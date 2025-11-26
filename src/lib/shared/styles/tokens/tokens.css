@@ -1,0 +1,227 @@
+/**
+ * Design Tokens for Tailwind 4
+ * CSS-first configuration using @theme directive
+ * 
+ * @see https://tailwindcss.com/docs/v4-beta
+ */
+
+ @import "tailwindcss";
+
+ @theme {
+   /* ===== COLOR PRIMITIVES ===== */
+   /* НЕ используются напрямую - только через semantic токены */
+   
+   --color-blue-10: #edf5ff;
+   --color-blue-20: #d0e2ff;
+   --color-blue-30: #a6c8ff;
+   --color-blue-40: #78a9ff;
+   --color-blue-50: #4589ff;
+   --color-blue-60: #0f62fe;
+   --color-blue-70: #0043ce;
+   --color-blue-80: #002d9c;
+   --color-blue-90: #001d6c;
+   --color-blue-100: #001141;
+ 
+   --color-gray-10: #f4f4f4;
+   --color-gray-20: #e0e0e0;
+   --color-gray-30: #c6c6c6;
+   --color-gray-40: #a8a8a8;
+   --color-gray-50: #8d8d8d;
+   --color-gray-60: #6f6f6f;
+   --color-gray-70: #525252;
+   --color-gray-80: #393939;
+   --color-gray-90: #262626;
+   --color-gray-100: #161616;
+ 
+   --color-red-10: #fff1f1;
+   --color-red-20: #ffd7d9;
+   --color-red-50: #fa4d56;
+   --color-red-60: #da1e28;
+   --color-red-70: #a2191f;
+   --color-red-80: #750e13;
+   --color-red-90: #520408;
+ 
+   --color-green-10: #defbe6;
+   --color-green-50: #24a148;
+   --color-green-60: #198038;
+   --color-green-70: #0e6027;
+   --color-green-80: #044317;
+ 
+   --color-yellow-10: #fcf4d6;
+   --color-yellow-20: #fddc69;
+   --color-yellow-30: #f1c21b;
+   --color-yellow-40: #d2a106;
+   --color-yellow-70: #684e00;
+ 
+   /* ===== SEMANTIC COLORS (shadcn/ui pattern) ===== */
+   /* AI-optimized naming для code generation */
+   
+   --color-primary: var(--color-blue-60);
+   --color-primary-hover: var(--color-blue-70);
+   --color-primary-active: var(--color-blue-80);
+   --color-primary-disabled: var(--color-gray-40);
+   --color-primary-foreground: #ffffff;
+ 
+   --color-secondary: var(--color-gray-80);
+   --color-secondary-hover: var(--color-gray-90);
+   --color-secondary-active: var(--color-gray-100);
+   --color-secondary-disabled: var(--color-gray-30);
+   --color-secondary-foreground: #ffffff;
+ 
+   --color-accent: var(--color-blue-50);
+   --color-accent-hover: var(--color-blue-60);
+   --color-accent-active: var(--color-blue-70);
+   --color-accent-foreground: #ffffff;
+ 
+   --color-destructive: var(--color-red-60);
+   --color-destructive-hover: var(--color-red-70);
+   --color-destructive-active: var(--color-red-80);
+   --color-destructive-foreground: #ffffff;
+ 
+   --color-muted: var(--color-gray-10);
+   --color-muted-hover: var(--color-gray-20);
+   --color-muted-foreground: var(--color-gray-70);
+ 
+   /* Surfaces */
+   --color-background: #ffffff;
+   --color-foreground: var(--color-gray-100);
+ 
+   --color-card: #ffffff;
+   --color-card-hover: var(--color-gray-10);
+   --color-card-foreground: var(--color-gray-100);
+   --color-card-border: var(--color-gray-20);
+ 
+   --color-popover: #ffffff;
+   --color-popover-foreground: var(--color-gray-100);
+   --color-popover-border: var(--color-gray-30);
+ 
+   /* Sidebar (для dashboard) */
+   --color-sidebar: var(--color-gray-100);
+   --color-sidebar-hover: var(--color-gray-90);
+   --color-sidebar-active: var(--color-gray-80);
+   --color-sidebar-foreground: #ffffff;
+   --color-sidebar-muted: var(--color-gray-70);
+ 
+   /* Borders & Inputs */
+   --color-border: var(--color-gray-30);
+   --color-border-hover: var(--color-gray-40);
+   --color-border-focus: var(--color-blue-60);
+ 
+   --color-input: var(--color-gray-30);
+   --color-input-hover: var(--color-gray-40);
+   --color-input-focus: var(--color-blue-60);
+   --color-input-disabled: var(--color-gray-20);
+ 
+   --color-ring: var(--color-blue-60);
+ 
+   /* Status colors */
+   --color-success: var(--color-green-60);
+   --color-success-hover: var(--color-green-70);
+   --color-success-foreground: #ffffff;
+   --color-success-muted: var(--color-green-10);
+   --color-success-muted-foreground: var(--color-green-80);
+ 
+   --color-warning: var(--color-yellow-30);
+   --color-warning-hover: var(--color-yellow-40);
+   --color-warning-foreground: var(--color-gray-100);
+   --color-warning-muted: var(--color-yellow-10);
+   --color-warning-muted-foreground: var(--color-yellow-70);
+ 
+   --color-error: var(--color-red-60);
+   --color-error-hover: var(--color-red-70);
+   --color-error-foreground: #ffffff;
+   --color-error-muted: var(--color-red-10);
+   --color-error-muted-foreground: var(--color-red-80);
+ 
+   --color-info: var(--color-blue-50);
+   --color-info-hover: var(--color-blue-60);
+   --color-info-foreground: #ffffff;
+   --color-info-muted: var(--color-blue-10);
+   --color-info-muted-foreground: var(--color-blue-80);
+ 
+   /* Charts */
+   --color-chart-1: var(--color-blue-60);
+   --color-chart-2: var(--color-green-60);
+   --color-chart-3: var(--color-yellow-30);
+   --color-chart-4: var(--color-red-60);
+   --color-chart-5: var(--color-gray-70);
+ 
+   /* ===== SPACING ===== */
+   --spacing-0: 0;
+   --spacing-1: 0.125rem;   /* 2px */
+   --spacing-2: 0.25rem;    /* 4px */
+   --spacing-3: 0.5rem;     /* 8px */
+   --spacing-4: 0.75rem;    /* 12px */
+   --spacing-5: 1rem;       /* 16px */
+   --spacing-6: 1.5rem;     /* 24px */
+   --spacing-7: 2rem;       /* 32px */
+   --spacing-8: 2.5rem;     /* 40px */
+   --spacing-9: 3rem;       /* 48px */
+   --spacing-10: 4rem;      /* 64px */
+   --spacing-11: 5rem;      /* 80px */
+   --spacing-12: 6rem;      /* 96px */
+   --spacing-13: 10rem;     /* 160px */
+ 
+   /* ===== BORDER RADIUS ===== */
+   --radius-none: 0;
+   --radius-sm: 0.125rem;   /* 2px */
+   --radius-md: 0.25rem;    /* 4px */
+   --radius-lg: 0.5rem;     /* 8px */
+   --radius-xl: 1rem;       /* 16px */
+   --radius-full: 9999px;
+ 
+   /* ===== TYPOGRAPHY ===== */
+   --font-size-xs: 0.75rem;    /* 12px */
+   --font-size-sm: 0.875rem;   /* 14px */
+   --font-size-base: 1rem;     /* 16px */
+   --font-size-lg: 1.125rem;   /* 18px */
+   --font-size-xl: 1.25rem;    /* 20px */
+   --font-size-2xl: 1.5rem;    /* 24px */
+   --font-size-3xl: 1.875rem;  /* 30px */
+   --font-size-4xl: 2.25rem;   /* 36px */
+ 
+   --font-weight-light: 300;
+   --font-weight-normal: 400;
+   --font-weight-medium: 500;
+   --font-weight-semibold: 600;
+   --font-weight-bold: 700;
+ 
+   --line-height-tight: 1.25;
+   --line-height-normal: 1.5;
+   --line-height-loose: 1.75;
+ 
+   /* ===== SHADOWS ===== */
+   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+   --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+ 
+   /* ===== TRANSITIONS ===== */
+   --transition-fast: 110ms;
+   --transition-moderate: 240ms;
+   --transition-slow: 400ms;
+ 
+   --ease-entrance: cubic-bezier(0, 0, 0.3, 1);
+   --ease-exit: cubic-bezier(0.2, 0, 1, 0.9);
+   --ease-standard: cubic-bezier(0.2, 0, 0.38, 0.9);
+ }
+ 
+ /* Dark theme override */
+ @media (prefers-color-scheme: dark) {
+   @theme {
+     --color-background: var(--color-gray-100);
+     --color-foreground: var(--color-gray-10);
+     
+     --color-card: var(--color-gray-90);
+     --color-card-hover: var(--color-gray-80);
+     --color-card-foreground: var(--color-gray-10);
+     --color-card-border: var(--color-gray-70);
+ 
+     --color-muted: var(--color-gray-80);
+     --color-muted-hover: var(--color-gray-70);
+     --color-muted-foreground: var(--color-gray-30);
+ 
+     --color-border: var(--color-gray-70);
+     --color-input: var(--color-gray-70);
+   }
+ }

@@ -1,0 +1,384 @@
+# 🎨 Design System AI Guide
+
+> Quick reference для AI code generation. Carbon Design System + Tailwind 4 + shadcn/ui patterns.
+
+---
+
+
+## 📁 Project Structure
+
+```
+src/
+├── app.css                          ← Entry point: @import tokens.css
+├── lib/shared/
+│   ├── styles/
+│   │   └── tokens/
+│   │       ├── tokens.css           ← CSS tokens
+│   │       ├── semantic.ts          ← TS exports для Canvas/Charts
+│   │       └── index.ts
+│   └── ui/                          ← Shared компоненты
+│       ├── Button/
+│       ├── Input/
+│       └── Card/
+```
+
+## 🎯 Core Rule
+
+**99% UI = Tailwind классы. TypeScript токены только для Canvas/Charts.**
+
+```svelte
+<!-- ✅ DO: Tailwind classes -->
+<button class="bg-primary hover:bg-primary-hover text-primary-foreground">
+  Click me
+</button>
+
+<!-- ❌ DON'T: Inline styles -->
+<button style="background: #0f62fe">Wrong</button>
+```
+
+---
+
+## 📦 Import Paths
+
+```typescript
+/* src/app.css - уже настроено */
+@import '$lib/shared/styles/tokens/tokens.css';
+
+// TypeScript tokens (только для Canvas/Charts)
+import { semantic, type ButtonVariant, type StatusVariant } from '$shared/styles/tokens';
+```
+
+---
+
+## 🎨 Token Reference
+
+### Colors (Tailwind classes)
+
+```svelte
+<!-- Actions -->
+bg-primary hover:bg-primary-hover text-primary-foreground
+bg-secondary hover:bg-secondary-hover text-secondary-foreground  
+bg-destructive hover:bg-destructive-hover text-destructive-foreground
+bg-accent hover:bg-accent-hover text-accent-foreground
+bg-muted hover:bg-muted-hover text-muted-foreground
+
+<!-- Surfaces -->
+bg-background text-foreground
+bg-card text-card-foreground border-card-border hover:bg-card-hover
+bg-popover text-popover-foreground border-popover-border
+bg-sidebar text-sidebar-foreground hover:bg-sidebar-hover
+
+<!-- Status -->
+bg-success text-success-foreground
+bg-warning text-warning-foreground  
+bg-error text-error-foreground
+bg-info text-info-foreground
+
+<!-- Muted variants -->
+bg-success-muted text-success-muted-foreground
+bg-warning-muted text-warning-muted-foreground
+bg-error-muted text-error-muted-foreground
+bg-info-muted text-info-muted-foreground
+
+<!-- Borders -->
+border-border hover:border-border-hover focus:border-border-focus
+border-input hover:border-input-hover focus:border-input-focus
+focus:ring-2 focus:ring-ring
+```
+
+### Spacing
+
+```svelte
+<!-- Доступные: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 -->
+p-4     <!-- 12px -->
+px-6    <!-- 24px horizontal -->
+gap-3   <!-- 8px gap -->
+```
+
+### Typography
+
+```svelte
+text-4xl font-semibold    <!-- Heading 1 -->
+text-2xl font-semibold    <!-- Heading 2 -->
+text-base                 <!-- Body -->
+text-sm text-muted-foreground  <!-- Helper text -->
+```
+
+### Other
+
+```svelte
+rounded-md     <!-- 4px -->
+rounded-lg     <!-- 8px -->
+shadow-md      <!-- Medium shadow -->
+transition-colors duration-200
+
+<!-- Durations -->
+duration-[110ms]   <!-- fast -->
+duration-[240ms]   <!-- moderate -->
+duration-[400ms]   <!-- slow -->
+
+<!-- Z-index (use sparingly, prefer stacking context) -->
+z-[1000]  <!-- dropdown -->
+z-[1400]  <!-- modal -->
+z-[1600]  <!-- tooltip -->
+```
+
+---
+
+## 🔧 TypeScript Tokens (semantic.ts)
+
+**Use ONLY for:**
+- ✅ Canvas/WebGL
+- ✅ Chart libraries (Recharts, Chart.js)
+- ✅ Programmatic color logic
+
+### Canvas Example
+
+```typescript
+import { semantic } from '$shared/styles/tokens';
+
+function draw(ctx: CanvasRenderingContext2D) {
+  ctx.fillStyle = semantic.primary.DEFAULT; // #0f62fe
+  ctx.fillRect(0, 0, 100, 100);
+}
+```
+
+### Chart Example
+
+```typescript
+import { semantic } from '$shared/styles/tokens';
+
+const config = {
+  datasets: [{
+    backgroundColor: semantic.chart[1], // #0f62fe
+    borderColor: semantic.primary.DEFAULT,
+  }]
+};
+```
+
+### Programmatic Logic
+
+```svelte
+<script lang="ts">
+  import { semanticVars } from '$shared/styles/tokens';
+  
+  let progress = 0.75;
+  
+  function getColor(val: number) {
+    if (val < 0.3) return semanticVars.error.DEFAULT;
+    if (val < 0.7) return semanticVars.warning.DEFAULT;
+    return semanticVars.success.DEFAULT;
+  }
+</script>
+
+<div style="width: {progress * 100}%; background: {getColor(progress)}" />
+```
+
+---
+
+## 🎨 Component Patterns
+
+### Button
+
+```svelte
+<script lang="ts">
+  import type { ButtonVariant } from '$shared/styles/tokens';
+  export let variant: ButtonVariant = 'primary';
+  
+  const variants: Record<ButtonVariant, string> = {
+    primary: 'bg-primary hover:bg-primary-hover text-primary-foreground',
+    secondary: 'bg-secondary hover:bg-secondary-hover text-secondary-foreground',
+    destructive: 'bg-destructive hover:bg-destructive-hover text-destructive-foreground',
+    accent: 'bg-accent hover:bg-accent-hover text-accent-foreground',
+    muted: 'bg-muted hover:bg-muted-hover text-muted-foreground',
+  };
+</script>
+
+<button class="{variants[variant]} px-4 py-2 rounded-md transition-colors">
+  <slot />
+</button>
+```
+
+### Card
+
+```svelte
+<div class="bg-card border border-card-border rounded-lg p-6 hover:bg-card-hover transition-colors">
+  <slot />
+</div>
+```
+
+### Input
+
+```svelte
+<input 
+  class="w-full px-3 py-2 rounded-md bg-background text-foreground
+         border border-input hover:border-input-hover 
+         focus:border-input-focus focus:ring-2 focus:ring-ring focus:outline-none
+         disabled:bg-muted disabled:opacity-50
+         transition-colors"
+/>
+```
+
+### Badge
+
+```svelte
+<script lang="ts">
+  import type { StatusVariant } from '$shared/styles/tokens';
+  export let variant: StatusVariant = 'info';
+  
+  const variants: Record<StatusVariant, string> = {
+    success: 'bg-success text-success-foreground',
+    warning: 'bg-warning text-warning-foreground',
+    error: 'bg-error text-error-foreground',
+    info: 'bg-info text-info-foreground',
+  };
+</script>
+
+<span class="{variants[variant]} px-2 py-1 text-sm rounded-md">
+  <slot />
+</span>
+```
+
+---
+
+## ✅ DO / ❌ DON'T
+
+### ✅ DO
+
+```svelte
+<!-- Use semantic tokens -->
+<button class="bg-primary text-primary-foreground">OK</button>
+
+<!-- Use interactive states -->
+<button class="bg-primary hover:bg-primary-hover active:bg-primary-active">OK</button>
+
+<!-- Use transitions -->
+<button class="bg-primary hover:bg-primary-hover transition-colors">OK</button>
+
+<!-- Use foreground for contrast -->
+<div class="bg-card text-card-foreground">OK</div>
+
+<!-- Type-safe variants -->
+<script lang="ts">
+  import type { ButtonVariant } from '$shared/styles/tokens';
+  let variant: ButtonVariant = 'primary';
+</script>
+```
+
+### ❌ DON'T
+
+```svelte
+<!-- Hardcoded colors -->
+<button class="bg-[#0f62fe]">Wrong</button>
+<button style="background: #0f62fe">Wrong</button>
+
+<!-- Primitive tokens directly -->
+<button class="bg-blue-60">Wrong</button>
+
+<!-- Semantic.ts instead of Tailwind -->
+<button style="background: {semantic.primary.DEFAULT}">Wrong</button>
+
+<!-- Arbitrary spacing -->
+<div class="p-[13px]">Wrong</div>
+
+<!-- Bad contrast -->
+<button class="bg-primary text-primary">Wrong</button>
+```
+
+---
+
+## 📋 AI Checklist
+
+Before generating code:
+
+- [ ] Semantic tokens used (not hardcoded colors)
+- [ ] Interactive states added (hover/active/disabled)
+- [ ] `text-*-foreground` used for proper contrast
+- [ ] `transition-colors` added for smooth UX
+- [ ] System spacing used (1-13, not arbitrary)
+- [ ] System radius used (sm/md/lg/xl)
+- [ ] TypeScript types used (ButtonVariant, StatusVariant)
+- [ ] Tailwind classes preferred over inline styles
+
+---
+
+## 🚀 Quick Patterns
+
+| Component | Pattern |
+|-----------|---------|
+| **Button** | `bg-{variant} hover:bg-{variant}-hover text-{variant}-foreground px-4 py-2 rounded-md transition-colors` |
+| **Card** | `bg-card border border-card-border rounded-lg p-6` |
+| **Input** | `border border-input focus:border-input-focus focus:ring-2 focus:ring-ring px-3 py-2 rounded-md` |
+| **Badge** | `bg-{status} text-{status}-foreground px-2 py-1 text-sm rounded-md` |
+| **Sidebar Nav** | `hover:bg-sidebar-hover active:bg-sidebar-active transition-colors` |
+
+---
+
+## 📊 Common Scenarios
+
+### Dashboard Card
+```svelte
+<div class="bg-card border border-card-border rounded-lg p-6 shadow-md">
+  <h3 class="text-sm font-medium text-muted-foreground mb-2">Revenue</h3>
+  <div class="text-3xl font-semibold">$12,345</div>
+  <p class="text-sm text-success mt-2">+12.5% from last month</p>
+</div>
+```
+
+### Form Field
+```svelte
+<div class="space-y-2">
+  <label class="text-sm font-medium">Email</label>
+  <input 
+    type="email"
+    class="w-full px-3 py-2 rounded-md border border-input 
+           focus:border-input-focus focus:ring-2 focus:ring-ring 
+           transition-colors"
+  />
+  <p class="text-sm text-muted-foreground">We'll never share your email.</p>
+</div>
+```
+
+### Status Indicator
+```svelte
+<div class="flex items-center gap-2">
+  <div class="w-2 h-2 rounded-full bg-success"></div>
+  <span class="text-sm">Active</span>
+</div>
+```
+
+### Chart Integration
+```svelte
+<script lang="ts">
+  import { semantic } from '$shared/styles/tokens';
+  import { Line } from 'svelte-chartjs';
+  
+  const data = {
+    datasets: [{
+      label: 'Revenue',
+      borderColor: semantic.primary.DEFAULT,
+      backgroundColor: semantic.chart[1],
+    }]
+  };
+</script>
+
+<Line {data} />
+```
+
+---
+
+## 🎯 Key Takeaways
+
+1. **Tailwind first**: 99% of UI uses Tailwind classes
+2. **Semantic tokens**: Never hardcode colors
+3. **Interactive states**: Always add hover/active/focus
+4. **Contrast**: Use `text-*-foreground` pairing
+5. **Transitions**: Smooth UX with `transition-colors`
+6. **Type safety**: Use ButtonVariant, StatusVariant
+7. **TypeScript tokens**: Only for Canvas/Charts/programmatic logic
+8. **Dark theme**: Automatic via `prefers-color-scheme` (cards, muted, borders adapt)
+
+---
+
+**Last updated**: November 2024  
+**Tech stack**: SvelteKit 2 + Svelte 5 + Tailwind 4 + Carbon Design System
