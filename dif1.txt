@@ -1,0 +1,481 @@
+warning: in the working copy of 'tsconfig.json', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/src/routes/Counter.svelte b/src/routes/Counter.svelte[m
+[1mdeleted file mode 100644[m
+[1mindex a9388f4..0000000[m
+[1m--- a/src/routes/Counter.svelte[m
+[1m+++ /dev/null[m
+[36m@@ -1,99 +0,0 @@[m
+[31m-<script lang="ts">[m
+[31m-	import { Spring } from 'svelte/motion';[m
+[31m-[m
+[31m-	const count = new Spring(0);[m
+[31m-	const offset = $derived(modulo(count.current, 1));[m
+[31m-[m
+[31m-	function modulo(n: number, m: number) {[m
+[31m-		// handle negative numbers[m
+[31m-		return ((n % m) + m) % m;[m
+[31m-	}[m
+[31m-</script>[m
+[31m-[m
+[31m-<div class="counter">[m
+[31m-	<button onclick={() => (count.target -= 1)} aria-label="Decrease the counter by one">[m
+[31m-		<svg aria-hidden="true" viewBox="0 0 1 1">[m
+[31m-			<path d="M0,0.5 L1,0.5" />[m
+[31m-		</svg>[m
+[31m-	</button>[m
+[31m-[m
+[31m-	<div class="counter-viewport">[m
+[31m-		<div class="counter-digits" style="transform: translate(0, {100 * offset}%)">[m
+[31m-			<strong class="hidden" aria-hidden="true">{Math.floor(count.current + 1)}</strong>[m
+[31m-			<strong>{Math.floor(count.current)}</strong>[m
+[31m-		</div>[m
+[31m-	</div>[m
+[31m-[m
+[31m-	<button onclick={() => (count.target += 1)} aria-label="Increase the counter by one">[m
+[31m-		<svg aria-hidden="true" viewBox="0 0 1 1">[m
+[31m-			<path d="M0,0.5 L1,0.5 M0.5,0 L0.5,1" />[m
+[31m-		</svg>[m
+[31m-	</button>[m
+[31m-</div>[m
+[31m-[m
+[31m-<style>[m
+[31m-	.counter {[m
+[31m-		display: flex;[m
+[31m-		border-top: 1px solid rgba(0, 0, 0, 0.1);[m
+[31m-		border-bottom: 1px solid rgba(0, 0, 0, 0.1);[m
+[31m-		margin: 1rem 0;[m
+[31m-	}[m
+[31m-[m
+[31m-	.counter button {[m
+[31m-		width: 2em;[m
+[31m-		padding: 0;[m
+[31m-		display: flex;[m
+[31m-		align-items: center;[m
+[31m-		justify-content: center;[m
+[31m-		border: 0;[m
+[31m-		background-color: transparent;[m
+[31m-		touch-action: manipulation;[m
+[31m-		font-size: 2rem;[m
+[31m-	}[m
+[31m-[m
+[31m-	.counter button:hover {[m
+[31m-		background-color: var(--color-bg-1);[m
+[31m-	}[m
+[31m-[m
+[31m-	svg {[m
+[31m-		width: 25%;[m
+[31m-		height: 25%;[m
+[31m-	}[m
+[31m-[m
+[31m-	path {[m
+[31m-		vector-effect: non-scaling-stroke;[m
+[31m-		stroke-width: 2px;[m
+[31m-		stroke: #444;[m
+[31m-	}[m
+[31m-[m
+[31m-	.counter-viewport {[m
+[31m-		width: 8em;[m
+[31m-		height: 4em;[m
+[31m-		overflow: hidden;[m
+[31m-		text-align: center;[m
+[31m-		position: relative;[m
+[31m-	}[m
+[31m-[m
+[31m-	.counter-viewport strong {[m
+[31m-		position: absolute;[m
+[31m-		display: flex;[m
+[31m-		width: 100%;[m
+[31m-		height: 100%;[m
+[31m-		font-weight: 400;[m
+[31m-		color: var(--color-theme-1);[m
+[31m-		font-size: 4rem;[m
+[31m-		align-items: center;[m
+[31m-		justify-content: center;[m
+[31m-	}[m
+[31m-[m
+[31m-	.counter-digits {[m
+[31m-		position: absolute;[m
+[31m-		width: 100%;[m
+[31m-		height: 100%;[m
+[31m-	}[m
+[31m-[m
+[31m-	.hidden {[m
+[31m-		top: -100%;[m
+[31m-		user-select: none;[m
+[31m-	}[m
+[31m-</style>[m
+[1mdiff --git a/src/routes/about/+page.svelte b/src/routes/about/+page.svelte[m
+[1mdeleted file mode 100644[m
+[1mindex 2345261..0000000[m
+[1m--- a/src/routes/about/+page.svelte[m
+[1m+++ /dev/null[m
+[36m@@ -1,26 +0,0 @@[m
+[31m-<svelte:head>[m
+[31m-	<title>About</title>[m
+[31m-	<meta name="description" content="About this app" />[m
+[31m-</svelte:head>[m
+[31m-[m
+[31m-<div class="text-column">[m
+[31m-	<h1>About this app</h1>[m
+[31m-[m
+[31m-	<p>[m
+[31m-		This is a <a href="https://svelte.dev/docs/kit">SvelteKit</a> app. You can make your own by typing[m
+[31m-		the following into your command line and following the prompts:[m
+[31m-	</p>[m
+[31m-[m
+[31m-	<pre>npx sv create</pre>[m
+[31m-[m
+[31m-	<p>[m
+[31m-		The page you're looking at is purely static HTML, with no client-side interactivity needed.[m
+[31m-		Because of that, we don't need to load any JavaScript. Try viewing the page's source, or opening[m
+[31m-		the devtools network panel and reloading.[m
+[31m-	</p>[m
+[31m-[m
+[31m-	<p>[m
+[31m-		The <a href="/sverdle">Sverdle</a> page illustrates SvelteKit's data loading and form handling. Try[m
+[31m-		using it with JavaScript disabled![m
+[31m-	</p>[m
+[31m-</div>[m
+[1mdiff --git a/src/routes/about/+page.ts b/src/routes/about/+page.ts[m
+[1mdeleted file mode 100644[m
+[1mindex e739ef4..0000000[m
+[1m--- a/src/routes/about/+page.ts[m
+[1m+++ /dev/null[m
+[36m@@ -1,9 +0,0 @@[m
+[31m-import { dev } from '$app/environment';[m
+[31m-[m
+[31m-// we don't need any JS on this page, though we'll load[m
+[31m-// it in dev so that we get hot module replacement[m
+[31m-export const csr = dev;[m
+[31m-[m
+[31m-// since there's no dynamic data here, we can prerender[m
+[31m-// it so that it gets served as a static asset in production[m
+[31m-export const prerender = true;[m
+[1mdiff --git a/src/routes/sverdle/+page.server.ts b/src/routes/sverdle/+page.server.ts[m
+[1mdeleted file mode 100644[m
+[1mindex 7279af5..0000000[m
+[1m--- a/src/routes/sverdle/+page.server.ts[m
+[1m+++ /dev/null[m
+[36m@@ -1,69 +0,0 @@[m
+[31m-import { fail } from '@sveltejs/kit';[m
+[31m-import { Game } from './game';[m
+[31m-import type { PageServerLoad, Actions } from './$types';[m
+[31m-[m
+[31m-export const load = (({ cookies }) => {[m
+[31m-	const game = new Game(cookies.get('sverdle'));[m
+[31m-[m
+[31m-	return {[m
+[31m-		/**[m
+[31m-		 * The player's guessed words so far[m
+[31m-		 */[m
+[31m-		guesses: game.guesses,[m
+[31m-[m
+[31m-		/**[m
+[31m-		 * An array of strings like '__x_c' corresponding to the guesses, where 'x' means[m
+[31m-		 * an exact match, and 'c' means a close match (right letter, wrong place)[m
+[31m-		 */[m
+[31m-		answers: game.answers,[m
+[31m-[m
+[31m-		/**[m
+[31m-		 * The correct answer, revealed if the game is over[m
+[31m-		 */[m
+[31m-		answer: game.answers.length >= 6 ? game.answer : null[m
+[31m-	};[m
+[31m-}) satisfies PageServerLoad;[m
+[31m-[m
+[31m-export const actions = {[m
+[31m-	/**[m
+[31m-	 * Modify game state in reaction to a keypress. If client-side JavaScript[m
+[31m-	 * is available, this will happen in the browser instead of here[m
+[31m-	 */[m
+[31m-	update: async ({ request, cookies }) => {[m
+[31m-		const game = new Game(cookies.get('sverdle'));[m
+[31m-[m
+[31m-		const data = await request.formData();[m
+[31m-		const key = data.get('key');[m
+[31m-[m
+[31m-		const i = game.answers.length;[m
+[31m-[m
+[31m-		if (key === 'backspace') {[m
+[31m-			game.guesses[i] = game.guesses[i].slice(0, -1);[m
+[31m-		} else {[m
+[31m-			game.guesses[i] += key;[m
+[31m-		}[m
+[31m-[m
+[31m-		cookies.set('sverdle', game.toString(), { path: '/' });[m
+[31m-	},[m
+[31m-[m
+[31m-	/**[m
+[31m-	 * Modify game state in reaction to a guessed word. This logic always runs on[m
+[31m-	 * the server, so that people can't cheat by peeking at the JavaScript[m
+[31m-	 */[m
+[31m-	enter: async ({ request, cookies }) => {[m
+[31m-		const game = new Game(cookies.get('sverdle'));[m
+[31m-[m
+[31m-		const data = await request.formData();[m
+[31m-		const guess = data.getAll('guess') as string[];[m
+[31m-[m
+[31m-		if (!game.enter(guess)) {[m
+[31m-			return fail(400, { badGuess: true });[m
+[31m-		}[m
+[31m-[m
+[31m-		cookies.set('sverdle', game.toString(), { path: '/' });[m
+[31m-	},[m
+[31m-[m
+[31m-	restart: async ({ cookies }) => {[m
+[31m-		cookies.delete('sverdle', { path: '/' });[m
+[31m-	}[m
+[31m-} satisfies Actions;[m
+[1mdiff --git a/src/routes/sverdle/+page.svelte b/src/routes/sverdle/+page.svelte[m
+[1mdeleted file mode 100644[m
+[1mindex 66b7ee9..0000000[m
+[1m--- a/src/routes/sverdle/+page.svelte[m
+[1m+++ /dev/null[m
+[36m@@ -1,411 +0,0 @@[m
+[31m-<script lang="ts">[m
+[31m-	import { enhance } from '$app/forms';[m
+[31m-	import { confetti } from '@neoconfetti/svelte';[m
+[31m-	import type { ActionData, PageData } from './$types';[m
+[31m-	import { MediaQuery } from 'svelte/reactivity';[m
+[31m-[m
+[31m-	interface Props {[m
+[31m-		data: PageData;[m
+[31m-		form: ActionData;[m
+[31m-	}[m
+[31m-	let { data, form = $bindable() }: Props = $props();[m
+[31m-[m
+[31m-	/** Whether the user prefers reduced motion */[m
+[31m-	const reducedMotion = new MediaQuery('(prefers-reduced-motion: reduce)');[m
+[31m-[m
+[31m-	/** Whether or not the user has won */[m
+[31m-	let won = $derived(data.answers.at(-1) === 'xxxxx');[m
+[31m-[m
+[31m-	/** The index of the current guess */[m
+[31m-	let i = $derived(won ? -1 : data.answers.length);[m
+[31m-[m
+[31m-	/** The current guess */[m
+[31m-	let currentGuess = $derived(data.guesses[i] || '');[m
+[31m-[m
+[31m-	/** Whether the current guess can be submitted */[m
+[31m-	let submittable = $derived(currentGuess.length === 5);[m
+[31m-[m
+[31m-	const { classnames, description } = $derived.by(() => {[m
+[31m-		/**[m
+[31m-		 * A map of classnames for all letters that have been guessed,[m
+[31m-		 * used for styling the keyboard[m
+[31m-		 */[m
+[31m-		let classnames: Record<string, 'exact' | 'close' | 'missing'> = {};[m
+[31m-		/**[m
+[31m-		 * A map of descriptions for all letters that have been guessed,[m
+[31m-		 * used for adding text for assistive technology (e.g. screen readers)[m
+[31m-		 */[m
+[31m-		let description: Record<string, string> = {};[m
+[31m-		data.answers.forEach((answer, i) => {[m
+[31m-			const guess = data.guesses[i];[m
+[31m-			for (let i = 0; i < 5; i += 1) {[m
+[31m-				const letter = guess[i];[m
+[31m-				if (answer[i] === 'x') {[m
+[31m-					classnames[letter] = 'exact';[m
+[31m-					description[letter] = 'correct';[m
+[31m-				} else if (!classnames[letter]) {[m
+[31m-					classnames[letter] = answer[i] === 'c' ? 'close' : 'missing';[m
+[31m-					description[letter] = answer[i] === 'c' ? 'present' : 'absent';[m
+[31m-				}[m
+[31m-			}[m
+[31m-		});[m
+[31m-		return { classnames, description };[m
+[31m-	});[m
+[31m-[m
+[31m-	/**[m
+[31m-	 * Modify the game state without making a trip to the server,[m
+[31m-	 * if client-side JavaScript is enabled[m
+[31m-	 */[m
+[31m-	function update(event: MouseEvent) {[m
+[31m-		event.preventDefault();[m
+[31m-		const key = (event.target as HTMLButtonElement).getAttribute([m
+[31m-			'data-key'[m
+[31m-		);[m
+[31m-[m
+[31m-		if (key === 'backspace') {[m
+[31m-			currentGuess = currentGuess.slice(0, -1);[m
+[31m-			if (form?.badGuess) form.badGuess = false;[m
+[31m-		} else if (currentGuess.length < 5) {[m
+[31m-			currentGuess += key;[m
+[31m-		}[m
+[31m-	}[m
+[31m-[m
+[31m-	/**[m
+[31m-	 * Trigger form logic in response to a keydown event, so that[m
+[31m-	 * desktop users can use the keyboard to play the game[m
+[31m-	 */[m
+[31m-	function keydown(event: KeyboardEvent) {[m
+[31m-		if (event.metaKey) return;[m
+[31m-[m
+[31m-		if (event.key === 'Enter' && !submittable) return;[m
+[31m-[m
+[31m-		document[m
+[31m-			.querySelector(`[data-key="${event.key}" i]`)[m
+[31m-			?.dispatchEvent(new MouseEvent('click', { cancelable: true, bubbles: true }));[m
+[31m-	}[m
+[31m-</script>[m
+[31m-[m
+[31m-<svelte:window onkeydown={keydown} />[m
+[31m-[m
+[31m-<svelte:head>[m
+[31m-	<title>Sverdle</title>[m
+[31m-	<meta name="description" content="A Wordle clone written in SvelteKit" />[m
+[31m-</svelte:head>[m
+[31m-[m
+[31m-<h1 class="visually-hidden">Sverdle</h1>[m
+[31m-[m
+[31m-<form[m
+[31m-	method="post"[m
+[31m-	action="?/enter"[m
+[31m-	use:enhance={() => {[m
+[31m-		// prevent default callback from resetting the form[m
+[31m-		return ({ update }) => {[m
+[31m-			update({ reset: false });[m
+[31m-		};[m
+[31m-	}}[m
+[31m->[m
+[31m-	<a class="how-to-play" href="/sverdle/how-to-play">How to play</a>[m
+[31m-[m
+[31m-	<div class="grid" class:playing={!won} class:bad-guess={form?.badGuess}>[m
+[31m-		{#each Array.from(Array(6).keys()) as row (row)}[m
+[31m-			{@const current = row === i}[m
+[31m-			<h2 class="visually-hidden">Row {row + 1}</h2>[m
+[31m-			<div class="row" class:current>[m
+[31m-				{#each Array.from(Array(5).keys()) as column (column)}[m
+[31m-					{@const guess = current ? currentGuess : data.guesses[row]}[m
+[31m-					{@const answer = data.answers[row]?.[column]}[m
+[31m-					{@const value = guess?.[column] ?? ''}[m
+[31m-					{@const selected = current && column === guess.length}[m
+[31m-					{@const exact = answer === 'x'}[m
+[31m-					{@const close = answer === 'c'}[m
+[31m-					{@const missing = answer === '_'}[m
+[31m-					<div class="letter" class:exact class:close class:missing class:selected>[m
+[31m-						{value}[m
+[31m-						<span class="visually-hidden">[m
+[31m-							{#if exact}[m
+[31m-								(correct)[m
+[31m-							{:else if close}[m
+[31m-								(present)[m
+[31m-							{:else if missing}[m
+[31m-								(absent)[m
+[31m-							{:else}[m
+[31m-								empty[m
+[31m-							{/if}[m
+[31m-						</span>[m
+[31m-						<input name="guess" disabled={!current} type="hidden" {value} />[m
+[31m-					</div>[m
+[31m-				{/each}[m
+[31m-			</div>[m
+[31m-		{/each}[m
+[31m-	</div>[m
+[31m-[m
+[31m-	<div class="controls">[m
+[31m-		{#if won || data.answers.length >= 6}[m
+[31m-			{#if !won && data.answer}[m
+[31m-				<p>the answer was "{data.answer}"</p>[m
+[31m-			{/if}[m
+[31m-			<button data-key="enter" class="restart selected" formaction="?/restart">[m
+[31m-				{won ? 'you won :)' : `game over :(`} play again?[m
+[31m-			</button>[m
+[31m-		{:else}[m
+[31m-			<div class="keyboard">[m
+[31m-				<button data-key="enter" class:selected={submittable} disabled={!submittable}>enter</button>[m
+[31m-[m
+[31m-				<button[m
+[31m-					onclick={update}[m
+[31m-					data-key="backspace"[m
+[31m-					formaction="?/update"[m
+[31m-					name="key"[m
+[31m-					value="backspace"[m
+[31m-				>[m
+[31m-					back[m
+[31m-				</button>[m
+[31m-[m
+[31m-				{#each ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'] as row (row)}[m
+[31m-					<div class="row">[m
+[31m-						{#each row as letter, index (index)}[m
+[31m-							<button[m
+[31m-								onclick={update}[m
+[31m-								data-key={letter}[m
+[31m-								class={classnames[letter]}[m
+[31m-								disabled={submittable}[m
+[31m-								formaction="?/update"[m
+[31m-								name="key"[m
+[31m-								value={letter}[m
+[31m-								aria-label="{letter} {description[letter] || ''}"[m
+[31m-							>[m
+[31m-								{letter}[m
+[31m-							</button>[m
+[31m-						{/each}[m
+[31m-					</div>[m
+[31m-				{/each}[m
+[31m-			</div>[m
+[31m-		{/if}[m
+[31m-	</div>[m
+[31m-</form>[m
+[31m-[m
+[31m-{#if won}[m
+[31m-	<div[m
+[31m-		style="position: absolute; left: 50%; top: 30%"[m
+[31m-		use:confetti={{[m
+[31m-			particleCount: reducedMotion.current ? 0 : undefined,[m
+[31m-			force: 0.7,[m
+[31m-			stageWidth: window.innerWidth,[m
+[31m-			stageHeight: window.innerHeight,[m
+[31m-			colors: ['#ff3e00', '#40b3ff', '#676778'][m
+[31m-		}}[m
+[31m-	></div>[m
+[31m-{/if}[m
+[31m-[m
+[31m-<style>[m
+[31m-	form {[m
+[31m-		width: 100%;[m
+[31m-		height: 100%;[m
+[31m-		display: flex;[m
+[31m-		flex-direction: column;[m
+[31m-		align-items: center;[m
+[31m-		justify-content: center;[m
+[31m-		gap: 1rem;[m
+[31m-		flex: 1;[m
+[31m-	}[m
+[31m-[m
+[31m-	.how-to-play {[m
+[31m-		color: var(--color-text);[m
+[31m-	}[m
+[31m-[m
+[31m-	.how-to-play::before {[m
+[31m-		content: 'i';[m
+[31m-		display: inline-block;[m
+[31m-		font-size: 0.8em;[m
+[31m-		font-weight: 900;[m
+[31m-		width: 1em;[m
+[31m-		height: 1em;[m
+[31m-		padding: 0.2em;[m
+[31m-		line-height: 1;[m
+[31m-		border: 1.5px solid var(--color-text);[m
+[31m-		border-radius: 50%;[m
+[31m-		text-align: center;[m
+[31m-		margin: 0 0.5em 0 0;[m
+[31m-		position: relative;[m
+[31m-		top: -0.05em;[m
+[31m-	}[m
+[31m-[m
+[31m-	.grid {[m
+[31m-		--width: min(100vw, 40vh, 380px);[m
+[31m-		max-width: var(--width);[m
+[31m-		align-self: center;[m
+[31m-		justify-self: center;[m
+[31m-		width: 100%;[m
+[31m-		height: 100%;[m
+[31m-		display: flex;[m
+[31m-		flex-direction: column;[m
+[31m-		justify-content: flex-start;[m
+[31m-	}[m
+[31m-[m
+[31m-	.grid .row {[m
+[31m-		display: grid;[m
+[31m-		grid-template

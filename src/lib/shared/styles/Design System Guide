@@ -12,9 +12,12 @@ src/
 ├── app.css                          ← Entry point: @import tokens.css
 ├── lib/shared/
 │   ├── styles/
-│   │   └── tokens/
-│   │       ├── tokens.css           ← CSS tokens
-│   │       ├── semantic.ts          ← TS exports для Canvas/Charts
+│   │   ├── tokens/
+│   │   │   ├── tokens.css           ← Tailwind 4 @theme
+│   │   │   ├── semantic.ts          ← TS exports для Canvas/Charts
+│   │   │   └── index.ts
+│   │   └── utils/
+│   │       ├── cn.ts                ← clsx + tailwind-merge
 │   │       └── index.ts
 │   └── ui/                          ← Shared компоненты
 │       ├── Button/

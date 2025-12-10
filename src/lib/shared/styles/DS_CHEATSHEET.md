@@ -16,9 +16,12 @@ src/
 ├── app.css                          ← Entry point: @import tokens.css
 ├── lib/shared/
 │   ├── styles/
-│   │   └── tokens/
-│   │       ├── tokens.css           ← CSS tokens
-│   │       ├── semantic.ts          ← TS exports для Canvas/Charts
+│   │   ├── tokens/
+│   │   │   ├── tokens.css           ← Tailwind 4 @theme
+│   │   │   ├── semantic.ts          ← TS exports для Canvas/Charts
+│   │   │   └── index.ts
+│   │   └── utils/
+│   │       ├── cn.ts                ← clsx + tailwind-merge
 │   │       └── index.ts
 │   └── ui/                          ← Shared компоненты
 │       ├── Button/
@@ -98,5 +101,19 @@ type StatusVariant = 'success' | 'warning' | 'error' | 'info';
 ```
 
 ---
+
+🛠️ cn() Utility (Critical!)
+Всегда используй в компонентах для композиции классов
+typescriptimport { cn } from '$shared/styles/utils';
+
+// Разрешает конфликты Tailwind
+cn('px-2', 'px-4')  // => 'px-4' (последний побеждает)
+
+// Условные классы
+cn('base', { 'active': isActive, 'disabled': !isActive })
+
+// В компонентах
+<button class={cn('px-4 py-2 bg-primary', className)}>
+
 
 **Last updated**: Nov 2025 | **Stack**: SvelteKit 2 + Svelte 5 + Tailwind + Carbon DS

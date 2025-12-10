@@ -206,22 +206,25 @@
    --ease-standard: cubic-bezier(0.2, 0, 0.38, 0.9);
  }
  
- /* Dark theme override */
+ /* Dark theme override - DISABLED (Light theme as default) */
+ /* To enable dark mode, uncomment the section below */
+ /*
  @media (prefers-color-scheme: dark) {
    @theme {
      --color-background: var(--color-gray-100);
      --color-foreground: var(--color-gray-10);
-     
+
      --color-card: var(--color-gray-90);
      --color-card-hover: var(--color-gray-80);
      --color-card-foreground: var(--color-gray-10);
      --color-card-border: var(--color-gray-70);
- 
+
      --color-muted: var(--color-gray-80);
      --color-muted-hover: var(--color-gray-70);
      --color-muted-foreground: var(--color-gray-30);
- 
+
      --color-border: var(--color-gray-70);
      --color-input: var(--color-gray-70);
    }
  }
+ */
