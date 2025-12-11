@@ -8,6 +8,8 @@
 		CardContent,
 		CardFooter
 	} from '$shared/ui/card';
+	import { Input } from '$shared/ui/input';
+	import { Select } from '$shared/ui/select';
 
 	let isLoading = $state(false);
 
@@ -129,6 +131,227 @@
 			<Button variant="default" class="w-full">Full Width Button</Button>
 			<Button variant="default" class="rounded-full">Rounded Full</Button>
 			<Button variant="outline" class="border-2 border-primary">Custom Border</Button>
+		</div>
+	</section>
+
+	<!-- Input Component -->
+	<section class="flex flex-col gap-4">
+		<h2 class="text-2xl font-semibold">Input Component</h2>
+
+		<!-- Input Types -->
+		<Card>
+			<CardHeader>
+				<CardTitle>Input Types</CardTitle>
+				<CardDescription>Different input types with Carbon Design System styling</CardDescription>
+			</CardHeader>
+			<CardContent>
+				<div class="flex flex-col gap-4">
+					<div>
+						<label for="input-text" class="text-sm font-medium mb-2 block">Text Input</label>
+						<Input id="input-text" type="text" placeholder="Enter your name" />
+					</div>
+
+					<div>
+						<label for="input-email" class="text-sm font-medium mb-2 block">Email Input</label>
+						<Input id="input-email" type="email" placeholder="email@example.com" />
+					</div>
+
+					<div>
+						<label for="input-password" class="text-sm font-medium mb-2 block">Password Input</label>
+						<Input id="input-password" type="password" placeholder="••••••••" />
+					</div>
+
+					<div>
+						<label for="input-number" class="text-sm font-medium mb-2 block">Number Input</label>
+						<Input id="input-number" type="number" placeholder="42" />
+					</div>
+
+					<div>
+						<label for="input-disabled" class="text-sm font-medium mb-2 block">Disabled Input</label>
+						<Input id="input-disabled" type="text" placeholder="Cannot edit" disabled />
+					</div>
+
+					<div>
+						<label for="input-file" class="text-sm font-medium mb-2 block">File Input</label>
+						<Input id="input-file" type="file" />
+					</div>
+				</div>
+			</CardContent>
+		</Card>
+
+		<!-- Input with Validation -->
+		<Card>
+			<CardHeader>
+				<CardTitle>Form Example</CardTitle>
+				<CardDescription>Input fields with labels and helper text</CardDescription>
+			</CardHeader>
+			<CardContent>
+				<form class="flex flex-col gap-4">
+					<div>
+						<label for="username" class="text-sm font-medium mb-2 block">Username</label>
+						<Input id="username" type="text" placeholder="johndoe" required />
+						<p class="text-sm text-muted-foreground mt-1">
+							This will be your public display name.
+						</p>
+					</div>
+
+					<div>
+						<label for="user-email" class="text-sm font-medium mb-2 block">Email</label>
+						<Input id="user-email" type="email" placeholder="john@example.com" required />
+					</div>
+
+					<div>
+						<label for="bio" class="text-sm font-medium mb-2 block">Bio</label>
+						<Input id="bio" type="text" placeholder="Tell us about yourself" />
+						<p class="text-sm text-muted-foreground mt-1">Max 100 characters.</p>
+					</div>
+
+					<Button type="submit" class="w-full">Save Profile</Button>
+				</form>
+			</CardContent>
+		</Card>
+
+		<!-- Input Sizes -->
+		<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+			<Card>
+				<CardHeader>
+					<CardTitle class="text-base">Default Size</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<Input placeholder="Default input (h-10)" />
+				</CardContent>
+			</Card>
+
+			<Card>
+				<CardHeader>
+					<CardTitle class="text-base">Custom Size</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<Input placeholder="Custom size" class="h-12 text-base" />
+				</CardContent>
+			</Card>
+		</div>
+	</section>
+
+	<!-- Select Component -->
+	<section class="flex flex-col gap-4">
+		<h2 class="text-2xl font-semibold">Select Component</h2>
+
+		<!-- Select Examples -->
+		<Card>
+			<CardHeader>
+				<CardTitle>Select Examples</CardTitle>
+				<CardDescription>Dropdown selections with Carbon Design System styling</CardDescription>
+			</CardHeader>
+			<CardContent>
+				<div class="flex flex-col gap-4">
+					<div>
+						<label for="select-country" class="text-sm font-medium mb-2 block">Country</label>
+						<Select id="select-country">
+							<option value="">Select a country</option>
+							<option value="us">United States</option>
+							<option value="uk">United Kingdom</option>
+							<option value="ca">Canada</option>
+							<option value="au">Australia</option>
+							<option value="de">Germany</option>
+						</Select>
+					</div>
+
+					<div>
+						<label for="select-framework" class="text-sm font-medium mb-2 block">Framework</label>
+						<Select id="select-framework">
+							<option value="react">React</option>
+							<option value="svelte" selected>SvelteKit</option>
+							<option value="vue">Vue</option>
+							<option value="angular">Angular</option>
+							<option value="solid">Solid</option>
+						</Select>
+					</div>
+
+					<div>
+						<label for="select-disabled" class="text-sm font-medium mb-2 block"
+							>Disabled Select</label
+						>
+						<Select id="select-disabled" disabled>
+							<option>Cannot select</option>
+						</Select>
+					</div>
+				</div>
+			</CardContent>
+		</Card>
+
+		<!-- Select with Form -->
+		<Card>
+			<CardHeader>
+				<CardTitle>User Preferences</CardTitle>
+				<CardDescription>Form with multiple select inputs</CardDescription>
+			</CardHeader>
+			<CardContent>
+				<form class="flex flex-col gap-4">
+					<div>
+						<label for="language" class="text-sm font-medium mb-2 block">Language</label>
+						<Select id="language" required>
+							<option value="">Choose language</option>
+							<option value="en">English</option>
+							<option value="es">Spanish</option>
+							<option value="fr">French</option>
+							<option value="de">German</option>
+							<option value="ja">Japanese</option>
+						</Select>
+					</div>
+
+					<div>
+						<label for="timezone" class="text-sm font-medium mb-2 block">Timezone</label>
+						<Select id="timezone">
+							<option value="utc">UTC</option>
+							<option value="est">Eastern Time</option>
+							<option value="cst">Central Time</option>
+							<option value="mst">Mountain Time</option>
+							<option value="pst" selected>Pacific Time</option>
+						</Select>
+					</div>
+
+					<div>
+						<label for="theme" class="text-sm font-medium mb-2 block">Theme</label>
+						<Select id="theme">
+							<option value="light">Light</option>
+							<option value="dark">Dark</option>
+							<option value="auto" selected>Auto</option>
+						</Select>
+					</div>
+
+					<Button type="submit" class="w-full">Save Preferences</Button>
+				</form>
+			</CardContent>
+		</Card>
+
+		<!-- Select Sizes -->
+		<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+			<Card>
+				<CardHeader>
+					<CardTitle class="text-base">Default Size</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<Select>
+						<option>Default select (h-10)</option>
+						<option>Option 2</option>
+						<option>Option 3</option>
+					</Select>
+				</CardContent>
+			</Card>
+
+			<Card>
+				<CardHeader>
+					<CardTitle class="text-base">Custom Size</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<Select class="h-12 text-base">
+						<option>Custom size select</option>
+						<option>Option 2</option>
+						<option>Option 3</option>
+					</Select>
+				</CardContent>
+			</Card>
 		</div>
 	</section>
 

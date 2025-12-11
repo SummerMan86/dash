@@ -370,6 +370,19 @@ Before generating code:
 
 ---
 
+🛠️ cn() Utility (Critical!)
+Всегда используй в компонентах для композиции классов
+typescriptimport { cn } from '$shared/styles/utils';
+
+// Разрешает конфликты Tailwind
+cn('px-2', 'px-4')  // => 'px-4' (последний побеждает)
+
+// Условные классы
+cn('base', { 'active': isActive, 'disabled': !isActive })
+
+// В компонентах
+<button class={cn('px-4 py-2 bg-primary', className)}>
+
 ## 🎯 Key Takeaways
 
 1. **Tailwind first**: 99% of UI uses Tailwind classes

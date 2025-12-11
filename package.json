@@ -15,8 +15,10 @@
 	},
 	"dependencies": {
 		"@fontsource/fira-mono": "^5.2.7",
+		"@fontsource/ibm-plex-sans": "^5.2.8",
 		"clsx": "^2.1.1",
 		"date-fns": "^4.1.0",
+		"echarts": "^6.0.0",
 		"tailwind-merge": "^2.5.4",
 		"zod": "^3.23.8"
 	},
