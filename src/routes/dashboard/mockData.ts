@@ -202,7 +202,7 @@ export interface TopClient {
 export const topClients: TopClient[] = [
 	{
 		role: 'DEBTOR',
-		client_name: 'ООО "Торговый Дом Альфа"',
+		client_name: 'Alpha Trading House LLC',
 		client_account: '40702810900000001234',
 		trx_count: 540,
 		trx_amount: 780000.0,
@@ -212,7 +212,7 @@ export const topClients: TopClient[] = [
 	},
 	{
 		role: 'DEBTOR',
-		client_name: 'ООО "Бета Логистика"',
+		client_name: 'Beta Logistics LLC',
 		client_account: '40702810400000005678',
 		trx_count: 430,
 		trx_amount: 520000.5,
@@ -222,7 +222,7 @@ export const topClients: TopClient[] = [
 	},
 	{
 		role: 'DEBTOR',
-		client_name: 'ООО "Гамма Ритейл"',
+		client_name: 'Gamma Retail LLC',
 		client_account: '40702810100000009012',
 		trx_count: 385,
 		trx_amount: 465000.0,
@@ -232,7 +232,7 @@ export const topClients: TopClient[] = [
 	},
 	{
 		role: 'DEBTOR',
-		client_name: 'ООО "Дельта Груп"',
+		client_name: 'Delta Group LLC',
 		client_account: '40702810200000003456',
 		trx_count: 350,
 		trx_amount: 420000.0,
@@ -242,7 +242,7 @@ export const topClients: TopClient[] = [
 	},
 	{
 		role: 'DEBTOR',
-		client_name: 'ООО "Эпсилон Трейд"',
+		client_name: 'Epsilon Trade LLC',
 		client_account: '40702810300000007890',
 		trx_count: 320,
 		trx_amount: 380000.0,
@@ -252,7 +252,7 @@ export const topClients: TopClient[] = [
 	},
 	{
 		role: 'CREDITOR',
-		client_name: 'ИП Петров С.В.',
+		client_name: 'Petrov Sole Proprietorship',
 		client_account: '40802810900000009876',
 		trx_count: 320,
 		trx_amount: 150000.0,
@@ -262,7 +262,7 @@ export const topClients: TopClient[] = [
 	},
 	{
 		role: 'CREDITOR',
-		client_name: 'ИП Иванов А.А.',
+		client_name: 'Ivanov Sole Proprietorship',
 		client_account: '40802810800000008765',
 		trx_count: 280,
 		trx_amount: 132000.0,
@@ -272,7 +272,7 @@ export const topClients: TopClient[] = [
 	},
 	{
 		role: 'CREDITOR',
-		client_name: 'ИП Сидоров В.П.',
+		client_name: 'Sidorov Sole Proprietorship',
 		client_account: '40802810700000007654',
 		trx_count: 250,
 		trx_amount: 118000.0,

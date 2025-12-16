@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Card, CardContent, CardHeader, CardTitle } from '$shared/ui/card';
 	import { Chart } from '$shared/ui/chart';
+	import { Sparkline } from '$shared/ui/sparkline';
 	import type { EChartsOption } from 'echarts';
 	import {
 		kpiSummary,
@@ -15,17 +16,33 @@
 	// ============================================================================
 	const kpiData = kpiSummary[0];
 
+	// Extract trend data for sparklines (7-day trends)
+	const amountTrend = timeseriesDaily
+		.filter((d) => d.status === 'SUCCESS')
+		.sort((a, b) => a.date.localeCompare(b.date))
+		.map((d) => d.trx_amount);
+
+	const countTrend = timeseriesDaily
+		.filter((d) => d.status === 'SUCCESS')
+		.sort((a, b) => a.date.localeCompare(b.date))
+		.map((d) => d.trx_count);
+
+	const rejectionTrend = timeseriesDaily
+		.filter((d) => d.status === 'REJECTED')
+		.sort((a, b) => a.date.localeCompare(b.date))
+		.map((d) => d.trx_amount);
+
 	// Format numbers for display
 	function formatCurrency(value: number): string {
-		return new Intl.NumberFormat('ru-RU', {
+		return new Intl.NumberFormat('en-US', {
 			style: 'currency',
-			currency: 'RUB',
+			currency: 'USD',
 			maximumFractionDigits: 0
 		}).format(value);
 	}
 
 	function formatNumber(value: number): string {
-		return new Intl.NumberFormat('ru-RU').format(value);
+		return new Intl.NumberFormat('en-US').format(value);
 	}
 
 	function formatPercent(value: number): string {
@@ -33,7 +50,7 @@
 	}
 
 	function formatTime(value: number): string {
-		return `${value.toFixed(1)} сек`;
+		return `${value.toFixed(1)}s`;
 	}
 
 	// ============================================================================
@@ -66,7 +83,7 @@
 
 	const timeseriesChartOptions: EChartsOption = {
 		title: {
-			text: 'Динамика платежей',
+			text: 'Payment Trends',
 			left: 'center',
 			textStyle: {
 				fontSize: 16,
@@ -85,7 +102,7 @@
 			}
 		},
 		legend: {
-			data: ['Успешные', 'Отклонённые'],
+			data: ['Successful', 'Rejected'],
 			bottom: 0
 		},
 		xAxis: {
@@ -110,7 +127,7 @@
 		},
 		series: [
 			{
-				name: 'Успешные',
+				name: 'Successful',
 				type: 'line',
 				data: successData,
 				smooth: true,
@@ -121,7 +138,7 @@
 				}
 			},
 			{
-				name: 'Отклонённые',
+				name: 'Rejected',
 				type: 'line',
 				data: rejectedData,
 				smooth: true,
@@ -145,7 +162,7 @@
 
 	const topClientsChartOptions: EChartsOption = {
 		title: {
-			text: 'Топ клиентов по сумме',
+			text: 'Top Clients by Amount',
 			left: 'center',
 			textStyle: {
 				fontSize: 16,
@@ -160,7 +177,7 @@
 			formatter: (params: any) => {
 				const param = params[0];
 				const value = formatCurrency(param.value);
-				return `<strong>${param.name}</strong><br/>${param.marker} Сумма: ${value}`;
+				return `<strong>${param.name}</strong><br/>${param.marker} Amount: ${value}`;
 			}
 		},
 		xAxis: {
@@ -184,7 +201,7 @@
 		},
 		series: [
 			{
-				name: 'Сумма операций',
+				name: 'Transaction Amount',
 				type: 'bar',
 				data: topDebtors.map((c) => c.trx_amount),
 				barWidth: '60%',
@@ -202,7 +219,7 @@
 
 	const mccChartOptions: EChartsOption = {
 		title: {
-			text: 'Обороты по MCC',
+			text: 'Turnover by MCC',
 			left: 'center',
 			textStyle: {
 				fontSize: 16,
@@ -218,7 +235,7 @@
 				const param = params[0];
 				const item = topMcc[param.dataIndex];
 				const value = formatCurrency(param.value);
-				return `<strong>${item.mcc_name}</strong><br/>MCC: ${item.mcc}<br/>Сумма: ${value}`;
+				return `<strong>${item.mcc_name}</strong><br/>MCC: ${item.mcc}<br/>Amount: ${value}`;
 			}
 		},
 		xAxis: {
@@ -239,7 +256,7 @@
 		},
 		series: [
 			{
-				name: 'Сумма операций',
+				name: 'Transaction Amount',
 				type: 'bar',
 				data: topMcc.map((m) => m.trx_amount),
 				barWidth: '50%',
@@ -252,80 +269,104 @@
 </script>
 
 <svelte:head>
-	<title>Мониторинг платежей</title>
+	<title>Payment Monitoring</title>
 </svelte:head>
 
-<div class="container mx-auto p-6 space-y-6">
+<div class="p-6 space-y-6">
 	<!-- Header -->
 	<div class="mb-8">
-		<h1 class="text-3xl font-semibold text-foreground">Мониторинг платежей</h1>
-		<p class="text-muted-foreground mt-2">Аналитика операций по FCT_PAYMENTS</p>
+		<h1 class="text-3xl font-semibold text-foreground">Payment Monitoring</h1>
+		<p class="text-muted-foreground mt-2">Analytics Dashboard for FCT_PAYMENTS</p>
 	</div>
 
 	<!-- KPI Cards Row -->
-	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+	<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
 		<!-- KPI 1: Total Amount -->
-		<Card>
-			<CardHeader class="pb-4">
-				<CardTitle class="text-sm font-medium text-muted-foreground">Сумма операций</CardTitle>
-			</CardHeader>
-			<CardContent>
-				<div class="text-2xl font-bold">{formatCurrency(kpiData.total_amount)}</div>
-				<p class="text-xs text-muted-foreground mt-1">
-					За период {new Date(kpiData.date_from).toLocaleDateString('ru-RU')}
-				</p>
+		<Card class="hover:bg-card-hover transition-colors">
+			<CardContent class="p-4">
+				<div class="flex items-center gap-2 mb-2">
+					<div class="w-5 h-5 rounded bg-primary/10 flex items-center justify-center">
+						<svg class="w-3 h-3 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+						</svg>
+					</div>
+					<p class="text-xs text-muted-foreground">Total Amount</p>
+				</div>
+				<div class="flex items-end justify-between">
+					<div class="text-xl font-semibold">{formatCurrency(kpiData.total_amount)}</div>
+					<Sparkline data={amountTrend} color="primary" />
+				</div>
+				<p class="text-xs text-muted-foreground mt-1">Period: {new Date(kpiData.date_from).toLocaleDateString('en-US')}</p>
 			</CardContent>
 		</Card>
 
-		<!-- KPI 2: Total Count -->
-		<Card>
-			<CardHeader class="pb-4">
-				<CardTitle class="text-sm font-medium text-muted-foreground"
-					>Количество операций</CardTitle
-				>
-			</CardHeader>
-			<CardContent>
-				<div class="text-2xl font-bold">{formatNumber(kpiData.total_count)}</div>
-				<p class="text-xs text-muted-foreground mt-1">
-					Средний чек: {formatCurrency(kpiData.avg_ticket)}
-				</p>
+		<!-- KPI 2: Transaction Count -->
+		<Card class="hover:bg-card-hover transition-colors">
+			<CardContent class="p-4">
+				<div class="flex items-center gap-2 mb-2">
+					<div class="w-5 h-5 rounded bg-primary/10 flex items-center justify-center">
+						<svg class="w-3 h-3 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+						</svg>
+					</div>
+					<p class="text-xs text-muted-foreground">Transactions</p>
+				</div>
+				<div class="flex items-end justify-between">
+					<div class="text-xl font-semibold">{formatNumber(kpiData.total_count)}</div>
+					<Sparkline data={countTrend} color="primary" />
+				</div>
+				<p class="text-xs text-muted-foreground mt-1">Avg: {formatCurrency(kpiData.avg_ticket)}</p>
 			</CardContent>
 		</Card>
 
-		<!-- KPI 3: Rejected Share -->
-		<Card>
-			<CardHeader class="pb-4">
-				<CardTitle class="text-sm font-medium text-muted-foreground">Доля отказов</CardTitle>
-			</CardHeader>
-			<CardContent>
-				<div class="text-2xl font-bold">{formatPercent(kpiData.rejected_share_pct)}</div>
-				<p class="text-xs text-muted-foreground mt-1">
-					{formatNumber(kpiData.rejected_count)} операций
-				</p>
+		<!-- KPI 3: Rejection Rate -->
+		<Card class="hover:bg-card-hover transition-colors">
+			<CardContent class="p-4">
+				<div class="flex items-center gap-2 mb-2">
+					<div class="w-5 h-5 rounded bg-error/10 flex items-center justify-center">
+						<svg class="w-3 h-3 text-error" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+						</svg>
+					</div>
+					<p class="text-xs text-muted-foreground">Rejection Rate</p>
+				</div>
+				<div class="flex items-end justify-between">
+					<div class="text-xl font-semibold">{formatPercent(kpiData.rejected_share_pct)}</div>
+					<Sparkline data={rejectionTrend} color="error" />
+				</div>
+				<p class="text-xs text-muted-foreground mt-1">{formatNumber(kpiData.rejected_count)} rejected</p>
 			</CardContent>
 		</Card>
 
 		<!-- KPI 4: Active Clients -->
-		<Card>
-			<CardHeader class="pb-4">
-				<CardTitle class="text-sm font-medium text-muted-foreground">Активные клиенты</CardTitle>
-			</CardHeader>
-			<CardContent>
-				<div class="text-2xl font-bold">{formatNumber(kpiData.active_clients_count)}</div>
-				<p class="text-xs text-muted-foreground mt-1">Уникальные клиенты</p>
+		<Card class="hover:bg-card-hover transition-colors">
+			<CardContent class="p-4">
+				<div class="flex items-center gap-2 mb-2">
+					<div class="w-5 h-5 rounded bg-success/10 flex items-center justify-center">
+						<svg class="w-3 h-3 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+						</svg>
+					</div>
+					<p class="text-xs text-muted-foreground">Active Clients</p>
+				</div>
+				<div class="text-xl font-semibold">{formatNumber(kpiData.active_clients_count)}</div>
+				<p class="text-xs text-muted-foreground mt-1">Unique customers</p>
 			</CardContent>
 		</Card>
 
-		<!-- KPI 5: Avg Processing Time -->
-		<Card>
-			<CardHeader class="pb-4">
-				<CardTitle class="text-sm font-medium text-muted-foreground"
-					>Среднее время обработки</CardTitle
-				>
-			</CardHeader>
-			<CardContent>
-				<div class="text-2xl font-bold">{formatTime(kpiData.avg_proc_time_sec)}</div>
-				<p class="text-xs text-muted-foreground mt-1">На одну операцию</p>
+		<!-- KPI 5: Processing Time -->
+		<Card class="hover:bg-card-hover transition-colors">
+			<CardContent class="p-4">
+				<div class="flex items-center gap-2 mb-2">
+					<div class="w-5 h-5 rounded bg-primary/10 flex items-center justify-center">
+						<svg class="w-3 h-3 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+						</svg>
+					</div>
+					<p class="text-xs text-muted-foreground">Processing Time</p>
+				</div>
+				<div class="text-xl font-semibold">{formatTime(kpiData.avg_proc_time_sec)}</div>
+				<p class="text-xs text-muted-foreground mt-1">Avg per transaction</p>
 			</CardContent>
 		</Card>
 	</div>
