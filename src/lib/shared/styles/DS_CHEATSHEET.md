@@ -1,119 +1,181 @@
 # Dashboard Builder — Design System Cheatsheet
 
-## 🎯 Core Rules
+## Core Rules
 
-1. **Carbon Design System colors** (не Radix, не shadcn defaults)
+1. **Carbon Design System colors** (not Radix, not shadcn defaults)
 2. **shadcn/ui naming** (primary, secondary, destructive, muted, accent)
-3. **Tailwind 4** (@theme in CSS) или **Tailwind 3** (config.js) — уточни при старте
-4. **99% = Tailwind classes**, TypeScript токены только для Canvas/Charts
+3. **Tailwind 4** (@theme in CSS)
+4. **99% = Tailwind classes**, TypeScript tokens only for Canvas/Charts
+5. **Teal palette** for charts (enterprise dashboard style)
 
 ---
 
-## 📁 Project Structure
-
-```
-src/
-├── app.css                          ← Entry point: @import tokens.css
-├── lib/shared/
-│   ├── styles/
-│   │   ├── tokens/
-│   │   │   ├── tokens.css           ← Tailwind 4 @theme
-│   │   │   ├── semantic.ts          ← TS exports для Canvas/Charts
-│   │   │   └── index.ts
-│   │   └── utils/
-│   │       ├── cn.ts                ← clsx + tailwind-merge
-│   │       └── index.ts
-│   └── ui/                          ← Shared компоненты
-│       ├── Button/
-│       ├── Input/
-│       └── Card/
-```
-
-**Import:**
-```typescript
-/* src/app.css - уже настроено */
-@import '$lib/shared/styles/tokens/tokens.css';
-
-// TypeScript (только для Canvas/Charts)
-import { semantic, type ButtonVariant } from '$shared/styles/tokens';
-```
-
----
-
-## 🎨 Unique Tokens
-
-### Carbon Colors (используй эти, не другие!)
-```svelte
-<!-- Primary = Carbon blue-60 (#0f62fe), не zinc/slate -->
-<button class="bg-primary hover:bg-primary-hover text-primary-foreground">
-
-<!-- Success = Carbon green-60, Warning = yellow-30, Error = red-60 -->
-<span class="bg-success text-success-foreground">
-```
-
-### Dashboard-specific
-```svelte
-<!-- Sidebar (специфично для dashboard) -->
-<nav class="bg-sidebar text-sidebar-foreground">
-  <a class="hover:bg-sidebar-hover active:bg-sidebar-active">Nav</a>
-</nav>
-
-<!-- Chart colors (для Recharts, Chart.js) -->
-import { semantic } from '$shared/styles/tokens';
-const chartColors = [
-  semantic.chart[1], // blue
-  semantic.chart[2], // green
-  semantic.chart[3], // yellow
-  semantic.chart[4], // red
-  semantic.chart[5], // gray
-];
-```
-
----
-
-## 🔧 When to Use TypeScript Tokens
-
-**ONLY for:**
-- Canvas/WebGL: `ctx.fillStyle = semantic.primary.DEFAULT`
-- Chart libraries: `backgroundColor: semantic.chart[1]`
-- Programmatic logic: `style="color: {getColor()}"`
-
-**Everything else = Tailwind classes**
-
----
-
-## ✅ Quick Checklist
-
-- [ ] Carbon colors используются (не Radix/shadcn defaults)
-- [ ] Semantic naming (primary/secondary, не blue/red)
-- [ ] Interactive states (hover/active/disabled)
-- [ ] text-*-foreground для контраста
-- [ ] transition-colors для UX
-- [ ] TypeScript токены ТОЛЬКО для Canvas/Charts
-
----
-
-## 📋 Component Variants (TypeScript)
+## Quick Imports
 
 ```typescript
-type ButtonVariant = 'primary' | 'secondary' | 'destructive' | 'accent' | 'muted';
+// UI Components
+import { StatCard } from '$shared/ui/stat-card';
+import { ChartCard } from '$shared/ui/chart-card';
+import { Skeleton } from '$shared/ui/skeleton';
+
+// Utilities
+import { formatCurrency, formatCompact, formatPercent } from '$shared/utils';
+
+// Chart presets
+import { lineChartPreset, getLineSeries, getBarSeries } from '$entities/charts';
+
+// Tokens (Canvas/Charts only)
+import { semantic, getChartPalette } from '$shared/styles/tokens';
+```
+
+---
+
+## Color Tokens
+
+### Actions
+```svelte
+bg-primary hover:bg-primary-hover text-primary-foreground   <!-- Blue -->
+bg-secondary hover:bg-secondary-hover text-secondary-foreground <!-- Gray -->
+bg-accent hover:bg-accent-hover text-accent-foreground     <!-- Teal -->
+bg-destructive text-destructive-foreground                  <!-- Red -->
+bg-muted text-muted-foreground
+```
+
+### Button Variants
+```svelte
+<!-- Outline — transparent bg, primary border (filters, secondary actions) -->
+bg-outline hover:bg-outline-hover border-outline-border text-outline-foreground
+
+<!-- Ghost — transparent, subtle hover (toolbars, icon buttons) -->
+bg-ghost hover:bg-ghost-hover text-ghost-foreground
+
+<!-- Link — text link style (navigation, inline links) -->
+bg-link text-link-foreground hover:text-link-hover-foreground
+```
+
+### Trends
+```svelte
+text-trend-up      <!-- Carbon green-50 #24a148 -->
+text-trend-down    <!-- Carbon red-60 #da1e28 -->
+text-trend-neutral <!-- Carbon gray-50 #8d8d8d -->
+```
+
+### Charts (Teal Palette)
+```svelte
+bg-chart-1  <!-- #009d9a teal-50 -->
+bg-chart-2  <!-- #005d5d teal-70 -->
+bg-chart-3  <!-- #24a148 green-50 -->
+bg-chart-4  <!-- #f1c21b yellow-30 -->
+bg-chart-5  <!-- #6f6f6f gray-60 -->
+```
+
+### Status
+```svelte
+bg-success / bg-success-muted text-success-muted-foreground
+bg-warning / bg-warning-muted text-warning-muted-foreground
+bg-error / bg-error-muted text-error-muted-foreground
+bg-info / bg-info-muted text-info-muted-foreground
+```
+
+---
+
+## Components
+
+### StatCard (KPI with trend)
+```svelte
+<StatCard
+  label="Revenue"
+  value={formatCurrency(448200000)}
+  trend={12.4}
+  trendLabel="vs last month"
+/>
+```
+
+### ChartCard (chart container)
+```svelte
+<ChartCard title="Volume" subtitle="Daily trend" updatedAt="Today">
+  <Chart options={chartOptions} />
+</ChartCard>
+```
+
+### Skeleton (loading)
+```svelte
+<Skeleton class="h-8 w-32" />
+```
+
+---
+
+## Format Utilities
+
+```typescript
+formatNumber(1234567)        // "1,234,567"
+formatCompact(1234567)       // "1.2M"
+formatCurrency(448200000)    // "€448.2M"
+formatPercent(12.4)          // "+12.4%"
+formatTrend(12.4)            // { label: "+12.4%", direction: "up" }
+```
+
+---
+
+## Chart Presets
+
+```typescript
+// Line chart
+const options = {
+  ...lineChartPreset,
+  xAxis: { ...lineChartPreset.xAxis, data: ['Jan', 'Feb'] },
+  series: [{ ...getLineSeries(1), data: [100, 200] }]
+};
+
+// Bar chart
+const options = {
+  ...barChartPreset,
+  series: [{ ...getBarSeries(1), data: [100, 200] }]
+};
+
+// Colors
+getChartPalette()  // ['#009d9a', '#005d5d', '#24a148', '#f1c21b', '#6f6f6f']
+```
+
+---
+
+## TypeScript Types
+
+```typescript
+type ButtonVariant = 'default' | 'secondary' | 'destructive' | 'outline' | 'ghost' | 'link';
+type TrendDirection = 'up' | 'down' | 'neutral';
+type ChartColorIndex = 1 | 2 | 3 | 4 | 5;
 type StatusVariant = 'success' | 'warning' | 'error' | 'info';
 ```
 
 ---
 
-🛠️ cn() Utility (Critical!)
-Всегда используй в компонентах для композиции классов
-typescriptimport { cn } from '$shared/styles/utils';
+## cn() Utility
 
-// Разрешает конфликты Tailwind
-cn('px-2', 'px-4')  // => 'px-4' (последний побеждает)
+```typescript
+import { cn } from '$shared/styles/utils';
+cn('px-2', 'px-4')  // => 'px-4'
+cn('base', { 'active': isActive })
+```
 
-// Условные классы
-cn('base', { 'active': isActive, 'disabled': !isActive })
+---
 
-// В компонентах
-<button class={cn('px-4 py-2 bg-primary', className)}>
+## DO / DON'T
 
+```svelte
+<!-- DO -->
+<StatCard label="Revenue" value={formatCurrency(100000)} trend={5.2} />
+<span class="text-trend-up">+12.4%</span>
+<Button variant="outline">Filter</Button>
+<Button variant="ghost"><Icon /></Button>
+series: [{ ...getLineSeries(1), data }]
 
-**Last updated**: Nov 2025 | **Stack**: SvelteKit 2 + Svelte 5 + Tailwind + Carbon DS
+<!-- DON'T -->
+<span class="text-green-500">+12.4%</span>  <!-- Use text-trend-up -->
+color: '#009d9a'                             <!-- Use semantic.chart[1] -->
+{(value / 1000000).toFixed(1)}M              <!-- Use formatCompact() -->
+```
+
+---
+
+**Updated**: Dec 2025 | **Stack**: SvelteKit 2 + Svelte 5 + Tailwind 4 + Carbon DS
