@@ -1,70 +1,13 @@
 /**
- * TypeScript Design Tokens
+ * TypeScript Design Tokens (thin wrapper)
  *
- * Architecture:
- * - primitives: Internal hex lookup (MUST SYNC with tokens.css Level 1!)
- * - semanticVars: CSS var() strings for inline styles
- * - semantic: Raw hex values for Canvas/Charts (via primitives)
+ * Single source of truth: CSS tokens in `tokens.css` (@theme custom properties).
  *
- * WARNING: For UI components use Tailwind classes, NOT these tokens!
+ * - `semanticVars`: typed `var(--token)` strings for rare inline-style cases
+ * - `resolve*`: client-side helpers that resolve CSS vars to real values for Canvas/ECharts
+ *
+ * NOTE: UI components should use Tailwind classes, not these tokens.
  */
-
-// ========================================
-// PRIMITIVES — SYNC WITH tokens.css!
-// ========================================
-// These values MUST match Level 1 in tokens.css
-// Used ONLY within this file to build semantic values
-
-const primitives = {
-  blue: {
-    10: '#edf5ff',
-    20: '#d0e2ff',
-    50: '#4589ff',
-    60: '#0f62fe',
-    70: '#0043ce',
-    80: '#002d9c',
-  },
-  gray: {
-    10: '#f4f4f4',
-    20: '#e0e0e0',
-    30: '#c6c6c6',
-    40: '#a8a8a8',
-    50: '#8d8d8d',
-    60: '#6f6f6f',
-    70: '#525252',
-    80: '#393939',
-    90: '#262626',
-    100: '#161616',
-  },
-  red: {
-    10: '#fff1f1',
-    60: '#da1e28',
-    70: '#a2191f',
-    80: '#750e13',
-  },
-  green: {
-    10: '#defbe6',
-    40: '#42be65',
-    50: '#24a148',
-    60: '#198038',
-    70: '#0e6027',
-    80: '#044317',
-  },
-  yellow: {
-    10: '#fcf4d6',
-    30: '#f1c21b',
-    40: '#d2a106',
-    70: '#684e00',
-  },
-  teal: {
-    10: '#d9fbfb',
-    50: '#009d9a',
-    60: '#007d79',
-    70: '#005d5d',
-  },
-  white: '#ffffff',
-  transparent: 'transparent',
-} as const;
 
 // ========================================
 // CSS VARIABLE REFERENCES
@@ -174,118 +117,6 @@ export const semanticVars = {
 } as const;
 
 // ========================================
-// RAW COLOR VALUES
-// ========================================
-// For Canvas/WebGL/Chart libraries where CSS vars don't work
-// All values come from primitives!
-
-export const semantic = {
-  primary: {
-    DEFAULT: primitives.blue[60],
-    hover: primitives.blue[70],
-    active: primitives.blue[80],
-    disabled: primitives.gray[40],
-    foreground: primitives.white,
-  },
-  secondary: {
-    DEFAULT: primitives.gray[80],
-    hover: primitives.gray[90],
-    active: primitives.gray[100],
-    disabled: primitives.gray[30],
-    foreground: primitives.white,
-  },
-  accent: {
-    DEFAULT: primitives.teal[50],
-    hover: primitives.teal[60],
-    active: primitives.teal[70],
-    foreground: primitives.white,
-  },
-  destructive: {
-    DEFAULT: primitives.red[60],
-    hover: primitives.red[70],
-    active: primitives.red[80],
-    foreground: primitives.white,
-  },
-  outline: {
-    DEFAULT: primitives.transparent,
-    hover: primitives.blue[10],
-    active: primitives.blue[20],
-    border: primitives.blue[60],
-    foreground: primitives.blue[60],
-  },
-  ghost: {
-    DEFAULT: primitives.transparent,
-    hover: primitives.gray[10],
-    active: primitives.gray[20],
-    foreground: primitives.gray[100],
-  },
-  link: {
-    DEFAULT: primitives.transparent,
-    hover: primitives.transparent,
-    foreground: primitives.blue[60],
-    hoverForeground: primitives.blue[70],
-  },
-  muted: {
-    DEFAULT: primitives.gray[10],
-    hover: primitives.gray[20],
-    foreground: primitives.gray[70],
-  },
-  success: {
-    DEFAULT: primitives.green[60],
-    hover: primitives.green[70],
-    foreground: primitives.white,
-    muted: primitives.green[10],
-    mutedForeground: primitives.green[80],
-  },
-  warning: {
-    DEFAULT: primitives.yellow[30],
-    hover: primitives.yellow[40],
-    foreground: primitives.gray[100],
-    muted: primitives.yellow[10],
-    mutedForeground: primitives.yellow[70],
-  },
-  error: {
-    DEFAULT: primitives.red[60],
-    hover: primitives.red[70],
-    foreground: primitives.white,
-    muted: primitives.red[10],
-    mutedForeground: primitives.red[80],
-  },
-  info: {
-    DEFAULT: primitives.blue[50],
-    hover: primitives.blue[60],
-    foreground: primitives.white,
-    muted: primitives.blue[10],
-    mutedForeground: primitives.blue[80],
-  },
-  border: {
-    DEFAULT: primitives.gray[30],
-    hover: primitives.gray[40],
-    focus: primitives.blue[60],
-  },
-  trend: {
-    up: primitives.green[50],      // Carbon green-50 for consistency
-    down: primitives.red[60],
-    neutral: primitives.gray[50],
-  },
-  tooltip: {
-    DEFAULT: primitives.gray[90],
-    foreground: primitives.white,
-  },
-  background: {
-    DEFAULT: primitives.white,
-    foreground: primitives.gray[100],
-  },
-  chart: {
-    1: primitives.teal[50],
-    2: primitives.teal[70],
-    3: primitives.green[50],       // Carbon green-50 (unified)
-    4: primitives.yellow[30],
-    5: primitives.gray[60],
-  },
-} as const;
-
-// ========================================
 // CHART CONFIGURATION
 // ========================================
 
@@ -321,38 +152,109 @@ export type ChartColorIndex = 1 | 2 | 3 | 4 | 5;
 // ========================================
 
 /**
- * Get chart color by index
+ * Read a CSS custom property value from :root.
+ * On the server (SSR), returns empty string.
  */
-export function getChartColor(index: ChartColorIndex): string {
-  return semantic.chart[index];
+export function readCssVar(name: `--${string}`): string {
+  if (typeof window === 'undefined') return '';
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
 /**
- * Get all chart colors as array
+ * Resolve a CSS color variable to a computed color string (e.g. "rgb(…)" / "rgba(…)" ).
+ *
+ * Why: some vars are defined as `var(--other-token)` so reading the custom property may
+ * return "var(--...)" instead of a real color value.
+ *
+ * On the server (SSR), returns undefined.
+ */
+export function resolveCssColorVar(name: `--${string}`): string | undefined {
+  if (typeof window === 'undefined') return undefined;
+
+  const el = document.createElement('span');
+  el.style.position = 'absolute';
+  el.style.visibility = 'hidden';
+  el.style.pointerEvents = 'none';
+  el.style.color = `var(${name})`;
+  document.body.appendChild(el);
+
+  const color = getComputedStyle(el).color?.trim();
+  el.remove();
+
+  return color || undefined;
+}
+
+/**
+ * Resolve a non-color CSS var to its computed value (e.g. `--font-family`).
+ * On the server (SSR), returns undefined.
+ */
+export function resolveCssVarValue(name: `--${string}`): string | undefined {
+  if (typeof window === 'undefined') return undefined;
+  const v = readCssVar(name);
+  return v || undefined;
+}
+
+let cachedChartPalette: string[] | undefined;
+
+export function resolveChartColor(index: ChartColorIndex): string | undefined {
+  return resolveCssColorVar(`--color-chart-${index}`);
+}
+
+/**
+ * Get chart palette as array of computed color strings.
+ * Cached after first client-side resolve.
+ */
+export function resolveChartPalette(): string[] {
+  if (cachedChartPalette) return cachedChartPalette;
+  const palette = ([1, 2, 3, 4, 5] as const)
+    .map((i) => resolveChartColor(i))
+    .filter((v): v is string => Boolean(v));
+  cachedChartPalette = palette;
+  return palette;
+}
+
+/**
+ * Backwards-compatible name (previously returned hex palette).
+ * Now returns computed color strings from CSS.
  */
 export function getChartPalette(): string[] {
-  return [
-    semantic.chart[1],
-    semantic.chart[2],
-    semantic.chart[3],
-    semantic.chart[4],
-    semantic.chart[5],
-  ];
+  return resolveChartPalette();
 }
 
 /**
- * Get trend color by direction
+ * Backwards-compatible name (previously returned hex).
+ * Now returns computed color string from CSS (or undefined on SSR).
  */
-export function getTrendColor(direction: TrendDirection): string {
-  return semantic.trend[direction];
+export function getChartColor(index: ChartColorIndex): string | undefined {
+  return resolveChartColor(index);
 }
 
 /**
- * Generate area gradient color stops for ECharts
+ * Backwards-compatible name (previously returned hex).
+ * Now returns computed color string from CSS (or undefined on SSR).
+ */
+export function getTrendColor(direction: TrendDirection): string | undefined {
+  return resolveCssColorVar(`--color-trend-${direction}`);
+}
+
+/**
+ * Generate area gradient color stops for ECharts.
+ * Uses resolved chart color and produces rgba() stops.
  */
 export function getAreaGradient(colorIndex: ChartColorIndex = 1) {
-  const color = semantic.chart[colorIndex];
+  const color = resolveChartColor(colorIndex);
   const { startOpacity, endOpacity } = chartConfig.gradient;
+
+  if (!color) {
+    return {
+      type: 'linear' as const,
+      x: 0,
+      y: 0,
+      x2: 0,
+      y2: 1,
+      colorStops: [],
+    };
+  }
 
   return {
     type: 'linear' as const,
@@ -361,18 +263,37 @@ export function getAreaGradient(colorIndex: ChartColorIndex = 1) {
     x2: 0,
     y2: 1,
     colorStops: [
-      { offset: 0, color: hexToRgba(color, startOpacity) },
-      { offset: 1, color: hexToRgba(color, endOpacity) },
+      { offset: 0, color: toRgba(color, startOpacity) },
+      { offset: 1, color: toRgba(color, endOpacity) },
     ],
   };
 }
 
-/**
- * Convert hex to rgba string
- */
-function hexToRgba(hex: string, alpha: number): string {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+function toRgba(color: string, alpha: number): string {
+  // Already rgba(...)
+  const rgbaMatch = color.match(/^rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([0-9.]+)\s*\)$/i);
+  if (rgbaMatch) {
+    const [, r, g, b] = rgbaMatch;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
+  // rgb(...)
+  const rgbMatch = color.match(/^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/i);
+  if (rgbMatch) {
+    const [, r, g, b] = rgbMatch;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
+  // hex #rrggbb
+  const hexMatch = color.match(/^#([0-9a-f]{6})$/i);
+  if (hexMatch) {
+    const hex = hexMatch[1];
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
+  // Fallback: don't attempt to parse other formats (e.g. hsl()).
+  return color;
 }

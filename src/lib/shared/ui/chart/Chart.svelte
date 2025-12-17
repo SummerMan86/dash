@@ -17,6 +17,7 @@
 	import * as echarts from 'echarts';
 	import type { EChartsOption } from 'echarts';
 	import { cn } from '$shared/styles/utils';
+	import { resolveChartPalette, resolveCssVarValue } from '$shared/styles/tokens';
 
 	interface Props {
 		options: EChartsOption;
@@ -28,35 +29,16 @@
 	let chartContainer: HTMLDivElement;
 	let chartInstance: echarts.ECharts | null = null;
 
-	// Carbon Design System color palette for charts
-	const carbonColors = {
-		blue: ['#0f62fe', '#4589ff', '#78a9ff', '#a6c8ff'],
-		purple: ['#8a3ffc', '#a56eff', '#be95ff', '#d4bbff'],
-		teal: ['#08bdba', '#3ddbd9', '#3ddbd9', '#9ef0f0'],
-		magenta: ['#d02670', '#ee5396', '#ff7eb6', '#ffafd2'],
-		red: ['#da1e28', '#fa4d56', '#ff8389', '#ffb3b8'],
-		green: ['#24a148', '#42be65', '#6fdc8c', '#a7f0ba'],
-		gray: ['#525252', '#878787', '#a8a8a8', '#c6c6c6']
-	};
-
-	// Default color palette for charts
-	const defaultColorPalette = [
-		carbonColors.blue[0],
-		carbonColors.purple[0],
-		carbonColors.teal[0],
-		carbonColors.magenta[0],
-		carbonColors.green[0],
-		carbonColors.red[0]
-	];
+	let resolvedPalette: string[] = [];
+	let resolvedFontFamily: string | undefined;
 
 	// Merge Carbon DS colors into options
 	function mergeWithCarbonTheme(opts: EChartsOption): EChartsOption {
 		return {
-			color: defaultColorPalette,
+			...(resolvedPalette.length ? { color: resolvedPalette } : {}),
 			backgroundColor: 'transparent',
 			textStyle: {
-				fontFamily:
-					'var(--font-family)',
+				...(resolvedFontFamily ? { fontFamily: resolvedFontFamily } : {}),
 				fontSize: 14
 			},
 			...opts,
@@ -73,6 +55,9 @@
 	}
 
 	onMount(() => {
+		resolvedPalette = resolveChartPalette();
+		resolvedFontFamily = resolveCssVarValue('--font-family');
+
 		// Initialize chart
 		chartInstance = echarts.init(chartContainer);
 
@@ -105,4 +90,4 @@
 	});
 </script>
 
-<div bind:this={chartContainer} class={cn('w-full h-full min-h-[300px]', className)} />
+<div bind:this={chartContainer} class={cn('w-full h-full min-h-[300px]', className)}></div>

@@ -4,7 +4,7 @@
 
 ---
 
-## Architecture (3 Levels)
+## Architecture (2 Levels)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -15,14 +15,6 @@
 │ LEVEL 2: Semantic CSS (tokens.css)                          │
 │ CSS var() references to primitives                          │
 │ Example: --color-chart-1: var(--color-teal-50)             │
-├─────────────────────────────────────────────────────────────┤
-│ LEVEL 3: TypeScript (semantic.ts)                           │
-│                                                             │
-│ ├── semanticVars: CSS var() strings for inline styles       │
-│ │   semanticVars.chart[1] → 'var(--color-chart-1)'         │
-│ │                                                           │
-│ └── semantic: Raw hex for Canvas/Charts                     │
-│     semantic.chart[1] → '#009d9a'                          │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -31,9 +23,9 @@
 | Context | Source | Example |
 |---------|--------|---------|
 | Svelte templates | Tailwind classes | `class="bg-primary text-muted-foreground"` |
-| Chart configs (JS/TS) | `semantic.*` | `color: semantic.chart[1]` |
+| Chart configs (JS/TS) | `getChartPalette()` / `resolveCssColorVar()` | `color: getChartPalette()[0]` |
 | Inline styles (rare) | `semanticVars.*` | `style="color: {semanticVars.trend.up}"` |
-| Canvas/WebGL | `semantic.*` | `ctx.fillStyle = semantic.primary.DEFAULT` |
+| Canvas/WebGL / ECharts | `resolveCssColorVar()` | `ctx.fillStyle = resolveCssColorVar('--color-primary') ?? 'currentColor'` |
 
 **FORBIDDEN:** Hardcoded hex in components/configs
 
@@ -49,7 +41,7 @@ src/
 │   │   ├── styles/
 │   │   │   ├── tokens/
 │   │   │   │   ├── tokens.css       ← Tailwind 4 @theme (primitives + semantic)
-│   │   │   │   ├── semantic.ts      ← TS tokens for Canvas/Charts
+│   │   │   │   ├── semantic.ts      ← TS thin wrapper (semanticVars + resolve*)
 │   │   │   │   └── index.ts
 │   │   │   └── utils/
 │   │   │       ├── cn.ts            ← clsx + tailwind-merge
@@ -67,7 +59,7 @@ src/
 │   │       └── index.ts
 │   └── entities/
 │       └── charts/
-│           ├── presets.ts           ← ECharts presets
+│           ├── presets.ts           ← Compat re-export (real presets live in shared)
 │           └── index.ts
 ```
 
@@ -80,7 +72,7 @@ src/
 @import '$lib/shared/styles/tokens/tokens.css';
 
 // TypeScript tokens (for Canvas/Charts only)
-import { semantic, semanticVars, getChartPalette } from '$shared/styles/tokens';
+import { semanticVars, getChartPalette, resolveCssColorVar } from '$shared/styles/tokens';
 import type { TrendDirection, ChartColorIndex } from '$shared/styles/tokens';
 
 // UI Components
@@ -172,8 +164,8 @@ bg-chart-4  <!-- #f1c21b (yellow-30) -->
 bg-chart-5  <!-- #6f6f6f (gray-60) -->
 
 <!-- Use in JS for ECharts -->
-import { semantic, getChartPalette } from '$shared/styles/tokens';
-const colors = getChartPalette(); // ['#009d9a', '#005d5d', '#24a148', '#f1c21b', '#6f6f6f']
+import { getChartPalette } from '$shared/styles/tokens';
+const colors = getChartPalette(); // computed colors from CSS (e.g. ['rgb(...)', ...])
 ```
 
 ### Surfaces
@@ -432,7 +424,7 @@ const options = { ...lineChartPreset, series: [getLineSeries(1)] };
 <span class="text-green-500">Wrong</span>  <!-- Use text-trend-up -->
 
 <!-- Manual chart config -->
-color: '#009d9a'  <!-- Use semantic.chart[1] -->
+color: '#009d9a'  <!-- Use getChartPalette()[0] (resolved from CSS vars) -->
 
 <!-- Manual number formatting -->
 {(value / 1000000).toFixed(1)}M  <!-- Use formatCompact(value) -->
@@ -482,7 +474,7 @@ color: '#009d9a'  <!-- Use semantic.chart[1] -->
 Before generating code:
 
 - [ ] Semantic tokens used (not hardcoded colors)
-- [ ] Teal palette for charts (`semantic.chart[1-5]`)
+- [ ] Teal palette for charts (`--color-chart-1..5` in CSS, resolved via `getChartPalette()`)
 - [ ] Trend colors for KPIs (`text-trend-up/down/neutral`)
 - [ ] Format utilities for numbers (`formatCurrency`, `formatCompact`)
 - [ ] Chart presets used (`lineChartPreset`, `getLineSeries`)

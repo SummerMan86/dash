@@ -25,7 +25,7 @@ import { formatCurrency, formatCompact, formatPercent } from '$shared/utils';
 import { lineChartPreset, getLineSeries, getBarSeries } from '$entities/charts';
 
 // Tokens (Canvas/Charts only)
-import { semantic, getChartPalette } from '$shared/styles/tokens';
+import { getChartPalette } from '$shared/styles/tokens';
 ```
 
 ---
@@ -172,7 +172,7 @@ series: [{ ...getLineSeries(1), data }]
 
 <!-- DON'T -->
 <span class="text-green-500">+12.4%</span>  <!-- Use text-trend-up -->
-color: '#009d9a'                             <!-- Use semantic.chart[1] -->
+color: '#009d9a'                             <!-- Use getChartPalette()[0] (resolved from CSS vars) -->
 {(value / 1000000).toFixed(1)}M              <!-- Use formatCompact() -->
 ```
 

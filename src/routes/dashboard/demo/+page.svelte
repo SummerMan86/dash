@@ -17,7 +17,7 @@
     getPieSeries,
     getChartPalette
   } from '$entities/charts';
-  import { semantic } from '$shared/styles/tokens';
+  import { resolveCssColorVar } from '$shared/styles/tokens';
   import type { EChartsOption } from 'echarts';
   import {
     kpiSummary,
@@ -113,7 +113,7 @@
     legend: {
       data: ['Successful', 'Rejected'],
       bottom: 0,
-      textStyle: { color: semantic.muted.foreground }
+      textStyle: { color: resolveCssColorVar('--color-muted-foreground') }
     },
     xAxis: {
       ...lineChartPreset.xAxis,
@@ -196,7 +196,7 @@
         ...getBarSeries(2),
         data: topMcc.map(m => m.trx_amount).reverse(),
         itemStyle: {
-          color: semantic.chart[2],
+          color: resolveCssColorVar('--color-chart-2'),
           borderRadius: [0, 4, 4, 0]
         }
       }
@@ -217,7 +217,7 @@
           show: true,
           formatter: '{b}: {d}%',
           fontSize: 11,
-          color: semantic.muted.foreground
+          color: resolveCssColorVar('--color-muted-foreground')
         }
       }
     ]
