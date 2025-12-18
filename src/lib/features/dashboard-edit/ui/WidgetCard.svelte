@@ -23,10 +23,31 @@
 		className
 	)}
 >
-	<div class="flex items-start gap-2 p-4 pb-2">
+	<div class="flex items-start justify-between gap-2 p-4 pb-2">
 		<div class="min-w-0">
 			<CardTitle class="truncate text-sm font-semibold">{widget.title}</CardTitle>
 			<CardDescription class="text-xs text-muted-foreground">{widget.type}</CardDescription>
+		</div>
+
+		<div
+			class={cn(
+				'widget-drag-handle inline-flex h-8 w-8 items-center justify-center rounded-md border border-border/50 bg-muted/30 text-muted-foreground',
+				editable
+					? 'cursor-grab hover:bg-muted/60 active:cursor-grabbing'
+					: 'cursor-not-allowed opacity-50'
+			)}
+			aria-label="Drag"
+			aria-disabled={!editable}
+			role="button"
+			tabindex={editable ? 0 : -1}
+			onclick={(e) => {
+				e.stopPropagation();
+			}}
+			onkeydown={(e) => {
+				if (e.key === 'Enter' || e.key === ' ') e.preventDefault();
+			}}
+		>
+			<span class="text-base leading-none">≡</span>
 		</div>
 	</div>
 
