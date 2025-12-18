@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import { dragHandle } from 'svelte-dnd-action';
 
 	import { cn } from '$shared/styles/utils';
 	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$shared/ui/card';
@@ -24,26 +23,11 @@
 		className
 	)}
 >
-	<div class="flex items-start justify-between gap-2 p-4 pb-2">
+	<div class="flex items-start gap-2 p-4 pb-2">
 		<div class="min-w-0">
 			<CardTitle class="truncate text-sm font-semibold">{widget.title}</CardTitle>
 			<CardDescription class="text-xs text-muted-foreground">{widget.type}</CardDescription>
 		</div>
-
-		<button
-			type="button"
-			class={cn(
-				'inline-flex h-8 w-8 items-center justify-center rounded-md border border-border/50 bg-muted/30 text-muted-foreground',
-				editable
-					? 'cursor-grab hover:bg-muted/60 active:cursor-grabbing'
-					: 'cursor-not-allowed opacity-50'
-			)}
-			aria-label="Drag"
-			aria-disabled={!editable}
-			use:dragHandle
-		>
-			<span class="text-base leading-none">≡</span>
-		</button>
 	</div>
 
 	<CardContent class={cn('p-4 pt-0', editable ? 'pointer-events-none' : '')}>
