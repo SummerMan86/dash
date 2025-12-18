@@ -4,13 +4,7 @@
 
 	import { cn } from '$shared/styles/utils';
 
-	import {
-		GRID_BUFFER_ROWS,
-		GRID_COLUMNS,
-		GRID_ROW_HEIGHT_PX,
-		indexToLayout,
-		layoutToIndex
-	} from '../model/layout';
+	import { GRID_BUFFER_ROWS, GRID_COLUMNS, GRID_ROW_HEIGHT_PX, indexToLayout, layoutToIndex } from '../model/layout';
 	import type { DashboardWidget } from '../model/types';
 
 	import WidgetCard from './WidgetCard.svelte';
@@ -30,7 +24,7 @@
 	}
 
 	let {
-		widgets = $bindable([]),
+		widgets = [],
 		editable = true,
 		columns = GRID_COLUMNS,
 		rowHeightPx = GRID_ROW_HEIGHT_PX,
@@ -40,8 +34,8 @@
 		onSelect
 	}: Props = $props();
 
-	// IMPORTANT: for fine-grid we model the canvas as a fixed list of cells (items).
-	// This keeps drag targets stable and avoids DnD glitches caused by rebuilding DOM during drag.
+	// Fine grid MVP: model the canvas as a fixed list of "cells" (items),
+	// so there are stable drop targets even where there is no widget.
 	type EmptySlot = { id: string; kind: 'empty' };
 	type CanvasItem = DashboardWidget | EmptySlot;
 
@@ -49,24 +43,46 @@
 		return (item as EmptySlot).kind === 'empty';
 	}
 
+	function isShadowItem(item: CanvasItem): boolean {
+		// svelte-dnd-action injects a shadow placeholder object with this marker
+		return !!(item as any)?.isDndShadowItem;
+	}
+
 	let slotItems = $state<CanvasItem[]>([]);
 	let internalDragUpdate = false;
+	let isDragging = $state(false);
 
-	function ensureSlotItemsFromWidgets(
-		input: DashboardWidget[],
-		minSlotCount: number
-	): CanvasItem[] {
+	function cleanupDraggedOverlay() {
+		if (typeof document === 'undefined') return;
+		// svelte-dnd-action uses a fixed id for the dragged overlay element
+		document.getElementById('dnd-action-dragged-el')?.remove();
+	}
+
+	function recoverIfStuck(reason: string) {
+		// Only recover if we still think we're dragging.
+		// Intentionally conservative to avoid racing `finalize`.
+		if (!isDragging) return;
+		void reason;
+		cleanupDraggedOverlay();
+		isDragging = false;
+		internalDragUpdate = true;
+		slotItems = ensureSlotItemsFromWidgets(widgets, 0);
+	}
+
+	function ensureSlotItemsFromWidgets(input: DashboardWidget[], minSlotCount: number): CanvasItem[] {
 		const safeColumns = Math.max(1, Math.floor(columns));
 
+		// Place widgets into cells by their layout index; resolve collisions by moving forward.
 		const occupiedByIndex = new Map<number, DashboardWidget>();
+		const occupied = new Set<number>();
 		let maxIndex = -1;
 
 		for (const w of input) {
-			const idx = layoutToIndex(w.layout, safeColumns);
-			if (!occupiedByIndex.has(idx)) {
-				occupiedByIndex.set(idx, w);
-				maxIndex = Math.max(maxIndex, idx);
-			}
+			let idx = layoutToIndex(w.layout, safeColumns);
+			while (occupied.has(idx)) idx++;
+			occupied.add(idx);
+			occupiedByIndex.set(idx, w);
+			maxIndex = Math.max(maxIndex, idx);
 		}
 
 		const required = Math.max(input.length, maxIndex + 1);
@@ -92,12 +108,27 @@
 
 		for (let i = 0; i < items.length; i++) {
 			const it = items[i];
-			if (isEmpty(it)) continue;
+			if (isEmpty(it) || isShadowItem(it)) continue;
 			const { x, y } = indexToLayout(i, safeColumns);
 			result.push({ ...it, layout: { ...it.layout, x, y, w: 1, h: 1 } });
 		}
 
 		return result;
+	}
+
+	function syncWidgetPayloadIntoSlotItems(items: CanvasItem[], input: DashboardWidget[]): CanvasItem[] {
+		const byId = new Map(input.map((w) => [w.id, w]));
+		let changed = false;
+
+		const next = items.map((it) => {
+			if (isEmpty(it) || isShadowItem(it)) return it;
+			const fresh = byId.get(it.id);
+			if (!fresh) return it;
+			if (fresh !== it) changed = true;
+			return fresh;
+		});
+
+		return changed ? next : items;
 	}
 
 	function sameSlotSignature(a: CanvasItem[], b: CanvasItem[]) {
@@ -109,14 +140,23 @@
 	}
 
 	$effect(() => {
-		// Rebuild slots only for external widget changes (load/reset/add),
-		// NOT for updates originating from consider/finalize.
+		// External updates (Reset/Add/Edit) rebuild the slots.
+		// During a drag, never rebuild from `widgets` (it can break DnD).
 		if (internalDragUpdate) {
 			internalDragUpdate = false;
+			if (isDragging) return;
+		}
+
+		const minSlots = isDragging ? slotItems.length : 0;
+		const next = ensureSlotItemsFromWidgets(widgets, minSlots);
+		if (!sameSlotSignature(next, slotItems)) {
+			slotItems = next;
 			return;
 		}
-		const next = ensureSlotItemsFromWidgets(widgets, slotItems.length);
-		if (!sameSlotSignature(next, slotItems)) slotItems = next;
+
+		// Same structure but payload might have changed (title/config edits).
+		const payloadSynced = syncWidgetPayloadIntoSlotItems(slotItems, widgets);
+		if (payloadSynced !== slotItems) slotItems = payloadSynced;
 	});
 
 	const zoneOptions = $derived<Options<CanvasItem>>({
@@ -124,29 +164,55 @@
 		flipDurationMs: 160,
 		dragDisabled: !editable,
 		dropFromOthersDisabled: true,
-		// Helps touch UX a bit
 		delayTouchStart: 80,
 		dropTargetClasses: ['dnd-drop-target']
 	});
 
 	function handleConsider(e: CustomEvent<DndEvent<CanvasItem>>) {
+		const trigger = (e.detail as any)?.info?.trigger as string | undefined;
+		if (trigger === 'dragStarted') isDragging = true;
 		internalDragUpdate = true;
 		slotItems = e.detail.items;
-		widgets = widgetsFromSlotItems(slotItems);
 	}
 
 	function handleFinalize(e: CustomEvent<DndEvent<CanvasItem>>) {
 		internalDragUpdate = true;
 		slotItems = e.detail.items;
-		widgets = widgetsFromSlotItems(slotItems);
-		onFinalize?.(widgets);
+		const nextWidgets = widgetsFromSlotItems(e.detail.items);
+		onFinalize?.(nextWidgets);
+		isDragging = false;
+		// If overlay ever gets stuck, remove it after drop paint.
+		requestAnimationFrame(() => cleanupDraggedOverlay());
 	}
 
-	function gridPlacementStyle(index: number) {
-		const safeColumns = Math.max(1, Math.floor(columns));
-		const { x, y } = indexToLayout(index, safeColumns);
-		return `grid-column: ${x + 1}; grid-row: ${y + 1};`;
-	}
+	// Minimal safety: if drag leaves the document, restore a clean slot model from widgets.
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+		const handle = () => {
+			isDragging = false;
+			slotItems = ensureSlotItemsFromWidgets(widgets, 0);
+			cleanupDraggedOverlay();
+		};
+		window.addEventListener('draggedLeftDocument', handle as EventListener);
+
+		// Safety: if mouse/touch ends but finalize didn't happen (rare), recover.
+		const endHandler = () => {
+			setTimeout(() => recoverIfStuck('mouseup/touchend-without-finalize'), 0);
+		};
+		window.addEventListener('mouseup', endHandler as EventListener);
+		window.addEventListener('touchend', endHandler as EventListener);
+		const escHandler = (ev: KeyboardEvent) => {
+			if (ev.key === 'Escape') recoverIfStuck('escape');
+		};
+		window.addEventListener('keyup', escHandler as unknown as EventListener);
+
+		return () => {
+			window.removeEventListener('draggedLeftDocument', handle as EventListener);
+			window.removeEventListener('mouseup', endHandler as EventListener);
+			window.removeEventListener('touchend', endHandler as EventListener);
+			window.removeEventListener('keyup', escHandler as unknown as EventListener);
+		};
+	});
 </script>
 
 <div
@@ -156,34 +222,36 @@
 	onconsider={handleConsider}
 	onfinalize={handleFinalize}
 >
-	{#each slotItems as item, index (item.id)}
-		<div style={gridPlacementStyle(index)}>
-			{#if isEmpty(item)}
-				<div
-					class={cn(
-						'flex h-full items-center justify-center rounded-md border border-dashed border-border/50 bg-muted/10',
-						editable ? 'text-muted-foreground' : 'opacity-50'
-					)}
-				>
-					<span class="text-[10px] leading-none">+</span>
-				</div>
-			{:else}
-				<div
-					class={cn(
-						'group rounded-lg',
-						selectedId === item.id ? 'ring-2 ring-ring ring-offset-2 ring-offset-background' : ''
-					)}
-					role="button"
-					tabindex={0}
-					onclick={() => onSelect?.(item.id)}
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') onSelect?.(item.id);
-					}}
-				>
-					<WidgetCard widget={item} {editable} />
-				</div>
-			{/if}
-		</div>
+	{#each slotItems as item, index (isShadowItem(item) ? `shadow-${index}` : item.id)}
+		{#if isEmpty(item) || isShadowItem(item)}
+			<div
+				class={cn(
+					'flex h-full items-center justify-center rounded-md border border-dashed border-border/50 bg-muted/10',
+					isShadowItem(item) ? 'bg-muted/30' : '',
+					editable ? 'text-muted-foreground' : 'opacity-50'
+				)}
+				aria-hidden="true"
+			>
+				<span class="text-[10px] leading-none">+</span>
+			</div>
+		{:else}
+			<div
+				class={cn(
+					'group h-full rounded-lg',
+					!isDragging && selectedId === item.id ? 'ring-2 ring-ring ring-offset-2 ring-offset-background' : ''
+				)}
+				role="button"
+				tabindex={0}
+				onclick={() => {
+					if (!isDragging) onSelect?.(item.id);
+				}}
+				onkeydown={(e) => {
+					if (!isDragging && (e.key === 'Enter' || e.key === ' ')) onSelect?.(item.id);
+				}}
+			>
+				<WidgetCard widget={item} {editable} />
+			</div>
+		{/if}
 	{/each}
 </div>
 
@@ -192,5 +260,11 @@
 		outline: 2px dashed color-mix(in srgb, var(--color-border) 70%, transparent);
 		outline-offset: 6px;
 		border-radius: 12px;
+	}
+
+	/* Prevent "multiple selected" look caused by the drag overlay cloning a selected item */
+	:global(#dnd-action-dragged-el) {
+		box-shadow: none !important;
+		outline: none !important;
 	}
 </style>

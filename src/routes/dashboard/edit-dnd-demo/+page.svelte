@@ -168,7 +168,7 @@
 			</CardHeader>
 			<CardContent class="space-y-4">
 				<WidgetCanvas
-					bind:widgets
+					widgets={widgets}
 					{editable}
 					columns={12}
 					rowHeightPx={56}
