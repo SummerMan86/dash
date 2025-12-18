@@ -52,7 +52,10 @@
 	let slotItems = $state<CanvasItem[]>([]);
 	let internalDragUpdate = false;
 
-	function ensureSlotItemsFromWidgets(input: DashboardWidget[]): CanvasItem[] {
+	function ensureSlotItemsFromWidgets(
+		input: DashboardWidget[],
+		minSlotCount: number
+	): CanvasItem[] {
 		const safeColumns = Math.max(1, Math.floor(columns));
 
 		const occupiedByIndex = new Map<number, DashboardWidget>();
@@ -68,7 +71,8 @@
 
 		const required = Math.max(input.length, maxIndex + 1);
 		const padded = required + GRID_BUFFER_ROWS * safeColumns;
-		const slotCount = Math.ceil(padded / safeColumns) * safeColumns;
+		const requiredSlots = Math.ceil(padded / safeColumns) * safeColumns;
+		const slotCount = Math.max(requiredSlots, Math.max(safeColumns, minSlotCount));
 
 		const items: CanvasItem[] = Array.from({ length: slotCount }, (_, i) => ({
 			id: `empty-${i}`,
@@ -96,6 +100,14 @@
 		return result;
 	}
 
+	function sameSlotSignature(a: CanvasItem[], b: CanvasItem[]) {
+		if (a.length !== b.length) return false;
+		for (let i = 0; i < a.length; i++) {
+			if (a[i].id !== b[i].id) return false;
+		}
+		return true;
+	}
+
 	$effect(() => {
 		// Rebuild slots only for external widget changes (load/reset/add),
 		// NOT for updates originating from consider/finalize.
@@ -103,7 +115,8 @@
 			internalDragUpdate = false;
 			return;
 		}
-		slotItems = ensureSlotItemsFromWidgets(widgets);
+		const next = ensureSlotItemsFromWidgets(widgets, slotItems.length);
+		if (!sameSlotSignature(next, slotItems)) slotItems = next;
 	});
 
 	const zoneOptions = $derived<Options<CanvasItem>>({
