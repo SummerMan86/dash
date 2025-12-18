@@ -10,7 +10,10 @@
 		WidgetInspector,
 		WidgetToolbox
 	} from '$lib/features/dashboard-edit';
-	import { applyGridByIndex } from '$lib/features/dashboard-edit/model/layout';
+	import {
+		applyGridByIndex,
+		placeWidgetInFirstFreeSlot
+	} from '$lib/features/dashboard-edit/model/layout';
 	import {
 		clearDashboardStorage,
 		createDebouncedDashboardSaver,
@@ -101,7 +104,7 @@
 
 		selectedId = id;
 		draft = undefined;
-		widgets = applyGridByIndex([...widgets, next], 4);
+		widgets = placeWidgetInFirstFreeSlot(widgets, next, 12);
 		saveNow();
 	}
 
@@ -118,7 +121,7 @@
 
 	function resetToFixture() {
 		clearDashboardStorage(STORAGE_KEY);
-		widgets = applyGridByIndex(data.dashboard.widgets);
+		widgets = applyGridByIndex(data.dashboard.widgets, 12);
 		saveState = 'idle';
 		lastError = null;
 		selectedId = null;
@@ -167,7 +170,8 @@
 				<WidgetCanvas
 					bind:widgets
 					{editable}
-					columns={4}
+					columns={12}
+					rowHeightPx={56}
 					{selectedId}
 					onSelect={selectWidget}
 					onFinalize={handleFinalize}

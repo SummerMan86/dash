@@ -63,7 +63,7 @@ function baseWidgets(): DashboardWidget[] {
 }
 
 export function createDemoDashboard(): DashboardConfig {
-	const widgets = applyGridByIndex(baseWidgets());
+	const widgets = applyGridByIndex(baseWidgets(), 12);
 
 	return {
 		id: 'demo-dashboard',
