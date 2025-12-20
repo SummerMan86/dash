@@ -323,7 +323,7 @@
 			{
 				column: COLUMNS,
 				cellHeight: ROW_HEIGHT_PX,
-				margin: 16,
+				margin: 8,
 				float: true,
 				draggable: { handle: '.demo-drag-handle' },
 				disableDrag: !editable,
