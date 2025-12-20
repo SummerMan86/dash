@@ -26,6 +26,15 @@
 
 	let { data }: { data: { dashboard: DashboardConfig } } = $props();
 
+	/**
+	 * Data flow (high level):
+	 * - Server provides a fixture dashboard (`data.dashboard`).
+	 * - We create a store around it (`createDashboardEditorStore`).
+	 * - On the client, we *optionally* override widgets from localStorage (MVP persistence).
+	 * - `WidgetCanvas` is the GridStack bridge:
+	 *   - emits `onWidgetsChange` frequently during drag/resize (live preview)
+	 *   - emits `onFinalize` on dragstop/resizestop (commit + persist)
+	 */
 	const editor = createDashboardEditorStore(data.dashboard);
 	const { editable, widgets, selectedId, selectedWidget, dashboard, setWidgets, selectWidget, patchSelected, addWidget } =
 		editor;
@@ -53,14 +62,17 @@
 	});
 
 	function saveNow() {
+		// We store the derived dashboard config (currently mostly widgets) in localStorage.
 		saver.save(get(dashboard));
 	}
 
 	function handleWidgetsChange(next: DashboardWidget[]) {
+		// Live updates from GridStack. We don't persist on every tiny change.
 		setWidgets(next);
 	}
 
 	function handleFinalize(next: DashboardWidget[]) {
+		// Final layout after drag/resize ends: commit + persist.
 		setWidgets(next);
 		saveNow();
 	}
@@ -116,6 +128,7 @@
 	}
 
 	onMount(() => {
+		// MVP persistence: restore last layout from localStorage if present.
 		const stored = loadDashboardFromStorage(STORAGE_KEY);
 		if (stored?.widgets?.length) {
 			setWidgets(stored.widgets);

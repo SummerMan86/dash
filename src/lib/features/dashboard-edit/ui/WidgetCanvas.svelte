@@ -8,6 +8,20 @@
 
 	import WidgetCard from './WidgetCard.svelte';
 
+	/**
+	 * This component is a “thin integration” between Svelte and GridStack:
+	 *
+	 * - Svelte owns rendering and state (`widgets` array).
+	 * - GridStack owns drag/resize behavior and writes new x/y/w/h during interactions.
+	 * - We bridge the two using:
+	 *   - a Svelte action (`use:widgetNode`) per widget DOM element
+	 *   - GridStack events (`change`, `dragstop`, `resizestop`)
+	 *
+	 * The core rule: **avoid feedback loops**.
+	 * When GridStack changes layout → we update the store.
+	 * When the store changes layout → we update GridStack.
+	 */
+
 	interface Props {
 		widgets?: DashboardWidget[];
 		editable?: boolean;
@@ -39,6 +53,7 @@
 
 	let gridEl: HTMLDivElement | null = $state(null);
 
+	/** Minimal shape of a GridStack node, used to avoid importing GridStack types in SSR. */
 	type GridStackNodeLike = {
 		id?: string | number;
 		x?: number;
@@ -48,6 +63,7 @@
 		el?: HTMLElement | null;
 	};
 
+	/** Minimal GridStack API surface we use in this file. */
 	type GridStackLike = {
 		on: (name: string, cb: (e: unknown, items: GridStackNodeLike[] | undefined) => void) => void;
 		update: (el: HTMLElement, opts: Record<string, unknown>) => void;
@@ -68,6 +84,8 @@
 	let applyingFromGrid = false;
 	let applyingFromStore = false;
 
+	// Widgets may be rendered before GridStack is initialized (because Svelte renders first).
+	// We remember those DOM elements and "adopt" them into GridStack after init.
 	const pendingWidgetEls = new Set<HTMLElement>();
 
 	type WidgetActionParams = {
@@ -76,14 +94,46 @@
 		editable: boolean;
 	};
 
-	function widgetNode(node: HTMLElement, params: WidgetActionParams) {
-		pendingWidgetEls.add(node);
+	function withApplyingFromStore<T>(fn: () => T): T {
+		applyingFromStore = true;
+		try {
+			return fn();
+		} finally {
+			applyingFromStore = false;
+		}
+	}
 
-		function apply(p: WidgetActionParams) {
-			if (!grid) return;
-			// Update is safe even if GridStack already manages the node.
-			applyingFromStore = true;
-			grid.update(node, {
+	function getNodeId(it: GridStackNodeLike): string | null {
+		// GridStack sometimes provides `id`, but we also keep `data-gs-id` on the element.
+		// This makes the mapping resilient even if GridStack version / config changes.
+		const id =
+			(typeof it.id === 'string' && it.id) ||
+			(typeof it.id === 'number' ? String(it.id) : '') ||
+			it.el?.getAttribute('data-gs-id') ||
+			it.el?.getAttribute('gs-id') ||
+			'';
+
+		return id ? id : null;
+	}
+
+	function applyLayoutToWidget(widget: DashboardWidget, node: GridStackNodeLike): DashboardWidget {
+		// GridStack nodes may omit values, so we fall back to the existing layout.
+		const x = node.x ?? widget.layout.x;
+		const y = node.y ?? widget.layout.y;
+		const w = node.w ?? widget.layout.w;
+		const h = node.h ?? widget.layout.h;
+
+		if (x === widget.layout.x && y === widget.layout.y && w === widget.layout.w && h === widget.layout.h) return widget;
+		return { ...widget, layout: { ...widget.layout, x, y, w, h } };
+	}
+
+	function syncNodeFromStore(nodeEl: HTMLElement, p: WidgetActionParams) {
+		const g = grid;
+		if (!g) return;
+		// This writes store state into GridStack. Guard against re-entering via `change` events.
+		withApplyingFromStore(() => {
+			// update() is safe even if GridStack already manages the node.
+			g.update(nodeEl, {
 				id: p.id,
 				x: p.layout.x,
 				y: p.layout.y,
@@ -92,20 +142,25 @@
 				noMove: !p.editable,
 				noResize: !p.editable
 			});
-			applyingFromStore = false;
-		}
+		});
+	}
+
+	function widgetNode(node: HTMLElement, params: WidgetActionParams) {
+		pendingWidgetEls.add(node);
 
 		if (grid) {
+			// When widgets mount after GridStack init, we must explicitly "adopt" them.
 			grid.makeWidget(node);
-			apply(params);
+			syncNodeFromStore(node, params);
 		}
 
 		return {
 			update(next: WidgetActionParams) {
-				apply(next);
+				syncNodeFromStore(node, next);
 			},
 			destroy() {
 				pendingWidgetEls.delete(node);
+				// Keep DOM (Svelte owns it), but remove the widget from GridStack's internal state.
 				if (grid) grid.removeWidget(node, false);
 			}
 		};
@@ -116,12 +171,7 @@
 
 		const byId = new Map<string, GridStackNodeLike>();
 		for (const it of items) {
-			const id =
-				(typeof it.id === 'string' && it.id) ||
-				(typeof it.id === 'number' ? String(it.id) : '') ||
-				it.el?.getAttribute('data-gs-id') ||
-				it.el?.getAttribute('gs-id') ||
-				'';
+			const id = getNodeId(it);
 			if (id) byId.set(id, it);
 		}
 
@@ -130,15 +180,9 @@
 		const next = widgets.map((w) => {
 			const it = byId.get(w.id);
 			if (!it) return w;
-
-			const x = it.x ?? w.layout.x;
-			const y = it.y ?? w.layout.y;
-			const ww = it.w ?? w.layout.w;
-			const hh = it.h ?? w.layout.h;
-
-			if (x === w.layout.x && y === w.layout.y && ww === w.layout.w && hh === w.layout.h) return w;
-			changed = true;
-			return { ...w, layout: { ...w.layout, x, y, w: ww, h: hh } };
+			const patched = applyLayoutToWidget(w, it);
+			if (patched !== w) changed = true;
+			return patched;
 		});
 
 		if (!changed) return;
@@ -149,42 +193,58 @@
 		applyingFromGrid = false;
 	}
 
-	onMount(async () => {
-		if (!gridEl) return;
-
+	async function initGridStack(el: HTMLDivElement) {
 		// IMPORTANT: GridStack's ESM build currently breaks when evaluated in SSR under Node ESM
-		// (extension-less internal imports). We therefore load it client-only.
+		// (extension-less internal imports). We therefore load it client-only (inside onMount).
 		const mod = await import('gridstack');
 		const GridStack = mod.GridStack as any;
 
-		grid = GridStack.init(
+		const g = GridStack.init(
 			{
 				column: Math.max(1, Math.floor(columns)),
 				cellHeight: Math.max(8, Math.floor(rowHeightPx)),
-				margin: 16, // matches tailwind gap-4 (16px)
+				margin: 8,
 				float: true,
+				// Best UX pattern: drag only from a dedicated handle, so content clicks don’t start dragging.
 				draggable: {
 					handle: '.widget-drag-handle'
 				},
 				disableDrag: !editable,
 				disableResize: !editable
 			},
-			gridEl
+			el
 		);
 
-		grid.on('change', (_e, items) => handleGridChange(items));
-		grid.on('dragstop', async () => {
+		return (g as GridStackLike) ?? null;
+	}
+
+	function attachGridEvents(g: GridStackLike) {
+		// Live updates: write x/y/w/h back into Svelte state while dragging/resizing.
+		g.on('change', (_e: unknown, items: GridStackNodeLike[] | undefined) => handleGridChange(items));
+
+		// Finalize updates: persist once the interaction stops.
+		// We wait a tick to ensure Svelte/store updates from the last `change` have been applied.
+		g.on('dragstop', async () => {
 			await tick();
 			onFinalize?.(lastWidgets);
 		});
-		grid.on('resizestop', async () => {
+		g.on('resizestop', async () => {
 			await tick();
 			onFinalize?.(lastWidgets);
 		});
+	}
+
+	onMount(async () => {
+		if (!gridEl) return;
+
+		const g = await initGridStack(gridEl);
+		if (!g) return;
+		grid = g;
+		attachGridEvents(g);
 
 		// Adopt any widgets rendered before init.
 		for (const el of pendingWidgetEls) {
-			grid.makeWidget(el);
+			g.makeWidget(el);
 		}
 	});
 
@@ -225,10 +285,10 @@
 			data-gs-h={item.layout.h}
 			use:widgetNode={{ id: item.id, layout: item.layout, editable }}
 		>
-			<div class="grid-stack-item-content">
+			<div class="grid-stack-item-content h-full">
 				<div
 					class={cn(
-						'group rounded-lg',
+						'group h-full min-h-0 rounded-lg',
 						selectedId === item.id ? 'ring-2 ring-ring ring-offset-2 ring-offset-background' : ''
 					)}
 					role="button"
