@@ -304,3 +304,16 @@
 		</div>
 	{/each}
 </div>
+
+<style>
+	/*
+		GridStack places resize handles in the item corner, but the icon is centered inside a 20x20 handle box.
+		That can look like it's "floating" away from the visible corner. We keep GridStack geometry intact
+		and only move the icon within the handle to sit in the corner.
+	*/
+	:global(.grid-stack .grid-stack-item > .ui-resizable-se) {
+		/* GridStack rotates this handle; anchor rotation to the corner to avoid the icon “floating”. */
+		transform-origin: 100% 100%;
+		background-position: right bottom;
+	}
+</style>
