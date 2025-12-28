@@ -147,12 +147,13 @@
   --color-popover-foreground: var(--color-gray-100);
   --color-popover-border: var(--color-gray-30);
 
-  /* Sidebar (dashboard navigation) */
-  --color-sidebar: var(--color-gray-100);
-  --color-sidebar-hover: var(--color-gray-90);
-  --color-sidebar-active: var(--color-gray-80);
-  --color-sidebar-foreground: #ffffff;
-  --color-sidebar-muted: var(--color-gray-70);
+  /* Sidebar (dashboard navigation) — светлая тема */
+  --color-sidebar: var(--color-white);
+  --color-sidebar-hover: var(--color-gray-10);
+  --color-sidebar-active: var(--color-gray-20);
+  --color-sidebar-foreground: var(--color-gray-100);
+  --color-sidebar-muted: var(--color-gray-50);
+  --color-sidebar-border: var(--color-gray-20);
 
   /* Borders & Inputs */
   --color-border: var(--color-gray-30);

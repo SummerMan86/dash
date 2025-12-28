@@ -172,8 +172,15 @@ colors from CSS (e.g. ['rgb(...)', ...])
 
 ```svelte
 bg-background text-foreground bg-card hover:bg-card-hover text-card-foreground border-card-border
-bg-popover text-popover-foreground border-popover-border bg-sidebar hover:bg-sidebar-hover
-text-sidebar-foreground bg-tooltip text-tooltip-foreground
+bg-popover text-popover-foreground border-popover-border bg-tooltip text-tooltip-foreground
+```
+
+### Sidebar (светлая тема)
+
+```svelte
+<!-- Sidebar использует светлый фон с тёмным текстом -->
+bg-sidebar text-sidebar-foreground border-sidebar-border
+hover:bg-sidebar-hover bg-sidebar-active text-sidebar-muted
 ```
 
 ### Borders
@@ -242,6 +249,64 @@ Loading placeholder with pulse animation.
 <Skeleton class="h-72 w-full" />
 <!-- Chart placeholder -->
 ```
+
+### Sidebar
+
+Responsive sidebar with collapsible mode (desktop: icons-only, mobile: drawer).
+
+```svelte
+<script lang="ts">
+	import {
+		SidebarProvider,
+		Sidebar,
+		SidebarTrigger,
+		SidebarInset,
+		SidebarNav,
+		SidebarItem
+	} from '$shared/ui/sidebar';
+</script>
+
+<!-- Wrap your layout in SidebarProvider -->
+<SidebarProvider>
+	<Sidebar>
+		<SidebarNav label="Navigation">
+			<SidebarItem href="/dashboard" active label="Dashboard">
+				{#snippet icon()}
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
+						<rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
+					</svg>
+				{/snippet}
+				Dashboard
+			</SidebarItem>
+			<SidebarItem href="/settings" label="Settings">
+				{#snippet icon()}
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<circle cx="12" cy="12" r="3" />
+						<path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42" />
+					</svg>
+				{/snippet}
+				Settings
+			</SidebarItem>
+		</SidebarNav>
+	</Sidebar>
+
+	<SidebarInset>
+		<!-- Toggle button in header -->
+		<header class="flex items-center gap-2 p-4">
+			<SidebarTrigger />
+			<h1>Page Title</h1>
+		</header>
+		<!-- Page content -->
+	</SidebarInset>
+</SidebarProvider>
+```
+
+**Props:**
+- `SidebarProvider`: `defaultCollapsed` (default: false) — start collapsed on desktop
+- `Sidebar`: `expandedWidth` (256px), `collapsedWidth` (64px)
+- `SidebarItem`: `icon` (Snippet), `label` (tooltip in collapsed), `active`, `href`
+- `SidebarTrigger`: toggles collapsed/expanded on desktop, drawer on mobile
 
 ---
 
