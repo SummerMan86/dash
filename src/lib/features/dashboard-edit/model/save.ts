@@ -1,6 +1,15 @@
 import { browser } from '$app/environment';
 import type { DashboardConfig } from './types';
 
+/**
+ * Simple save-state machine for UI feedback.
+ *
+ * - idle: nothing scheduled
+ * - scheduled: save is debounced (waiting)
+ * - saving: writing to localStorage and/or sending request
+ * - saved: last save finished successfully
+ * - error: last save failed (non-abort)
+ */
 export type SaveState = 'idle' | 'scheduled' | 'saving' | 'saved' | 'error';
 
 export type DebouncedSaverOptions = {
@@ -14,6 +23,7 @@ export function loadDashboardFromStorage(storageKey: string): DashboardConfig | 
 	if (!browser) return null;
 
 	try {
+		// localStorage returns strings; we store JSON here.
 		const raw = localStorage.getItem(storageKey);
 		if (!raw) return null;
 		return JSON.parse(raw) as DashboardConfig;
@@ -27,10 +37,20 @@ export function clearDashboardStorage(storageKey: string) {
 	localStorage.removeItem(storageKey);
 }
 
+/**
+ * Debounced saver that:
+ * - coalesces many small changes into a single save
+ * - aborts in-flight requests when a newer save is scheduled (latest wins)
+ *
+ * In this MVP we always persist to localStorage.
+ * `endpoint` is optional and useful for observing abort/race behavior in dev tools.
+ */
 export function createDebouncedDashboardSaver(options: DebouncedSaverOptions) {
 	const { storageKey, endpoint, delayMs = 500, onStateChange = () => undefined } = options;
 
+	// AbortController is used to cancel an in-flight request if a newer save happens.
 	let abortController: AbortController | null = null;
+	// Debounce timer handle.
 	let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
 	function cancel() {
@@ -61,10 +81,10 @@ export function createDebouncedDashboardSaver(options: DebouncedSaverOptions) {
 			onStateChange('saving');
 
 			try {
-				// Persist locally for "reload persists" demo
+				// Persist locally so refresh/reload keeps the layout (MVP persistence).
 				localStorage.setItem(storageKey, JSON.stringify(dashboard));
 
-				// Optional server call to validate abort/race behaviour in Network tab
+				// Optional server call to validate abort/race behavior in the Network tab.
 				if (endpoint) {
 					await fetch(endpoint, {
 						method: 'POST',
@@ -75,12 +95,20 @@ export function createDebouncedDashboardSaver(options: DebouncedSaverOptions) {
 				}
 
 				onStateChange('saved');
-			} catch (e: any) {
-				if (e?.name === 'AbortError') return;
+			} catch (e: unknown) {
+				// If we aborted because a newer save was scheduled, ignore this error.
+				if (isAbortError(e)) return;
 				onStateChange('error', e);
 			}
 		}, delayMs);
 	}
 
 	return { save, cancel };
+}
+
+function isAbortError(error: unknown): boolean {
+	if (error instanceof DOMException) return error.name === 'AbortError';
+	if (typeof error !== 'object' || error === null) return false;
+	if (!('name' in error)) return false;
+	return (error as { name?: unknown }).name === 'AbortError';
 }

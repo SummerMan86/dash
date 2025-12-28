@@ -60,26 +60,54 @@ export function placeWidgetInFirstFreeSlot(
 	columns: number
 ): DashboardWidget[] {
 	const safeColumns = Math.max(1, Math.floor(columns));
-	const occupied = new Set<number>();
+	const occupied = new Set<string>();
 
+	let maxBottom = 0;
 	for (const w of widgets) {
-		occupied.add(layoutToIndex(w.layout, safeColumns));
+		const l = normalizeLayout(w.layout);
+		maxBottom = Math.max(maxBottom, Math.max(0, l.y) + l.h);
+
+		for (let yy = Math.max(0, l.y); yy < Math.max(0, l.y) + l.h; yy++) {
+			for (let xx = Math.max(0, l.x); xx < Math.max(0, l.x) + l.w; xx++) {
+				occupied.add(`${xx},${yy}`);
+			}
+		}
 	}
 
-	let idx = 0;
-	while (occupied.has(idx)) idx++;
+	const nextLayout = normalizeLayout(newWidget.layout);
+	const w = Math.min(nextLayout.w, safeColumns);
+	const h = nextLayout.h;
 
-	const { x, y } = indexToLayout(idx, safeColumns);
+	let found: { x: number; y: number } | null = null;
+
+	const maxScanRows = Math.max(maxBottom + GRID_BUFFER_ROWS, 64);
+	for (let y = 0; y <= maxScanRows && !found; y++) {
+		for (let x = 0; x <= safeColumns - w && !found; x++) {
+			let free = true;
+			for (let dy = 0; dy < h && free; dy++) {
+				for (let dx = 0; dx < w; dx++) {
+					if (occupied.has(`${x + dx},${y + dy}`)) {
+						free = false;
+						break;
+					}
+				}
+			}
+			if (free) found = { x, y };
+		}
+	}
+
+	const x = found?.x ?? 0;
+	const y = found?.y ?? maxBottom;
 	return [
 		...widgets,
 		{
 			...newWidget,
 			layout: {
-				...normalizeLayout(newWidget.layout),
+				...nextLayout,
 				x,
 				y,
-				w: 1,
-				h: 1
+				w,
+				h
 			}
 		}
 	];

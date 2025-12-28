@@ -105,7 +105,9 @@
 				</Select>
 			</div>
 
-			<p class="text-xs text-muted-foreground">DnD changes order; inspector edits update config.</p>
+			<p class="text-xs text-muted-foreground">
+				Drag/resize changes layout; inspector edits update config.
+			</p>
 		{:else}
 			<div class="space-y-1">
 				<div class="text-xs text-muted-foreground">New widget</div>
