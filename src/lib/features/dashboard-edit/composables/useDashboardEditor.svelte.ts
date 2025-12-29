@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 import { onMount } from 'svelte';
 
-import { DEFAULT_GRID_CONFIG, type GridConfig } from '../model/config';
+import { DEFAULT_GRID_CONFIG } from '../model/config';
 import { placeWidgetInFirstFreeSlot } from '../model/layout.internal';
 import {
 	clearDashboardStorage,
@@ -9,7 +9,7 @@ import {
 	loadDashboardFromStorage,
 	type SaveState
 } from '../model/save.internal';
-import type { DashboardConfig, DashboardWidget, WidgetConfig, WidgetType } from '../model/types';
+import type { DashboardConfig, DashboardWidget, WidgetType } from '../model/types';
 
 /**
  * Options for creating a dashboard editor.
