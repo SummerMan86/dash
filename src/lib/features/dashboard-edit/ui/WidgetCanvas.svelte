@@ -1,12 +1,20 @@
 <script lang="ts">
-	import { onDestroy, onMount, tick } from 'svelte';
+	import { onDestroy, onMount, tick, type Snippet } from 'svelte';
 
 	import { cn } from '$shared/styles/utils';
 
-	import { GRID_COLUMNS, GRID_ROW_HEIGHT_PX } from '../model/layout';
+	import { DEFAULT_GRID_CONFIG } from '../model/config';
+	import type { GridStackApi, GridStackNode } from '../model/gridstack.types';
 	import type { DashboardWidget } from '../model/types';
 
 	import WidgetCard from './WidgetCard.svelte';
+
+	/** Props for the custom widget snippet */
+	export type WidgetSnippetProps = {
+		widget: DashboardWidget;
+		editable: boolean;
+		selected: boolean;
+	};
 
 	/**
 	 * This component is a “thin integration” between Svelte and GridStack:
@@ -27,8 +35,12 @@
 		editable?: boolean;
 		columns?: number;
 		rowHeightPx?: number;
+		/** Margin between widgets in pixels */
+		margin?: number;
 		selectedId?: string | null;
 		class?: string;
+		/** Custom widget renderer. If not provided, uses default WidgetCard. */
+		widgetSnippet?: Snippet<[WidgetSnippetProps]>;
 		onWidgetsChange?: (widgets: DashboardWidget[]) => void;
 		onFinalize?: (widgets: DashboardWidget[]) => void;
 		onSelect?: (id: string) => void;
@@ -37,10 +49,12 @@
 	let {
 		widgets = [],
 		editable = true,
-		columns = GRID_COLUMNS,
-		rowHeightPx = GRID_ROW_HEIGHT_PX,
+		columns = DEFAULT_GRID_CONFIG.columns,
+		rowHeightPx = DEFAULT_GRID_CONFIG.rowHeightPx,
+		margin = DEFAULT_GRID_CONFIG.margin,
 		selectedId = null,
 		class: className,
+		widgetSnippet,
 		onWidgetsChange,
 		onFinalize,
 		onSelect
@@ -53,30 +67,7 @@
 
 	let gridEl: HTMLDivElement | null = $state(null);
 
-	/** Minimal shape of a GridStack node, used to avoid importing GridStack types in SSR. */
-	type GridStackNodeLike = {
-		id?: string | number;
-		x?: number;
-		y?: number;
-		w?: number;
-		h?: number;
-		el?: HTMLElement | null;
-	};
-
-	/** Minimal GridStack API surface we use in this file. */
-	type GridStackLike = {
-		on: (name: string, cb: (e: unknown, items: GridStackNodeLike[] | undefined) => void) => void;
-		update: (el: HTMLElement, opts: Record<string, unknown>) => void;
-		makeWidget: (el: HTMLElement) => void;
-		removeWidget: (el: HTMLElement, removeDOM?: boolean) => void;
-		destroy: (removeDOM?: boolean) => void;
-		column: (n: number) => void;
-		cellHeight: (h: number) => void;
-		enableMove: (enabled: boolean) => void;
-		enableResize: (enabled: boolean) => void;
-	};
-
-	let grid: GridStackLike | null = null;
+	let grid: GridStackApi | null = null;
 
 	// Prevent feedback loops:
 	// - applyingFromGrid: we are currently writing layouts into `widgets` due to grid events.
@@ -103,7 +94,7 @@
 		}
 	}
 
-	function getNodeId(it: GridStackNodeLike): string | null {
+	function getNodeId(it: GridStackNode): string | null {
 		// GridStack sometimes provides `id`, but we also keep `data-gs-id` on the element.
 		// This makes the mapping resilient even if GridStack version / config changes.
 		const id =
@@ -116,7 +107,7 @@
 		return id ? id : null;
 	}
 
-	function applyLayoutToWidget(widget: DashboardWidget, node: GridStackNodeLike): DashboardWidget {
+	function applyLayoutToWidget(widget: DashboardWidget, node: GridStackNode): DashboardWidget {
 		// GridStack nodes may omit values, so we fall back to the existing layout.
 		const x = node.x ?? widget.layout.x;
 		const y = node.y ?? widget.layout.y;
@@ -166,10 +157,10 @@
 		};
 	}
 
-	function handleGridChange(items: GridStackNodeLike[] | undefined) {
+	function handleGridChange(items: GridStackNode[] | undefined) {
 		if (!items || applyingFromStore) return;
 
-		const byId = new Map<string, GridStackNodeLike>();
+		const byId = new Map<string, GridStackNode>();
 		for (const it of items) {
 			const id = getNodeId(it);
 			if (id) byId.set(id, it);
@@ -203,9 +194,12 @@
 			{
 				column: Math.max(1, Math.floor(columns)),
 				cellHeight: Math.max(8, Math.floor(rowHeightPx)),
-				margin: 8,
-				float: true,
-				// Best UX pattern: drag only from a dedicated handle, so content clicks don’t start dragging.
+				margin: margin,
+				// float: false makes widgets push each other when dragged
+				float: false,
+				// Animate widget movements for smooth UX
+				animate: true,
+				// Best UX pattern: drag only from a dedicated handle, so content clicks don't start dragging.
 				draggable: {
 					handle: '.widget-drag-handle'
 				},
@@ -215,12 +209,12 @@
 			el
 		);
 
-		return (g as GridStackLike) ?? null;
+		return (g as GridStackApi) ?? null;
 	}
 
-	function attachGridEvents(g: GridStackLike) {
+	function attachGridEvents(g: GridStackApi) {
 		// Live updates: write x/y/w/h back into Svelte state while dragging/resizing.
-		g.on('change', (_e: unknown, items: GridStackNodeLike[] | undefined) => handleGridChange(items));
+		g.on('change', (_e: unknown, items: GridStackNode[] | undefined) => handleGridChange(items));
 
 		// Finalize updates: persist once the interaction stops.
 		// We wait a tick to ensure Svelte/store updates from the last `change` have been applied.
@@ -298,7 +292,11 @@
 						if (e.key === 'Enter' || e.key === ' ') onSelect?.(item.id);
 					}}
 				>
-					<WidgetCard widget={item} {editable} />
+					{#if widgetSnippet}
+						{@render widgetSnippet({ widget: item, editable, selected: selectedId === item.id })}
+					{:else}
+						<WidgetCard widget={item} {editable} />
+					{/if}
 				</div>
 			</div>
 		</div>

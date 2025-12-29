@@ -2,30 +2,12 @@
 	"extends": "./.svelte-kit/tsconfig.json",
 	"compilerOptions": {
 		"strict": true,
-		"target": "ES2022",
-		"module": "ES2022",
-		"lib": ["ES2022", "DOM", "DOM.Iterable"],
-		"moduleResolution": "bundler",
-		"resolveJsonModule": true,
+		//"resolveJsonModule": true,
 		"skipLibCheck": true,
-		"sourceMap": true,
-		"verbatimModuleSyntax": true,
-		
+		//"sourceMap": true,
+		//"verbatimModuleSyntax": true,		
 		"allowJs": true,
 		"checkJs": true,
-		
-		"paths": {
-			"$lib": ["./src/lib"],
-			"$lib/*": ["./src/lib/*"],
-			"$shared": ["./src/lib/shared"],
-			"$shared/*": ["./src/lib/shared/*"],
-			"$entities": ["./src/lib/entities"],
-			"$entities/*": ["./src/lib/entities/*"],
-			"$features": ["./src/lib/features"],
-			"$features/*": ["./src/lib/features/*"],
-			"$widgets": ["./src/lib/widgets"],
-			"$widgets/*": ["./src/lib/widgets/*"]
-		}
 	},
 	"include": ["src/**/*.d.ts", "src/**/*.ts", "src/**/*.js", "src/**/*.svelte", "tailwind.config.js"]
 }

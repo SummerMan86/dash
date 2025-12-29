@@ -3,12 +3,13 @@
   Container for charts with header and optional metadata
 
   Usage:
-    <ChartCard
-      title="Transaction Volume"
-      subtitle="Monthly trend analysis"
-      updatedAt="Dec 2024"
-    >
+    <ChartCard title="Transaction Volume" subtitle="Monthly trend analysis">
       <MyChart />
+    </ChartCard>
+
+  For GridStack/flex containers, use fluid prop:
+    <ChartCard title="Revenue" fluid>
+      <Chart options={chartOptions} autoResize />
     </ChartCard>
 -->
 
@@ -25,6 +26,8 @@
     updatedAt?: string;
     /** Loading state */
     loading?: boolean;
+    /** Fill parent container height instead of fixed height (useful for GridStack, flex layouts) */
+    fluid?: boolean;
     /** Chart content slot */
     children?: Snippet;
     /** Additional classes */
@@ -37,6 +40,7 @@
     subtitle,
     updatedAt,
     loading = false,
+    fluid = false,
     children,
     class: className,
     ...rest
@@ -49,6 +53,7 @@
 <div
   class={cn(
     'rounded-lg border border-border/50 bg-card',
+    fluid && 'flex h-full flex-col',
     className
   )}
   {...rest}
@@ -74,10 +79,10 @@
   </div>
 
   <!-- Content -->
-  <div class="p-6 pt-0">
+  <div class={cn('p-6 pt-0', fluid && 'flex min-h-0 flex-1 flex-col')}>
     {#if loading}
       <!-- Inline chart skeleton -->
-      <div class="flex h-72 items-end gap-2 px-4 animate-pulse">
+      <div class={cn('flex items-end gap-2 px-4 animate-pulse', fluid ? 'min-h-[200px] flex-1' : 'h-72')}>
         {#each skeletonHeights as height}
           <div
             class="flex-1 rounded bg-muted"
@@ -86,7 +91,7 @@
         {/each}
       </div>
     {:else}
-      <div class="h-72">
+      <div class={fluid ? 'min-h-0 flex-1' : 'h-72'}>
         {#if children}
           {@render children()}
         {/if}

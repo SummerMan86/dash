@@ -1,6 +1,6 @@
 import { derived, get, writable, type Readable, type Writable } from 'svelte/store';
 
-import { placeWidgetInFirstFreeSlot } from './layout';
+import { placeWidgetInFirstFreeSlot } from './layout.internal';
 import type { DashboardConfig, DashboardWidget } from './types';
 
 /**

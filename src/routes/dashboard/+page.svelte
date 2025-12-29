@@ -1,138 +1,30 @@
 <script lang="ts">
-	import { get } from 'svelte/store';
-	import { onMount } from 'svelte';
-
 	import { Button } from '$shared/ui/button';
 	import { Card, CardContent, CardHeader, CardTitle } from '$shared/ui/card';
 
 	import {
+		useDashboardEditor,
 		WidgetCanvas,
 		WidgetEditorShell,
 		WidgetInspector,
 		WidgetToolbox
 	} from '$lib/features/dashboard-edit';
-	import { createDashboardEditorStore } from '$lib/features/dashboard-edit/model/store';
-	import {
-		clearDashboardStorage,
-		createDebouncedDashboardSaver,
-		loadDashboardFromStorage,
-		type SaveState
-	} from '$lib/features/dashboard-edit/model/save';
-	import type { DashboardConfig, DashboardWidget, WidgetType } from '$lib/features/dashboard-edit/model/types';
-
-	const STORAGE_KEY = 'dashboard-editor:v1';
-	const COLUMNS = 12;
-	const ROW_HEIGHT_PX = 56;
+	import type { DashboardConfig } from '$lib/features/dashboard-edit';
 
 	let { data }: { data: { dashboard: DashboardConfig } } = $props();
 
 	/**
-	 * Data flow (high level):
-	 * - Server provides a fixture dashboard (`data.dashboard`).
-	 * - We create a store around it (`createDashboardEditorStore`).
-	 * - On the client, we *optionally* override widgets from localStorage (MVP persistence).
-	 * - `WidgetCanvas` is the GridStack bridge:
-	 *   - emits `onWidgetsChange` frequently during drag/resize (live preview)
-	 *   - emits `onFinalize` on dragstop/resizestop (commit + persist)
+	 * The useDashboardEditor composable handles:
+	 * - Widget state management
+	 * - Selection and draft state
+	 * - Persistence to localStorage
+	 * - All GridStack integration callbacks
 	 */
-	const editor = createDashboardEditorStore(data.dashboard);
-	const { editable, widgets, selectedId, selectedWidget, dashboard, setWidgets, selectWidget, patchSelected, addWidget } =
-		editor;
-
-	let saveState = $state<SaveState>('idle');
-	let lastError = $state<string | null>(null);
-
-	let draft = $state<
-		| {
-				type: WidgetType;
-				title: string;
-				measure: string;
-				dimension: string;
-		  }
-		| undefined
-	>(undefined);
-
-	const saver = createDebouncedDashboardSaver({
-		storageKey: STORAGE_KEY,
-		delayMs: 500,
-		onStateChange: (state, err) => {
-			saveState = state;
-			lastError = err ? String(err) : null;
-		}
-	});
-
-	function saveNow() {
-		// We store the derived dashboard config (currently mostly widgets) in localStorage.
-		saver.save(get(dashboard));
-	}
-
-	function handleWidgetsChange(next: DashboardWidget[]) {
-		// Live updates from GridStack. We don't persist on every tiny change.
-		setWidgets(next);
-	}
-
-	function handleFinalize(next: DashboardWidget[]) {
-		// Final layout after drag/resize ends: commit + persist.
-		setWidgets(next);
-		saveNow();
-	}
-
-	function setDraftType(type: WidgetType) {
-		selectWidget(null);
-		draft = {
-			type,
-			title: `New ${type.toUpperCase()}`,
-			measure: 'revenue',
-			dimension: 'date'
-		};
-	}
-
-	function addWidgetFromDraft() {
-		if (!draft) return;
-
-		const id =
-			typeof crypto !== 'undefined' && 'randomUUID' in crypto
-				? crypto.randomUUID()
-				: `w-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-
-		const next: DashboardWidget = {
-			id,
-			type: draft.type,
-			title: draft.title,
-			layout: { x: 0, y: 0, w: 3, h: 3 },
-			config: { measure: draft.measure, dimension: draft.dimension }
-		};
-
-		draft = undefined;
-		addWidget(next, COLUMNS);
-		saveNow();
-	}
-
-	function patchSelectedWidget(patch: Partial<DashboardWidget>) {
-		patchSelected(patch);
-		saveNow();
-	}
-
-	function patchDraft(patch: Partial<NonNullable<typeof draft>>) {
-		if (!draft) return;
-		draft = { ...draft, ...patch };
-	}
-
-	function resetToFixture() {
-		clearDashboardStorage(STORAGE_KEY);
-		setWidgets(data.dashboard.widgets);
-		saveState = 'idle';
-		lastError = null;
-		selectWidget(null);
-		draft = undefined;
-	}
-
-	onMount(() => {
-		// MVP persistence: restore last layout from localStorage if present.
-		const stored = loadDashboardFromStorage(STORAGE_KEY);
-		if (stored?.widgets?.length) {
-			setWidgets(stored.widgets);
-		}
+	const editor = useDashboardEditor({
+		initial: data.dashboard,
+		storageKey: 'dashboard-editor:v1',
+		columns: 12,
+		rowHeightPx: 24
 	});
 </script>
 
@@ -151,20 +43,22 @@
 
 		<div class="flex flex-wrap items-center gap-2">
 			<Button
-				variant={$editable ? 'default' : 'secondary'}
-				onclick={() => {
-					editable.set(!$editable);
-				}}
+				variant={editor.editable ? 'default' : 'secondary'}
+				onclick={() => editor.setEditable(!editor.editable)}
 			>
-				{$editable ? 'Edit mode' : 'View mode'}
+				{editor.editable ? 'Edit mode' : 'View mode'}
 			</Button>
-			<Button variant="secondary" onclick={resetToFixture}>Reset</Button>
+			<Button variant="secondary" onclick={() => editor.reset()}>Reset</Button>
 		</div>
 	</header>
 
 	<WidgetEditorShell>
 		<!-- Left: Toolbox -->
-		<WidgetToolbox selectedType={draft?.type} editable={$editable} onSelectType={(t) => setDraftType(t)} />
+		<WidgetToolbox
+			selectedType={editor.draft?.type}
+			editable={editor.editable}
+			onSelectType={(t) => editor.setDraftType(t)}
+		/>
 
 		<!-- Center: Dashboard -->
 		<Card>
@@ -173,14 +67,14 @@
 			</CardHeader>
 			<CardContent class="space-y-4">
 				<WidgetCanvas
-					widgets={$widgets}
-					editable={$editable}
-					columns={COLUMNS}
-					rowHeightPx={ROW_HEIGHT_PX}
-					selectedId={$selectedId}
-					onSelect={(id) => selectWidget(id)}
-					onWidgetsChange={handleWidgetsChange}
-					onFinalize={handleFinalize}
+					widgets={editor.widgets}
+					editable={editor.editable}
+					columns={editor.columns}
+					rowHeightPx={editor.rowHeightPx}
+					selectedId={editor.selectedId}
+					onSelect={(id) => editor.selectWidget(id)}
+					onWidgetsChange={editor.handleWidgetsChange}
+					onFinalize={editor.handleFinalize}
 				/>
 			</CardContent>
 		</Card>
@@ -188,12 +82,16 @@
 		<!-- Right: Inspector -->
 		<div class="space-y-6">
 			<WidgetInspector
-				editable={$editable}
-				selectedWidget={$selectedWidget}
-				draft={draft}
-				onChangeSelected={patchSelectedWidget}
-				onChangeDraft={patchDraft}
-				onAddWidget={addWidgetFromDraft}
+				editable={editor.editable}
+				selectedWidget={editor.selectedWidget}
+				draft={editor.draft}
+				onChangeSelected={(patch) => {
+					if (editor.selectedId) {
+						editor.patchWidget(editor.selectedId, patch);
+					}
+				}}
+				onChangeDraft={(patch) => editor.patchDraft(patch)}
+				onAddWidget={() => editor.addWidgetFromDraft()}
 			/>
 
 			<Card>
@@ -203,23 +101,23 @@
 				<CardContent class="space-y-2 text-sm">
 					<div class="flex items-center justify-between">
 						<span class="text-muted-foreground">Mode</span>
-						<span class="font-medium">{$editable ? 'edit' : 'view'}</span>
+						<span class="font-medium">{editor.editable ? 'edit' : 'view'}</span>
 					</div>
 					<div class="flex items-center justify-between">
 						<span class="text-muted-foreground">Selected</span>
-						<span class="font-medium">{$selectedWidget?.id ?? (draft ? 'new' : '—')}</span>
+						<span class="font-medium">{editor.selectedWidget?.id ?? (editor.draft ? 'new' : '—')}</span>
 					</div>
 					<div class="flex items-center justify-between">
 						<span class="text-muted-foreground">Widgets</span>
-						<span class="font-medium">{$widgets.length}</span>
+						<span class="font-medium">{editor.widgets.length}</span>
 					</div>
 					<div class="flex items-center justify-between">
 						<span class="text-muted-foreground">Save</span>
-						<span class="font-medium">{saveState}</span>
+						<span class="font-medium">{editor.saveState}</span>
 					</div>
-					{#if lastError}
+					{#if editor.lastError}
 						<div class="rounded-md border border-border/50 bg-muted/20 p-2 text-xs text-error">
-							{lastError}
+							{editor.lastError}
 						</div>
 					{/if}
 					<p class="pt-2 text-xs text-muted-foreground">

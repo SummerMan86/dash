@@ -1,8 +1,17 @@
+import { DEFAULT_GRID_CONFIG } from './config';
 import type { DashboardWidget, WidgetLayout } from './types';
 
-export const GRID_COLUMNS = 4;
-export const GRID_ROW_HEIGHT_PX = 240;
-export const GRID_BUFFER_ROWS = 2;
+/**
+ * @deprecated Use DEFAULT_GRID_CONFIG.columns instead
+ */
+export const GRID_COLUMNS = DEFAULT_GRID_CONFIG.columns;
+
+/**
+ * @deprecated Use DEFAULT_GRID_CONFIG.rowHeightPx instead
+ */
+export const GRID_ROW_HEIGHT_PX = DEFAULT_GRID_CONFIG.rowHeightPx;
+
+const GRID_BUFFER_ROWS = DEFAULT_GRID_CONFIG.bufferRows;
 
 function normalizeLayout(layout: Partial<WidgetLayout> | undefined): WidgetLayout {
 	return {

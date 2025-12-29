@@ -7,7 +7,7 @@
 
 	import type { DashboardWidget, WidgetType } from '../model/types';
 
-	interface DraftWidget {
+	export interface DraftWidget {
 		type: WidgetType;
 		title: string;
 		measure: string;
@@ -17,7 +17,7 @@
 	interface Props {
 		editable?: boolean;
 		selectedWidget?: DashboardWidget | null;
-		draft?: DraftWidget;
+		draft?: DraftWidget | null;
 		measures?: string[];
 		dimensions?: string[];
 		onChangeSelected?: (patch: Partial<DashboardWidget>) => void;

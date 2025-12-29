@@ -10,6 +10,7 @@
 
   Usage:
   <Chart options={chartOptions} class="h-96" />
+  <Chart options={chartOptions} autoResize />  <!-- for GridStack/flex containers -->
 -->
 
 <script lang="ts">
@@ -21,10 +22,12 @@
 
 	interface Props {
 		options: EChartsOption;
+		/** Auto-resize chart when container size changes (useful for GridStack, flex layouts) */
+		autoResize?: boolean;
 		class?: string;
 	}
 
-	let { options, class: className }: Props = $props();
+	let { options, autoResize = false, class: className }: Props = $props();
 
 	let chartContainer: HTMLDivElement;
 	let chartInstance: echarts.ECharts | null = null;
@@ -65,6 +68,15 @@
 		const themedOptions = mergeWithCarbonTheme(options);
 		chartInstance.setOption(themedOptions);
 
+		// Handle container resize (only when autoResize is enabled)
+		let resizeObserver: ResizeObserver | null = null;
+		if (autoResize) {
+			resizeObserver = new ResizeObserver(() => {
+				chartInstance?.resize();
+			});
+			resizeObserver.observe(chartContainer);
+		}
+
 		// Handle window resize
 		const resizeHandler = () => {
 			chartInstance?.resize();
@@ -73,6 +85,7 @@
 
 		// Cleanup
 		return () => {
+			resizeObserver?.disconnect();
 			window.removeEventListener('resize', resizeHandler);
 		};
 	});
@@ -90,4 +103,4 @@
 	});
 </script>
 
-<div bind:this={chartContainer} class={cn('w-full h-full min-h-[300px]', className)}></div>
+<div bind:this={chartContainer} class={cn('w-full', autoResize ? 'h-full' : 'h-full min-h-[300px]', className)}></div>
