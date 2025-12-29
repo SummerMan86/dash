@@ -1,3 +1,45 @@
+<!--
+	WidgetCanvas.svelte
+
+	═══════════════════════════════════════════════════════════════════════════════
+	НАЗНАЧЕНИЕ
+	═══════════════════════════════════════════════════════════════════════════════
+	Интеграционный слой между Svelte и библиотекой GridStack.
+	- Svelte отвечает за рендеринг виджетов и управление состоянием
+	- GridStack отвечает за drag & drop и resize
+
+	═══════════════════════════════════════════════════════════════════════════════
+	КЛЮЧЕВАЯ ПРОБЛЕМА: СИНХРОНИЗАЦИЯ ДВУХ ИСТОЧНИКОВ ИСТИНЫ
+	═══════════════════════════════════════════════════════════════════════════════
+	Svelte имеет свой массив `widgets`, GridStack имеет внутреннее состояние позиций.
+	При drag/resize нужно синхронизировать оба без бесконечных циклов.
+
+	Решение:
+	1. Флаги `applyingFromGrid` / `applyingFromStore` блокируют циклы
+	2. Svelte action `widgetNode` связывает DOM с GridStack
+	3. События `change`, `dragstop`, `resizestop` синхронизируют состояние
+
+	═══════════════════════════════════════════════════════════════════════════════
+	ПОТОК ДАННЫХ
+	═══════════════════════════════════════════════════════════════════════════════
+
+	Пользователь перетаскивает виджет:
+	┌─────────────────────────────────────────────────────────────────────────────┐
+	│ Drag → GridStack 'change' → handleGridChange() → onWidgetsChange() → Store │
+	│                                       │                                      │
+	│                          applyingFromGrid = true                            │
+	│                          (блокирует обратную синхронизацию)                  │
+	└─────────────────────────────────────────────────────────────────────────────┘
+
+	Store обновляется извне:
+	┌─────────────────────────────────────────────────────────────────────────────┐
+	│ Store → widgets prop → widgetNode action → syncNodeFromStore() → GridStack │
+	│                                       │                                      │
+	│                          applyingFromStore = true                           │
+	│                          (блокирует событие 'change')                        │
+	└─────────────────────────────────────────────────────────────────────────────┘
+-->
+
 <script lang="ts">
 	import { onDestroy, onMount, tick, type Snippet } from 'svelte';
 
@@ -6,8 +48,13 @@
 	import { DEFAULT_GRID_CONFIG } from '../model/config';
 	import type { GridStackApi, GridStackNode } from '../model/gridstack.types';
 	import type { DashboardWidget } from '../model/types';
+	import { extractNodeId, applyLayoutChanges } from '../model/gridstack-helpers';
 
 	import WidgetCard from './WidgetCard.svelte';
+
+	// ═══════════════════════════════════════════════════════════════════════════
+	// СЕКЦИЯ 1: ТИПЫ И ПРОПСЫ
+	// ═══════════════════════════════════════════════════════════════════════════
 
 	/** Props for the custom widget snippet */
 	export type WidgetSnippetProps = {
@@ -15,20 +62,6 @@
 		editable: boolean;
 		selected: boolean;
 	};
-
-	/**
-	 * This component is a “thin integration” between Svelte and GridStack:
-	 *
-	 * - Svelte owns rendering and state (`widgets` array).
-	 * - GridStack owns drag/resize behavior and writes new x/y/w/h during interactions.
-	 * - We bridge the two using:
-	 *   - a Svelte action (`use:widgetNode`) per widget DOM element
-	 *   - GridStack events (`change`, `dragstop`, `resizestop`)
-	 *
-	 * The core rule: **avoid feedback loops**.
-	 * When GridStack changes layout → we update the store.
-	 * When the store changes layout → we update GridStack.
-	 */
 
 	interface Props {
 		widgets?: DashboardWidget[];
@@ -60,31 +93,61 @@
 		onSelect
 	}: Props = $props();
 
+	// ═══════════════════════════════════════════════════════════════════════════
+	// СЕКЦИЯ 2: СОСТОЯНИЕ СИНХРОНИЗАЦИИ
+	// Флаги и переменные для предотвращения бесконечных циклов обновлений
+	// ═══════════════════════════════════════════════════════════════════════════
+
+	/**
+	 * Снимок последнего состояния виджетов.
+	 * Нужен для `onFinalize`, который вызывается асинхронно после dragstop/resizestop.
+	 * К этому моменту реактивное состояние может уже измениться, поэтому храним снимок.
+	 */
 	let lastWidgets = widgets;
 	$effect(() => {
 		lastWidgets = widgets;
 	});
 
+	/** Ссылка на DOM-контейнер для GridStack */
 	let gridEl: HTMLDivElement | null = $state(null);
 
+	/** Инстанс GridStack (null до инициализации) */
 	let grid: GridStackApi | null = null;
 
-	// Prevent feedback loops:
-	// - applyingFromGrid: we are currently writing layouts into `widgets` due to grid events.
-	// - applyingFromStore: we are currently calling grid.update() due to external/store changes.
+	/**
+	 * Флаг: сейчас применяем изменения ОТ GridStack К Store.
+	 * Когда true, игнорируем входящие обновления от Store (предотвращаем цикл).
+	 */
 	let applyingFromGrid = false;
+
+	/**
+	 * Флаг: сейчас применяем изменения ОТ Store К GridStack.
+	 * Когда true, игнорируем события 'change' от GridStack (предотвращаем цикл).
+	 */
 	let applyingFromStore = false;
 
-	// Widgets may be rendered before GridStack is initialized (because Svelte renders first).
-	// We remember those DOM elements and "adopt" them into GridStack after init.
+	/**
+	 * Виджеты могут отрендериться ДО инициализации GridStack (Svelte рендерит первым).
+	 * Запоминаем такие DOM-элементы и "усыновляем" их в GridStack после init.
+	 */
 	const pendingWidgetEls = new Set<HTMLElement>();
 
+	/** Параметры для Svelte action widgetNode */
 	type WidgetActionParams = {
 		id: string;
 		layout: DashboardWidget['layout'];
 		editable: boolean;
 	};
 
+	// ═══════════════════════════════════════════════════════════════════════════
+	// СЕКЦИЯ 3: ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+	// Утилиты для работы с флагами и синхронизации состояния
+	// ═══════════════════════════════════════════════════════════════════════════
+
+	/**
+	 * Выполняет функцию с установленным флагом applyingFromStore.
+	 * Используется при записи данных из Store в GridStack.
+	 */
 	function withApplyingFromStore<T>(fn: () => T): T {
 		applyingFromStore = true;
 		try {
@@ -94,36 +157,16 @@
 		}
 	}
 
-	function getNodeId(it: GridStackNode): string | null {
-		// GridStack sometimes provides `id`, but we also keep `data-gs-id` on the element.
-		// This makes the mapping resilient even if GridStack version / config changes.
-		const id =
-			(typeof it.id === 'string' && it.id) ||
-			(typeof it.id === 'number' ? String(it.id) : '') ||
-			it.el?.getAttribute('data-gs-id') ||
-			it.el?.getAttribute('gs-id') ||
-			'';
-
-		return id ? id : null;
-	}
-
-	function applyLayoutToWidget(widget: DashboardWidget, node: GridStackNode): DashboardWidget {
-		// GridStack nodes may omit values, so we fall back to the existing layout.
-		const x = node.x ?? widget.layout.x;
-		const y = node.y ?? widget.layout.y;
-		const w = node.w ?? widget.layout.w;
-		const h = node.h ?? widget.layout.h;
-
-		if (x === widget.layout.x && y === widget.layout.y && w === widget.layout.w && h === widget.layout.h) return widget;
-		return { ...widget, layout: { ...widget.layout, x, y, w, h } };
-	}
-
+	/**
+	 * Синхронизирует состояние виджета из Store в GridStack.
+	 * Вызывается при изменении пропсов виджета или при первичном монтировании.
+	 */
 	function syncNodeFromStore(nodeEl: HTMLElement, p: WidgetActionParams) {
 		const g = grid;
 		if (!g) return;
-		// This writes store state into GridStack. Guard against re-entering via `change` events.
+
+		// Оборачиваем в withApplyingFromStore, чтобы событие 'change' было проигнорировано
 		withApplyingFromStore(() => {
-			// update() is safe even if GridStack already manages the node.
 			g.update(nodeEl, {
 				id: p.id,
 				x: p.layout.x,
@@ -136,128 +179,217 @@
 		});
 	}
 
+	// ═══════════════════════════════════════════════════════════════════════════
+	// СЕКЦИЯ 4: SVELTE ACTION (widgetNode)
+	// Связывает DOM-элемент виджета с GridStack
+	// ═══════════════════════════════════════════════════════════════════════════
+
+	/**
+	 * Svelte action для интеграции виджета с GridStack.
+	 *
+	 * Что делает:
+	 * 1. При монтировании: регистрирует элемент в GridStack (или в очередь ожидания)
+	 * 2. При обновлении: синхронизирует layout из Store в GridStack
+	 * 3. При размонтировании: удаляет из GridStack (но сохраняет DOM — им владеет Svelte)
+	 *
+	 * @example
+	 * <div use:widgetNode={{ id: widget.id, layout: widget.layout, editable }}>
+	 */
 	function widgetNode(node: HTMLElement, params: WidgetActionParams) {
+		// Запоминаем элемент на случай, если GridStack ещё не инициализирован
 		pendingWidgetEls.add(node);
 
 		if (grid) {
-			// When widgets mount after GridStack init, we must explicitly "adopt" them.
+			// GridStack уже готов — сразу регистрируем виджет
 			grid.makeWidget(node);
 			syncNodeFromStore(node, params);
 		}
 
 		return {
+			/** Вызывается при изменении параметров action */
 			update(next: WidgetActionParams) {
 				syncNodeFromStore(node, next);
 			},
+
+			/** Вызывается при удалении элемента из DOM */
 			destroy() {
 				pendingWidgetEls.delete(node);
-				// Keep DOM (Svelte owns it), but remove the widget from GridStack's internal state.
+				// false = не удалять DOM (Svelte владеет им)
 				if (grid) grid.removeWidget(node, false);
 			}
 		};
 	}
 
+	// ═══════════════════════════════════════════════════════════════════════════
+	// СЕКЦИЯ 5: ОБРАБОТЧИКИ СОБЫТИЙ GRIDSTACK
+	// Синхронизация изменений от GridStack в Store
+	// ═══════════════════════════════════════════════════════════════════════════
+
+	/**
+	 * Обрабатывает событие 'change' от GridStack.
+	 * Вызывается многократно во время drag/resize (примерно 60 раз в секунду).
+	 *
+	 * @param items - Массив изменённых узлов GridStack
+	 */
 	function handleGridChange(items: GridStackNode[] | undefined) {
+		// Игнорируем, если это наше собственное обновление (предотвращение цикла)
 		if (!items || applyingFromStore) return;
 
-		const byId = new Map<string, GridStackNode>();
-		for (const it of items) {
-			const id = getNodeId(it);
-			if (id) byId.set(id, it);
+		// Создаём Map для быстрого поиска изменений по ID виджета
+		const changesById = new Map<string, GridStackNode>();
+		for (const item of items) {
+			const id = extractNodeId(item);
+			if (id) changesById.set(id, item);
 		}
 
-		// Only update widgets that actually changed.
-		let changed = false;
-		const next = widgets.map((w) => {
-			const it = byId.get(w.id);
-			if (!it) return w;
-			const patched = applyLayoutToWidget(w, it);
-			if (patched !== w) changed = true;
+		// Применяем изменения только к тем виджетам, которые действительно изменились
+		let hasChanges = false;
+		const updatedWidgets = widgets.map((widget) => {
+			const change = changesById.get(widget.id);
+			if (!change) return widget;
+
+			const patched = applyLayoutChanges(widget, change);
+			if (patched !== widget) hasChanges = true;
 			return patched;
 		});
 
-		if (!changed) return;
+		if (!hasChanges) return;
 
+		// Уведомляем родителя об изменениях
 		applyingFromGrid = true;
-		lastWidgets = next;
-		onWidgetsChange?.(next);
+		lastWidgets = updatedWidgets;
+		onWidgetsChange?.(updatedWidgets);
 		applyingFromGrid = false;
 	}
 
-	async function initGridStack(el: HTMLDivElement) {
-		// IMPORTANT: GridStack's ESM build currently breaks when evaluated in SSR under Node ESM
-		// (extension-less internal imports). We therefore load it client-only (inside onMount).
-		const mod = await import('gridstack');
-		const GridStack = mod.GridStack as any;
+	// ═══════════════════════════════════════════════════════════════════════════
+	// СЕКЦИЯ 6: ИНИЦИАЛИЗАЦИЯ И ЖИЗНЕННЫЙ ЦИКЛ
+	// Создание и уничтожение GridStack
+	// ═══════════════════════════════════════════════════════════════════════════
 
-		const g = GridStack.init(
-			{
-				column: Math.max(1, Math.floor(columns)),
-				cellHeight: Math.max(8, Math.floor(rowHeightPx)),
-				margin: margin,
-				// float: false makes widgets push each other when dragged
-				float: false,
-				// Animate widget movements for smooth UX
-				animate: true,
-				// Best UX pattern: drag only from a dedicated handle, so content clicks don't start dragging.
-				draggable: {
-					handle: '.widget-drag-handle'
+	/**
+	 * Инициализирует GridStack с заданной конфигурацией.
+	 *
+	 * ВАЖНО: GridStack загружается динамически внутри onMount,
+	 * потому что его ESM-сборка ломается при SSR в Node.js.
+	 */
+	async function initGridStack(el: HTMLDivElement): Promise<GridStackApi | null> {
+		try {
+			const mod = await import('gridstack');
+			const GridStack = mod.GridStack;
+
+			if (!GridStack) {
+				console.error('[WidgetCanvas] GridStack не найден в модуле');
+				return null;
+			}
+
+			const g = GridStack.init(
+				{
+					// Количество колонок сетки (по умолчанию 12)
+					column: Math.max(1, Math.floor(columns)),
+
+					// Высота одной ячейки в пикселях
+					cellHeight: Math.max(8, Math.floor(rowHeightPx)),
+
+					// Отступ между виджетами
+					margin: margin,
+
+					// float: false — виджеты толкают друг друга при перетаскивании
+					float: false,
+
+					// Анимация перемещения для плавного UX
+					animate: true,
+
+					// Перетаскивание только за специальный handle (не за весь виджет)
+					draggable: {
+						handle: '.widget-drag-handle'
+					},
+
+					// Начальное состояние редактирования
+					disableDrag: !editable,
+					disableResize: !editable
 				},
-				disableDrag: !editable,
-				disableResize: !editable
-			},
-			el
-		);
+				el
+			);
 
-		return (g as GridStackApi) ?? null;
+			return (g as GridStackApi) ?? null;
+		} catch (error) {
+			console.error('[WidgetCanvas] Ошибка инициализации GridStack:', error);
+			return null;
+		}
 	}
 
+	/**
+	 * Подключает обработчики событий GridStack.
+	 *
+	 * События:
+	 * - 'change': вызывается при каждом движении виджета (live updates)
+	 * - 'dragstop': вызывается когда пользователь отпустил виджет
+	 * - 'resizestop': вызывается когда пользователь закончил ресайз
+	 */
 	function attachGridEvents(g: GridStackApi) {
-		// Live updates: write x/y/w/h back into Svelte state while dragging/resizing.
+		// Live updates: синхронизируем позиции во время drag/resize
 		g.on('change', (_e: unknown, items: GridStackNode[] | undefined) => handleGridChange(items));
 
-		// Finalize updates: persist once the interaction stops.
-		// We wait a tick to ensure Svelte/store updates from the last `change` have been applied.
+		// Финализация: сохраняем после завершения взаимодействия
+		// tick() нужен чтобы дождаться применения последнего 'change' в Svelte
 		g.on('dragstop', async () => {
 			await tick();
 			onFinalize?.(lastWidgets);
 		});
+
 		g.on('resizestop', async () => {
 			await tick();
 			onFinalize?.(lastWidgets);
 		});
 	}
 
+	/**
+	 * Жизненный цикл: монтирование компонента.
+	 * Инициализируем GridStack и подключаем события.
+	 */
 	onMount(async () => {
 		if (!gridEl) return;
 
 		const g = await initGridStack(gridEl);
 		if (!g) return;
+
 		grid = g;
 		attachGridEvents(g);
 
-		// Adopt any widgets rendered before init.
+		// "Усыновляем" виджеты, которые отрендерились до инициализации GridStack
 		for (const el of pendingWidgetEls) {
 			g.makeWidget(el);
 		}
 	});
 
+	/**
+	 * Жизненный цикл: размонтирование компонента.
+	 * Уничтожаем GridStack (но сохраняем DOM — им владеет Svelte).
+	 */
 	onDestroy(() => {
 		if (grid) grid.destroy(false);
 		grid = null;
 	});
 
-	// Reflect external changes (columns/rowHeight/editable) into GridStack without re-writing layouts.
+	// ═══════════════════════════════════════════════════════════════════════════
+	// СЕКЦИЯ 7: РЕАКТИВНЫЕ ЭФФЕКТЫ
+	// Синхронизация пропсов компонента с GridStack
+	// ═══════════════════════════════════════════════════════════════════════════
+
+	/** Обновляет количество колонок при изменении пропа */
 	$effect(() => {
 		if (!grid) return;
 		grid.column(Math.max(1, Math.floor(columns)));
 	});
 
+	/** Обновляет высоту ячейки при изменении пропа */
 	$effect(() => {
 		if (!grid) return;
 		grid.cellHeight(Math.max(8, Math.floor(rowHeightPx)));
 	});
 
+	/** Включает/выключает редактирование при изменении пропа */
 	$effect(() => {
 		if (!grid) return;
 		grid.enableMove(!!editable);
