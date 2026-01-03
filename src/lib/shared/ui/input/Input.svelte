@@ -18,11 +18,14 @@
 		class?: string;
 	}
 
-	let { class: className, type = 'text', ...rest }: Props = $props();
+	// Svelte 5: make `value` bindable for consumers (`bind:value={...}`).
+	// Note: we keep `value` as `any`-ish since HTML input value varies by `type`.
+	let { class: className, type = 'text', value = $bindable(), ...rest }: Props = $props();
 </script>
 
 <input
 	{type}
+	bind:value
 	class={cn(
 		'flex h-9 w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm',
 		'file:border-0 file:bg-transparent file:text-sm file:font-medium',

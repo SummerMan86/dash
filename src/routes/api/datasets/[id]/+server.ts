@@ -5,6 +5,7 @@ import { CONTRACT_VERSION } from '$entities/dataset';
 
 import { compileDataset } from '$lib/server/datasets/compile';
 import { mockProvider } from '$lib/server/providers/mockProvider';
+import { postgresProvider } from '$lib/server/providers/postgresProvider';
 
 /**
  * Transport adapter (HTTP).
@@ -68,11 +69,16 @@ export const POST: RequestHandler = async ({ params, request }) => {
 	}
 
 	try {
-		const response = await mockProvider.execute(ir, ctx);
+		const provider = datasetId.startsWith('wildberries.') ? postgresProvider : mockProvider;
+		const response = await provider.execute(ir, ctx);
 		// Echo requestId if present (helps UI dedup/tracing).
 		if (query.requestId) response.requestId = query.requestId;
 		return json(response);
-	} catch {
+	} catch (e: unknown) {
+		const message = e instanceof Error ? e.message : '';
+		if (datasetId.startsWith('wildberries.') && message.includes('DATABASE_URL')) {
+			return json({ error: 'DATABASE_URL is not set (required for wildberries datasets)' }, { status: 500 });
+		}
 		return json({ error: 'Failed to execute dataset query' }, { status: 500 });
 	}
 };
