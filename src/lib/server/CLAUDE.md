@@ -47,8 +47,6 @@ Add more prefixes or a registry when needed.
 ## postgresProvider DATASETS registry
 Currently registered:
 - `wildberries.fact_product_office_day` → `mart.fact_product_office_day`
-
-NOT yet registered (in DB schema, needs adding):
 - `wildberries.fact_product_period` → `mart.fact_product_period`
 
 ## Environment

@@ -6,8 +6,13 @@ import {
 	compileWildberriesDataset,
 	type WildberriesDatasetId
 } from './definitions/wildberriesOfficeDay';
+import {
+	PRODUCT_PERIOD_DATASETS,
+	compileProductPeriodDataset,
+	type ProductPeriodDatasetId
+} from './definitions/wildberriesProductPeriod';
 
-type KnownDatasetId = PaymentDatasetId | WildberriesDatasetId;
+type KnownDatasetId = PaymentDatasetId | WildberriesDatasetId | ProductPeriodDatasetId;
 
 /**
  * Dataset compiler entrypoint.
@@ -21,7 +26,8 @@ type KnownDatasetId = PaymentDatasetId | WildberriesDatasetId;
 export function isKnownDatasetId(id: string): id is KnownDatasetId {
 	return (
 		Object.values(PAYMENT_DATASETS).includes(id as PaymentDatasetId) ||
-		Object.values(WILDBERRIES_DATASETS).includes(id as WildberriesDatasetId)
+		Object.values(WILDBERRIES_DATASETS).includes(id as WildberriesDatasetId) ||
+		Object.values(PRODUCT_PERIOD_DATASETS).includes(id as ProductPeriodDatasetId)
 	);
 }
 
@@ -31,6 +37,9 @@ export function compileDataset(datasetId: DatasetId, query: DatasetQuery): Datas
 	}
 	if (Object.values(WILDBERRIES_DATASETS).includes(datasetId as WildberriesDatasetId)) {
 		return compileWildberriesDataset(datasetId as WildberriesDatasetId, query);
+	}
+	if (Object.values(PRODUCT_PERIOD_DATASETS).includes(datasetId as ProductPeriodDatasetId)) {
+		return compileProductPeriodDataset(datasetId as ProductPeriodDatasetId, query);
 	}
 	// This error code is used by the HTTP layer to return 404.
 	throw Object.assign(new Error(`Unknown datasetId: ${datasetId}`), { code: 'DATASET_NOT_FOUND' });

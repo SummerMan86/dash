@@ -34,6 +34,47 @@ const DATASETS: Record<string, DatasetSqlMapping> = {
 			to_client_count: 'number',
 			from_client_count: 'number'
 		}
+	},
+	'wildberries.fact_product_period': {
+		relation: { schema: 'mart', table: 'fact_product_period' },
+		columns: {
+			nm_id: 'number',
+			dt: 'date',
+			loaded_at: 'datetime',
+			title: 'string',
+			vendor_code: 'string',
+			brand_name: 'string',
+			subject_id: 'number',
+			subject_name: 'string',
+			main_photo: 'string',
+			stock_count: 'number',
+			stock_sum: 'number',
+			sale_rate_days: 'number',
+			avg_stock_turnover_days: 'number',
+			to_client_count: 'number',
+			from_client_count: 'number',
+			lost_orders_count: 'number',
+			lost_orders_sum: 'number',
+			lost_buyouts_count: 'number',
+			lost_buyouts_sum: 'number',
+			availability_status: 'string',
+			price_min: 'number',
+			price_max: 'number',
+			open_count: 'number',
+			cart_count: 'number',
+			order_count: 'number',
+			order_sum: 'number',
+			buyout_count: 'number',
+			buyout_sum: 'number',
+			add_to_cart_percent: 'number',
+			cart_to_order_percent: 'number',
+			buyout_percent: 'number',
+			add_to_wishlist_count: 'number',
+			product_rating: 'number',
+			feedback_rating: 'number',
+			stocks_wb: 'number',
+			stocks_mp: 'number'
+		}
 	}
 };
 
