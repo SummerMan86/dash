@@ -1,6 +1,11 @@
 import type { DatasetId, DatasetQuery, DatasetResponse, JsonValue } from '$entities/dataset';
 import { CONTRACT_VERSION } from '$entities/dataset';
-import { getFilterSnapshot } from '$entities/filter';
+import {
+	getFilterSnapshot,
+	getEffectiveFilters,
+	planFiltersForDataset,
+	hasFiltersForDataset
+} from '$entities/filter';
 
 type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
@@ -41,6 +46,10 @@ export type FetchDatasetArgs = {
 	 * Cache control (client-side).
 	 */
 	cache?: { ttlMs?: number };
+	/**
+	 * Skip client-side filtering (useful for raw data access).
+	 */
+	skipClientFilter?: boolean;
 };
 
 type CacheEntry = { expiresAt: number; value: DatasetResponse };
@@ -71,9 +80,24 @@ export async function fetchDataset(args: FetchDatasetArgs): Promise<DatasetRespo
 		args.fetch ?? (typeof fetch !== 'undefined' ? (fetch as FetchLike) : undefined);
 	if (!doFetch) throw new Error('fetchDataset: no fetch available (provide args.fetch in SSR/load)');
 
-	// Merge global filters (single source of truth) + per-call overrides.
-	const globalFilters = getFilterSnapshot() as unknown as Record<string, JsonValue>;
-	const mergedFilters: Record<string, JsonValue> = { ...globalFilters, ...(args.filters ?? {}) };
+	// Get effective filters from the new store
+	const effectiveFilters = getEffectiveFilters();
+
+	// Plan filter application (if filters are registered for this dataset)
+	const plan = hasFiltersForDataset(args.id)
+		? planFiltersForDataset(args.id, effectiveFilters)
+		: null;
+
+	// Build merged filters:
+	// 1. Legacy global filters (for backward compat)
+	// 2. Planned server params (from new filter system)
+	// 3. Explicit overrides from args.filters
+	const legacyFilters = getFilterSnapshot() as unknown as Record<string, JsonValue>;
+	const mergedFilters: Record<string, JsonValue> = {
+		...legacyFilters,
+		...(plan?.serverParams ?? {}),
+		...(args.filters ?? {})
+	};
 
 	// This is the only request payload format the BFF understands.
 	const query: DatasetQuery = {
@@ -83,19 +107,46 @@ export async function fetchDataset(args: FetchDatasetArgs): Promise<DatasetRespo
 		...(args.params ? { params: args.params } : {})
 	};
 
-	const key = makeKey(args.id, query);
+	// Cache key uses SERVER-SIDE params only (client filters don't affect it)
+	// This allows client-only filter changes to not bust the cache
+	const cacheKeyQuery: DatasetQuery = {
+		contractVersion: CONTRACT_VERSION,
+		...(args.requestId ? { requestId: args.requestId } : {}),
+		...(Object.keys(mergedFilters).length ? { filters: mergedFilters } : {}),
+		...(args.params ? { params: args.params } : {})
+	};
+	const key = makeKey(args.id, cacheKeyQuery);
 	const now = Date.now();
 	const ttlMs = args.cache?.ttlMs ?? 0;
 
 	if (ttlMs > 0) {
 		// TTL cache: returns quickly without hitting network.
 		const cached = memoryCache.get(key);
-		if (cached && cached.expiresAt > now) return cached.value;
+		if (cached && cached.expiresAt > now) {
+			// Apply client filter to cached data too
+			if (!args.skipClientFilter && plan?.clientFilterFn) {
+				return {
+					...cached.value,
+					rows: cached.value.rows.filter(plan.clientFilterFn)
+				};
+			}
+			return cached.value;
+		}
 	}
 
 	// In-flight dedup: if another component is already fetching the same key, await it.
 	const existing = inFlight.get(key);
-	if (existing) return existing;
+	if (existing) {
+		const result = await existing;
+		// Apply client filter to deduped result
+		if (!args.skipClientFilter && plan?.clientFilterFn) {
+			return {
+				...result,
+				rows: result.rows.filter(plan.clientFilterFn)
+			};
+		}
+		return result;
+	}
 
 	const p = (async () => {
 		const res = await doFetch(`/api/datasets/${encodeURIComponent(String(args.id))}`, {
@@ -123,7 +174,16 @@ export async function fetchDataset(args: FetchDatasetArgs): Promise<DatasetRespo
 		});
 
 	inFlight.set(key, p);
-	return p;
+
+	const result = await p;
+
+	// Apply client-side filtering if needed
+	if (!args.skipClientFilter && plan?.clientFilterFn) {
+		return {
+			...result,
+			rows: result.rows.filter(plan.clientFilterFn)
+		};
+	}
+
+	return result;
 }
-
-

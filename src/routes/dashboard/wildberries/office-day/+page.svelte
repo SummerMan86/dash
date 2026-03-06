@@ -1,33 +1,39 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-
 	import { fetchDataset } from '$shared/api/fetchDataset';
+	import { useDebouncedLoader } from '$shared/lib/useDebouncedLoader.svelte';
 	import { Button } from '$shared/ui/button';
 	import { Card, CardContent, CardHeader, CardTitle } from '$shared/ui/card';
 	import { Input } from '$shared/ui/input';
 	import type { DatasetResponse, JsonValue } from '$entities/dataset';
+	import { registerFilters, filterStoreV2 } from '$entities/filter';
+	import { FilterPanel } from '$widgets/filters';
+	import { officeDayFilters } from './filters';
 
 	const datasetId = 'wildberries.fact_product_office_day';
 
-	let loading = $state(false);
+	// Register filter specs on mount
+	registerFilters(officeDayFilters);
+
 	let error = $state<string | null>(null);
 	let data = $state<DatasetResponse | null>(null);
 
-	// Filters/params (kept local for MVP; later can be wired to global/IndexedDB state).
-	let dateFrom = $state<string>('');
-	let dateTo = $state<string>('');
+	// Dataset-specific params (kept local - not global filters)
 	let nmId = $state<string>('');
 	let officeId = $state<string>('');
 	let chrtId = $state<string>('');
 	let regionName = $state<string>('');
 	let limit = $state<string>('500');
 
+	// Subscribe to filter changes
+	let effectiveFilters = $derived(filterStoreV2.effective);
+
+	const numberFmt = new Intl.NumberFormat('ru-RU');
+
 	function formatCell(value: JsonValue): string {
 		if (value === null || typeof value === 'undefined') return '—';
-		if (typeof value === 'number') return new Intl.NumberFormat('ru-RU').format(value);
+		if (typeof value === 'number') return numberFmt.format(value);
 		if (typeof value === 'boolean') return value ? 'true' : 'false';
 		if (typeof value === 'string') return value;
-		// arrays/objects: keep readable for MVP
 		try {
 			return JSON.stringify(value);
 		} catch {
@@ -35,14 +41,13 @@
 		}
 	}
 
-	async function load() {
-		loading = true;
-		error = null;
-		try {
-			const filters: Record<string, JsonValue> = {};
-			if (dateFrom) filters.dateFrom = dateFrom;
-			if (dateTo) filters.dateTo = dateTo;
+	const { reload: load, loading } = useDebouncedLoader({
+		watch: () => $effectiveFilters,
+		delayMs: 250,
+		load: async () => {
+			error = null;
 
+			// Dataset-specific params
 			const params: Record<string, JsonValue> = {};
 			if (nmId) params.nmId = nmId;
 			if (officeId) params.officeId = officeId;
@@ -50,21 +55,22 @@
 			if (regionName) params.regionName = regionName;
 			if (limit) params.limit = limit;
 
-			data = await fetchDataset({
+			// Filters come from FilterPanel via the store
+			// fetchDataset will automatically use them through planner
+			return await fetchDataset({
 				id: datasetId,
-				...(Object.keys(filters).length ? { filters } : {}),
 				...(Object.keys(params).length ? { params } : {}),
 				cache: { ttlMs: 0 }
 			});
-		} catch (e: unknown) {
+		},
+		onData: (result) => {
+			data = result;
+		},
+		onError: (e) => {
 			error = e instanceof Error ? e.message : 'Failed to load dataset';
 			data = null;
-		} finally {
-			loading = false;
 		}
-	}
-
-	onMount(load);
+	});
 </script>
 
 <svelte:head>
@@ -84,46 +90,40 @@
 			<CardTitle>Filters</CardTitle>
 		</CardHeader>
 		<CardContent class="space-y-4">
-			<div class="grid grid-cols-1 gap-3 md:grid-cols-6">
-				<div class="space-y-1 md:col-span-1">
-					<div class="text-xs text-muted-foreground">Date from</div>
-					<Input type="date" bind:value={dateFrom} />
-				</div>
-				<div class="space-y-1 md:col-span-1">
-					<div class="text-xs text-muted-foreground">Date to</div>
-					<Input type="date" bind:value={dateTo} />
-				</div>
-				<div class="space-y-1 md:col-span-1">
+			<!-- Global filters via FilterPanel -->
+			<FilterPanel scope="global" />
+
+			<!-- Dataset-specific params -->
+			<div class="grid grid-cols-1 gap-3 md:grid-cols-5">
+				<div class="space-y-1">
 					<div class="text-xs text-muted-foreground">nm_id</div>
 					<Input inputmode="numeric" placeholder="e.g. 123" bind:value={nmId} />
 				</div>
-				<div class="space-y-1 md:col-span-1">
+				<div class="space-y-1">
 					<div class="text-xs text-muted-foreground">office_id</div>
 					<Input inputmode="numeric" placeholder="e.g. 45" bind:value={officeId} />
 				</div>
-				<div class="space-y-1 md:col-span-1">
+				<div class="space-y-1">
 					<div class="text-xs text-muted-foreground">chrt_id</div>
 					<Input inputmode="numeric" placeholder="e.g. 678" bind:value={chrtId} />
 				</div>
-				<div class="space-y-1 md:col-span-1">
+				<div class="space-y-1">
+					<div class="text-xs text-muted-foreground">region_name</div>
+					<Input placeholder="e.g. Москва" bind:value={regionName} />
+				</div>
+				<div class="space-y-1">
 					<div class="text-xs text-muted-foreground">Limit</div>
 					<Input inputmode="numeric" placeholder="500" bind:value={limit} />
 				</div>
 			</div>
 
-			<div class="grid grid-cols-1 gap-3 md:grid-cols-3">
-				<div class="space-y-1 md:col-span-2">
-					<div class="text-xs text-muted-foreground">region_name</div>
-					<Input placeholder="e.g. Москва" bind:value={regionName} />
-				</div>
-				<div class="flex items-end gap-2">
-					<Button onclick={load} disabled={loading}>
-						{loading ? 'Loading…' : 'Reload'}
-					</Button>
-					{#if data?.meta?.source}
-						<span class="text-xs text-muted-foreground">source: {data.meta.source}</span>
-					{/if}
-				</div>
+			<div class="flex items-center gap-2">
+				<Button onclick={load} disabled={loading}>
+					{loading ? 'Loading…' : 'Reload'}
+				</Button>
+				{#if data?.meta?.source}
+					<span class="text-xs text-muted-foreground">source: {data.meta.source}</span>
+				{/if}
 			</div>
 
 			{#if error}
@@ -176,4 +176,3 @@
 		</CardContent>
 	</Card>
 </div>
-

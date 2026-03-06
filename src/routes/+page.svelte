@@ -218,7 +218,7 @@
 					<CardTitle class="text-base">Default Size</CardTitle>
 				</CardHeader>
 				<CardContent>
-					<Input placeholder="Default input (h-10)" />
+					<Input placeholder="Default input (h-9)" />
 				</CardContent>
 			</Card>
 
@@ -227,7 +227,7 @@
 					<CardTitle class="text-base">Custom Size</CardTitle>
 				</CardHeader>
 				<CardContent>
-					<Input placeholder="Custom size" class="h-12 text-base" />
+					<Input placeholder="Custom size (avoid unless necessary)" class="h-10 text-base" />
 				</CardContent>
 			</Card>
 		</div>
@@ -333,7 +333,7 @@
 				</CardHeader>
 				<CardContent>
 					<Select>
-						<option>Default select (h-10)</option>
+						<option>Default select (h-9)</option>
 						<option>Option 2</option>
 						<option>Option 3</option>
 					</Select>
@@ -345,7 +345,7 @@
 					<CardTitle class="text-base">Custom Size</CardTitle>
 				</CardHeader>
 				<CardContent>
-					<Select class="h-12 text-base">
+					<Select class="h-10 text-base">
 						<option>Custom size select</option>
 						<option>Option 2</option>
 						<option>Option 3</option>

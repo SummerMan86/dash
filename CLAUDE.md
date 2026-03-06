@@ -1,5 +1,20 @@
 # Dashboard Builder — Development Guide
 
+## Module Documentation
+
+Each major module has its own `CLAUDE.md` with types, patterns, and conventions.
+Read these before scanning source files:
+
+| Module | Doc |
+|--------|-----|
+| Dataset contracts & IR | `src/lib/entities/dataset/CLAUDE.md` |
+| Filter system (spec, store, planner) | `src/lib/entities/filter/CLAUDE.md` |
+| Server BFF (compile, providers) | `src/lib/server/CLAUDE.md` |
+| Alert system & scheduler | `src/lib/server/alerts/CLAUDE.md` |
+| Dashboard editor (GridStack) | `src/lib/features/dashboard-edit/CLAUDE.md` |
+| Widget catalog | `src/lib/widgets/CLAUDE.md` |
+| Shared UI & utilities | `src/lib/shared/CLAUDE.md` |
+
 ## Stack
 
 SvelteKit 2 + TypeScript + TailwindCSS 4 + ECharts + GridStack
@@ -30,11 +45,44 @@ UI → fetchDataset() → POST /api/datasets/:id → compile() → IR → Provid
 - `DatasetResponse` — response with data
 - `Provider` interface — adapter for data source
 
+## Server Layer (`src/lib/server/`)
+
+BFF layer implementing data compilation and provider abstraction. Server-only code (not bundled to client).
+
+```
+src/lib/server/
+├── datasets/           # Dataset registry and compilation
+│   ├── compile.ts      # Query → IR compiler (routing)
+│   └── definitions/    # Dataset-specific compile functions
+├── providers/          # IR executors (database adapters)
+│   ├── mockProvider.ts
+│   └── postgresProvider.ts
+└── db/                 # Database connections (infrastructure)
+    └── pg.ts
+```
+
+**Dependency direction:**
+```
+routes/api/        → imports → server/datasets, server/providers
+server/datasets    → imports → entities/dataset (types only)
+server/providers   → imports → entities/dataset, server/db
+server/db          → imports → nothing (leaf)
+```
+
+**SQL injection prevention:** All user input goes through parameterized queries (`$1`, `$2`). Identifiers validated via `isSafeIdent()` regex.
+
 ## How to Add a New Dataset
 
+**Mock dataset:**
 1. Add ID in `src/lib/server/datasets/definitions/`
 2. Implement compile function (Query → IR)
 3. Add fixture in `src/lib/shared/fixtures/`
+4. Register in `src/lib/server/datasets/compile.ts`
+
+**PostgreSQL dataset (wildberries.\*):**
+1. Add compile function in `src/lib/server/datasets/definitions/`
+2. Add SQL mapping in `src/lib/server/providers/postgresProvider.ts` (`DATASETS` constant)
+3. Register in `src/lib/server/datasets/compile.ts`
 
 ## How to Add a New Provider
 
@@ -47,18 +95,80 @@ UI → fetchDataset() → POST /api/datasets/:id → compile() → IR → Provid
 2. Add type to `WidgetType` (`src/lib/features/dashboard-edit/model/types.ts`)
 3. Add to toolbox (`WidgetToolbox.svelte`)
 
+## How to Add Filters for a New Page
+
+1. Create filter specs in page folder:
+   ```typescript
+   // src/routes/dashboard/[your-page]/filters.ts
+   import type { FilterSpec } from '$entities/filter';
+
+   export const pageFilters: FilterSpec[] = [
+     {
+       id: 'dateRange',
+       type: 'dateRange',        // dateRange | select | multiSelect | text
+       label: 'Период',
+       scope: 'global',          // global (shared) | page (local)
+       apply: 'server',          // server (SQL) | client (JS) | hybrid
+       bindings: {
+         'your.dataset_id': { field: 'dt' }  // datasetId → column
+       }
+     }
+   ];
+   ```
+
+2. Register and render in page:
+   ```svelte
+   <script>
+     import { registerFilters } from '$entities/filter';
+     import { FilterPanel } from '$widgets/filters';
+     import { pageFilters } from './filters';
+
+     registerFilters(pageFilters);
+   </script>
+
+   <FilterPanel />
+   ```
+
+3. fetchDataset applies filters automatically via planner.
+
+**Filter types:** `dateRange`, `select`, `multiSelect`, `text`
+
+**Scope:** `global` — shared across pages, `page` — local to this page
+
+**Apply:** `server` — SQL WHERE, `client` — JS filter after fetch, `hybrid` — both
+
+## Filter Reactivity & Performance Notes (Svelte 5 runes)
+
+When wiring filters to data loads, avoid triggering request storms or infinite effect loops:
+
+- **Prefer a debounced single-flight loader**: use `useDebouncedLoader()` from `src/lib/shared/lib/useDebouncedLoader.svelte.ts` to:
+  - debounce reloads on `$effectiveFilters` changes
+  - prevent parallel `load()` calls (queues a single rerun)
+  - ignore stale responses (only latest request commits data)
+
+- **Do not store timers in reactive state**: putting `setTimeout` handles into `$state` and then reading/writing them inside `$effect` can cause `effect_update_depth_exceeded`.
+
+- **Filter store emits only real changes**: `filterStoreV2.setFilter()` is a no-op if the next value is equal to the current value (prevents unnecessary reactive updates).
+
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `src/lib/shared/api/fetchDataset.ts` | Data fetching facade (cache, dedup) |
+| `src/lib/shared/api/fetchDataset.ts` | Data fetching facade (cache, dedup, filter planner) |
 | `src/lib/entities/dataset/model/ir.ts` | IR definition + builder |
 | `src/lib/entities/dataset/model/ports.ts` | Provider interface |
+| `src/lib/entities/filter/model/types.ts` | FilterSpec, FilterValue types |
 | `src/lib/entities/filter/model/store.svelte.ts` | Global filters store |
+| `src/lib/entities/filter/model/registry.ts` | Filter registration (registerFilters) |
+| `src/lib/entities/filter/model/planner.ts` | Filter planning (server/client routing) |
+| `src/lib/widgets/filters/FilterPanel.svelte` | Filter UI container |
 | `src/lib/server/providers/mockProvider.ts` | Example Provider implementation |
 | `src/lib/features/dashboard-edit/model/store.ts` | Dashboard editor state |
 | `src/lib/features/dashboard-edit/ui/WidgetCanvas.svelte` | GridStack integration |
 | `src/routes/api/datasets/[id]/+server.ts` | API endpoint (routing) |
+
+## Design system
+For UI use 'src\lib\shared\styles\DESIGN_SYSTEM_GUIDE.md'
 
 ## Conventions
 
@@ -89,13 +199,13 @@ DATABASE_URL=postgresql://user:password@localhost:5432/dashboard
 CREATE TABLE mart.fact_product_office_day (
 	nm_id int8 NOT NULL, -- НМ-ID товара
 	chrt_id int8 NOT NULL, -- ID размера
-	office_id int8 NOT NULL, -- ID офиса/склада
+	office_id int8 NOT NULL, -- ID офиса/офиса
 	dt date NOT NULL, -- Дата снимка
 	loaded_at timestamptz NOT NULL, -- Дата загрузки ETL
 	size_name text NULL, -- Название размера
-	office_name text NULL, -- Название офиса/склада
+	office_name text NULL, -- Название офиса/офиса
 	region_name text NULL, -- Название региона
-	stock_count int4 NULL, -- Количество на складе
+	stock_count int4 NULL, -- Количество на офисе
 	stock_sum int8 NULL, -- Сумма остатков
 	buyout_count int4 NULL, -- Количество выкупов
 	buyout_sum int8 NULL, -- Сумма выкупов
@@ -119,7 +229,7 @@ CREATE TABLE mart.fact_product_period (
 	subject_id int8 NULL, -- ID категории
 	subject_name text NULL, -- Название категории
 	main_photo text NULL, -- Ссылка на главное фото
-	stock_count int4 NULL, -- Количество на складе
+	stock_count int4 NULL, -- Количество на офисе
 	stock_sum int8 NULL, -- Сумма остатков
 	sale_rate_days float8 NULL, -- Скорость продаж (дней)
 	avg_stock_turnover_days float8 NULL, -- Средняя оборачиваемость (дней)
@@ -189,3 +299,115 @@ create table if not exists conf.calc_params_specific (
     references conf.calc_params_common (seller_id, preset_id)
     on delete cascade
 );
+
+## Alert System (`src/lib/server/alerts/`)
+
+Server-side alerting system for Telegram (and future Browser Push) notifications.
+
+### Architecture
+
+```
+src/lib/server/alerts/
+├── model/
+│   ├── types.ts              # AlertRule, AlertCondition, Recipient types
+│   └── schema.ts             # Zod validation schemas
+├── repository/
+│   ├── alertRuleRepository.ts    # Rules CRUD
+│   ├── recipientRepository.ts    # Recipients CRUD
+│   └── alertHistoryRepository.ts # Notification history
+├── services/
+│   ├── conditionEvaluator.ts # SQL generation for condition checks
+│   ├── alertProcessor.ts     # Main processing pipeline
+│   └── alertScheduler.ts     # Cron scheduler with distributed locking
+├── channels/
+│   └── telegramChannel.ts    # Telegram Bot API integration
+└── sql/
+    └── 001_alerts_schema.sql # Database migration
+```
+
+### Environment Variables
+
+```bash
+# Required for alerts
+TELEGRAM_BOT_TOKEN=your_bot_token_from_botfather
+
+# Optional
+ALERT_SCHEDULE="0 9 * * *"        # Cron expression (default: daily at 9:00)
+ALERT_TIMEZONE="Europe/Moscow"    # Timezone for scheduler
+PUBLIC_BASE_URL=http://localhost:5173  # For dashboard links in notifications
+ENABLE_ALERT_SCHEDULER=true       # Set to 'false' to disable scheduler
+```
+
+### How to Set Up Alerts
+
+1. **Apply database migration:**
+   ```bash
+   psql $DATABASE_URL < src/lib/server/alerts/sql/001_alerts_schema.sql
+   ```
+
+2. **Create Telegram bot:**
+   - Message @BotFather on Telegram
+   - Create new bot with /newbot
+   - Copy the token to `.env` as `TELEGRAM_BOT_TOKEN`
+
+3. **Get your chat_id:**
+   - Message your bot
+   - Visit `https://api.telegram.org/bot<TOKEN>/getUpdates`
+   - Find `chat.id` in the response
+
+4. **Create alert rule via SQL:**
+   ```sql
+   -- Create recipient
+   INSERT INTO alerts.recipients (seller_id, channel, address, name)
+   VALUES (1, 'telegram', 'YOUR_CHAT_ID', 'My Telegram');
+
+   -- Create alert rule
+   INSERT INTO alerts.rules (seller_id, name, condition, dataset_id)
+   VALUES (
+     1,
+     'Stock Deficit Alert',
+     '{"metric": "stock_count", "operator": "<=", "threshold": 0}',
+     'wildberries.fact_product_period'
+   );
+
+   -- Link rule to recipient
+   INSERT INTO alerts.rule_recipients (rule_id, recipient_id)
+   VALUES (1, 1);
+   ```
+
+### Alert Condition Format
+
+```typescript
+{
+  metric: string;           // Column name (e.g., 'stock_count', 'lost_orders_sum')
+  operator: '<' | '<=' | '>' | '>=' | '=' | '!=';
+  threshold: number;
+  scope?: {                 // Optional filters
+    brand_name?: string;
+    nm_id?: number;
+  };
+  dateRange?: {             // Optional date range
+    from: 'now' | '-7d' | '-1w' | '-1m';
+    to: 'now';
+  };
+}
+```
+
+### Manual Alert Trigger
+
+```typescript
+import { triggerAlertCheck } from '$lib/server/alerts';
+
+// In API endpoint or server function
+const result = await triggerAlertCheck();
+// { processed: 5, triggered: 2, errors: 0 }
+```
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `src/lib/server/alerts/index.ts` | Public API exports |
+| `src/lib/server/alerts/services/alertScheduler.ts` | Cron + distributed lock |
+| `src/lib/server/alerts/channels/telegramChannel.ts` | Telegram Bot API |
+| `src/hooks.server.ts` | Scheduler initialization |

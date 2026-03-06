@@ -1,3 +1,14 @@
+  Запуск dev-сервера
+
+  . /home/orl/.nvm/nvm.sh   # активировать node (или открыть новый терминал)
+  pnpm dev
+
+  После первого открытия нового терминала nvm будет подхватываться автоматически через ~/.bashrc — дополнительно активировать
+   не нужно.
+
+  Сервер поднимется на http://localhost:5173. Для Wildberries-страниц нужен файл .env с DATABASE_URL.
+
+
 # sv
 
 Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).

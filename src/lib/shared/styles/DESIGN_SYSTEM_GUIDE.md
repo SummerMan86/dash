@@ -144,6 +144,15 @@ bg-success-muted text-success-muted-foreground bg-warning-muted text-warning-mut
 text-error-muted-foreground bg-info-muted text-info-muted-foreground
 ```
 
+**Rule (badges / pills):** For status labels in tables/cards (e.g. “Дефицит/Риск/Норма”), use semantic muted tokens:
+
+```svelte
+<!-- Status badge (recommended) -->
+class="inline-flex items-center rounded-full border border-error/20 bg-error-muted px-2 py-0.5 text-xs font-medium text-error"
+```
+
+Avoid ad-hoc Tailwind palette colors like `text-red-600 bg-red-50 dark:bg-red-950` in feature pages — they drift from the design system and break dark-mode consistency.
+
 ### Trend Indicators
 
 ```svelte
@@ -193,6 +202,19 @@ hover:border-input-hover focus:border-input-focus focus:ring-2 focus:ring-ring
 ---
 
 ## Components
+
+### Form Controls (Inputs / Filters)
+
+**Rule:** For any user input/filter, prefer `$shared/ui` components over raw HTML:
+- Use `<Input />` from `$shared/ui/input`
+- Use `<Select />` from `$shared/ui/select`
+- Use `<Button />` from `$shared/ui/button`
+
+**Sizing standard (recommended):**
+- `Input` / `Select`: **`h-9` (36px)** — default for filters and forms
+- `Button`: use `size="sm"` for filter bars / toolbars, `size="default"` for primary actions
+
+**Avoid:** ad-hoc `h-12`/custom paddings on controls in app pages — it breaks visual consistency and confuses future AI generation.
 
 ### StatCard
 
