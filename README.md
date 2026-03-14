@@ -1,49 +1,82 @@
-  Запуск dev-сервера
+# Dashboard Builder / BI Platform
 
-  . /home/orl/.nvm/nvm.sh   # активировать node (или открыть новый терминал)
-  pnpm dev
+Текущий репозиторий содержит SvelteKit-приложение, которое уже вышло за рамки простого "builder demo". По факту это заготовка BI/аналитической платформы с общими UI-компонентами, BFF-слоем для датасетов, системой фильтров, редактором дашбордов и несколькими прикладными аналитическими модулями.
 
-  После первого открытия нового терминала nvm будет подхватываться автоматически через ~/.bashrc — дополнительно активировать
-   не нужно.
+## Что уже есть
 
-  Сервер поднимется на http://localhost:5173. Для Wildberries-страниц нужен файл .env с DATABASE_URL.
+- `shared/ui` и `shared/styles` - базовый design system на Svelte 5 + Tailwind 4
+- `entities/dataset` + `server/*` - BFF-паттерн `DatasetQuery -> IR -> Provider`
+- `entities/filter` + `widgets/filters` - декларативные фильтры и их привязка к датасетам
+- `features/dashboard-edit` - редактор дашбордов на GridStack
+- `routes/dashboard/wildberries/*` - прикладные аналитические страницы поверх PostgreSQL
+- `server/alerts` - серверный scheduler и уведомления
 
+## Стек
 
-# sv
+- Svelte 5
+- SvelteKit 2
+- TypeScript
+- Tailwind CSS 4
+- ECharts
+- GridStack
+- PostgreSQL
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+## Быстрый старт
 
-## Creating a project
-
-If you're seeing this, you've probably already done this step. Congrats!
-
-```sh
-# create a new project in the current directory
-npx sv create
-
-# create a new project in my-app
-npx sv create my-app
+```bash
+pnpm install
+pnpm dev
 ```
 
-## Developing
+Dev-сервер поднимается на `http://localhost:5173`.
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+Для страниц с PostgreSQL-датасетами нужен `.env` с `DATABASE_URL`.
+Для EMIS-команд `db:*` нужна PostgreSQL-инстанция с доступным расширением `PostGIS`.
 
-```sh
-npm run dev
+## Основные команды
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+```bash
+pnpm dev
+pnpm db:status
+pnpm db:migrate
+pnpm db:seed
+pnpm db:reset
+pnpm check
+pnpm lint
+pnpm build
 ```
 
-## Building
+## Важные переменные окружения
 
-To create a production version of your app:
+- `DATABASE_URL` - PostgreSQL для `wildberries.*` датасетов и scheduler alerts
+- `ENABLE_ALERT_SCHEDULER` - выключение фонового scheduler (`false`)
+- `ALERT_SCHEDULE` - cron для alerts
+- `ALERT_TIMEZONE` - timezone для alerts
+- `WB_API_TOKEN` - токен для прокси `/api/wb/prices`
 
-```sh
-npm run build
-```
+## Основные маршруты
 
-You can preview the production build with `npm run preview`.
+- `/emis` - стартовая точка EMIS foundation
+- `/dashboard` - редактор дашборда
+- `/dashboard/demo` - демо аналитического UI
+- `/dashboard/analytics` - статическая demo-аналитика
+- `/dashboard/wildberries/office-day` - таблица офисных остатков
+- `/dashboard/wildberries/product-analytics` - аналитика товара
+- `/dashboard/wildberries/stock-alerts` - анализ рисков по складам
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+## Документация
+
+- `AGENTS.md` - быстрый навигатор по проекту и иерархии модулей
+- [Текущий анализ проекта](docs/current-project-analysis.md)
+- [Обновленное ТЗ EMIS v2](docs/emis_mve_tz_v_2.md)
+- [Implementation Spec EMIS v1](docs/emis_implementation_spec_v1.md)
+- `CLAUDE.md` - обзор архитектуры и ссылки на модульные docs
+- `src/lib/**/CLAUDE.md` - локальные инструкции по отдельным подсистемам
+
+## Замечание по структуре
+
+Сейчас это один SvelteKit-пакет, а не полноценное монорепо. При этом внутренняя архитектура уже достаточно модульная, чтобы использовать репозиторий как базу для EMIS и позже, при необходимости, разнести код на `apps/*` и `packages/*` без полного переписывания.
+
+## Локальные git-checkpoints
+
+Для EMIS принят рабочий ритм: после каждого завершенного этапа сохранять локальный git commit, даже если задача еще не дошла до финального релиза. Это помогает не терять устойчивые промежуточные состояния.

@@ -1,0 +1,76 @@
+INSERT INTO emis.objects (
+	id,
+	object_type_id,
+	name,
+	name_en,
+	country_code,
+	region,
+	status,
+	operator_name,
+	description,
+	attributes,
+	geom,
+	centroid,
+	source_note
+)
+VALUES
+	(
+		'00000000-0000-0000-0000-000000000101',
+		'11111111-1111-1111-1111-111111111111',
+		'Новороссийский порт',
+		'Novorossiysk Port',
+		'RU',
+		'Краснодарский край',
+		'active',
+		'Demo Operator',
+		'Демо-объект для начального слоя EMIS.',
+		'{"priority":"high"}'::jsonb,
+		ST_SetSRID(ST_GeomFromText('POINT(37.7685 44.7233)'), 4326),
+		ST_SetSRID(ST_GeomFromText('POINT(37.7685 44.7233)'), 4326),
+		'seed'
+	),
+	(
+		'00000000-0000-0000-0000-000000000102',
+		'22222222-2222-2222-2222-222222222222',
+		'Туапсинский НПЗ',
+		'Tuapse Refinery',
+		'RU',
+		'Краснодарский край',
+		'active',
+		'Demo Refining',
+		'Демо НПЗ для проверки связей объектов и новостей.',
+		'{"category":"refining"}'::jsonb,
+		ST_SetSRID(ST_GeomFromText('POINT(39.0728 44.1031)'), 4326),
+		ST_SetSRID(ST_GeomFromText('POINT(39.0728 44.1031)'), 4326),
+		'seed'
+	),
+	(
+		'00000000-0000-0000-0000-000000000103',
+		'33333333-3333-3333-3333-333333333333',
+		'LNG Терминал Алиага',
+		'Aliaga LNG Terminal',
+		'TR',
+		'Измир',
+		'active',
+		'Demo LNG',
+		'Демо LNG терминал для внешнего объекта.',
+		'{"category":"lng"}'::jsonb,
+		ST_SetSRID(ST_GeomFromText('POINT(26.9624 38.7996)'), 4326),
+		ST_SetSRID(ST_GeomFromText('POINT(26.9624 38.7996)'), 4326),
+		'seed'
+	)
+ON CONFLICT (id) DO UPDATE
+SET
+	object_type_id = EXCLUDED.object_type_id,
+	name = EXCLUDED.name,
+	name_en = EXCLUDED.name_en,
+	country_code = EXCLUDED.country_code,
+	region = EXCLUDED.region,
+	status = EXCLUDED.status,
+	operator_name = EXCLUDED.operator_name,
+	description = EXCLUDED.description,
+	attributes = EXCLUDED.attributes,
+	geom = EXCLUDED.geom,
+	centroid = EXCLUDED.centroid,
+	source_note = EXCLUDED.source_note,
+	updated_at = now();

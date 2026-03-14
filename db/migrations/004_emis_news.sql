@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS emis.news_items (
+	id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+	source_id UUID NOT NULL REFERENCES emis.sources (id),
+	source_item_id TEXT NULL,
+	url TEXT NULL,
+	title TEXT NOT NULL,
+	summary TEXT NULL,
+	body TEXT NULL,
+	language CHAR(2) NULL,
+	published_at TIMESTAMPTZ NOT NULL,
+	collected_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+	country_code CHAR(2) NULL REFERENCES emis.countries (code),
+	region TEXT NULL,
+	news_type TEXT NULL,
+	importance SMALLINT NULL CHECK (importance BETWEEN 1 AND 5),
+	geom geometry(Point, 4326) NULL,
+	is_manual BOOLEAN NOT NULL DEFAULT false,
+	meta JSONB NOT NULL DEFAULT '{}'::jsonb,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+	updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+	deleted_at TIMESTAMPTZ NULL
+);
