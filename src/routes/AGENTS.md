@@ -37,6 +37,7 @@
 Серверные endpoints:
 
 - `api/datasets/[id]/+server.ts`
+- `api/emis/*`
 - `api/wb/prices/+server.ts`
 
 Это ключевые входы в server-side сценарии.
@@ -52,7 +53,8 @@
 Если нужен API:
 
 1. `api/datasets/[id]/+server.ts`
-2. `api/wb/prices/+server.ts`
+2. `api/emis/AGENTS.md`
+3. `api/wb/prices/+server.ts`
 
 ## Что здесь активнее всего
 

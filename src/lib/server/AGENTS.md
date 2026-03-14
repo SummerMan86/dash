@@ -45,6 +45,20 @@ Routing layer для dataset definitions.
 
 Это уже не просто helper, а почти самостоятельная подсистема.
 
+### `emis/`
+
+Новый server-only namespace для EMIS.
+
+Содержит:
+
+- `repositories/`
+- `services/`
+- `queries/`
+- `sql/`
+- transport helpers и errors
+
+Это правильное место для EMIS backend-логики в текущей архитектуре проекта.
+
 ## Как читать server layer
 
 Если интересует BFF:
@@ -66,5 +80,5 @@ Routing layer для dataset definitions.
 ## На что обратить внимание
 
 - `server/` сейчас в основном ориентирован на read/query flows.
-- Для будущего EMIS write side здесь еще не сформирован и должен появляться отдельным namespace, а не размазываться по существующим файлам.
+- Для EMIS write side и query side должны развиваться в `server/emis`, а не размазываться по существующим BI/BFF модулям.
 - В `hooks.server.ts` есть boot-side effect для alerts scheduler; это важно помнить при изменении server lifecycle.

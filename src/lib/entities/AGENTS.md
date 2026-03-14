@@ -8,6 +8,7 @@
 Также есть:
 
 - `charts/` - набор chart presets и helpers
+- `emis-*` - новый набор сущностей и контрактов для EMIS
 - пустые заготовки `dashboard/` и `widget/`
 
 ## Что здесь важно
@@ -52,6 +53,25 @@
 
 Полезно для визуализации, но это не data contract слой.
 
+### `emis-*`
+
+Это новый доменный contract layer для EMIS.
+
+Здесь должны жить:
+
+- input/output types
+- DTO
+- geometry contracts
+- link contracts
+- Zod validation schemas
+
+Здесь не должно быть:
+
+- SQL
+- сервисов
+- Svelte components
+- route-specific logic
+
 ## Порядок чтения
 
 1. `dataset/CLAUDE.md`
@@ -65,3 +85,4 @@
 - `dataset/` и `filter/` фактически играют роль platform-модулей, а не прикладных доменов.
 - Для будущего EMIS именно эти два модуля сейчас важнее всего для read/query части.
 - `dashboard/` и `widget/` пока можно игнорировать: рабочего кода там нет.
+- для EMIS именно `entities/emis-*` теперь является правильной точкой расширения domain contracts.

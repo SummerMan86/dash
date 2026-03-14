@@ -132,3 +132,27 @@
   - интеграция с BI/read-models
 
 Идея простая: лучше больше небольших локальных опорных точек, чем один большой неразборчивый коммит в конце.
+
+## 9. EMIS Architecture Rules
+
+Для EMIS принимаем адаптированный FSD-подход, совместимый с текущим проектом:
+
+- `src/lib/entities/emis-*` - контракты, DTO, базовые доменные типы, Zod schemas
+- `src/lib/server/emis/*` - server-only namespace для repositories, services и queries
+- `src/routes/api/emis/*` - тонкий HTTP transport
+- `src/routes/emis/*` - UI/workspace слой
+
+### Что это означает на практике
+
+- FSD сохраняется для client/shared части проекта.
+- Server write/query logic не нужно насильно раскладывать по `features/` и `widgets/`.
+- `server/emis` считается допустимым и правильным отклонением от "чистого" FSD, потому что это server-only слой модульного монолита.
+
+### Правила разработки
+
+- не писать SQL в `routes/api/emis/*`
+- не писать HTTP-логику в `services/*`
+- не класть Zod-схемы EMIS в random route files, если это reusable contract
+- не смешивать CRUD и BI/dataset layer без причины
+- для аналитических read-models использовать отдельные queries или dataset layer
+- все изменения схемы EMIS только через `db/migrations/*`

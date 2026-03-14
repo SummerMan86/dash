@@ -30,6 +30,16 @@
 - `widgets/filters/`
 - `widgets/stock-alerts/`
 
+## Как сюда встраивается EMIS
+
+Для EMIS в `lib/` фиксируем такую модель:
+
+- `entities/emis-*` - contracts и domain DTO
+- `server/emis/*` - backend logic
+- будущие client-side feature/widgets EMIS появятся только когда начнется UI-слой workspace и карточек
+
+Это помогает не размывать границу между shared platform и новым доменом.
+
 ## Что здесь пока не стоит переоценивать
 
 Внутри `lib/` есть несколько пустых пространств, которые пока не дают архитектурной ценности сами по себе:
