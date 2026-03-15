@@ -2,8 +2,10 @@
 
 ## Module Documentation
 
-Each major module has its own `CLAUDE.md` with types, patterns, and conventions.
+Each major module has its own `CLAUDE.md` (or `AGENTS.md` for EMIS) with types, patterns, and conventions.
 Read these before scanning source files:
+
+### BI platform
 
 | Module | Doc |
 |--------|-----|
@@ -14,6 +16,15 @@ Read these before scanning source files:
 | Dashboard editor (GridStack) | `src/lib/features/dashboard-edit/CLAUDE.md` |
 | Widget catalog | `src/lib/widgets/CLAUDE.md` |
 | Shared UI & utilities | `src/lib/shared/CLAUDE.md` |
+
+### EMIS domain
+
+| Module | Doc |
+|--------|-----|
+| Docs navigation (TZ, spec, analysis) | `docs/AGENTS.md` |
+| Server architecture & dev rules | `src/lib/server/emis/AGENTS.md` |
+| Semantic backend modules (objects, news, links, dicts) | `src/lib/server/emis/modules/AGENTS.md` |
+| API transport layer rules | `src/routes/api/emis/AGENTS.md` |
 
 ## Stack
 
@@ -192,7 +203,7 @@ pnpm lint     # Lint code
 For PostgreSQL-backed datasets (e.g. `wildberries.*`) set:
 
 ```bash
-DATABASE_URL=postgresql://user:password@localhost:5432/dashboard
+DATABASE_URL=postgresql://postgres:SSYS@localhost:5435/dashboard
 ```
 
 ## DWH datamart and presets tables
@@ -219,7 +230,7 @@ CREATE TABLE mart.fact_product_office_day (
 CREATE INDEX ix_fact_office_day_dt ON mart.fact_product_office_day USING btree (dt);
 CREATE INDEX ix_fact_office_day_office ON mart.fact_product_office_day USING btree (office_id, dt);
 
-CREATE TABLE mart.fact_product_period (
+CREATE TABLE mart.fact_product_day (  -- NOTE: actual table name in DB (not fact_product_period)
 	nm_id int8 NOT NULL, -- НМ-ID товара
 	dt date NOT NULL, -- Дата снимка
 	loaded_at timestamptz NOT NULL, -- Дата загрузки ETL
@@ -256,11 +267,11 @@ CREATE TABLE mart.fact_product_period (
 	feedback_rating float8 NULL, -- Рейтинг отзывов
 	stocks_wb int4 NULL, -- Остатки на WB
 	stocks_mp int4 NULL, -- Остатки на MP (продавец)
-	CONSTRAINT fact_product_period_pkey PRIMARY KEY (nm_id, dt)
+	CONSTRAINT fact_product_day_pkey PRIMARY KEY (nm_id, dt)
 );
-CREATE INDEX ix_fact_period_brand_subject ON mart.fact_product_period USING btree (brand_name, subject_name);
-CREATE INDEX ix_fact_period_dt ON mart.fact_product_period USING btree (dt);
-CREATE INDEX ix_fact_period_priority ON mart.fact_product_period USING btree (dt, lost_orders_sum DESC NULLS LAST);
+CREATE INDEX ix_fact_period_brand_subject ON mart.fact_product_day USING btree (brand_name, subject_name);
+CREATE INDEX ix_fact_period_dt ON mart.fact_product_day USING btree (dt);
+CREATE INDEX ix_fact_period_priority ON mart.fact_product_day USING btree (dt, lost_orders_sum DESC NULLS LAST);
 
 -- Общие пресеты (на уровень seller)
 create table if not exists conf.calc_params_common (

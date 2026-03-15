@@ -33,6 +33,19 @@ Dev-сервер поднимается на `http://localhost:5173`.
 Для страниц с PostgreSQL-датасетами нужен `.env` с `DATABASE_URL`.
 Для EMIS-команд `db:*` нужна PostgreSQL-инстанция с доступным расширением `PostGIS`.
 
+### Локальный PostGIS в Docker
+
+В репозитории есть `docker-compose.yml` для dev-PostgreSQL с PostGIS.
+По умолчанию контейнер публикуется на `localhost:5435`, чтобы не конфликтовать с уже занятым `5432`.
+
+```bash
+docker compose up -d
+pnpm db:migrate
+pnpm db:seed
+```
+
+Реквизиты подключения лежат в `.env` и продублированы в `.env.example`.
+
 ## Основные команды
 
 ```bash
