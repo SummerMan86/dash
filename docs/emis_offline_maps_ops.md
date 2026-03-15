@@ -47,6 +47,8 @@ static/
 
 Текущая реализация рассчитана на **pre-extracted static bundle**. Если позже понадобится поддержка `MBTiles` через отдельный tile-serving runtime, это будет следующая итерация, а не обязательная часть текущего слоя.
 
+Отдельно: возможен и формат `PMTiles`, но для него production server должен корректно поддерживать HTTP Range Requests. Пока это не подтверждено в целевом deployment, `pre-extracted static bundle` остается более безопасным default.
+
 ## 3. Команды
 
 Проверить bundle:
@@ -125,6 +127,12 @@ EMIS_MAP_TILES_URL=/emis-map/offline/tiles/{z}/{x}/{y}.pbf
 - максимальный zoom;
 - формат tiles;
 - место хранения и обновления bundle.
+
+Если выбирается `PMTiles`:
+
+- проверьте поддержку `Range`/`206 Partial Content` на стороне production server;
+- убедитесь, что клиент не скачивает весь bundle целиком при первом открытии карты;
+- зафиксируйте это отдельным smoke test в deployment checklist.
 
 ## 7. Что ещё не входит в текущую реализацию
 

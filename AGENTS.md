@@ -36,6 +36,11 @@
 - `docs/emis_mve_tz_v_2.md` - source of truth по scope, data invariants и acceptance
 - `docs/emis_implementation_spec_v1.md` - source of truth по implementation decisions и очередности работ
 
+Текущие рабочие конвенции для EMIS:
+
+- по умолчанию используем плоский namespace `emis-*` для новых `entities/features/widgets`
+- новый EMIS UI пишем сразу на Svelte 5 runes
+
 ## 3. Главные зоны проекта
 
 - `docs/` - архитектурные и продуктовые документы

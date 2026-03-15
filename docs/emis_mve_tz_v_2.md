@@ -571,6 +571,7 @@ Read side отвечает за:
 - `centroid` является производным полем и должен вычисляться из `geom` на write side или в repair migration;
 - у новостей геометрия остается опциональной;
 - `object_types.geometry_kind` должен быть совместим с фактической геометрией объекта, а несовместимые комбинации должны отклоняться write side-валидацией.
+- для будущих distance/radius queries допускается использовать `geom::geography` на уровне query layer, например через `ST_DWithin(...)`; это не требует менять базовое MVE-решение по хранению геометрии.
 
 ### 15.10. Soft delete semantics и restore policy
 

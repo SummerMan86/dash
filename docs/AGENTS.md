@@ -30,6 +30,11 @@
 - audit/provenance/actor attribution входят в target contract
 - FK behavior и vocabulary boundaries должны быть зафиксированы явно
 
+Текущие implementation conventions для EMIS:
+
+- плоский namespace `emis-*` считается нормой для ранних этапов
+- для нового EMIS UI по умолчанию использовать Svelte 5 runes
+
 ## Рекомендуемый порядок
 
 1. `current-project-analysis.md`
