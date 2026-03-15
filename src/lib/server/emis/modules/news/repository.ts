@@ -36,12 +36,14 @@ export async function insertNews(input: CreateEmisNewsInput, client?: PoolClient
 			importance,
 			geom,
 			is_manual,
-			meta
+			meta,
+			source_origin
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8::timestamptz, $9, $10, $11, $12,
 			CASE WHEN $13::text IS NULL THEN NULL ELSE ${newsGeometrySql(13)} END,
 			$14,
-			$15::jsonb
+			$15::jsonb,
+			CASE WHEN $14 THEN 'manual' ELSE 'import' END
 		)
 		RETURNING id`,
 		[

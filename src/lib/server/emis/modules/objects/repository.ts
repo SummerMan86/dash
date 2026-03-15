@@ -40,12 +40,14 @@ export async function insertObject(
 			attributes,
 			geom,
 			centroid,
-			source_note
+			source_note,
+			source_origin
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb,
 			${geometrySql(11)},
 			ST_Centroid(${geometrySql(11)}),
-			$12
+			$12,
+			'manual'
 		)
 		RETURNING id`,
 		[

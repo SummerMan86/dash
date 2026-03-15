@@ -11,7 +11,8 @@ INSERT INTO emis.objects (
 	attributes,
 	geom,
 	centroid,
-	source_note
+	source_note,
+	source_origin
 )
 VALUES
 	(
@@ -27,6 +28,7 @@ VALUES
 		'{"priority":"high"}'::jsonb,
 		ST_SetSRID(ST_GeomFromText('POINT(37.7685 44.7233)'), 4326),
 		ST_SetSRID(ST_GeomFromText('POINT(37.7685 44.7233)'), 4326),
+		'seed',
 		'seed'
 	),
 	(
@@ -42,6 +44,7 @@ VALUES
 		'{"category":"refining"}'::jsonb,
 		ST_SetSRID(ST_GeomFromText('POINT(39.0728 44.1031)'), 4326),
 		ST_SetSRID(ST_GeomFromText('POINT(39.0728 44.1031)'), 4326),
+		'seed',
 		'seed'
 	),
 	(
@@ -57,6 +60,7 @@ VALUES
 		'{"category":"lng"}'::jsonb,
 		ST_SetSRID(ST_GeomFromText('POINT(26.9624 38.7996)'), 4326),
 		ST_SetSRID(ST_GeomFromText('POINT(26.9624 38.7996)'), 4326),
+		'seed',
 		'seed'
 	)
 ON CONFLICT (id) DO UPDATE
@@ -73,4 +77,5 @@ SET
 	geom = EXCLUDED.geom,
 	centroid = EXCLUDED.centroid,
 	source_note = EXCLUDED.source_note,
+	source_origin = EXCLUDED.source_origin,
 	updated_at = now();

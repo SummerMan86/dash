@@ -14,7 +14,8 @@ INSERT INTO emis.news_items (
 	importance,
 	geom,
 	is_manual,
-	meta
+	meta,
+	source_origin
 )
 VALUES
 	(
@@ -33,7 +34,8 @@ VALUES
 		3,
 		ST_SetSRID(ST_GeomFromText('POINT(37.7700 44.7240)'), 4326),
 		false,
-		'{"seed":true}'::jsonb
+		'{"seed":true}'::jsonb,
+		'seed'
 	),
 	(
 		'00000000-0000-0000-0000-000000000202',
@@ -51,7 +53,8 @@ VALUES
 		2,
 		ST_SetSRID(ST_GeomFromText('POINT(26.9620 38.7990)'), 4326),
 		false,
-		'{"seed":true}'::jsonb
+		'{"seed":true}'::jsonb,
+		'seed'
 	),
 	(
 		'00000000-0000-0000-0000-000000000203',
@@ -69,7 +72,8 @@ VALUES
 		4,
 		NULL,
 		true,
-		'{"seed":true,"manual":true}'::jsonb
+		'{"seed":true,"manual":true}'::jsonb,
+		'seed'
 	)
 ON CONFLICT (id) DO UPDATE
 SET
@@ -88,4 +92,5 @@ SET
 	geom = EXCLUDED.geom,
 	is_manual = EXCLUDED.is_manual,
 	meta = EXCLUDED.meta,
+	source_origin = EXCLUDED.source_origin,
 	updated_at = now();
