@@ -39,12 +39,11 @@ Dev-сервер поднимается на `http://localhost:5173`.
 По умолчанию контейнер публикуется на `localhost:5435`, чтобы не конфликтовать с уже занятым `5432`.
 
 ```bash
-docker compose up -d
-pnpm db:migrate
-pnpm db:seed
+pnpm db:init
 ```
 
 Реквизиты подключения лежат в `.env` и продублированы в `.env.example`.
+Для ручного управления контейнером есть `pnpm db:up`, `pnpm db:down` и `pnpm db:logs`.
 
 ## Основные команды
 
@@ -52,6 +51,9 @@ pnpm db:seed
 pnpm dev
 pnpm map:assets:status
 pnpm map:assets:install -- --source /abs/path/to/offline-bundle
+pnpm db:up
+pnpm db:init
+pnpm db:down
 pnpm db:status
 pnpm db:migrate
 pnpm db:seed
