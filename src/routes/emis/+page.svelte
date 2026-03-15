@@ -153,6 +153,12 @@
 							<span class="font-mono">EMIS_MAP_MODE=offline</span> - переключить runtime в локальный
 							basemap mode
 						</p>
+						<p>
+							<a class="underline underline-offset-4" href="/emis/pmtiles-spike"
+								>/emis/pmtiles-spike</a
+							>
+							- отдельный validation route для PMTiles без смены основного contract
+						</p>
 					</CardContent>
 				</Card>
 			</div>
@@ -195,7 +201,7 @@
 				<CardContent class="space-y-2 text-sm text-muted-foreground">
 					<p>1. Добавить popup/select flow поверх уже работающих map overlay endpoints.</p>
 					<p>2. Довести search endpoints и синхронизацию filters между list/map workspace.</p>
-					<p>3. Зафиксировать production bundle поставки и smoke checks без внешнего интернета.</p>
+					<p>3. Прогнать PMTiles validation wave, не ломая текущий offline bundle contract.</p>
 				</CardContent>
 			</Card>
 		</div>

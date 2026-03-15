@@ -19,6 +19,9 @@
 - `emis_session_bootstrap.md`
   Читать, если нужен совсем короткий checklist для старта новой сессии или нового агента.
 
+- `emis_pmtiles_validation_wave.md`
+  Читать, если нужно оценить PMTiles как отдельный validation-spike без немедленной смены текущего offline contract.
+
 ## Что считать source of truth для EMIS
 
 Если вопрос про продуктовые рамки, данные, ограничения и acceptance:

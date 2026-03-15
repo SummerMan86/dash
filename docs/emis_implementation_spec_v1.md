@@ -894,3 +894,4 @@ Gate завершения:
 - production server обязан корректно поддерживать HTTP Range Requests;
 - без Range support клиент может попытаться читать слишком большие куски файла или весь bundle целиком;
 - пока эта способность не проверена в целевом deployment, безопасным default остается pre-extracted static bundle.
+- до смены основного contract `PMTiles` нужно валидировать отдельной spike-wave, не подменяя текущий `/emis` runtime semantics.

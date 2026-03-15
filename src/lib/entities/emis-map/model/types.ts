@@ -93,3 +93,24 @@ export type EmisMapNewsQueryInput = {
 	objectId?: string;
 	limit?: number;
 };
+
+export type EmisPmtilesFileInfo = {
+	name: string;
+	sizeBytes: number;
+	url: string;
+};
+
+export type EmisPmtilesSpikeStatus = {
+	assetRootUrl: string;
+	selectedPmtilesUrl: string | null;
+	selectedPmtilesName: string | null;
+	selectedSpriteUrl: string;
+	selectedGlyphsUrl: string;
+	localPmtilesFiles: EmisPmtilesFileInfo[];
+	spritesReady: boolean;
+	fontsReady: boolean;
+	manifestReady: boolean;
+	offlineCandidateReady: boolean;
+	warnings: string[];
+	checkedAt: string;
+};

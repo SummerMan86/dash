@@ -49,6 +49,12 @@ static/
 
 Отдельно: возможен и формат `PMTiles`, но для него production server должен корректно поддерживать HTTP Range Requests. Пока это не подтверждено в целевом deployment, `pre-extracted static bundle` остается более безопасным default.
 
+Для текущего репозитория это означает:
+
+- `PMTiles` пока живет как отдельная validation wave;
+- основной runtime в `/emis` не меняет contract до прохождения spike;
+- для локального техспайка использовать маршрут `/emis/pmtiles-spike` и документ [EMIS PMTiles Validation Wave](./emis_pmtiles_validation_wave.md).
+
 ## 3. Команды
 
 Проверить bundle:
@@ -133,6 +139,7 @@ EMIS_MAP_TILES_URL=/emis-map/offline/tiles/{z}/{x}/{y}.pbf
 - проверьте поддержку `Range`/`206 Partial Content` на стороне production server;
 - убедитесь, что клиент не скачивает весь bundle целиком при первом открытии карты;
 - зафиксируйте это отдельным smoke test в deployment checklist.
+- не считайте remote PMTiles URL достаточным доказательством offline-ready semantics.
 
 ## 7. Что ещё не входит в текущую реализацию
 

@@ -11,7 +11,9 @@ export type {
 	EmisMapObjectFeatureCollection,
 	EmisMapNewsFeatureCollection,
 	EmisMapObjectsQueryInput,
-	EmisMapNewsQueryInput
+	EmisMapNewsQueryInput,
+	EmisPmtilesFileInfo,
+	EmisPmtilesSpikeStatus
 } from './model/types';
 export {
 	mapBboxSchema,
