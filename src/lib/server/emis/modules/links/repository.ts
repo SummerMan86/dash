@@ -2,7 +2,7 @@ import type { PoolClient } from 'pg';
 
 import type { EmisObjectLinkInput, UpdateNewsObjectLinkInput } from '$entities/emis-link';
 
-import { getDb } from '../sql/db';
+import { getDb } from '../../infra/db';
 
 export async function upsertNewsObjectLinks(
 	newsId: string,

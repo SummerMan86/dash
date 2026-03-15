@@ -1,14 +1,10 @@
 import type { AttachNewsObjectsSchemaInput, UpdateNewsObjectLinkInput } from '$entities/emis-link';
 
-import { EmisError } from '../errors';
-import {
-	upsertNewsObjectLinks,
-	updateNewsObjectLink,
-	deleteNewsObjectLink
-} from '../repositories/linkRepository';
-import { newsExists } from '../repositories/newsRepository';
-import { objectExists } from '../repositories/objectRepository';
-import { withTransaction } from '../sql/db';
+import { EmisError } from '../../infra/errors';
+import { withTransaction } from '../../infra/db';
+import { newsExists } from '../news/repository';
+import { objectExists } from '../objects/repository';
+import { upsertNewsObjectLinks, updateNewsObjectLink, deleteNewsObjectLink } from './repository';
 
 export async function attachNewsObjectsService(
 	newsId: string,

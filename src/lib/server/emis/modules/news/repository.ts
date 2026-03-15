@@ -2,7 +2,7 @@ import type { PoolClient } from 'pg';
 
 import type { CreateEmisNewsInput, UpdateEmisNewsInput } from '$entities/emis-news';
 
-import { getDb } from '../sql/db';
+import { getDb } from '../../infra/db';
 
 function newsGeometrySql(paramIndex: number): string {
 	return `ST_SetSRID(ST_GeomFromGeoJSON($${paramIndex}), 4326)`;

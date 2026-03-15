@@ -2,16 +2,11 @@ import type { PoolClient } from 'pg';
 
 import type { CreateEmisObjectInput, UpdateEmisObjectInput } from '$entities/emis-object';
 
-import { EmisError } from '../errors';
-import {
-	objectExists,
-	insertObject,
-	softDeleteObject,
-	updateObject
-} from '../repositories/objectRepository';
-import { countryExists, objectTypeExists } from '../repositories/dictionaryRepository';
-import { getObjectDetailQuery } from '../queries/objectQueries';
-import { withTransaction } from '../sql/db';
+import { EmisError } from '../../infra/errors';
+import { withTransaction } from '../../infra/db';
+import { countryExists, objectTypeExists } from '../dictionaries/repository';
+import { getObjectDetailQuery } from './queries';
+import { objectExists, insertObject, softDeleteObject, updateObject } from './repository';
 
 async function validateObjectReferences(
 	input: { objectTypeId?: string; countryCode?: string | null },

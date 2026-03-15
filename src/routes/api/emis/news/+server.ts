@@ -1,10 +1,10 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 
 import { createEmisNewsSchema, listEmisNewsQuerySchema } from '$entities/emis-news';
-import { EmisError } from '$lib/server/emis/errors';
-import { handleEmisRoute, parseIntParam, parseJsonBody } from '$lib/server/emis/http';
-import { listNewsQuery } from '$lib/server/emis/queries/newsQueries';
-import { createNewsService } from '$lib/server/emis/services/newsService';
+import { EmisError } from '$lib/server/emis/infra/errors';
+import { handleEmisRoute, parseIntParam, parseJsonBody } from '$lib/server/emis/infra/http';
+import { listNewsQuery } from '$lib/server/emis/modules/news/queries';
+import { createNewsService } from '$lib/server/emis/modules/news/service';
 
 function parseListQuery(url: URL) {
 	const parsed = listEmisNewsQuerySchema.safeParse({

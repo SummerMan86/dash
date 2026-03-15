@@ -2,7 +2,7 @@ import type { PoolClient } from 'pg';
 
 import type { CreateEmisObjectInput, UpdateEmisObjectInput } from '$entities/emis-object';
 
-import { getDb } from '../sql/db';
+import { getDb } from '../../infra/db';
 
 function jsonOrNull(value: Record<string, unknown> | undefined): string {
 	return JSON.stringify(value ?? {});

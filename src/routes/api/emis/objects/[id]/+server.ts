@@ -1,13 +1,13 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 
 import { updateEmisObjectSchema } from '$entities/emis-object';
-import { EmisError } from '$lib/server/emis/errors';
-import { handleEmisRoute, parseJsonBody, requireUuid } from '$lib/server/emis/http';
-import { getObjectDetailQuery } from '$lib/server/emis/queries/objectQueries';
+import { EmisError } from '$lib/server/emis/infra/errors';
+import { handleEmisRoute, parseJsonBody, requireUuid } from '$lib/server/emis/infra/http';
+import { getObjectDetailQuery } from '$lib/server/emis/modules/objects/queries';
 import {
 	softDeleteObjectService,
 	updateObjectService
-} from '$lib/server/emis/services/objectService';
+} from '$lib/server/emis/modules/objects/service';
 
 export const GET: RequestHandler = handleEmisRoute(async ({ params }) => {
 	const id = requireUuid(params.id, 'object id');

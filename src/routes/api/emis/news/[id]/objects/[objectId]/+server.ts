@@ -1,11 +1,11 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 
 import { updateNewsObjectLinkSchema } from '$entities/emis-link';
-import { handleEmisRoute, parseJsonBody, requireUuid } from '$lib/server/emis/http';
+import { handleEmisRoute, parseJsonBody, requireUuid } from '$lib/server/emis/infra/http';
 import {
 	deleteNewsObjectLinkService,
 	updateNewsObjectLinkService
-} from '$lib/server/emis/services/linkService';
+} from '$lib/server/emis/modules/links/service';
 
 export const PATCH: RequestHandler = handleEmisRoute(async ({ params, request }) => {
 	const newsId = requireUuid(params.id, 'news id');

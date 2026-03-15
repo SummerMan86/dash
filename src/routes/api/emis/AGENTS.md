@@ -18,6 +18,6 @@
 
 ## Направление зависимостей
 
-`routes/api/emis/* -> $entities/emis-* + $lib/server/emis/*`
+`routes/api/emis/* -> $entities/emis-* + $lib/server/emis/infra/* + $lib/server/emis/modules/*`
 
 Это должен быть тонкий слой над server namespace.

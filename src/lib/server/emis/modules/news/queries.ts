@@ -5,7 +5,7 @@ import type {
 	ListEmisNewsInput
 } from '$entities/emis-news';
 
-import { getDb } from '../sql/db';
+import { getDb } from '../../infra/db';
 
 function clampPageSize(value: number | undefined): number {
 	return Math.max(1, Math.min(100, Math.trunc(value ?? 50)));

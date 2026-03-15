@@ -1,10 +1,10 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 
 import { createEmisObjectSchema, listEmisObjectsQuerySchema } from '$entities/emis-object';
-import { EmisError } from '$lib/server/emis/errors';
-import { handleEmisRoute, parseIntParam, parseJsonBody } from '$lib/server/emis/http';
-import { listObjectsQuery } from '$lib/server/emis/queries/objectQueries';
-import { createObjectService } from '$lib/server/emis/services/objectService';
+import { EmisError } from '$lib/server/emis/infra/errors';
+import { handleEmisRoute, parseIntParam, parseJsonBody } from '$lib/server/emis/infra/http';
+import { listObjectsQuery } from '$lib/server/emis/modules/objects/queries';
+import { createObjectService } from '$lib/server/emis/modules/objects/service';
 
 function parseListQuery(url: URL) {
 	const parsed = listEmisObjectsQuerySchema.safeParse({

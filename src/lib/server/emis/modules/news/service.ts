@@ -2,11 +2,11 @@ import type { PoolClient } from 'pg';
 
 import type { CreateEmisNewsInput, UpdateEmisNewsInput } from '$entities/emis-news';
 
-import { EmisError } from '../errors';
-import { countryExists, sourceExists } from '../repositories/dictionaryRepository';
-import { insertNews, newsExists, softDeleteNews, updateNews } from '../repositories/newsRepository';
-import { getNewsDetailQuery } from '../queries/newsQueries';
-import { withTransaction } from '../sql/db';
+import { EmisError } from '../../infra/errors';
+import { withTransaction } from '../../infra/db';
+import { countryExists, sourceExists } from '../dictionaries/repository';
+import { getNewsDetailQuery } from './queries';
+import { insertNews, newsExists, softDeleteNews, updateNews } from './repository';
 
 async function validateNewsReferences(
 	input: { sourceId?: string; countryCode?: string | null },

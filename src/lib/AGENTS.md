@@ -35,7 +35,8 @@
 Для EMIS в `lib/` фиксируем такую модель:
 
 - `entities/emis-*` - contracts и domain DTO
-- `server/emis/*` - backend logic
+- `server/emis/infra/*` - backend infrastructure
+- `server/emis/modules/*` - semantic backend modules
 - будущие client-side feature/widgets EMIS появятся только когда начнется UI-слой workspace и карточек
 
 Это помогает не размывать границу между shared platform и новым доменом.

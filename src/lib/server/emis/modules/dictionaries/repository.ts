@@ -2,7 +2,7 @@ import type { PoolClient } from 'pg';
 
 import type { EmisCountry, EmisObjectType, EmisSource } from '$entities/emis-dictionary';
 
-import { getDb } from '../sql/db';
+import { getDb } from '../../infra/db';
 
 export async function listCountries(client?: PoolClient): Promise<EmisCountry[]> {
 	const db = getDb(client);

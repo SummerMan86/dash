@@ -51,10 +51,8 @@ Routing layer для dataset definitions.
 
 Содержит:
 
-- `repositories/`
-- `services/`
-- `queries/`
-- `sql/`
+- `infra/`
+- `modules/`
 - transport helpers и errors
 
 Это правильное место для EMIS backend-логики в текущей архитектуре проекта.

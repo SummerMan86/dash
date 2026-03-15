@@ -103,43 +103,41 @@ src/
 - HTTP;
 - Svelte components.
 
-### 5.2. `server/emis/repositories`
+### 5.2. `server/emis/infra`
 
-Отвечают за:
+Общий backend infrastructure layer:
 
-- SQL/ORM-запросы;
-- загрузку и запись сущностей;
-- работу с транзакциями;
-- использование PostGIS-функций на уровне доступа к данным.
+- доступ к БД и транзакциям;
+- типовые EMIS errors;
+- HTTP helpers для API routes;
+- технические зависимости, которые не относятся к конкретному домену.
 
-### 5.3. `server/emis/services`
+### 5.3. `server/emis/modules/*`
 
-Отвечают за:
+Семантические backend-модули по доменам:
 
-- бизнес-правила;
-- сценарии create/update/delete;
-- проверку связности данных;
-- orchestration между repositories.
+- `objects`
+- `news`
+- `links`
+- `dictionaries`
+- позже `geo`, `search`, `read-models`
 
-### 5.4. `server/emis/queries`
+Внутри каждого модуля допускаются свои `repository/service/queries`, если это действительно нужно домену.
 
-Отдельный read side для:
+Такой подход позволяет:
 
-- списков;
-- карточек;
-- map layers;
-- search;
-- BI/read-model endpoints.
+- не смешивать unrelated домены;
+- держать read/write логику рядом с предметной областью;
+- не раздувать глобальные папки `repositories/` и `services/`;
+- сохранить monolith-friendly структуру без лишнего microservice-style дробления.
 
-Это позволит не смешивать CRUD и аналитические выборки.
-
-### 5.5. `routes/api/emis/*`
+### 5.4. `routes/api/emis/*`
 
 Тонкий transport layer:
 
 - читает request;
 - валидирует вход;
-- вызывает service/query слой;
+- вызывает нужный модуль или infra helper;
 - возвращает DTO;
 - не содержит бизнес-логики.
 

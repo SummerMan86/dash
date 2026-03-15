@@ -138,7 +138,8 @@
 Для EMIS принимаем адаптированный FSD-подход, совместимый с текущим проектом:
 
 - `src/lib/entities/emis-*` - контракты, DTO, базовые доменные типы, Zod schemas
-- `src/lib/server/emis/*` - server-only namespace для repositories, services и queries
+- `src/lib/server/emis/infra/*` - server infrastructure
+- `src/lib/server/emis/modules/*` - семантические backend-модули
 - `src/routes/api/emis/*` - тонкий HTTP transport
 - `src/routes/emis/*` - UI/workspace слой
 
