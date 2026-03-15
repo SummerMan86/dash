@@ -37,6 +37,10 @@ function getTenantId(request: Request): string {
 	return request.headers.get('x-tenant-id')?.trim() || 'demo';
 }
 
+function isPostgresDataset(datasetId: string): boolean {
+	return datasetId.startsWith('wildberries.') || datasetId.startsWith('emis.');
+}
+
 export const POST: RequestHandler = async ({ params, request }) => {
 	const datasetId = params.id;
 	if (!datasetId) return json({ error: 'Missing dataset id' }, { status: 400 });
@@ -69,15 +73,15 @@ export const POST: RequestHandler = async ({ params, request }) => {
 	}
 
 	try {
-		const provider = datasetId.startsWith('wildberries.') ? postgresProvider : mockProvider;
+		const provider = isPostgresDataset(datasetId) ? postgresProvider : mockProvider;
 		const response = await provider.execute(ir, ctx);
 		// Echo requestId if present (helps UI dedup/tracing).
 		if (query.requestId) response.requestId = query.requestId;
 		return json(response);
 	} catch (e: unknown) {
 		const message = e instanceof Error ? e.message : '';
-		if (datasetId.startsWith('wildberries.') && message.includes('DATABASE_URL')) {
-			return json({ error: 'DATABASE_URL is not set (required for wildberries datasets)' }, { status: 500 });
+		if (isPostgresDataset(datasetId) && message.includes('DATABASE_URL')) {
+			return json({ error: 'DATABASE_URL is not set (required for postgres-backed datasets)' }, { status: 500 });
 		}
 		return json({ error: 'Failed to execute dataset query' }, { status: 500 });
 	}

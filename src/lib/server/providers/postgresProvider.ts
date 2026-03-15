@@ -3,7 +3,12 @@ import type { DatasetIr, IrExpr, IrOrderBy, IrSelectItem } from '$entities/datas
 import type { Provider, ServerContext } from '$entities/dataset';
 import { CONTRACT_VERSION } from '$entities/dataset';
 
+import pg from 'pg';
 import { getPgPool } from '$lib/server/db/pg';
+
+// pg returns bigint (OID 20) as string by default to avoid precision loss.
+// Our dashboard metrics fit safely in JS number (< 2^53), so parse as float.
+pg.types.setTypeParser(20, (val: string) => parseFloat(val));
 
 type ColumnType = DatasetField['type'];
 
@@ -36,7 +41,7 @@ const DATASETS: Record<string, DatasetSqlMapping> = {
 		}
 	},
 	'wildberries.fact_product_period': {
-		relation: { schema: 'mart', table: 'fact_product_period' },
+		relation: { schema: 'mart', table: 'fact_product_day' },
 		columns: {
 			nm_id: 'number',
 			dt: 'date',
@@ -74,6 +79,69 @@ const DATASETS: Record<string, DatasetSqlMapping> = {
 			feedback_rating: 'number',
 			stocks_wb: 'number',
 			stocks_mp: 'number'
+		}
+	},
+	'emis.news_flat': {
+		relation: { schema: 'mart', table: 'emis_news_flat' },
+		columns: {
+			id: 'string',
+			title: 'string',
+			summary: 'string',
+			source_code: 'string',
+			source_name: 'string',
+			published_at: 'datetime',
+			country_code: 'string',
+			region: 'string',
+			news_type: 'string',
+			importance: 'number',
+			is_manual: 'boolean',
+			source_origin: 'string',
+			has_geometry: 'boolean',
+			related_objects_count: 'number'
+		}
+	},
+	'emis.object_news_facts': {
+		relation: { schema: 'mart', table: 'emis_object_news_facts' },
+		columns: {
+			link_id: 'string',
+			news_id: 'string',
+			news_title: 'string',
+			object_id: 'string',
+			object_name: 'string',
+			object_type_code: 'string',
+			object_type_name: 'string',
+			object_country_code: 'string',
+			published_at: 'datetime',
+			source_code: 'string',
+			source_name: 'string',
+			link_type: 'string',
+			is_primary: 'boolean',
+			confidence: 'number',
+			news_source_origin: 'string',
+			object_source_origin: 'string'
+		}
+	},
+	'emis.objects_dim': {
+		relation: { schema: 'mart', table: 'emis_objects_dim' },
+		columns: {
+			id: 'string',
+			external_id: 'string',
+			name: 'string',
+			name_en: 'string',
+			object_type_code: 'string',
+			object_type_name: 'string',
+			country_code: 'string',
+			country_name_ru: 'string',
+			country_name_en: 'string',
+			region: 'string',
+			status: 'string',
+			operator_name: 'string',
+			source_origin: 'string',
+			geometry_type: 'string',
+			centroid_lon: 'number',
+			centroid_lat: 'number',
+			created_at: 'datetime',
+			updated_at: 'datetime'
 		}
 	}
 };
@@ -259,4 +327,3 @@ export const postgresProvider: Provider = {
 		};
 	}
 };
-
