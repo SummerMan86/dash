@@ -499,6 +499,9 @@ Read side отвечает за:
 - B-tree по `news_object_links(object_id)`
 - B-tree по `news_object_links(news_id)`
 - полнотекстовый индекс по `news_items(title, summary, body)` через PostgreSQL FTS
+- active partial unique index по `news_items(source_id, source_item_id)`, где `source_item_id IS NOT NULL AND deleted_at IS NULL`
+- active partial unique index по `news_items(source_id, url)`, где `source_item_id IS NULL AND url IS NOT NULL AND deleted_at IS NULL`
+- active partial unique index по `objects(external_id)`, где `external_id IS NOT NULL AND deleted_at IS NULL`
 
 ### 15.8. BI / analytical views
 
@@ -556,6 +559,7 @@ Read side отвечает за:
 - для новостей приоритетным внешним ключом идентичности считается `source_id + source_item_id`;
 - если `source_item_id` отсутствует, fallback-ключом может быть `source_id + url`;
 - если и `source_item_id`, и `url` отсутствуют, допустима ручная загрузка потенциальных дублей без автоматического слияния;
+- правила идентичности должны быть продублированы в БД через active unique constraints / partial unique indexes, а не оставаться только на уровне prose;
 - для связей новостей и объектов каноническая уникальность задается ограничением `UNIQUE(news_id, object_id, link_type)`.
 
 #### Гео-правила
@@ -567,6 +571,58 @@ Read side отвечает за:
 - `centroid` является производным полем и должен вычисляться из `geom` на write side или в repair migration;
 - у новостей геометрия остается опциональной;
 - `object_types.geometry_kind` должен быть совместим с фактической геометрией объекта, а несовместимые комбинации должны отклоняться write side-валидацией.
+
+### 15.10. Soft delete semantics и restore policy
+
+Для MVE soft delete считается частью основного data contract, а не локальной деталью реализации.
+
+Правила:
+
+- все operational list/query/detail endpoints по умолчанию работают только с активными записями, то есть `deleted_at IS NULL`;
+- soft-deleted записи не должны попадать в стандартные list pages, search endpoints, map endpoints и detail responses публичного MVE-контура;
+- BI views/read models в MVE по умолчанию тоже исключают soft-deleted записи;
+- если для отдельного административного сценария нужен доступ к soft-deleted данным, это должен быть явный отдельный контракт, а не скрытый side effect базовых endpoints;
+- active unique constraints должны действовать только для записей с `deleted_at IS NULL`, чтобы policy пере-создания после soft delete была определена однозначно;
+- restore soft-deleted сущности допускается только если это не нарушает active unique constraints; при конфликте restore требует ручного merge/resolution.
+
+### 15.11. Минимальный audit trail и provenance contract
+
+Требования audit/actor/provenance должны отражаться не только в эксплуатации, но и в модели данных.
+
+Минимум для MVE:
+
+- в `objects`, `news_items`, `news_object_links` должны существовать `created_by`, `updated_by`, `deleted_by` как nullable actor references, не зависящие жестко от конкретной auth-системы;
+- в `objects` и `news_items` должно существовать поле `source_origin` со значениями из controlled vocabulary: `seed`, `manual`, `import`, `ingestion`;
+- должен существовать append-only `audit_log`, фиксирующий:
+  - `entity_type`
+  - `entity_id`
+  - `action`
+  - `actor_id`
+  - `occurred_at`
+  - `payload JSONB`
+- отсутствие полноценной RBAC/auth-модели не отменяет requirement на actor attribution и provenance.
+
+### 15.12. Referential integrity и controlled vocabularies
+
+Для первой версии фиксируются следующие базовые решения.
+
+#### FK behavior
+
+- `objects.object_type_id -> object_types(id)` использует `ON DELETE RESTRICT`;
+- `objects.country_code -> countries(code)` использует `ON DELETE RESTRICT`;
+- `news_items.source_id -> sources(id)` использует `ON DELETE RESTRICT`;
+- `news_items.country_code -> countries(code)` использует `ON DELETE RESTRICT`;
+- `news_object_links.news_id -> news_items(id)` использует `ON DELETE CASCADE` для hard-delete cleanup;
+- `news_object_links.object_id -> objects(id)` использует `ON DELETE CASCADE` для hard-delete cleanup.
+
+#### Controlled vocabularies
+
+- `countries`, `object_types`, `sources` - словари в БД;
+- `status`, `kind`, `geometry_kind`, `link_type` - controlled vocabularies, которые должны быть ограничены и на уровне приложения, и на уровне БД;
+- `news_type` в MVE не считается свободным пользовательским текстом: это controlled nullable vocabulary, согласованная в контрактах и миграциях;
+- граница такая:
+  - часто меняемые операторские справочники живут в БД;
+  - маленькие стабильные системные vocabularies живут в коде и дублируются DB constraints/checks.
 
 ## 16. Функциональные требования
 
@@ -623,7 +679,7 @@ Read side отвечает за:
 Система должна обеспечивать:
 
 - подготовленные SQL views/read models;
-- минимум один аналитический экран или встраиваемый аналитический блок поверх данных EMIS;
+- как минимум один EMIS dataset/view, подключенный к текущему BI/BFF-контуру и отображаемый в UI;
 - возможность подключать read-модели EMIS к текущему BI-контурy без перепроектирования БД.
 
 ### 16.6. Административные и эксплуатационные функции
@@ -696,7 +752,7 @@ Read side отвечает за:
 
 Это упростит coexistence с текущими BI endpoints.
 
-### 18.1. Write API
+### 18.1. CRUD API
 
 #### Объекты
 
@@ -726,7 +782,7 @@ Read side отвечает за:
 - `GET /api/emis/dictionaries/sources`
 - `GET /api/emis/dictionaries/countries`
 
-### 18.2. Read / map API
+### 18.2. Search / Query API
 
 Рекомендуемые endpoints:
 
@@ -738,12 +794,9 @@ Read side отвечает за:
 
 Допускается, что часть аналитических read-моделей будет выдаваться через dataset-style endpoints, если это согласуется с текущим платформенным слоем.
 
-### 18.3. GeoJSON
+### 18.3. GeoJSON format contract
 
-Для карты желательно выдавать GeoJSON:
-
-- `GET /api/emis/map/objects`
-- `GET /api/emis/map/news`
+Map endpoints из query API должны возвращать GeoJSON FeatureCollection с документированным набором `properties`, а не произвольный map-provider-specific payload.
 
 ### 18.4. Конвенции API и query semantics
 
@@ -964,6 +1017,7 @@ Post-MVE wave для карт:
 - есть SQL views/read models для BI;
 - schema и API documentированы;
 - приложение запускается локально через Docker Compose;
+- есть хотя бы один EMIS dataset/view, подключенный к текущему BI/BFF-контуру и отображаемый в UI;
 - EMIS может сосуществовать с текущим BI-контуром без конфликтов namespace и контрактов.
 
 ## 23. Пакет рабочих документов после утверждения

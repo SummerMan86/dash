@@ -13,6 +13,23 @@
 - `emis_implementation_spec_v1.md`
   Читать, если нужен уже рабочий план внедрения EMIS в текущий репозиторий: структура папок, миграции, API, этапы и DoD.
 
+## Что считать source of truth для EMIS
+
+Если вопрос про продуктовые рамки, данные, ограничения и acceptance:
+
+- главным документом считать `emis_mve_tz_v_2.md`
+
+Если вопрос про порядок реализации и технические решения внутри текущего репозитория:
+
+- главным документом считать `emis_implementation_spec_v1.md`
+
+Для обоих документов считать обязательными следующие инварианты:
+
+- canonical identity должна доходить до DB constraints
+- soft delete semantics не должны трактоваться по-разному между API, views и BI
+- audit/provenance/actor attribution входят в target contract
+- FK behavior и vocabulary boundaries должны быть зафиксированы явно
+
 ## Рекомендуемый порядок
 
 1. `current-project-analysis.md`

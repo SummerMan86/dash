@@ -31,6 +31,11 @@
 6. локальный `AGENTS.md` в нужной папке
 7. локальный `CLAUDE.md`, если он есть
 
+Для EMIS это не просто справочные документы:
+
+- `docs/emis_mve_tz_v_2.md` - source of truth по scope, data invariants и acceptance
+- `docs/emis_implementation_spec_v1.md` - source of truth по implementation decisions и очередности работ
+
 ## 3. Главные зоны проекта
 
 - `docs/` - архитектурные и продуктовые документы
@@ -157,3 +162,12 @@
 - не смешивать CRUD и BI/dataset layer без причины
 - для аналитических read-models использовать отдельные queries или dataset layer
 - все изменения схемы EMIS только через `db/migrations/*`
+
+### Что теперь считается обязательным EMIS contract
+
+Для следующих диалогов и реализаций считать не опциональными, а обязательными:
+
+- canonical identity rules должны быть продублированы DB constraints / partial unique indexes
+- soft delete semantics должны быть едиными для API, views и recreate/restore сценариев
+- audit trail, actor attribution и provenance не считаются "потом", а входят в target contract
+- FK behavior и vocabulary boundaries должны фиксироваться явно, а не оставаться implicit
