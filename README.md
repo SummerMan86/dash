@@ -37,6 +37,8 @@ Dev-сервер поднимается на `http://localhost:5173`.
 
 ```bash
 pnpm dev
+pnpm map:assets:status
+pnpm map:assets:install -- --source /abs/path/to/offline-bundle
 pnpm db:status
 pnpm db:migrate
 pnpm db:seed
@@ -49,6 +51,12 @@ pnpm build
 ## Важные переменные окружения
 
 - `DATABASE_URL` - PostgreSQL для `wildberries.*` датасетов и scheduler alerts
+- `EMIS_MAP_MODE` - режим basemap для EMIS (`online` или `offline`)
+- `EMIS_MAP_STYLE_URL` - online style URL или общий fallback style URL
+- `EMIS_MAP_OFFLINE_STYLE_URL` - локальный style URL для offline bundle
+- `EMIS_MAP_TILES_URL` - tiles URL template для offline diagnostics/runtime
+- `EMIS_MAP_INITIAL_CENTER` - стартовый центр карты в формате `lon,lat`
+- `EMIS_MAP_INITIAL_ZOOM` - стартовый zoom EMIS-карты
 - `ENABLE_ALERT_SCHEDULER` - выключение фонового scheduler (`false`)
 - `ALERT_SCHEDULE` - cron для alerts
 - `ALERT_TIMEZONE` - timezone для alerts
@@ -70,6 +78,7 @@ pnpm build
 - [Текущий анализ проекта](docs/current-project-analysis.md)
 - [Обновленное ТЗ EMIS v2](docs/emis_mve_tz_v_2.md)
 - [Implementation Spec EMIS v1](docs/emis_implementation_spec_v1.md)
+- [Offline Maps Ops Guide](docs/emis_offline_maps_ops.md)
 - `CLAUDE.md` - обзор архитектуры и ссылки на модульные docs
 - `src/lib/**/CLAUDE.md` - локальные инструкции по отдельным подсистемам
 

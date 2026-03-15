@@ -25,6 +25,15 @@
 - `ScenarioParams.svelte`
 - `StatusBadge.svelte`
 
+### `emis-map/`
+
+Новый EMIS widget-модуль для map runtime и дальнейших geospatial сценариев:
+
+- `EmisMap.svelte`
+- чтение server-resolved `mapConfig`
+- online/offline basemap mode
+- controlled fallback при отсутствии локального bundle
+
 ## Что здесь пока неактивно
 
 Папки:
@@ -41,6 +50,7 @@
 1. `CLAUDE.md`
 2. `filters/*`
 3. `stock-alerts/*`
+4. `emis-map/*`
 
 Если нужно понять общую фильтрацию страниц, читай widgets вместе с:
 

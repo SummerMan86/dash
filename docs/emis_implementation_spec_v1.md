@@ -367,6 +367,7 @@ API route -> validate -> service -> repository -> DB
 
 ### 9.3. Query endpoints
 
+- `GET /api/emis/map-config`
 - `GET /api/emis/search/objects`
 - `GET /api/emis/search/news`
 - `GET /api/emis/map/objects`
@@ -521,8 +522,19 @@ src/lib/widgets/emis-map/
 
 - редактирование геометрии на карте;
 - clustering with advanced controls;
-- offline tiles;
 - time slider.
+
+### 11.4. Offline basemap как отдельная post-MVE wave
+
+Offline basemap больше не считается "запрещенным направлением", но и не входит в критический путь первой рабочей поставки.
+
+Фиксируем такой подход:
+
+- объекты и новости EMIS по-прежнему отдаются локально из нашей БД и API;
+- offline basemap реализуется как отдельный runtime layer поверх `MapLibre GL JS`;
+- карта должна уметь переключаться между `online` и `offline` mode через server-resolved config;
+- offline bundle размещается в локальной статике проекта и ставится отдельной install-командой;
+- при отсутствии полного bundle карта должна уходить в controlled fallback, а не ломать весь workspace.
 
 ## 12. BI / analytical integration
 
@@ -745,6 +757,7 @@ Gate завершения:
 - Wave C: `/emis` workspace v1 с картой, фильтрами и списком
 - Wave D: catalogs/detail pages + manual create/edit flows + audit hook scaffold
 - Wave E: BI wiring + smoke tests + production-shape hardening
+- Wave F: offline basemap bundle + local static delivery + no-internet smoke checks
 
 Логика именно такая:
 
