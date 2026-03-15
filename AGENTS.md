@@ -26,17 +26,19 @@
 1. `README.md`
 2. `CLAUDE.md`
 3. `docs/current-project-analysis.md`
-4. `docs/emis_freeze_note.md`
-5. `docs/emis_mve_tz_v_2.md`
-6. `docs/emis_implementation_spec_v1.md`
-7. локальный `AGENTS.md` в нужной папке
-8. локальный `CLAUDE.md`, если он есть
+4. `docs/emis_session_bootstrap.md`
+5. `docs/emis_freeze_note.md`
+6. `docs/emis_mve_tz_v_2.md`
+7. `docs/emis_implementation_spec_v1.md`
+8. локальный `AGENTS.md` в нужной папке
+9. локальный `CLAUDE.md`, если он есть
 
 Для EMIS это не просто справочные документы:
 
 - `docs/emis_mve_tz_v_2.md` - source of truth по scope, data invariants и acceptance
 - `docs/emis_implementation_spec_v1.md` - source of truth по implementation decisions и очередности работ
 - `docs/emis_freeze_note.md` - короткий derived summary для быстрых новых сессий, но не замена `ТЗ/spec`
+- `docs/emis_session_bootstrap.md` - ultra-short стартовая памятка для новых чатов и агентов
 
 Текущие рабочие конвенции для EMIS:
 

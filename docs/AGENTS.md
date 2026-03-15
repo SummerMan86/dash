@@ -16,6 +16,9 @@
 - `emis_freeze_note.md`
   Читать, если нужен быстрый вход в контекст EMIS без полного перечитывания ТЗ и spec.
 
+- `emis_session_bootstrap.md`
+  Читать, если нужен совсем короткий checklist для старта новой сессии или нового агента.
+
 ## Что считать source of truth для EMIS
 
 Если вопрос про продуктовые рамки, данные, ограничения и acceptance:
@@ -27,6 +30,7 @@
 - главным документом считать `emis_implementation_spec_v1.md`
 
 `emis_freeze_note.md` считать только summary-document, а не самостоятельным источником истины.
+`emis_session_bootstrap.md` считать только ultra-short bootstrap note, а не отдельным документом требований.
 
 Для обоих документов считать обязательными следующие инварианты:
 
@@ -43,9 +47,10 @@
 ## Рекомендуемый порядок
 
 1. `current-project-analysis.md`
-2. `emis_freeze_note.md`
-3. `emis_mve_tz_v_2.md`
-4. `emis_implementation_spec_v1.md`
+2. `emis_session_bootstrap.md`
+3. `emis_freeze_note.md`
+4. `emis_mve_tz_v_2.md`
+5. `emis_implementation_spec_v1.md`
 
 ## Как использовать вместе с кодом
 
