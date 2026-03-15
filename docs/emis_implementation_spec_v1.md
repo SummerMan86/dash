@@ -47,6 +47,7 @@ src/
       emis-news/
       emis-link/
       emis-dictionary/
+      emis-geo/
     features/
       emis-object-form/
       emis-news-form/
@@ -59,31 +60,29 @@ src/
       emis-search-results/
     server/
       emis/
-        repositories/
-        services/
-        queries/
-        dto/
-        sql/
-        validation/
+        infra/
+        modules/
+          dictionaries/
+          links/
+          news/
+          objects/
+          geo/          # позже
+          search/       # позже
+          read-models/  # позже
   routes/
     emis/
       +page.svelte
-      objects/
-        +page.svelte
-        [id]/
-          +page.svelte
-      news/
-        +page.svelte
-        [id]/
-          +page.svelte
+      objects/          # следующим этапом
+      news/             # следующим этапом
     api/
       emis/
+        health/
         objects/
         news/
-        links/
         dictionaries/
-        map/
-        search/
+        links/          # следующим этапом
+        map/            # следующим этапом
+        search/         # следующим этапом
 ```
 
 ## 5. Правила по слоям
