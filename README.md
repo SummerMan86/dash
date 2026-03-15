@@ -76,6 +76,7 @@ pnpm build
 
 - `AGENTS.md` - быстрый навигатор по проекту и иерархии модулей
 - [Текущий анализ проекта](docs/current-project-analysis.md)
+- [EMIS Freeze Note](docs/emis_freeze_note.md)
 - [Обновленное ТЗ EMIS v2](docs/emis_mve_tz_v_2.md)
 - [Implementation Spec EMIS v1](docs/emis_implementation_spec_v1.md)
 - [Offline Maps Ops Guide](docs/emis_offline_maps_ops.md)
