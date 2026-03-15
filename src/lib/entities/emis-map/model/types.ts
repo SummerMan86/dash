@@ -27,3 +27,69 @@ export type EmisMapConfig = {
 	offlineAssets: EmisMapAssetStatus;
 	checkedAt: string;
 };
+
+export type EmisMapBBox = [number, number, number, number];
+
+export type EmisMapFeatureKind = 'object' | 'news';
+
+type EmisMapFeatureBaseProperties = {
+	id: string;
+	kind: EmisMapFeatureKind;
+	title: string;
+	subtitle: string | null;
+	colorKey: string;
+};
+
+export type EmisMapObjectFeatureProperties = EmisMapFeatureBaseProperties & {
+	kind: 'object';
+	objectTypeId: string;
+	objectTypeCode: string;
+	objectTypeName: string;
+	countryCode: string | null;
+	region: string | null;
+	status: string;
+	updatedAt: string;
+};
+
+export type EmisMapNewsFeatureProperties = EmisMapFeatureBaseProperties & {
+	kind: 'news';
+	sourceId: string;
+	sourceName: string;
+	countryCode: string | null;
+	region: string | null;
+	newsType: string | null;
+	importance: number | null;
+	publishedAt: string;
+	relatedObjectsCount: number;
+};
+
+export type EmisMapObjectFeatureCollection = GeoJSON.FeatureCollection<
+	GeoJSON.Point,
+	EmisMapObjectFeatureProperties
+>;
+
+export type EmisMapNewsFeatureCollection = GeoJSON.FeatureCollection<
+	GeoJSON.Point,
+	EmisMapNewsFeatureProperties
+>;
+
+export type EmisMapObjectsQueryInput = {
+	bbox: EmisMapBBox;
+	q?: string;
+	objectType?: string;
+	country?: string;
+	status?: string;
+	limit?: number;
+};
+
+export type EmisMapNewsQueryInput = {
+	bbox: EmisMapBBox;
+	q?: string;
+	source?: string;
+	country?: string;
+	newsType?: string;
+	dateFrom?: string;
+	dateTo?: string;
+	objectId?: string;
+	limit?: number;
+};

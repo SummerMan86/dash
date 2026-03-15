@@ -100,6 +100,19 @@
 									>/api/emis/map-config</a
 								>
 							</p>
+							<p class="mt-2 text-sm">
+								Objects overlay:
+								<a
+									class="underline underline-offset-4"
+									href="/api/emis/map/objects?bbox=20,30,50,60">/api/emis/map/objects</a
+								>
+							</p>
+							<p class="mt-2 text-sm">
+								News overlay:
+								<a class="underline underline-offset-4" href="/api/emis/map/news?bbox=20,30,50,60"
+									>/api/emis/map/news</a
+								>
+							</p>
 						</div>
 					</CardContent>
 				</Card>
@@ -164,7 +177,11 @@
 					<CardDescription>Что ещё не закрыто поверх этого слоя</CardDescription>
 				</CardHeader>
 				<CardContent class="space-y-2 text-sm text-muted-foreground">
-					<p>Map overlay endpoints <span class="font-mono">/api/emis/map/*</span> ещё впереди.</p>
+					<p>
+						Viewport filters и overlay layers уже идут через <span class="font-mono"
+							>/api/emis/map/*</span
+						>.
+					</p>
 					<p>Поиск, geocoding и routing специально не входят в этот этап.</p>
 					<p>Offline bundle сейчас ожидается как уже подготовленная локальная папка с assets.</p>
 				</CardContent>
@@ -176,11 +193,8 @@
 					<CardDescription>Что логично делать после этого каркаса</CardDescription>
 				</CardHeader>
 				<CardContent class="space-y-2 text-sm text-muted-foreground">
-					<p>
-						1. Довести <span class="font-mono">/api/emis/map/objects</span> и
-						<span class="font-mono">/api/emis/map/news</span>.
-					</p>
-					<p>2. Подключить слои объектов и новостей поверх basemap.</p>
+					<p>1. Добавить popup/select flow поверх уже работающих map overlay endpoints.</p>
+					<p>2. Довести search endpoints и синхронизацию filters между list/map workspace.</p>
 					<p>3. Зафиксировать production bundle поставки и smoke checks без внешнего интернета.</p>
 				</CardContent>
 			</Card>
