@@ -10,6 +10,7 @@
 		"map:assets:status": "node ./scripts/emis-map-assets.mjs status",
 		"map:assets:install": "node ./scripts/emis-map-assets.mjs install",
 		"map:pmtiles:probe": "node ./scripts/emis-pmtiles-spike.mjs probe",
+		"map:pmtiles:setup": "node ./scripts/emis-pmtiles-setup.mjs",
 		"db:up": "docker compose up -d",
 		"db:down": "docker compose down",
 		"db:logs": "docker compose logs postgres --tail=100",

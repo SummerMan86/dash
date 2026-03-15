@@ -1,98 +1,42 @@
 # EMIS PMTiles Validation Wave
 
-Этот документ фиксирует временный spike-подход для `PMTiles` без немедленной замены текущего
-offline bundle contract.
+Этот документ сохранён как краткая заметка о завершённой validation wave.
 
-## 1. Что это значит
+## 1. Итог
 
-Сейчас `PMTiles` рассматривается как **validation wave**, а не как уже принятый production default.
+PMTiles validation wave пройдена:
 
-До прохождения валидации сохраняются текущие правила:
+- `Range` / `206 Partial Content` подтверждены;
+- browser smoke для `MapLibre + pmtiles.Protocol` подтверждён;
+- локальный offline сценарий без внешнего интернета подтверждён;
+- основной `/emis` runtime переведён на новый contract.
 
-- основным safe default остается `pre-extracted static bundle`;
-- основной runtime в `/emis` не переключается на `PMTiles`;
-- remote PMTiles URL не считаются "true offline" вариантом;
-- изменение source-of-truth docs и архитектурного contract допустимо только после прохождения gates.
+Текущий production-like contract теперь такой:
 
-## 2. Что уже есть в репозитории
+- `online` - remote style (`MapTiler` или custom URL);
+- `offline` - local `PMTiles`;
+- `auto` - online first, одноразовый fallback в local `PMTiles` при startup failure.
 
-Для spike добавлены:
+## 2. Что осталось от spike-wave
 
-- отдельный маршрут `"/emis/pmtiles-spike"`;
-- отдельный PMTiles runtime path, не влияющий на основной `EmisMap`;
-- повторяемый CLI probe:
+В репозитории намеренно оставлены:
 
-```bash
-pnpm map:pmtiles:probe -- --url http://127.0.0.1:4173/emis-map/offline/example.pmtiles
-```
+- `/emis/pmtiles-spike` - отдельный маршрут для техпроверки и наблюдаемости;
+- `pnpm map:pmtiles:probe` - CLI для byte-serving / range smoke check;
+- `pnpm map:pmtiles:setup` - локальный setup реальных PMTiles assets.
 
-Этот probe проверяет:
+## 3. Когда этот документ полезен
 
-- `206 Partial Content`;
-- `Accept-Ranges: bytes`;
-- корректный `Content-Range`;
-- малый range-response без скачивания большого файла;
-- стабильность `ETag`, если сервер его отдает.
+Открывать его стоит, если нужно:
 
-## 3. Как подготовить локальный spike
+- быстро понять, почему в проекте есть отдельный PMTiles spike route;
+- повторить low-level range/browser smoke вне основного `/emis` UI;
+- проверить новый bundle до выката или смены coverage.
 
-1. Положить реальный `.pmtiles` файл напрямую в:
+## 4. Что теперь считать source of truth
 
-```text
-static/emis-map/offline/
-```
+Для текущей эксплуатации и contract semantics ориентироваться уже не на этот spike-note, а на:
 
-2. Убедиться, что рядом есть локальные:
-
-- `fonts/`
-- `sprites/`
-
-3. Поднять приложение через `pnpm dev` или `pnpm preview`.
-4. Открыть `/emis/pmtiles-spike`.
-5. Прогнать `map:pmtiles:probe` по candidate URL.
-
-Важно: это не меняет текущий install-flow `offline-bundle -> static/emis-map/offline` для
-основного runtime. PMTiles spike сейчас живет отдельно, чтобы не ломать текущий contract раньше времени.
-
-## 4. Validation gates
-
-### Gate 1. Node-serving path
-
-Нужно подтвердить:
-
-- `Range` запросы работают;
-- сервер отвечает `206`;
-- `Content-Range` корректен;
-- `Accept-Ranges: bytes` присутствует.
-
-### Gate 2. Browser smoke
-
-Нужно подтвердить:
-
-- `MapLibre + pmtiles.Protocol` реально открывают архив;
-- нет style parsing errors;
-- нет скачивания всего архива целиком;
-- overlay endpoints продолжают рисоваться поверх basemap.
-
-### Gate 3. Offline semantics
-
-Нужно подтвердить:
-
-- локальный `.pmtiles` + локальные `fonts/sprites` переживают сценарий без внешнего интернета;
-- remote PMTiles URL не попадают в offline-ready semantics.
-
-### Gate 4. Ops consistency
-
-До архитектурного pivot:
-
-- `pnpm map:assets:status` и `/api/emis/map-config` продолжают жить по текущему contract;
-- отдельная PMTiles validation wave не должна подменять эти semantics незаметно.
-
-### Gate 5. Docs + contract switch
-
-Только после прохождения всех gates можно переходить к следующей волне:
-
-- менять `mapConfig`;
-- менять основной `EmisMap.svelte`;
-- менять `map:assets:*`;
-- менять source-of-truth docs под PMTiles contract.
+- [EMIS Offline Maps Ops Guide](./emis_offline_maps_ops.md)
+- [EMIS Session Bootstrap](./emis_session_bootstrap.md)
+- [EMIS Implementation Spec v1](./emis_implementation_spec_v1.md)

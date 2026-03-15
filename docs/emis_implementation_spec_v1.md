@@ -889,9 +889,9 @@ Gate завершения:
 
 ### 18.4. Offline maps caveat для следующих волн
 
-Если в post-MVE contour будет выбран формат `PMTiles`:
+Текущий post-MVE contract для offline basemap принят как `local PMTiles`.
 
 - production server обязан корректно поддерживать HTTP Range Requests;
 - без Range support клиент может попытаться читать слишком большие куски файла или весь bundle целиком;
-- пока эта способность не проверена в целевом deployment, безопасным default остается pre-extracted static bundle.
-- до смены основного contract `PMTiles` нужно валидировать отдельной spike-wave, не подменяя текущий `/emis` runtime semantics.
+- основной runtime теперь строится как `online style + local PMTiles + auto fallback`;
+- отдельный `/emis/pmtiles-spike` сохраняется как маршрут для повторяемой техвалидации и observability.

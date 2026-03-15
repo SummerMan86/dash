@@ -1,154 +1,146 @@
 # EMIS Offline Maps Ops Guide
 
-Этот документ описывает, как работает offline basemap bundle для EMIS и как его поставить на сервер один раз без зависимости от внешнего интернета.
+Этот документ описывает текущий basemap contract для EMIS:
 
-## 1. Что входит в текущую реализацию
+- `online` - remote style, по умолчанию `MapTiler` при наличии ключа;
+- `offline` - локальный `PMTiles` bundle из `static/emis-map/offline`;
+- `auto` - старт online с одноразовым fallback в local `PMTiles`, если online basemap не поднялся на старте.
 
-В проекте уже добавлены:
+## 1. Что считается offline-ready
 
-- `MapLibre GL JS` runtime для EMIS map widget;
-- server-resolved `mapConfig`;
-- режимы `online` и `offline`;
-- локальная раздача assets из `static/emis-map/offline`;
-- команды:
-  - `pnpm map:assets:status`
-  - `pnpm map:assets:install -- --source /abs/path/to/offline-bundle`
-
-Важно:
-
-- offline bundle относится к отдельной post-MVE wave;
-- отсутствие offline bundle не ломает весь EMIS, если есть online style или controlled fallback;
-- объекты и новости EMIS уже локальны сами по себе и не зависят от внешнего basemap provider.
-
-## 2. Ожидаемая структура offline bundle
-
-Команда install ожидает готовую папку следующего вида:
+Для offline runtime bundle считается готовым, если в `static/emis-map/offline` есть:
 
 ```text
-offline-bundle/
-  style.json
-  tiles/
+offline/
+  *.pmtiles
   sprites/
   fonts/
+  manifest.json
 ```
 
-После установки она копируется в:
+Готовность считается одинаково в:
 
-```text
-static/
-  emis-map/
-    offline/
-      style.json
-      tiles/
-      sprites/
-      fonts/
-      manifest.json
-```
+- `pnpm map:assets:status`
+- `/api/emis/map-config`
+- основном `/emis` runtime
 
-Текущая реализация рассчитана на **pre-extracted static bundle**. Если позже понадобится поддержка `MBTiles` через отдельный tile-serving runtime, это будет следующая итерация, а не обязательная часть текущего слоя.
+Если `manifest.json` есть, но битый, bundle не считается `ready`.
 
-Отдельно: возможен и формат `PMTiles`, но для него production server должен корректно поддерживать HTTP Range Requests. Пока это не подтверждено в целевом deployment, `pre-extracted static bundle` остается более безопасным default.
+## 2. Основные команды
 
-Для текущего репозитория это означает:
-
-- `PMTiles` пока живет как отдельная validation wave;
-- основной runtime в `/emis` не меняет contract до прохождения spike;
-- для локального техспайка использовать маршрут `/emis/pmtiles-spike` и документ [EMIS PMTiles Validation Wave](./emis_pmtiles_validation_wave.md).
-
-## 3. Команды
-
-Проверить bundle:
+Проверить готовность локального bundle:
 
 ```bash
 pnpm map:assets:status
 ```
 
-Установить bundle:
+Установить готовый bundle из внешней папки:
 
 ```bash
 pnpm map:assets:install -- --source /abs/path/to/offline-bundle
 ```
 
-Что делает install:
+Собрать/скачать локальный bundle прямо в проект:
 
-- проверяет наличие `style.json`, `tiles/`, `sprites/`, `fonts/`;
-- копирует bundle в `static/emis-map/offline`;
-- обновляет `manifest.json` с `installedAt` и `sourcePath`.
+```bash
+pnpm map:pmtiles:setup
+```
+
+Проверить byte-serving для конкретного PMTiles URL:
+
+```bash
+pnpm map:pmtiles:probe -- --url http://127.0.0.1:4173/emis-map/offline/moscow.pmtiles
+```
+
+## 3. Что делает setup/install
+
+### `map:pmtiles:setup`
+
+- ставит `go-pmtiles` CLI локально;
+- вырезает регион из Protomaps daily build;
+- подтягивает локальные `fonts` и `sprites`;
+- генерирует `manifest.json`.
+
+### `map:assets:install`
+
+- ожидает bundle с `*.pmtiles`, `sprites/`, `fonts/`;
+- копирует его в `static/emis-map/offline`;
+- дописывает/обновляет `manifest.json`;
+- восстанавливает локальный `.gitignore` для `*.pmtiles`.
 
 ## 4. Переменные окружения
 
 Поддерживаются:
 
-- `EMIS_MAP_MODE=online|offline`
+- `EMIS_MAP_MODE=auto|online|offline`
+- `EMIS_MAP_ONLINE_STYLE_URL`
 - `EMIS_MAP_STYLE_URL`
-- `EMIS_MAP_OFFLINE_STYLE_URL`
-- `EMIS_MAP_TILES_URL`
+- `EMIS_MAPTILER_KEY`
+- `EMIS_MAPTILER_STYLE_ID`
 - `EMIS_MAP_INITIAL_CENTER=lon,lat`
 - `EMIS_MAP_INITIAL_ZOOM=number`
 
-Рекомендуемые сценарии:
-
-### Online
+Рекомендуемый production-like сценарий:
 
 ```env
-EMIS_MAP_MODE=online
-EMIS_MAP_STYLE_URL=https://demotiles.maplibre.org/style.json
+EMIS_MAP_MODE=auto
+EMIS_MAPTILER_KEY=...
+EMIS_MAPTILER_STYLE_ID=streets-v2
 ```
 
-### Offline
+Если нужен forced offline:
 
 ```env
 EMIS_MAP_MODE=offline
-EMIS_MAP_OFFLINE_STYLE_URL=/emis-map/offline/style.json
-EMIS_MAP_TILES_URL=/emis-map/offline/tiles/{z}/{x}/{y}.pbf
 ```
 
-## 5. Как проверить, что карта действительно работает офлайн
+Если нужен forced online без auto fallback:
 
-Минимальный smoke checklist:
+```env
+EMIS_MAP_MODE=online
+```
 
-1. Сервер доступен пользователям по сети.
-2. Внешний интернет для сервера или браузера отключен.
-3. `EMIS_MAP_MODE=offline`.
-4. `/api/emis/map-config` показывает `effectiveMode=offline`.
-5. В DevTools нет запросов к внешним tile/style/font CDN.
-6. `/emis` продолжает открываться и рендерить basemap.
+## 5. Как проверять runtime
 
-Если bundle неполный, ожидаемое поведение:
+### Online / auto
 
-- `map-config` возвращает `fallback-online` или `missing-assets`;
-- UI не падает;
-- пользователь видит диагностическое сообщение.
+1. Открыть `/emis`.
+2. Убедиться, что `/api/emis/map-config` возвращает ожидаемый `requestedMode`.
+3. Проверить, что online style резолвится и basemap загружается.
 
-## 6. Размеры и эксплуатационные заметки
+### Offline
 
-Размер offline basemap bundle зависит от покрытия, формата и уровня zoom. Практически это может быть:
+1. Убедиться, что `pnpm map:assets:status` возвращает `ready: true`.
+2. Поставить `EMIS_MAP_MODE=offline`.
+3. Отключить внешний интернет для браузера или сервера.
+4. Проверить, что `/api/emis/map-config` показывает `effectiveMode=offline`.
+5. Убедиться, что `/emis` продолжает рендерить basemap и overlays без внешних CDN.
 
-- от нескольких гигабайт для небольшого покрытия;
-- до десятков гигабайт для регионального или более плотного набора tiles.
+### Auto fallback
 
-Поэтому перед эксплуатацией стоит заранее определить:
+1. Поставить `EMIS_MAP_MODE=auto`.
+2. Убедиться, что online style сконфигурирован, а local PMTiles bundle готов.
+3. Спровоцировать startup-failure online basemap.
+4. Проверить, что `/emis` один раз переключился в local PMTiles runtime.
+5. Проверить, что в рамках одной сессии нет автоматического возврата обратно в online.
 
-- географический охват;
-- максимальный zoom;
-- формат tiles;
-- место хранения и обновления bundle.
+## 6. Эксплуатационные заметки
 
-Если выбирается `PMTiles`:
+- Если offline coverage ограничен регионом, стартовый viewport лучше брать из `manifest.json` или через env override.
+- Если используется несколько `.pmtiles` архивов, runtime уважает порядок из `manifest.json`.
+- Для coarse world coverage + detail AOI можно держать несколько архивов с разными `maxzoom`.
+- Remote PMTiles URL не считаются доказательством “true offline”.
 
-- проверьте поддержку `Range`/`206 Partial Content` на стороне production server;
-- убедитесь, что клиент не скачивает весь bundle целиком при первом открытии карты;
-- зафиксируйте это отдельным smoke test в deployment checklist.
-- не считайте remote PMTiles URL достаточным доказательством offline-ready semantics.
-
-## 7. Что ещё не входит в текущую реализацию
+## 7. Что не входит в текущий слой
 
 Сейчас специально не делаем:
 
 - offline geocoding;
 - routing;
-- time slider;
 - map editing tools;
-- отдельный MBTiles tile server внутри приложения.
+- time slider;
+- встроенный MBTiles tile server.
 
-Это оставлено на следующую волну, если offline contour покажет реальную ценность после запуска базового EMIS workflow.
+Для технической диагностики и повторного smoke check сохраняется отдельный маршрут:
+
+- `/emis/pmtiles-spike`

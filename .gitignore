@@ -25,5 +25,9 @@ vite.config.ts.timestamp-*
 # Claude Code local settings
 .claude/settings.local.json
 
+# Local binaries (go-pmtiles etc.)
+.bin/
+.tmp-basemaps-assets/
+
 # Misc assets not part of source
 src/Examples/

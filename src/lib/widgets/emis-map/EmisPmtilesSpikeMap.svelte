@@ -10,16 +10,16 @@
 		setEmisOverlayData
 	} from './layer-config';
 	import { acquirePmtilesProtocol, releasePmtilesProtocol } from './pmtiles-protocol';
-	import { buildPmtilesStyle } from './pmtiles-style';
+	import { buildPmtilesStyle, type PmtilesSourceDef } from './pmtiles-style';
 
 	interface Props {
-		pmtilesUrl: string;
+		sources: PmtilesSourceDef[];
 		glyphsUrl: string;
 		spriteUrl: string;
 		class?: string;
 	}
 
-	let { pmtilesUrl, glyphsUrl, spriteUrl, class: className }: Props = $props();
+	let { sources, glyphsUrl, spriteUrl, class: className }: Props = $props();
 
 	let container = $state<HTMLDivElement | null>(null);
 	let mapLoaded = $state(false);
@@ -138,7 +138,7 @@
 		map = new maplibregl.Map({
 			container,
 			style: buildPmtilesStyle({
-				pmtilesUrl,
+				sources,
 				glyphsUrl,
 				spriteUrl
 			}),
@@ -203,10 +203,12 @@
 				</span>
 			</div>
 			<div class="mt-2 grid gap-1">
-				<div>
-					<span class="font-medium text-foreground">Archive:</span>
-					{pmtilesUrl}
-				</div>
+				{#each sources as src}
+					<div>
+						<span class="font-medium text-foreground">Archive:</span>
+						{src.url}{src.maxzoom != null ? ` (z≤${src.maxzoom})` : ''}
+					</div>
+				{/each}
 				<div>
 					<span class="font-medium text-foreground">Glyphs:</span>
 					{glyphsUrl}

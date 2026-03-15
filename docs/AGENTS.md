@@ -20,7 +20,7 @@
   Читать, если нужен совсем короткий checklist для старта новой сессии или нового агента.
 
 - `emis_pmtiles_validation_wave.md`
-  Читать, если нужно оценить PMTiles как отдельный validation-spike без немедленной смены текущего offline contract.
+  Читать, если нужно понять, как был провалидирован PMTiles runtime и зачем в проекте оставлен отдельный `/emis/pmtiles-spike`.
 
 ## Что считать source of truth для EMIS
 

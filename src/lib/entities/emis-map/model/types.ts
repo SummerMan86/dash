@@ -1,15 +1,28 @@
-export type EmisMapMode = 'online' | 'offline';
+export type EmisMapMode = 'auto' | 'online' | 'offline';
 
-export type EmisMapSource = 'remote-style' | 'offline-style' | 'none';
+export type EmisMapSource = 'auto' | 'online-style' | 'offline-pmtiles' | 'none';
 
-export type EmisMapRuntimeStatus = 'ready' | 'fallback-online' | 'missing-assets' | 'misconfigured';
+export type EmisMapRuntimeStatus = 'ready' | 'degraded' | 'missing-assets' | 'misconfigured';
+
+export type EmisMapOnlineProvider = 'maptiler' | 'custom' | 'demo' | 'none';
 
 export type EmisMapAssetStatus = {
-	style: boolean;
-	tiles: boolean;
+	pmtiles: boolean;
 	sprites: boolean;
 	fonts: boolean;
 	manifest: boolean;
+};
+
+export type EmisMapOfflineManifest = {
+	version: number | null;
+	createdAt: string | null;
+	source: string | null;
+	bbox: EmisMapBBox | null;
+	maxzoom: number | null;
+	pmtiles: string[];
+	fonts: string[];
+	sprites: string[];
+	notes: string | null;
 };
 
 export type EmisMapConfig = {
@@ -17,8 +30,15 @@ export type EmisMapConfig = {
 	effectiveMode: EmisMapMode;
 	runtimeStatus: EmisMapRuntimeStatus;
 	source: EmisMapSource;
-	styleUrl: string | null;
-	tilesUrl: string | null;
+	onlineProvider: EmisMapOnlineProvider;
+	onlineStyleUrl: string | null;
+	offlinePmtilesUrl: string | null;
+	offlinePmtilesName: string | null;
+	offlinePmtilesSources: EmisPmtilesFileInfo[];
+	offlineSpriteUrl: string | null;
+	offlineGlyphsUrl: string | null;
+	offlineManifest: EmisMapOfflineManifest | null;
+	autoFallbackEnabled: boolean;
 	assetRootUrl: string;
 	statusMessage: string;
 	warnings: string[];
@@ -98,6 +118,7 @@ export type EmisPmtilesFileInfo = {
 	name: string;
 	sizeBytes: number;
 	url: string;
+	maxzoom?: number;
 };
 
 export type EmisPmtilesSpikeStatus = {

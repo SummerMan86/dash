@@ -62,11 +62,12 @@
 				EMIS / PMTiles Spike
 			</div>
 			<div class="space-y-2">
-				<h1 class="text-3xl font-semibold tracking-tight">PMTiles Validation Wave</h1>
+				<h1 class="text-3xl font-semibold tracking-tight">PMTiles Validation / Observatory</h1>
 				<p class="max-w-4xl text-sm text-muted-foreground">
-					Этот маршрут нужен только для проверки PMTiles на реальном Node-serving path. Основной
-					EMIS runtime в <span class="font-mono">/emis</span> не переключается на PMTiles, пока не пройдены
-					Range-check, browser smoke и local-only offline gates.
+					Этот маршрут остался как отдельная observability-площадка для PMTiles на реальном
+					Node-serving path. Основной EMIS runtime в <span class="font-mono">/emis</span> уже использует
+					новый online + local PMTiles contract, а здесь удобно повторять Range/browser smoke и локально
+					проверять bundle без лишнего UI-шума.
 				</p>
 			</div>
 		</header>
@@ -80,9 +81,12 @@
 					</CardDescription>
 				</CardHeader>
 				<CardContent class="p-4">
-					{#if data.pmtilesSpike.selectedPmtilesUrl}
+					{#if data.pmtilesSpike.localPmtilesFiles.length}
 						<EmisPmtilesSpikeMap
-							pmtilesUrl={data.pmtilesSpike.selectedPmtilesUrl}
+							sources={data.pmtilesSpike.localPmtilesFiles.map((f) => ({
+								url: f.url,
+								maxzoom: f.maxzoom
+							}))}
 							glyphsUrl={data.pmtilesSpike.selectedGlyphsUrl}
 							spriteUrl={data.pmtilesSpike.selectedSpriteUrl}
 						/>
@@ -94,8 +98,9 @@
 								<p class="font-medium text-foreground">Локальный `.pmtiles` архив ещё не найден</p>
 								<p>
 									Для spike положите реальный PMTiles-файл напрямую в
-									<span class="font-mono">static/emis-map/offline</span>. Это не меняет основной
-									offline bundle contract и нужно только для validation wave.
+									<span class="font-mono">static/emis-map/offline</span>. Этот route использует тот
+									же локальный bundle, что и основной `/emis`, но оставлен как отдельная
+									техпроверка.
 								</p>
 							</div>
 						</div>
@@ -106,9 +111,8 @@
 			<div class="flex flex-col gap-4">
 				<Card>
 					<CardHeader>
-						<CardTitle>Current Contract</CardTitle>
-						<CardDescription
-							>Главный `/emis` runtime пока остаётся без архитектурного pivot</CardDescription
+						<CardTitle>Main Contract</CardTitle>
+						<CardDescription>Главный `/emis` runtime уже работает на новом contract</CardDescription
 						>
 					</CardHeader>
 					<CardContent class="space-y-2 text-sm text-muted-foreground">
@@ -125,8 +129,8 @@
 							<span class="font-mono"> {data.mapConfig.runtimeStatus}</span>
 						</p>
 						<p>
-							Обычный runtime по-прежнему использует текущий
-							<span class="font-mono">pre-extracted static bundle</span> contract.
+							Обычный runtime теперь использует
+							<span class="font-mono">online style + local PMTiles + auto fallback</span> contract.
 						</p>
 						<p>
 							<a class="underline underline-offset-4" href="/emis"
@@ -215,7 +219,7 @@
 			<Card>
 				<CardHeader>
 					<CardTitle>Validation Gates</CardTitle>
-					<CardDescription>Что должно пройти до смены архитектурного default</CardDescription>
+					<CardDescription>Что повторно проверяем после contract switch</CardDescription>
 				</CardHeader>
 				<CardContent class="space-y-2 text-sm">
 					{#each validationGates as gate}
@@ -236,9 +240,7 @@
 					<p>2. Нет style/glyph/sprite parsing errors в console.</p>
 					<p>3. Overlay endpoints по-прежнему рисуются поверх basemap.</p>
 					<p>4. Remote PMTiles URL не трактуется как offline-ready contract.</p>
-					<p>
-						5. После прохождения gates обновляем source-of-truth docs и только потом меняем runtime.
-					</p>
+					<p>5. При смене coverage или asset pipeline обновляем docs и manifest одновременно.</p>
 				</CardContent>
 			</Card>
 		</div>

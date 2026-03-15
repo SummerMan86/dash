@@ -12,4 +12,4 @@
 8. Naming default для ранних этапов: плоский namespace `emis-*`.
 9. Ближайшие волны реализации: `Wave A -> Wave B -> Wave C -> Wave D -> Wave E -> Wave F`.
 10. Если вопрос спорный, сначала сверять `freeze note`, потом `ТЗ v2`, потом `implementation spec`, а не принимать новое решение “с нуля”.
-11. `PMTiles` пока считать validation wave, а не принятым production default: безопасный baseline все еще `pre-extracted static bundle` до прохождения Range/browser/offline gates.
+11. Текущий basemap contract для EMIS: `online (MapTiler/custom style) + offline (local PMTiles) + auto fallback`; отдельный `/emis/pmtiles-spike` остаётся как техмаршрут для проверок и наблюдаемости.

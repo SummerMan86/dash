@@ -1,40 +1,29 @@
-import { access, readdir } from 'node:fs/promises';
-import path from 'node:path';
+import type {
+	EmisMapBBox,
+	EmisMapConfig,
+	EmisMapMode,
+	EmisMapOnlineProvider
+} from '$entities/emis-map';
 
-import type { EmisMapAssetStatus, EmisMapConfig, EmisMapMode } from '$entities/emis-map';
+import {
+	EMIS_OFFLINE_ASSET_ROOT_URL,
+	deriveCenterFromBbox,
+	deriveZoomFromBbox,
+	getEmisPmtilesBundleStatus
+} from './pmtilesBundle';
 
-const OFFLINE_ASSET_ROOT_URL = '/emis-map/offline';
-const OFFLINE_ASSET_DIR = path.resolve(process.cwd(), 'static', 'emis-map', 'offline');
-const DEFAULT_OFFLINE_STYLE_URL = `${OFFLINE_ASSET_ROOT_URL}/style.json`;
-const DEFAULT_OFFLINE_TILES_URL = `${OFFLINE_ASSET_ROOT_URL}/tiles/{z}/{x}/{y}.pbf`;
 const DEFAULT_ONLINE_STYLE_URL = 'https://demotiles.maplibre.org/style.json';
+const DEFAULT_MAPTILER_STYLE_ID = 'streets-v2';
 const DEFAULT_INITIAL_CENTER: [number, number] = [30, 35];
 const DEFAULT_INITIAL_ZOOM = 2.2;
 
-async function exists(targetPath: string): Promise<boolean> {
-	try {
-		await access(targetPath);
-		return true;
-	} catch {
-		return false;
-	}
-}
-
-async function hasVisibleEntries(targetPath: string): Promise<boolean> {
-	try {
-		const entries = await readdir(targetPath);
-		return entries.some((entry) => !entry.startsWith('.'));
-	} catch {
-		return false;
-	}
-}
-
 function parseMode(value: string | undefined): EmisMapMode {
-	return value === 'offline' ? 'offline' : 'online';
+	if (value === 'online' || value === 'offline') return value;
+	return 'auto';
 }
 
-function parseCenter(value: string | undefined): [number, number] {
-	if (!value) return DEFAULT_INITIAL_CENTER;
+function parseCenter(value: string | undefined): [number, number] | null {
+	if (!value) return null;
 
 	const [lon, lat] = value
 		.split(',')
@@ -42,145 +31,264 @@ function parseCenter(value: string | undefined): [number, number] {
 		.slice(0, 2);
 
 	if (!Number.isFinite(lon) || !Number.isFinite(lat)) {
-		return DEFAULT_INITIAL_CENTER;
+		return null;
 	}
 
 	return [Math.max(-180, Math.min(180, lon)), Math.max(-90, Math.min(90, lat))];
 }
 
-function parseZoom(value: string | undefined): number {
-	if (!value) return DEFAULT_INITIAL_ZOOM;
+function parseZoom(value: string | undefined): number | null {
+	if (!value) return null;
 	const parsed = Number(value);
-	if (!Number.isFinite(parsed)) return DEFAULT_INITIAL_ZOOM;
+	if (!Number.isFinite(parsed)) return null;
 	return Math.max(0, Math.min(18, parsed));
 }
 
-async function getOfflineAssetStatus(): Promise<EmisMapAssetStatus> {
+function resolveOnlineConfig(): {
+	provider: EmisMapOnlineProvider;
+	styleUrl: string | null;
+	warnings: string[];
+} {
+	const explicitStyle =
+		process.env.EMIS_MAP_ONLINE_STYLE_URL?.trim() || process.env.EMIS_MAP_STYLE_URL?.trim();
+	if (explicitStyle) {
+		return {
+			provider: explicitStyle.includes('api.maptiler.com') ? 'maptiler' : 'custom',
+			styleUrl: explicitStyle,
+			warnings: []
+		};
+	}
+
+	const mapTilerKey = process.env.EMIS_MAPTILER_KEY?.trim() || process.env.MAPTILER_KEY?.trim();
+	if (mapTilerKey) {
+		const styleId = process.env.EMIS_MAPTILER_STYLE_ID?.trim() || DEFAULT_MAPTILER_STYLE_ID;
+		return {
+			provider: 'maptiler',
+			styleUrl: `https://api.maptiler.com/maps/${styleId}/style.json?key=${mapTilerKey}`,
+			warnings: []
+		};
+	}
+
 	return {
-		style: await exists(path.join(OFFLINE_ASSET_DIR, 'style.json')),
-		tiles: await hasVisibleEntries(path.join(OFFLINE_ASSET_DIR, 'tiles')),
-		sprites: await hasVisibleEntries(path.join(OFFLINE_ASSET_DIR, 'sprites')),
-		fonts: await hasVisibleEntries(path.join(OFFLINE_ASSET_DIR, 'fonts')),
-		manifest: await exists(path.join(OFFLINE_ASSET_DIR, 'manifest.json'))
+		provider: 'demo',
+		styleUrl: DEFAULT_ONLINE_STYLE_URL,
+		warnings: [
+			'EMIS_MAPTILER_KEY is not configured; using the demo online style instead of MapTiler.'
+		]
 	};
 }
 
-function buildWarnings(assetStatus: EmisMapAssetStatus): string[] {
-	const warnings: string[] = [];
+function resolveInitialView(
+	requestedMode: EmisMapMode,
+	offlineManifestBbox: EmisMapBBox | null,
+	offlineMaxZoom: number | null
+) {
+	const envCenter = parseCenter(process.env.EMIS_MAP_INITIAL_CENTER);
+	const envZoom = parseZoom(process.env.EMIS_MAP_INITIAL_ZOOM);
 
-	if (!assetStatus.style) warnings.push('Missing offline style.json bundle');
-	if (!assetStatus.tiles) warnings.push('Missing offline tiles bundle');
-	if (!assetStatus.sprites) warnings.push('Missing offline sprites bundle');
-	if (!assetStatus.fonts) warnings.push('Missing offline fonts bundle');
-	if (!assetStatus.manifest) warnings.push('Missing offline manifest.json');
+	const fallbackCenter =
+		requestedMode !== 'online' && offlineManifestBbox
+			? deriveCenterFromBbox(offlineManifestBbox)
+			: DEFAULT_INITIAL_CENTER;
+	const fallbackZoom =
+		requestedMode !== 'online' && offlineManifestBbox
+			? deriveZoomFromBbox(offlineManifestBbox, offlineMaxZoom, DEFAULT_INITIAL_ZOOM)
+			: DEFAULT_INITIAL_ZOOM;
 
-	return warnings;
+	return {
+		initialCenter: envCenter ?? fallbackCenter,
+		initialZoom: envZoom ?? fallbackZoom
+	};
+}
+
+function buildConfig({
+	requestedMode,
+	effectiveMode,
+	runtimeStatus,
+	source,
+	onlineProvider,
+	onlineStyleUrl,
+	offlinePmtilesUrl,
+	offlinePmtilesName,
+	offlinePmtilesSources,
+	offlineSpriteUrl,
+	offlineGlyphsUrl,
+	offlineManifest,
+	autoFallbackEnabled,
+	statusMessage,
+	warnings,
+	initialCenter,
+	initialZoom,
+	offlineAssets,
+	checkedAt
+}: Omit<EmisMapConfig, 'assetRootUrl'>): EmisMapConfig {
+	return {
+		requestedMode,
+		effectiveMode,
+		runtimeStatus,
+		source,
+		onlineProvider,
+		onlineStyleUrl,
+		offlinePmtilesUrl,
+		offlinePmtilesName,
+		offlinePmtilesSources,
+		offlineSpriteUrl,
+		offlineGlyphsUrl,
+		offlineManifest,
+		autoFallbackEnabled,
+		assetRootUrl: EMIS_OFFLINE_ASSET_ROOT_URL,
+		statusMessage,
+		warnings,
+		initialCenter,
+		initialZoom,
+		offlineAssets,
+		checkedAt
+	};
+}
+
+function describeOnlineProvider(provider: EmisMapOnlineProvider): string {
+	if (provider === 'maptiler') return 'MapTiler';
+	if (provider === 'custom') return 'custom online style';
+	if (provider === 'demo') return 'demo online style';
+	return 'online style';
 }
 
 export async function getEmisMapConfig(): Promise<EmisMapConfig> {
 	const requestedMode = parseMode(process.env.EMIS_MAP_MODE);
-	const assetStatus = await getOfflineAssetStatus();
-	const warnings = buildWarnings(assetStatus);
-	const onlineStyleUrl =
-		process.env.EMIS_MAP_STYLE_URL?.trim() ||
-		process.env.EMIS_MAP_ONLINE_STYLE_URL?.trim() ||
-		DEFAULT_ONLINE_STYLE_URL;
-	const offlineStyleUrl =
-		process.env.EMIS_MAP_OFFLINE_STYLE_URL?.trim() ||
-		process.env.EMIS_MAP_STYLE_URL?.trim() ||
-		DEFAULT_OFFLINE_STYLE_URL;
-	const offlineTilesUrl = process.env.EMIS_MAP_TILES_URL?.trim() || DEFAULT_OFFLINE_TILES_URL;
-	const initialCenter = parseCenter(process.env.EMIS_MAP_INITIAL_CENTER);
-	const initialZoom = parseZoom(process.env.EMIS_MAP_INITIAL_ZOOM);
+	const bundleStatus = await getEmisPmtilesBundleStatus();
+	const onlineConfig = resolveOnlineConfig();
 	const checkedAt = new Date().toISOString();
+	const warnings = [
+		...bundleStatus.warnings,
+		...(requestedMode === 'offline' ? [] : onlineConfig.warnings)
+	];
+	const offlineReady = bundleStatus.ready;
+	const onlineReady = Boolean(onlineConfig.styleUrl);
+	const { initialCenter, initialZoom } = resolveInitialView(
+		requestedMode,
+		bundleStatus.manifest?.bbox ?? null,
+		bundleStatus.manifest?.maxzoom ?? null
+	);
+	const offlineAssets = {
+		pmtiles: Boolean(bundleStatus.selectedPmtilesUrl),
+		sprites: bundleStatus.spritesReady,
+		fonts: bundleStatus.fontsReady,
+		manifest: bundleStatus.manifestReady && Boolean(bundleStatus.manifest)
+	};
+
+	const shared = {
+		onlineProvider: onlineConfig.provider,
+		onlineStyleUrl: onlineConfig.styleUrl,
+		offlinePmtilesUrl: bundleStatus.selectedPmtilesUrl,
+		offlinePmtilesName: bundleStatus.selectedPmtilesName,
+		offlinePmtilesSources: bundleStatus.localPmtilesFiles,
+		offlineSpriteUrl: bundleStatus.selectedSpriteUrl,
+		offlineGlyphsUrl: bundleStatus.selectedGlyphsUrl,
+		offlineManifest: bundleStatus.manifest,
+		warnings,
+		initialCenter,
+		initialZoom,
+		offlineAssets,
+		checkedAt
+	};
 
 	if (requestedMode === 'offline') {
-		if (assetStatus.style && assetStatus.tiles) {
-			return {
+		if (offlineReady) {
+			return buildConfig({
 				requestedMode,
 				effectiveMode: 'offline',
 				runtimeStatus: 'ready',
-				source: 'offline-style',
-				styleUrl: offlineStyleUrl,
-				tilesUrl: offlineTilesUrl,
-				assetRootUrl: OFFLINE_ASSET_ROOT_URL,
-				statusMessage: 'Offline basemap bundle is installed and served from local static assets.',
-				warnings,
-				initialCenter,
-				initialZoom,
-				offlineAssets: assetStatus,
-				checkedAt
-			};
+				source: 'offline-pmtiles',
+				autoFallbackEnabled: false,
+				statusMessage: 'Offline PMTiles bundle is installed and served from local static assets.',
+				...shared
+			});
 		}
 
-		if (onlineStyleUrl) {
-			return {
-				requestedMode,
-				effectiveMode: 'online',
-				runtimeStatus: 'fallback-online',
-				source: 'remote-style',
-				styleUrl: onlineStyleUrl,
-				tilesUrl: null,
-				assetRootUrl: OFFLINE_ASSET_ROOT_URL,
-				statusMessage:
-					'Offline mode was requested, but the local bundle is incomplete. The map is using the online style as a controlled fallback.',
-				warnings,
-				initialCenter,
-				initialZoom,
-				offlineAssets: assetStatus,
-				checkedAt
-			};
-		}
-
-		return {
+		return buildConfig({
 			requestedMode,
 			effectiveMode: 'offline',
 			runtimeStatus: 'missing-assets',
 			source: 'none',
-			styleUrl: null,
-			tilesUrl: offlineTilesUrl,
-			assetRootUrl: OFFLINE_ASSET_ROOT_URL,
+			autoFallbackEnabled: false,
 			statusMessage:
-				'Offline mode was requested, but local style or tiles are missing and no online fallback is configured.',
-			warnings,
-			initialCenter,
-			initialZoom,
-			offlineAssets: assetStatus,
-			checkedAt
-		};
+				'Offline mode was requested, but the local PMTiles bundle is incomplete or missing.',
+			...shared
+		});
 	}
 
-	if (!onlineStyleUrl) {
-		return {
+	if (requestedMode === 'online') {
+		if (onlineReady) {
+			return buildConfig({
+				requestedMode,
+				effectiveMode: 'online',
+				runtimeStatus: 'ready',
+				source: 'online-style',
+				autoFallbackEnabled: false,
+				statusMessage: `Online mode is using ${describeOnlineProvider(onlineConfig.provider)}.`,
+				...shared
+			});
+		}
+
+		return buildConfig({
 			requestedMode,
 			effectiveMode: 'online',
 			runtimeStatus: 'misconfigured',
 			source: 'none',
-			styleUrl: null,
-			tilesUrl: null,
-			assetRootUrl: OFFLINE_ASSET_ROOT_URL,
-			statusMessage: 'Online map mode is enabled, but no style URL is configured.',
-			warnings,
-			initialCenter,
-			initialZoom,
-			offlineAssets: assetStatus,
-			checkedAt
-		};
+			autoFallbackEnabled: false,
+			statusMessage:
+				'Online mode was requested, but no online basemap style is configured for the client.',
+			...shared
+		});
 	}
 
-	return {
+	if (onlineReady && offlineReady) {
+		return buildConfig({
+			requestedMode,
+			effectiveMode: 'auto',
+			runtimeStatus: 'ready',
+			source: 'auto',
+			autoFallbackEnabled: true,
+			statusMessage:
+				'Auto mode will start with the online basemap and switch once to local PMTiles if startup fails.',
+			...shared
+		});
+	}
+
+	if (onlineReady) {
+		return buildConfig({
+			requestedMode,
+			effectiveMode: 'online',
+			runtimeStatus: 'degraded',
+			source: 'online-style',
+			autoFallbackEnabled: false,
+			statusMessage:
+				'Auto mode is running online-only because the local PMTiles bundle is not fully ready yet.',
+			...shared
+		});
+	}
+
+	if (offlineReady) {
+		return buildConfig({
+			requestedMode,
+			effectiveMode: 'offline',
+			runtimeStatus: 'degraded',
+			source: 'offline-pmtiles',
+			autoFallbackEnabled: false,
+			statusMessage:
+				'Auto mode is starting directly in local offline mode because the online basemap is unavailable.',
+			...shared
+		});
+	}
+
+	return buildConfig({
 		requestedMode,
-		effectiveMode: 'online',
-		runtimeStatus: 'ready',
-		source: onlineStyleUrl.startsWith('/') ? 'offline-style' : 'remote-style',
-		styleUrl: onlineStyleUrl,
-		tilesUrl: null,
-		assetRootUrl: OFFLINE_ASSET_ROOT_URL,
-		statusMessage: 'The map is using the configured online basemap style.',
-		warnings,
-		initialCenter,
-		initialZoom,
-		offlineAssets: assetStatus,
-		checkedAt
-	};
+		effectiveMode: 'auto',
+		runtimeStatus: 'misconfigured',
+		source: 'none',
+		autoFallbackEnabled: false,
+		statusMessage:
+			'Auto mode has neither a working online basemap style nor a complete local PMTiles bundle.',
+		...shared
+	});
 }

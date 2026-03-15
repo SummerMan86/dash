@@ -7,8 +7,7 @@
 	let { data }: { data: PageData } = $props();
 
 	const assetChecklist = [
-		{ key: 'style', label: 'style.json', ready: data.mapConfig.offlineAssets.style },
-		{ key: 'tiles', label: 'tiles bundle', ready: data.mapConfig.offlineAssets.tiles },
+		{ key: 'pmtiles', label: '.pmtiles archive', ready: data.mapConfig.offlineAssets.pmtiles },
 		{ key: 'sprites', label: 'sprites', ready: data.mapConfig.offlineAssets.sprites },
 		{ key: 'fonts', label: 'fonts', ready: data.mapConfig.offlineAssets.fonts },
 		{ key: 'manifest', label: 'manifest.json', ready: data.mapConfig.offlineAssets.manifest }
@@ -25,7 +24,7 @@
 	<title>EMIS Workspace</title>
 	<meta
 		name="description"
-		content="EMIS workspace foundation with map runtime configuration and offline basemap delivery."
+		content="EMIS workspace with MapTiler online basemap, local PMTiles offline bundle, and controlled auto fallback."
 	/>
 </svelte:head>
 
@@ -34,12 +33,13 @@
 		<header class="space-y-3">
 			<div class="text-xs font-medium tracking-[0.24em] text-muted-foreground uppercase">EMIS</div>
 			<div class="space-y-2">
-				<h1 class="text-3xl font-semibold tracking-tight">Workspace + Offline Map Runtime</h1>
+				<h1 class="text-3xl font-semibold tracking-tight">Workspace + PMTiles Runtime</h1>
 				<p class="max-w-4xl text-sm text-muted-foreground">
-					EMIS теперь умеет читать runtime-конфигурацию карты, переключаться между
-					<span class="font-mono">online</span> и <span class="font-mono">offline</span> режимами, раздавать
-					локальный basemap bundle со статики и предсказуемо деградировать, если assets ещё не установлены
-					на сервер.
+					EMIS теперь использует basemap contract вида
+					<span class="font-mono">online (MapTiler or custom style)</span> +
+					<span class="font-mono"> offline (local PMTiles)</span> +
+					<span class="font-mono"> auto</span>. В auto-режиме карта стартует online и один раз
+					переключается на локальный PMTiles bundle, если online basemap не поднялся при запуске.
 				</p>
 			</div>
 		</header>
@@ -49,8 +49,8 @@
 				<CardHeader class="border-b border-border/60 bg-muted/10">
 					<CardTitle>EMIS Map Runtime</CardTitle>
 					<CardDescription>
-						MapLibre widget уже читает server-side map config и умеет работать с локальным
-						<span class="font-mono">style.json</span>.
+						MapLibre widget читает server-side config, работает с online style и локальным PMTiles
+						bundle, сохраняя overlay endpoints поверх basemap.
 					</CardDescription>
 				</CardHeader>
 				<CardContent class="p-4">
@@ -79,14 +79,34 @@
 								<span class="font-mono"> {data.mapConfig.runtimeStatus}</span>
 							</div>
 							<div>
-								<span class="font-medium text-foreground">Style URL:</span>
+								<span class="font-medium text-foreground">Source:</span>
+								<span class="font-mono"> {data.mapConfig.source}</span>
+							</div>
+							<div>
+								<span class="font-medium text-foreground">Online provider:</span>
+								<span class="font-mono"> {data.mapConfig.onlineProvider}</span>
+							</div>
+							<div>
+								<span class="font-medium text-foreground">Online style:</span>
 								<span class="font-mono break-all">
-									{data.mapConfig.styleUrl ?? 'not configured'}</span
+									{data.mapConfig.onlineStyleUrl ?? 'not configured'}</span
 								>
 							</div>
 							<div>
-								<span class="font-medium text-foreground">Tiles URL:</span>
-								<span class="font-mono break-all"> {data.mapConfig.tilesUrl ?? 'n/a'}</span>
+								<span class="font-medium text-foreground">Offline PMTiles:</span>
+								<span class="font-mono break-all">
+									{data.mapConfig.offlinePmtilesUrl ?? 'not configured'}</span
+								>
+							</div>
+							<div>
+								<span class="font-medium text-foreground">Offline sources:</span>
+								<span class="font-mono"> {data.mapConfig.offlinePmtilesSources.length}</span>
+							</div>
+							<div>
+								<span class="font-medium text-foreground">Auto fallback:</span>
+								<span class="font-mono">
+									{data.mapConfig.autoFallbackEnabled ? 'enabled' : 'disabled'}
+								</span>
 							</div>
 						</div>
 
@@ -120,7 +140,7 @@
 				<Card>
 					<CardHeader>
 						<CardTitle>Offline Bundle Status</CardTitle>
-						<CardDescription>Что уже лежит в локальном basemap bundle</CardDescription>
+						<CardDescription>Что уже лежит в локальном PMTiles bundle</CardDescription>
 					</CardHeader>
 					<CardContent class="grid gap-2 text-sm">
 						{#each assetChecklist as item}
@@ -133,31 +153,58 @@
 								>
 							</div>
 						{/each}
+
+						{#if data.mapConfig.offlineManifest}
+							<div class="rounded-xl border border-border/60 bg-muted/20 p-3 text-muted-foreground">
+								<div class="text-xs font-medium tracking-[0.18em] uppercase">Manifest</div>
+								<div class="mt-2 grid gap-1 text-xs">
+									<div>
+										<span class="font-medium text-foreground">Source:</span>
+										{data.mapConfig.offlineManifest.source ?? 'n/a'}
+									</div>
+									<div>
+										<span class="font-medium text-foreground">Max zoom:</span>
+										{data.mapConfig.offlineManifest.maxzoom ?? 'n/a'}
+									</div>
+									<div>
+										<span class="font-medium text-foreground">BBox:</span>
+										{data.mapConfig.offlineManifest.bbox?.join(', ') ?? 'n/a'}
+									</div>
+								</div>
+							</div>
+						{/if}
 					</CardContent>
 				</Card>
 
 				<Card>
 					<CardHeader>
 						<CardTitle>Ops Commands</CardTitle>
-						<CardDescription>Как проверить и установить offline assets на сервер</CardDescription>
+						<CardDescription>Как проверить и обновить PMTiles basemap на сервере</CardDescription>
 					</CardHeader>
 					<CardContent class="space-y-2 text-sm text-muted-foreground">
 						<p>
-							<span class="font-mono">pnpm map:assets:status</span> - проверить наличие offline bundle
+							<span class="font-mono">pnpm map:assets:status</span> - проверить готовность локального
+							PMTiles bundle
 						</p>
 						<p>
-							<span class="font-mono">pnpm map:assets:install -- --source /abs/path/to/bundle</span>
-							- скопировать подготовленный basemap bundle в локальную статику проекта
+							<span class="font-mono">pnpm map:pmtiles:setup</span> - скачать/собрать локальный
+							PMTiles bundle прямо в <span class="font-mono">static/emis-map/offline</span>
 						</p>
 						<p>
-							<span class="font-mono">EMIS_MAP_MODE=offline</span> - переключить runtime в локальный
-							basemap mode
+							<span class="font-mono"
+								>pnpm map:assets:install -- --source /abs/path/to/offline-bundle</span
+							>
+							- скопировать подготовленный PMTiles bundle в локальную статику проекта
+						</p>
+						<p>
+							<span class="font-mono">EMIS_MAP_MODE=auto</span> - online first, controlled offline fallback
+							на старте карты
 						</p>
 						<p>
 							<a class="underline underline-offset-4" href="/emis/pmtiles-spike"
 								>/emis/pmtiles-spike</a
 							>
-							- отдельный validation route для PMTiles без смены основного contract
+							- отдельный validation/observability route для PMTiles runtime
 						</p>
 					</CardContent>
 				</Card>
@@ -168,12 +215,14 @@
 			<Card>
 				<CardHeader>
 					<CardTitle>What Changed</CardTitle>
-					<CardDescription>Вертикальный срез offline map layer</CardDescription>
+					<CardDescription>Новый basemap contract для EMIS</CardDescription>
 				</CardHeader>
 				<CardContent class="space-y-2 text-sm text-muted-foreground">
-					<p>Server-side map config resolved через EMIS infra.</p>
-					<p>Map widget умеет запускаться в online/offline и показывать controlled fallback.</p>
-					<p>Offline assets отдаются из <span class="font-mono">static/emis-map/offline</span>.</p>
+					<p>Server-side map config теперь резолвит `online`, `offline` и `auto`.</p>
+					<p>Offline basemap теперь опирается на локальный PMTiles archive + sprites + glyphs.</p>
+					<p>
+						Auto-режим один раз переключается на local PMTiles при startup failure online basemap.
+					</p>
 				</CardContent>
 			</Card>
 
@@ -189,19 +238,22 @@
 						>.
 					</p>
 					<p>Поиск, geocoding и routing специально не входят в этот этап.</p>
-					<p>Offline bundle сейчас ожидается как уже подготовленная локальная папка с assets.</p>
+					<p>География offline bundle ограничена тем покрытием, которое лежит в PMTiles archive.</p>
 				</CardContent>
 			</Card>
 
 			<Card>
 				<CardHeader>
 					<CardTitle>Next Wave</CardTitle>
-					<CardDescription>Что логично делать после этого каркаса</CardDescription>
+					<CardDescription>Что логично делать после switch-а</CardDescription>
 				</CardHeader>
 				<CardContent class="space-y-2 text-sm text-muted-foreground">
 					<p>1. Добавить popup/select flow поверх уже работающих map overlay endpoints.</p>
 					<p>2. Довести search endpoints и синхронизацию filters между list/map workspace.</p>
-					<p>3. Прогнать PMTiles validation wave, не ломая текущий offline bundle contract.</p>
+					<p>
+						3. Расширить offline coverage и зафиксировать production MapTiler credentials/ops
+						runbook.
+					</p>
 				</CardContent>
 			</Card>
 		</div>

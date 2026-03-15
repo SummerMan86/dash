@@ -66,10 +66,11 @@ pnpm build
 ## Важные переменные окружения
 
 - `DATABASE_URL` - PostgreSQL для `wildberries.*` датасетов и scheduler alerts
-- `EMIS_MAP_MODE` - режим basemap для EMIS (`online` или `offline`)
-- `EMIS_MAP_STYLE_URL` - online style URL или общий fallback style URL
-- `EMIS_MAP_OFFLINE_STYLE_URL` - локальный style URL для offline bundle
-- `EMIS_MAP_TILES_URL` - tiles URL template для offline diagnostics/runtime
+- `EMIS_MAP_MODE` - режим basemap для EMIS (`auto`, `online` или `offline`)
+- `EMIS_MAP_ONLINE_STYLE_URL` - явный online style URL для EMIS
+- `EMIS_MAP_STYLE_URL` - legacy alias для online style URL
+- `EMIS_MAPTILER_KEY` - API key для MapTiler style runtime
+- `EMIS_MAPTILER_STYLE_ID` - style id для MapTiler, по умолчанию `streets-v2`
 - `EMIS_MAP_INITIAL_CENTER` - стартовый центр карты в формате `lon,lat`
 - `EMIS_MAP_INITIAL_ZOOM` - стартовый zoom EMIS-карты
 - `ENABLE_ALERT_SCHEDULER` - выключение фонового scheduler (`false`)
