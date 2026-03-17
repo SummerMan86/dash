@@ -16,12 +16,18 @@ import {
 	compileEmisMartDataset,
 	type EmisMartDatasetId
 } from './definitions/emisMart';
+import {
+	EMIS_SHIP_ROUTE_DATASETS,
+	compileEmisShipRouteDataset,
+	type EmisShipRouteDatasetId
+} from './definitions/emisShipRoutes';
 
 type KnownDatasetId =
 	| PaymentDatasetId
 	| WildberriesDatasetId
 	| ProductPeriodDatasetId
-	| EmisMartDatasetId;
+	| EmisMartDatasetId
+	| EmisShipRouteDatasetId;
 
 /**
  * Dataset compiler entrypoint.
@@ -37,7 +43,8 @@ export function isKnownDatasetId(id: string): id is KnownDatasetId {
 		Object.values(PAYMENT_DATASETS).includes(id as PaymentDatasetId) ||
 		Object.values(WILDBERRIES_DATASETS).includes(id as WildberriesDatasetId) ||
 		Object.values(PRODUCT_PERIOD_DATASETS).includes(id as ProductPeriodDatasetId) ||
-		Object.values(EMIS_MART_DATASETS).includes(id as EmisMartDatasetId)
+		Object.values(EMIS_MART_DATASETS).includes(id as EmisMartDatasetId) ||
+		Object.values(EMIS_SHIP_ROUTE_DATASETS).includes(id as EmisShipRouteDatasetId)
 	);
 }
 
@@ -53,6 +60,9 @@ export function compileDataset(datasetId: DatasetId, query: DatasetQuery): Datas
 	}
 	if (Object.values(EMIS_MART_DATASETS).includes(datasetId as EmisMartDatasetId)) {
 		return compileEmisMartDataset(datasetId as EmisMartDatasetId, query);
+	}
+	if (Object.values(EMIS_SHIP_ROUTE_DATASETS).includes(datasetId as EmisShipRouteDatasetId)) {
+		return compileEmisShipRouteDataset(datasetId as EmisShipRouteDatasetId, query);
 	}
 	// This error code is used by the HTTP layer to return 404.
 	throw Object.assign(new Error(`Unknown datasetId: ${datasetId}`), { code: 'DATASET_NOT_FOUND' });

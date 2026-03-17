@@ -143,6 +143,70 @@ const DATASETS: Record<string, DatasetSqlMapping> = {
 			created_at: 'datetime',
 			updated_at: 'datetime'
 		}
+	},
+	'emis.ship_route_points': {
+		relation: { schema: 'mart_emis', table: 'vsl_route_point_hist' },
+		columns: {
+			route_point_id: 'number',
+			load_batch_id: 'number',
+			ship_hbk_id: 'number',
+			ship_id: 'number',
+			imo: 'number',
+			mmsi: 'number',
+			vessel_name: 'string',
+			vessel_type: 'string',
+			flag: 'string',
+			callsign: 'string',
+			route_date_utc: 'date',
+			point_seq_ship: 'number',
+			point_seq_day: 'number',
+			fetched_at: 'datetime',
+			loaded_at: 'datetime',
+			latitude: 'number',
+			longitude: 'number',
+			speed: 'number',
+			course: 'number',
+			heading: 'number',
+			prev_route_point_id: 'number',
+			prev_fetched_at: 'datetime',
+			prev_latitude: 'number',
+			prev_longitude: 'number',
+			gap_minutes_from_prev: 'number',
+			same_coordinates_as_prev: 'boolean',
+			next_route_point_id: 'number',
+			next_fetched_at: 'datetime',
+			next_latitude: 'number',
+			next_longitude: 'number',
+			gap_minutes_to_next: 'number'
+		}
+	},
+	'emis.ship_route_segments': {
+		relation: { schema: 'mart_emis', table: 'vsl_route_segment_hist' },
+		columns: {
+			ship_hbk_id: 'number',
+			ship_id: 'number',
+			imo: 'number',
+			mmsi: 'number',
+			vessel_name: 'string',
+			vessel_type: 'string',
+			flag: 'string',
+			callsign: 'string',
+			segment_seq_ship: 'number',
+			route_date_utc: 'date',
+			from_route_point_id: 'number',
+			to_route_point_id: 'number',
+			from_fetched_at: 'datetime',
+			to_fetched_at: 'datetime',
+			from_latitude: 'number',
+			from_longitude: 'number',
+			to_latitude: 'number',
+			to_longitude: 'number',
+			from_speed: 'number',
+			from_course: 'number',
+			from_heading: 'number',
+			gap_minutes: 'number',
+			same_coordinates_as_next: 'boolean'
+		}
 	}
 };
 
