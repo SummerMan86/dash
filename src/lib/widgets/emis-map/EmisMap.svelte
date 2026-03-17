@@ -5,28 +5,58 @@
 
 	import type {
 		EmisMapConfig,
+		EmisMapFeatureRef,
 		EmisMapNewsFeatureCollection,
-		EmisMapObjectFeatureCollection
+		EmisMapNewsFeatureProperties,
+		EmisMapObjectFeatureCollection,
+		EmisMapObjectFeatureProperties,
+		EmisMapSelectedFeature
 	} from '$entities/emis-map';
+	import type { JsonValue } from '$entities/dataset';
 	import { cn } from '$shared/styles/utils';
 	import {
 		EMPTY_FEATURE_COLLECTION,
+		EMPTY_LINE_FEATURE_COLLECTION,
 		ensureEmisOverlayLayers,
-		setEmisOverlayData
+		EMIS_MAP_LAYER_IDS,
+		setEmisOverlayData,
+		setEmisRouteData,
+		setEmisOverlaySelection
 	} from './layer-config';
 	import { acquirePmtilesProtocol, releasePmtilesProtocol } from './pmtiles-protocol';
+	import { renderFeaturePopupContent } from './popup-renderers';
 	import { buildPmtilesStyle } from './pmtiles-style';
 
 	const AUTO_FALLBACK_TIMEOUT_MS = 7000;
 
 	type BasemapSource = 'online' | 'offline' | 'unavailable';
+	type EmisLayerMode = 'all' | 'objects' | 'news';
 
 	interface Props {
 		mapConfig: EmisMapConfig;
+		objectsQuery?: Record<string, JsonValue>;
+		newsQuery?: Record<string, JsonValue>;
+		routePointsData?: GeoJSON.FeatureCollection<GeoJSON.Point>;
+		routeSegmentsData?: GeoJSON.FeatureCollection<GeoJSON.LineString>;
+		routeFocusKey?: string | number | null;
+		layer?: EmisLayerMode;
+		selectedFeature?: EmisMapFeatureRef | null;
+		onFeatureSelect?: (feature: EmisMapSelectedFeature) => void;
 		class?: string;
 	}
 
-	let { mapConfig, class: className }: Props = $props();
+	let {
+		mapConfig,
+		objectsQuery = {},
+		newsQuery = {},
+		routePointsData = EMPTY_FEATURE_COLLECTION as GeoJSON.FeatureCollection<GeoJSON.Point>,
+		routeSegmentsData = EMPTY_LINE_FEATURE_COLLECTION as GeoJSON.FeatureCollection<GeoJSON.LineString>,
+		routeFocusKey = null,
+		layer = 'all',
+		selectedFeature = null,
+		onFeatureSelect,
+		class: className
+	}: Props = $props();
 
 	let container = $state<HTMLDivElement | null>(null);
 	let mapLoaded = $state(false);
@@ -35,7 +65,10 @@
 	let overlaysLoading = $state(false);
 	let objectsCount = $state(0);
 	let newsCount = $state(0);
+	let routePointsCount = $state(0);
+	let routeSegmentsCount = $state(0);
 	let resolvedBbox = $state<string | null>(null);
+	let resolvedOverlayKey = $state<string | null>(null);
 	let activeBasemapSource = $state<BasemapSource>('unavailable');
 	let runtimeNote = $state<string | null>(null);
 	let fallbackActivated = $state(false);
@@ -45,6 +78,8 @@
 	let activeOverlayAbortController: AbortController | null = null;
 	let startupTimer: ReturnType<typeof setTimeout> | null = null;
 	let protocolAttached = false;
+	let popup: maplibregl.Popup | null = null;
+	let resolvedRouteFocusKey: string | number | null = null;
 
 	function getStatusTone() {
 		if (mapConfig.runtimeStatus === 'ready') {
@@ -101,17 +136,38 @@
 		if (map) {
 			setEmisOverlayData(map, 'objects', EMPTY_FEATURE_COLLECTION);
 			setEmisOverlayData(map, 'news', EMPTY_FEATURE_COLLECTION);
+			setEmisRouteData(map, EMPTY_FEATURE_COLLECTION, EMPTY_LINE_FEATURE_COLLECTION);
 		}
 
 		objectsCount = 0;
 		newsCount = 0;
+		routePointsCount = 0;
+		routeSegmentsCount = 0;
 		resolvedBbox = null;
+		resolvedOverlayKey = null;
+		resolvedRouteFocusKey = null;
+	}
+
+	function appendQueryParams(url: URL, params: Record<string, JsonValue>) {
+		for (const [key, value] of Object.entries(params)) {
+			if (value === null || value === undefined) continue;
+			if (Array.isArray(value)) {
+				for (const item of value) {
+					url.searchParams.append(key, String(item));
+				}
+				continue;
+			}
+
+			url.searchParams.set(key, String(value));
+		}
 	}
 
 	function destroyMapRuntime() {
 		clearStartupTimer();
 		activeOverlayAbortController?.abort();
 		activeOverlayAbortController = null;
+		popup?.remove();
+		popup = null;
 		map?.remove();
 		map = null;
 		if (protocolAttached) {
@@ -121,6 +177,168 @@
 		mapLoaded = false;
 		overlaysLoading = false;
 		resetOverlaySources();
+	}
+
+	function openFeaturePopup(
+		feature: EmisMapSelectedFeature,
+		lngLat: maplibregl.LngLatLike
+	) {
+		if (!map) return;
+
+		popup?.remove();
+		popup = new maplibregl.Popup({
+			closeButton: true,
+			closeOnClick: true,
+			maxWidth: '320px',
+			offset: 16
+		})
+			.setLngLat(lngLat)
+			.setDOMContent(renderFeaturePopupContent(feature))
+			.addTo(map);
+	}
+
+	function normalizeObjectFeature(
+		properties: GeoJSON.GeoJsonProperties | null | undefined
+	): EmisMapObjectFeatureProperties | null {
+		if (
+			!properties ||
+			typeof properties.id !== 'string' ||
+			typeof properties.title !== 'string' ||
+			typeof properties.objectTypeId !== 'string' ||
+			typeof properties.objectTypeCode !== 'string' ||
+			typeof properties.objectTypeName !== 'string' ||
+			typeof properties.status !== 'string' ||
+			typeof properties.updatedAt !== 'string'
+		) {
+			return null;
+		}
+
+		return {
+			id: properties.id,
+			kind: 'object',
+			title: properties.title,
+			subtitle: typeof properties.subtitle === 'string' ? properties.subtitle : null,
+			colorKey: typeof properties.colorKey === 'string' ? properties.colorKey : 'object',
+			objectTypeId: properties.objectTypeId,
+			objectTypeCode: properties.objectTypeCode,
+			objectTypeName: properties.objectTypeName,
+			countryCode: typeof properties.countryCode === 'string' ? properties.countryCode : null,
+			region: typeof properties.region === 'string' ? properties.region : null,
+			status: properties.status,
+			updatedAt: properties.updatedAt
+		};
+	}
+
+	function normalizeNewsFeature(
+		properties: GeoJSON.GeoJsonProperties | null | undefined
+	): EmisMapNewsFeatureProperties | null {
+		if (
+			!properties ||
+			typeof properties.id !== 'string' ||
+			typeof properties.title !== 'string' ||
+			typeof properties.sourceId !== 'string' ||
+			typeof properties.sourceName !== 'string' ||
+			typeof properties.publishedAt !== 'string'
+		) {
+			return null;
+		}
+
+		return {
+			id: properties.id,
+			kind: 'news',
+			title: properties.title,
+			subtitle: typeof properties.subtitle === 'string' ? properties.subtitle : null,
+			colorKey: typeof properties.colorKey === 'string' ? properties.colorKey : 'news',
+			sourceId: properties.sourceId,
+			sourceName: properties.sourceName,
+			countryCode: typeof properties.countryCode === 'string' ? properties.countryCode : null,
+			region: typeof properties.region === 'string' ? properties.region : null,
+			newsType: typeof properties.newsType === 'string' ? properties.newsType : null,
+			importance: typeof properties.importance === 'number' ? properties.importance : null,
+			publishedAt: properties.publishedAt,
+			relatedObjectsCount:
+				typeof properties.relatedObjectsCount === 'number' ? properties.relatedObjectsCount : 0
+		};
+	}
+
+	function bindOverlayInteractions(targetMap: maplibregl.Map) {
+		const handleFeatureSelection = (
+			feature: EmisMapSelectedFeature | null,
+			lngLat: maplibregl.LngLatLike
+		) => {
+			if (!feature) return;
+			onFeatureSelect?.(feature);
+			openFeaturePopup(feature, lngLat);
+		};
+
+		targetMap.on('click', EMIS_MAP_LAYER_IDS.objects, (event) => {
+			handleFeatureSelection(normalizeObjectFeature(event.features?.[0]?.properties), event.lngLat);
+		});
+
+		targetMap.on('click', EMIS_MAP_LAYER_IDS.news, (event) => {
+			handleFeatureSelection(normalizeNewsFeature(event.features?.[0]?.properties), event.lngLat);
+		});
+
+		targetMap.on('mouseenter', EMIS_MAP_LAYER_IDS.objects, () => {
+			targetMap.getCanvas().style.cursor = 'pointer';
+		});
+		targetMap.on('mouseenter', EMIS_MAP_LAYER_IDS.news, () => {
+			targetMap.getCanvas().style.cursor = 'pointer';
+		});
+		targetMap.on('mouseleave', EMIS_MAP_LAYER_IDS.objects, () => {
+			targetMap.getCanvas().style.cursor = '';
+		});
+		targetMap.on('mouseleave', EMIS_MAP_LAYER_IDS.news, () => {
+			targetMap.getCanvas().style.cursor = '';
+		});
+	}
+
+	function syncRouteOverlays() {
+		if (!map || !mapLoaded) return;
+
+		setEmisRouteData(map, routePointsData, routeSegmentsData);
+		routePointsCount = routePointsData.features.length;
+		routeSegmentsCount = routeSegmentsData.features.length;
+	}
+
+	function buildRouteBounds() {
+		const bounds = new maplibregl.LngLatBounds();
+		let hasCoordinates = false;
+
+		for (const feature of routePointsData.features) {
+			if (feature.geometry?.type !== 'Point') continue;
+			const [lng, lat] = feature.geometry.coordinates;
+			if (!Number.isFinite(lng) || !Number.isFinite(lat)) continue;
+			bounds.extend([lng, lat]);
+			hasCoordinates = true;
+		}
+
+		for (const feature of routeSegmentsData.features) {
+			if (feature.geometry?.type !== 'LineString') continue;
+			for (const [lng, lat] of feature.geometry.coordinates) {
+				if (!Number.isFinite(lng) || !Number.isFinite(lat)) continue;
+				bounds.extend([lng, lat]);
+				hasCoordinates = true;
+			}
+		}
+
+		return hasCoordinates ? bounds : null;
+	}
+
+	function maybeFitRouteBounds() {
+		if (!map || !mapLoaded || routeFocusKey === null || routeFocusKey === resolvedRouteFocusKey) {
+			return;
+		}
+
+		const bounds = buildRouteBounds();
+		if (!bounds) return;
+
+		resolvedRouteFocusKey = routeFocusKey;
+		map.fitBounds(bounds, {
+			padding: { top: 84, right: 72, bottom: 84, left: 72 },
+			maxZoom: 8,
+			duration: 900
+		});
 	}
 
 	function getMapStyle(source: Exclude<BasemapSource, 'unavailable'>) {
@@ -172,11 +390,25 @@
 		return (await response.json()) as T;
 	}
 
-	async function refreshOverlays(reason: 'load' | 'moveend') {
+	async function refreshOverlays(reason: 'load' | 'moveend' | 'filters') {
 		if (!map || !mapLoaded) return;
 
 		const bbox = buildBboxParam(map);
-		if (reason !== 'load' && bbox === resolvedBbox && !overlayError) {
+		const objectsUrl = new URL('/api/emis/map/objects', window.location.origin);
+		const newsUrl = new URL('/api/emis/map/news', window.location.origin);
+		objectsUrl.searchParams.set('bbox', bbox);
+		newsUrl.searchParams.set('bbox', bbox);
+		appendQueryParams(objectsUrl, objectsQuery);
+		appendQueryParams(newsUrl, newsQuery);
+
+		const overlayKey = [
+			layer,
+			bbox,
+			objectsUrl.searchParams.toString(),
+			newsUrl.searchParams.toString()
+		].join('|');
+
+		if (reason !== 'load' && overlayKey === resolvedOverlayKey && !overlayError) {
 			return;
 		}
 
@@ -190,16 +422,21 @@
 		activeOverlayAbortController = controller;
 
 		try {
-			const [objects, news] = await Promise.all([
-				fetchFeatureCollection<EmisMapObjectFeatureCollection>(
-					`/api/emis/map/objects?bbox=${encodeURIComponent(bbox)}`,
-					controller.signal
-				),
-				fetchFeatureCollection<EmisMapNewsFeatureCollection>(
-					`/api/emis/map/news?bbox=${encodeURIComponent(bbox)}`,
-					controller.signal
-				)
-			]);
+			const objectsPromise =
+				layer === 'news'
+					? Promise.resolve(EMPTY_FEATURE_COLLECTION as EmisMapObjectFeatureCollection)
+					: fetchFeatureCollection<EmisMapObjectFeatureCollection>(
+							`${objectsUrl.pathname}?${objectsUrl.searchParams.toString()}`,
+							controller.signal
+						);
+			const newsPromise =
+				layer === 'objects'
+					? Promise.resolve(EMPTY_FEATURE_COLLECTION as EmisMapNewsFeatureCollection)
+					: fetchFeatureCollection<EmisMapNewsFeatureCollection>(
+							`${newsUrl.pathname}?${newsUrl.searchParams.toString()}`,
+							controller.signal
+						);
+			const [objects, news] = await Promise.all([objectsPromise, newsPromise]);
 
 			if (!map || controller.signal.aborted || requestId !== activeOverlayRequestId) {
 				return;
@@ -210,6 +447,7 @@
 			objectsCount = objects.features.length;
 			newsCount = news.features.length;
 			resolvedBbox = bbox;
+			resolvedOverlayKey = overlayKey;
 		} catch (error) {
 			if (controller.signal.aborted) return;
 
@@ -294,8 +532,12 @@
 			clearStartupTimer();
 			if (!map) return;
 			ensureEmisOverlayLayers(map);
+			setEmisOverlaySelection(map, selectedFeature);
+			syncRouteOverlays();
+			bindOverlayInteractions(map);
 			mapLoaded = true;
 			void refreshOverlays('load');
+			maybeFitRouteBounds();
 		});
 		map.on('error', (event) => {
 			const nextError =
@@ -329,6 +571,42 @@
 
 		return null;
 	}
+
+	$effect(() => {
+		const _layer = layer;
+		const _objectsQuery = JSON.stringify(objectsQuery);
+		const _newsQuery = JSON.stringify(newsQuery);
+
+		if (!mapLoaded) return;
+
+		void refreshOverlays('filters');
+	});
+
+	$effect(() => {
+		const selection = selectedFeature;
+
+		if (!mapLoaded || !map) return;
+
+		setEmisOverlaySelection(map, selection);
+	});
+
+	$effect(() => {
+		const _routePointsKey = JSON.stringify(routePointsData);
+		const _routeSegmentsKey = JSON.stringify(routeSegmentsData);
+
+		if (!mapLoaded) return;
+
+		syncRouteOverlays();
+		maybeFitRouteBounds();
+	});
+
+	$effect(() => {
+		const _routeFocusKey = routeFocusKey;
+
+		if (!mapLoaded) return;
+
+		maybeFitRouteBounds();
+	});
 
 	onMount(() => {
 		const initialSource = resolveInitialBasemapSource();
@@ -438,6 +716,14 @@
 				<div>
 					<span class="font-medium text-foreground">News:</span>
 					{newsCount}
+				</div>
+				<div>
+					<span class="font-medium text-foreground">Route points:</span>
+					{routePointsCount}
+				</div>
+				<div>
+					<span class="font-medium text-foreground">Route segments:</span>
+					{routeSegmentsCount}
 				</div>
 				<div>
 					<span class="font-medium text-foreground">Viewport bbox:</span>
