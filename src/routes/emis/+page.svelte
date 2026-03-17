@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { browser } from '$app/environment';
 	import { onMount } from 'svelte';
 	import type { PageData } from './$types';
 
@@ -10,11 +11,15 @@
 	import { useDebouncedLoader } from '$shared/lib/useDebouncedLoader.svelte';
 	import { Button } from '$shared/ui/button';
 	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$shared/ui/card';
-	import { Select } from '$shared/ui/select';
 	import { FilterPanel } from '$widgets/filters';
 	import { EmisMap } from '$widgets/emis-map';
 
-	import { emisWorkspaceFilters, EMIS_FILTER_TARGETS } from './filters';
+	import {
+		emisWorkspaceFilters,
+		EMIS_FILTER_TARGETS,
+		EMIS_PRIMARY_FILTER_IDS,
+		EMIS_SHIP_ROUTE_FILTER_IDS
+	} from './filters';
 
 	type SearchResultKind = 'objects' | 'news';
 	type ShipRoutePointRow = {
@@ -96,7 +101,6 @@
 	let selectedFeature = $state<EmisMapSelectedFeature | null>(null);
 	let selectionFilterSnapshot = $state<string | null>(null);
 	let shipRouteCatalog = $state<ShipRouteVesselOption[]>([]);
-	let selectedShipHbkId = $state('');
 	let shipRoutePoints = $state<ShipRoutePointRow[]>([]);
 	let shipRouteSegments = $state<ShipRouteSegmentRow[]>([]);
 	let shipRouteCatalogLoading = $state(false);
@@ -160,6 +164,10 @@
 	function formatMetric(value: number | null, suffix = '') {
 		if (value === null) return 'n/a';
 		return `${value.toFixed(1)}${suffix}`;
+	}
+
+	function parseSearchResultKind(value: string | null | undefined): SearchResultKind | null {
+		return value === 'objects' || value === 'news' ? value : null;
 	}
 
 	function parseShipRoutePoint(row: Record<string, unknown>): ShipRoutePointRow | null {
@@ -290,6 +298,10 @@
 	let activeLayer = $derived.by((): 'all' | 'objects' | 'news' => {
 		const raw = $effectiveFilters.layer;
 		return raw === 'objects' || raw === 'news' ? raw : 'all';
+	});
+	let selectedShipHbkId = $derived.by(() => {
+		const raw = $effectiveFilters.shipHbkId;
+		return typeof raw === 'string' ? raw : '';
 	});
 	let effectiveFilterSnapshot = $derived(JSON.stringify($effectiveFilters));
 	let selectedFeatureRef = $derived(
@@ -479,12 +491,15 @@
 				.map(parseShipRouteVessel)
 				.filter((row): row is ShipRouteVesselOption => Boolean(row));
 
-			if (!selectedShipHbkId || !shipRouteCatalog.some((vessel) => vessel.shipHbkId === selectedShipHbkId)) {
-				selectedShipHbkId = shipRouteCatalog[0]?.shipHbkId ?? '';
+			const nextShipHbkId = shipRouteCatalog[0]?.shipHbkId ?? null;
+			if (
+				!selectedShipHbkId ||
+				!shipRouteCatalog.some((vessel) => vessel.shipHbkId === selectedShipHbkId)
+			) {
+				filterRuntime.setFilter('shipHbkId', nextShipHbkId);
 			}
 		} catch (error) {
 			shipRouteCatalog = [];
-			selectedShipHbkId = '';
 			shipRouteCatalogError =
 				error instanceof Error ? error.message : 'Не удалось загрузить список судов';
 		} finally {
@@ -584,7 +599,30 @@
 		}
 	});
 
+	$effect(() => {
+		if (activeLayer === 'objects' || activeLayer === 'news') {
+			preferredResultKind = activeLayer;
+		}
+	});
+
+	$effect(() => {
+		const target = preferredResultKind;
+
+		if (!browser) return;
+
+		const url = new URL(window.location.href);
+		if (url.searchParams.get('target') === target) return;
+
+		url.searchParams.set('target', target);
+		window.history.replaceState(window.history.state, '', `${url.pathname}?${url.searchParams.toString()}${url.hash}`);
+	});
+
 	onMount(() => {
+		const initialTarget = parseSearchResultKind(new URLSearchParams(window.location.search).get('target'));
+		if (initialTarget) {
+			preferredResultKind = initialTarget;
+		}
+
 		void loadShipRouteCatalog();
 	});
 </script>
@@ -619,17 +657,22 @@
 				</CardDescription>
 			</CardHeader>
 			<CardContent class="space-y-4">
-				<FilterPanel runtime={filterRuntime} scope="all" direction="horizontal" />
+				<FilterPanel
+					runtime={filterRuntime}
+					scope="all"
+					direction="horizontal"
+					filterIds={[...EMIS_PRIMARY_FILTER_IDS]}
+				/>
 
 				<div class="flex flex-wrap items-center gap-2">
 					<Button
-						variant={resultKind === 'objects' ? 'default' : 'outline'}
+						variant={effectiveResultKind === 'objects' ? 'default' : 'outline'}
 						onclick={() => setResultKind('objects')}
 					>
 						Список объектов
 					</Button>
 					<Button
-						variant={resultKind === 'news' ? 'default' : 'outline'}
+						variant={effectiveResultKind === 'news' ? 'default' : 'outline'}
 						onclick={() => setResultKind('news')}
 					>
 						Список новостей
@@ -640,7 +683,16 @@
 					<div class="type-caption text-muted-foreground">
 						Активный layer filter: <span class="font-mono">{activeLayer}</span>
 					</div>
+					<div class="type-caption text-muted-foreground">
+						Search target: <span class="font-mono">{effectiveResultKind}</span>
+					</div>
 				</div>
+				{#if activeLayer !== 'all'}
+					<div class="rounded-xl border border-info/20 bg-info-muted/20 px-3 py-2 type-caption text-muted-foreground">
+						Список сейчас синхронизирован с `layer={activeLayer}`. Для независимого выбора target
+						верните layer в <span class="font-mono">all</span>.
+					</div>
+				{/if}
 			</CardContent>
 		</Card>
 
@@ -678,7 +730,7 @@
 				<CardContent class="space-y-4">
 					<div class="flex items-center justify-between gap-3">
 						<div class="type-caption text-muted-foreground">
-							Target: <span class="font-mono">{resultKind}</span>
+							Target: <span class="font-mono">{effectiveResultKind}</span>
 						</div>
 						<div class="type-caption text-muted-foreground">
 							Rows: {resultsMeta?.count ?? 0}
@@ -741,11 +793,11 @@
 						<div class="rounded-xl border border-error/30 bg-error-muted/30 p-3 type-body-sm text-error">
 							{resultsError}
 						</div>
-					{:else if resultsLoading && resultKind === 'objects' && objectRows.length === 0}
+					{:else if resultsLoading && effectiveResultKind === 'objects' && objectRows.length === 0}
 						<div class="type-body-sm text-muted-foreground">Загружаем объекты...</div>
-					{:else if resultsLoading && resultKind === 'news' && newsRows.length === 0}
+					{:else if resultsLoading && effectiveResultKind === 'news' && newsRows.length === 0}
 						<div class="type-body-sm text-muted-foreground">Загружаем новости...</div>
-					{:else if resultKind === 'objects'}
+					{:else if effectiveResultKind === 'objects'}
 						<div class="space-y-3">
 							{#if objectRows.length === 0}
 								<div class="type-body-sm text-muted-foreground">По текущим фильтрам объекты не найдены.</div>
@@ -841,23 +893,12 @@
 				</CardHeader>
 				<CardContent class="space-y-4">
 					<div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto_auto]">
-						<div class="space-y-2">
-							<label class="type-caption text-muted-foreground" for="ship-route-select">
-								Судно
-							</label>
-							<Select
-								id="ship-route-select"
-								bind:value={selectedShipHbkId}
-								disabled={shipRouteCatalogLoading || shipRouteCatalog.length === 0}
-							>
-								<option value="" disabled>Выберите судно</option>
-								{#each shipRouteCatalog as vessel (vessel.shipHbkId)}
-									<option value={vessel.shipHbkId}>
-										{vessel.vesselName} · HBK {vessel.shipHbkId}
-									</option>
-								{/each}
-							</Select>
-						</div>
+						<FilterPanel
+							runtime={filterRuntime}
+							scope="workspace"
+							direction="horizontal"
+							filterIds={[...EMIS_SHIP_ROUTE_FILTER_IDS]}
+						/>
 						<div class="flex items-end">
 							<Button
 								variant="outline"
@@ -942,7 +983,7 @@
 						<div class="type-body-sm text-muted-foreground">Загружаем маршрут судна...</div>
 					{:else if !selectedShipHbkId}
 						<div class="type-body-sm text-muted-foreground">
-							В `mart_emis` пока не выбрано судно для route preview.
+							Выберите судно через route filter, чтобы открыть ship-track preview.
 						</div>
 					{:else if shipRoutePoints.length === 0}
 						<div class="type-body-sm text-muted-foreground">

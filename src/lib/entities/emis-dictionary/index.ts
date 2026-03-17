@@ -1,1 +1,1 @@
-export type { EmisCountry, EmisObjectType, EmisSource } from './model/types';
+export type { EmisCountry, EmisObjectType, EmisShipRouteVessel, EmisSource } from './model/types';
