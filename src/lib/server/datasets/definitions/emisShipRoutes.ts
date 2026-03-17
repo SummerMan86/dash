@@ -2,6 +2,7 @@ import type { DatasetId, DatasetIr, DatasetQuery } from '$entities/dataset';
 import { ir } from '$entities/dataset';
 
 export const EMIS_SHIP_ROUTE_DATASETS = {
+	shipRouteVessels: 'emis.ship_route_vessels',
 	shipRoutePoints: 'emis.ship_route_points',
 	shipRouteSegments: 'emis.ship_route_segments'
 } as const satisfies Record<string, DatasetId>;
@@ -55,6 +56,45 @@ export function compileEmisShipRouteDataset(
 	const limit = clampLimit(p.limit, 5000);
 
 	switch (datasetId) {
+		case EMIS_SHIP_ROUTE_DATASETS.shipRouteVessels: {
+			const whereParts = [];
+			if (typeof shipHbkId === 'number') whereParts.push(ir.eq(ir.col('ship_hbk_id'), ir.lit(shipHbkId)));
+			if (typeof shipId === 'number') whereParts.push(ir.eq(ir.col('ship_id'), ir.lit(shipId)));
+			if (typeof imo === 'number') whereParts.push(ir.eq(ir.col('imo'), ir.lit(imo)));
+			if (typeof mmsi === 'number') whereParts.push(ir.eq(ir.col('mmsi'), ir.lit(mmsi)));
+			if (vesselName) whereParts.push(ir.eq(ir.col('vessel_name'), ir.lit(vesselName)));
+			if (routeDateUtc) {
+				whereParts.push(ir.eq(ir.col('last_route_date_utc'), ir.lit(routeDateUtc)));
+			}
+
+			return {
+				kind: 'select',
+				from: { kind: 'dataset', id: datasetId },
+				select: [
+					{ expr: ir.col('ship_hbk_id') },
+					{ expr: ir.col('ship_id') },
+					{ expr: ir.col('imo') },
+					{ expr: ir.col('mmsi') },
+					{ expr: ir.col('vessel_name') },
+					{ expr: ir.col('vessel_type') },
+					{ expr: ir.col('flag') },
+					{ expr: ir.col('callsign') },
+					{ expr: ir.col('first_fetched_at') },
+					{ expr: ir.col('last_fetched_at') },
+					{ expr: ir.col('last_route_date_utc') },
+					{ expr: ir.col('points_count') },
+					{ expr: ir.col('route_days_count') },
+					{ expr: ir.col('last_latitude') },
+					{ expr: ir.col('last_longitude') }
+				],
+				...(whereParts.length
+					? { where: whereParts.length === 1 ? whereParts[0] : ir.and(whereParts) }
+					: {}),
+				orderBy: [{ expr: ir.col('last_fetched_at'), dir: 'desc' }],
+				limit: clampLimit(p.limit, 200)
+			};
+		}
+
 		case EMIS_SHIP_ROUTE_DATASETS.shipRoutePoints: {
 			const whereParts = [];
 			const dateWhere = datetimeRangeWhere('fetched_at', query.filters);

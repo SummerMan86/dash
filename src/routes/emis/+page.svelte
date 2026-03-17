@@ -68,11 +68,15 @@
 	type ShipRouteVesselOption = {
 		shipHbkId: string;
 		vesselName: string;
+		firstFetchedAt: string | null;
 		latestFetchedAt: string;
 		routeDateUtc: string | null;
 		pointsCount: number;
+		routeDaysCount: number;
 		imo: number | null;
 		mmsi: number | null;
+		lastLatitude: number | null;
+		lastLongitude: number | null;
 	};
 
 	let { data }: { data: PageData } = $props();
@@ -84,7 +88,7 @@
 	});
 	let effectiveFilters = $derived(filterRuntime.effective);
 
-	let resultKind = $state<SearchResultKind>('objects');
+	let preferredResultKind = $state<SearchResultKind>('objects');
 	let objectRows = $state<EmisObjectSummary[]>([]);
 	let newsRows = $state<EmisNewsSummary[]>([]);
 	let resultsError = $state<string | null>(null);
@@ -250,6 +254,29 @@
 		};
 	}
 
+	function parseShipRouteVessel(row: Record<string, unknown>): ShipRouteVesselOption | null {
+		const shipHbkId = asNumber(row.ship_hbk_id);
+		const latestFetchedAt = asString(row.last_fetched_at);
+
+		if (shipHbkId === null || !latestFetchedAt) {
+			return null;
+		}
+
+		return {
+			shipHbkId: String(shipHbkId),
+			vesselName: asString(row.vessel_name) ?? `Ship ${shipHbkId}`,
+			firstFetchedAt: asString(row.first_fetched_at),
+			latestFetchedAt,
+			routeDateUtc: asString(row.last_route_date_utc),
+			pointsCount: asNumber(row.points_count) ?? 0,
+			routeDaysCount: asNumber(row.route_days_count) ?? 0,
+			imo: asNumber(row.imo),
+			mmsi: asNumber(row.mmsi),
+			lastLatitude: asNumber(row.last_latitude),
+			lastLongitude: asNumber(row.last_longitude)
+		};
+	}
+
 	function buildObjectSubtitle(row: EmisObjectSummary) {
 		const parts = [row.objectTypeName, row.region, row.countryCode].filter(Boolean);
 		return parts.length ? parts.join(' • ') : null;
@@ -324,8 +351,18 @@
 	);
 	let latestShipRoutePoints = $derived.by(() => [...shipRoutePoints].slice(-8).reverse());
 
+	let effectiveResultKind = $derived.by<SearchResultKind>(() => {
+		if (activeLayer === 'objects') return 'objects';
+		if (activeLayer === 'news') return 'news';
+		return preferredResultKind;
+	});
+
 	function setResultKind(nextKind: SearchResultKind) {
-		resultKind = nextKind;
+		preferredResultKind = nextKind;
+
+		if (activeLayer !== 'all' && activeLayer !== nextKind) {
+			filterRuntime.setFilter('layer', nextKind);
+		}
 
 		if (
 			selectedFeature &&
@@ -344,7 +381,7 @@
 
 	function handleMapFeatureSelect(feature: EmisMapSelectedFeature) {
 		storeSelection(feature);
-		resultKind = feature.kind === 'object' ? 'objects' : 'news';
+		preferredResultKind = feature.kind === 'object' ? 'objects' : 'news';
 	}
 
 	function selectObjectRow(row: EmisObjectSummary) {
@@ -362,7 +399,7 @@
 			status: row.status,
 			updatedAt: row.updatedAt
 		});
-		resultKind = 'objects';
+		preferredResultKind = 'objects';
 	}
 
 	function selectNewsRow(row: EmisNewsSummary) {
@@ -381,7 +418,7 @@
 			publishedAt: row.publishedAt,
 			relatedObjectsCount: row.relatedObjectsCount
 		});
-		resultKind = 'news';
+		preferredResultKind = 'news';
 	}
 
 	function clearSelection() {
@@ -434,45 +471,13 @@
 
 		try {
 			const response = await fetchDataset({
-				id: 'emis.ship_route_points',
-				params: { limit: 500 }
+				id: 'emis.ship_route_vessels',
+				params: { limit: 250 },
+				cache: { ttlMs: 30_000 }
 			});
-			const rows = response.rows as Array<Record<string, unknown>>;
-			const catalog = new Map<string, ShipRouteVesselOption>();
-
-			for (const row of rows) {
-				const point = parseShipRoutePoint(row);
-				if (!point) continue;
-
-				const key = String(point.shipHbkId);
-				const existing = catalog.get(key);
-				if (!existing) {
-					catalog.set(key, {
-						shipHbkId: key,
-						vesselName: point.vesselName,
-						latestFetchedAt: point.fetchedAt,
-						routeDateUtc: point.routeDateUtc,
-						pointsCount: 1,
-						imo: point.imo,
-						mmsi: point.mmsi
-					});
-					continue;
-				}
-
-				existing.pointsCount += 1;
-				if (new Date(point.fetchedAt).getTime() >= new Date(existing.latestFetchedAt).getTime()) {
-					existing.latestFetchedAt = point.fetchedAt;
-					existing.vesselName = point.vesselName;
-					existing.routeDateUtc = point.routeDateUtc;
-					existing.imo = point.imo;
-					existing.mmsi = point.mmsi;
-				}
-			}
-
-			shipRouteCatalog = [...catalog.values()].sort(
-				(left, right) =>
-					new Date(right.latestFetchedAt).getTime() - new Date(left.latestFetchedAt).getTime()
-			);
+			shipRouteCatalog = (response.rows as Array<Record<string, unknown>>)
+				.map(parseShipRouteVessel)
+				.filter((row): row is ShipRouteVesselOption => Boolean(row));
 
 			if (!selectedShipHbkId || !shipRouteCatalog.some((vessel) => vessel.shipHbkId === selectedShipHbkId)) {
 				selectedShipHbkId = shipRouteCatalog[0]?.shipHbkId ?? '';
@@ -519,9 +524,9 @@
 	}
 
 	const { reload: reloadResults, loading: resultsLoading } = useDebouncedLoader({
-		watch: () => ({ filters: $effectiveFilters, kind: resultKind }),
+		watch: () => ({ filters: $effectiveFilters, kind: effectiveResultKind }),
 		delayMs: 300,
-		load: () => loadSearchResults(resultKind),
+		load: () => loadSearchResults(effectiveResultKind),
 		onData: (payload) => {
 			if (payload.kind === 'objects') {
 				objectRows = payload.rows;
@@ -534,7 +539,7 @@
 		},
 		onError: (error) => {
 			resultsError = error instanceof Error ? error.message : String(error);
-			if (resultKind === 'objects') {
+			if (effectiveResultKind === 'objects') {
 				objectRows = [];
 			} else {
 				newsRows = [];
@@ -563,6 +568,18 @@
 		const snapshot = effectiveFilterSnapshot;
 
 		if (selectedFeature && selectionFilterSnapshot && snapshot !== selectionFilterSnapshot) {
+			clearSelection();
+		}
+	});
+
+	$effect(() => {
+		const target = effectiveResultKind;
+
+		if (
+			selectedFeature &&
+			((selectedFeature.kind === 'object' && target !== 'objects') ||
+				(selectedFeature.kind === 'news' && target !== 'news'))
+		) {
 			clearSelection();
 		}
 	});
@@ -884,7 +901,9 @@
 									{formatDate(selectedShipRouteVessel.latestFetchedAt)}
 								</div>
 								<div class="type-caption text-muted-foreground">
-									Route day: {selectedShipRouteVessel.routeDateUtc ?? 'n/a'}
+									First seen: {selectedShipRouteVessel.firstFetchedAt
+										? formatDate(selectedShipRouteVessel.firstFetchedAt)
+										: 'n/a'}
 								</div>
 							</div>
 							<div>
@@ -893,7 +912,7 @@
 									{shipRoutePoints.length} points / {shipRouteSegments.length} segments
 								</div>
 								<div class="type-caption text-muted-foreground">
-									Catalog sample: {selectedShipRouteVessel.pointsCount} points
+									Catalog: {selectedShipRouteVessel.pointsCount} points / {selectedShipRouteVessel.routeDaysCount} days
 								</div>
 							</div>
 							<div>
@@ -903,6 +922,13 @@
 								</div>
 								<div class="type-caption text-muted-foreground">
 									MMSI {selectedShipRouteVessel.mmsi ?? 'n/a'}
+								</div>
+								<div class="type-caption text-muted-foreground">
+									Last pos:
+									{selectedShipRouteVessel.lastLatitude !== null &&
+									selectedShipRouteVessel.lastLongitude !== null
+										? `${formatCoordinate(selectedShipRouteVessel.lastLatitude)}, ${formatCoordinate(selectedShipRouteVessel.lastLongitude)}`
+										: 'n/a'}
 								</div>
 							</div>
 						</div>

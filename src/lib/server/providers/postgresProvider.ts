@@ -180,6 +180,26 @@ const DATASETS: Record<string, DatasetSqlMapping> = {
 			gap_minutes_to_next: 'number'
 		}
 	},
+	'emis.ship_route_vessels': {
+		relation: { schema: 'mart', table: 'emis_ship_route_vessels' },
+		columns: {
+			ship_hbk_id: 'number',
+			ship_id: 'number',
+			imo: 'number',
+			mmsi: 'number',
+			vessel_name: 'string',
+			vessel_type: 'string',
+			flag: 'string',
+			callsign: 'string',
+			first_fetched_at: 'datetime',
+			last_fetched_at: 'datetime',
+			last_route_date_utc: 'date',
+			points_count: 'number',
+			route_days_count: 'number',
+			last_latitude: 'number',
+			last_longitude: 'number'
+		}
+	},
 	'emis.ship_route_segments': {
 		relation: { schema: 'mart_emis', table: 'vsl_route_segment_hist' },
 		columns: {
