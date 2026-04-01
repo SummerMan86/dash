@@ -110,8 +110,8 @@ export function useDebouncedLoader<T>(opts: DebouncedLoaderOptions<T>) {
 
 	return {
 		reload,
-		loading
+		get loading() {
+			return loading;
+		}
 	};
 }
-
-

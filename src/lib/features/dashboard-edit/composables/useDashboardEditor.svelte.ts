@@ -59,7 +59,9 @@ export type DashboardEditorApi = {
 	setEditable(value: boolean): void;
 	selectWidget(id: string | null): void;
 	patchWidget(id: string, patch: Partial<DashboardWidget>): void;
-	addWidget(widget: Omit<DashboardWidget, 'id' | 'layout'> & { layout?: Partial<DashboardWidget['layout']> }): void;
+	addWidget(
+		widget: Omit<DashboardWidget, 'id' | 'layout'> & { layout?: Partial<DashboardWidget['layout']> }
+	): void;
 	removeWidget(id: string): void;
 	reset(): void;
 
@@ -128,7 +130,9 @@ export function useDashboardEditor(options: DashboardEditorOptions): DashboardEd
 	let _draft = $state<WidgetDraft | null>(null);
 
 	// === Derived state ===
-	const _selectedWidget = $derived(_selectedId ? _widgets.find((w) => w.id === _selectedId) ?? null : null);
+	const _selectedWidget = $derived(
+		_selectedId ? (_widgets.find((w) => w.id === _selectedId) ?? null) : null
+	);
 	const _dashboard = $derived({ ...initial, widgets: _widgets });
 
 	// === Saver (only if storageKey provided) ===

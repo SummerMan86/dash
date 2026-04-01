@@ -5,9 +5,15 @@
 		//"resolveJsonModule": true,
 		"skipLibCheck": true,
 		//"sourceMap": true,
-		//"verbatimModuleSyntax": true,		
+		//"verbatimModuleSyntax": true,
 		"allowJs": true,
-		"checkJs": true,
+		"checkJs": true
 	},
-	"include": ["src/**/*.d.ts", "src/**/*.ts", "src/**/*.js", "src/**/*.svelte", "tailwind.config.js"]
+	"include": [
+		"src/**/*.d.ts",
+		"src/**/*.ts",
+		"src/**/*.js",
+		"src/**/*.svelte",
+		"tailwind.config.js"
+	]
 }

@@ -17,7 +17,7 @@
 
 Есть локальный документ:
 
-- `dashboard-edit/CLAUDE.md`
+- `dashboard-edit/AGENTS.md`
 
 Если нужно понять drag-and-drop и layout editing, читать надо именно его.
 

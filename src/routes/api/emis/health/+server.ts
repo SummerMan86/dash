@@ -1,4 +1,4 @@
-import { readdir } from 'node:fs/promises';
+import { access, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -21,20 +21,48 @@ async function getSqlFiles(dirName: string): Promise<string[]> {
 	}
 }
 
+async function filePresent(relativePath: string): Promise<boolean> {
+	try {
+		await access(path.join(ROOT_DIR, relativePath));
+		return true;
+	} catch {
+		return false;
+	}
+}
+
 export const GET: RequestHandler = async () => {
-	const [migrations, seeds] = await Promise.all([getSqlFiles('migrations'), getSqlFiles('seeds')]);
+	const [seeds, demoFixtures, snapshotReady, catalogReady, changesReady, pendingPatchReady] =
+		await Promise.all([
+			getSqlFiles('seeds'),
+			getSqlFiles('demo-fixtures'),
+			filePresent('db/current_schema.sql'),
+			filePresent('db/schema_catalog.md'),
+			filePresent('db/applied_changes.md'),
+			filePresent('db/pending_changes.sql')
+		]);
 
 	return json({
 		service: 'emis',
-		status: 'foundation-ready',
+		status: 'snapshot-ready',
 		db: {
-			schema: 'emis',
-			migrationFiles: migrations,
-			seedFiles: seeds
+			mode: 'snapshot-first',
+			schemas: ['emis', 'stg_emis', 'mart_emis', 'mart'],
+			baselineFile: 'db/current_schema.sql',
+			schemaCatalogFile: 'db/schema_catalog.md',
+			appliedChangesFile: 'db/applied_changes.md',
+			pendingChangesFile: 'db/pending_changes.sql',
+			baselineReady: snapshotReady,
+			catalogReady,
+			appliedChangesReady: changesReady,
+			pendingPatchFileReady: pendingPatchReady,
+			seedFiles: seeds,
+			demoFixtureFiles: demoFixtures
 		},
 		docs: {
+			bootstrap: '/docs/emis_session_bootstrap.md',
 			tz: '/docs/emis_mve_tz_v_2.md',
-			implementationSpec: '/docs/emis_implementation_spec_v1.md'
+			implementationSpec: '/docs/emis_implementation_spec_v1.md',
+			runtimeContract: '/src/lib/server/emis/infra/RUNTIME_CONTRACT.md'
 		}
 	});
 };

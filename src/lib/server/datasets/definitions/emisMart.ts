@@ -4,7 +4,8 @@ import { ir } from '$entities/dataset';
 export const EMIS_MART_DATASETS = {
 	newsFlat: 'emis.news_flat',
 	objectNewsFacts: 'emis.object_news_facts',
-	objectsDim: 'emis.objects_dim'
+	objectsDim: 'emis.objects_dim',
+	shipRouteVessels: 'emis.ship_route_vessels'
 } as const satisfies Record<string, DatasetId>;
 
 export type EmisMartDatasetId = (typeof EMIS_MART_DATASETS)[keyof typeof EMIS_MART_DATASETS];
@@ -20,7 +21,8 @@ function asBoolean(value: unknown): boolean | undefined {
 
 function asNumber(value: unknown): number | undefined {
 	if (typeof value === 'number' && Number.isFinite(value)) return value;
-	if (typeof value === 'string' && value.trim() && Number.isFinite(Number(value))) return Number(value);
+	if (typeof value === 'string' && value.trim() && Number.isFinite(Number(value)))
+		return Number(value);
 	return undefined;
 }
 
@@ -71,7 +73,8 @@ export function compileEmisMartDataset(
 			if (sourceCode) whereParts.push(ir.eq(ir.col('source_code'), ir.lit(sourceCode)));
 			if (newsType) whereParts.push(ir.eq(ir.col('news_type'), ir.lit(newsType)));
 			if (sourceOrigin) whereParts.push(ir.eq(ir.col('source_origin'), ir.lit(sourceOrigin)));
-			if (typeof isManual === 'boolean') whereParts.push(ir.eq(ir.col('is_manual'), ir.lit(isManual)));
+			if (typeof isManual === 'boolean')
+				whereParts.push(ir.eq(ir.col('is_manual'), ir.lit(isManual)));
 			if (typeof hasGeometry === 'boolean') {
 				whereParts.push(ir.eq(ir.col('has_geometry'), ir.lit(hasGeometry)));
 			}
@@ -95,7 +98,9 @@ export function compileEmisMartDataset(
 					{ expr: ir.col('has_geometry') },
 					{ expr: ir.col('related_objects_count') }
 				],
-				...(whereParts.length ? { where: whereParts.length === 1 ? whereParts[0] : ir.and(whereParts) } : {}),
+				...(whereParts.length
+					? { where: whereParts.length === 1 ? whereParts[0] : ir.and(whereParts) }
+					: {}),
 				orderBy: [{ expr: ir.col('published_at'), dir: 'desc' }],
 				limit
 			};
@@ -108,6 +113,8 @@ export function compileEmisMartDataset(
 			const sourceCode = asString(p.sourceCode);
 			const countryCode = asString(p.countryCode) || asString(f.countryCode) || asString(f.country);
 			const linkType = asString(p.linkType);
+			const newsSourceOrigin = asString(p.newsSourceOrigin);
+			const objectSourceOrigin = asString(p.objectSourceOrigin);
 			const isPrimary = asBoolean(p.isPrimary);
 			const limit = clampLimit(p.limit, 500);
 
@@ -116,11 +123,19 @@ export function compileEmisMartDataset(
 			if (rangeWhere) whereParts.push(rangeWhere);
 			if (objectId) whereParts.push(ir.eq(ir.col('object_id'), ir.lit(objectId)));
 			if (newsId) whereParts.push(ir.eq(ir.col('news_id'), ir.lit(newsId)));
-			if (objectTypeCode) whereParts.push(ir.eq(ir.col('object_type_code'), ir.lit(objectTypeCode)));
+			if (objectTypeCode)
+				whereParts.push(ir.eq(ir.col('object_type_code'), ir.lit(objectTypeCode)));
 			if (sourceCode) whereParts.push(ir.eq(ir.col('source_code'), ir.lit(sourceCode)));
 			if (countryCode) whereParts.push(ir.eq(ir.col('object_country_code'), ir.lit(countryCode)));
 			if (linkType) whereParts.push(ir.eq(ir.col('link_type'), ir.lit(linkType)));
-			if (typeof isPrimary === 'boolean') whereParts.push(ir.eq(ir.col('is_primary'), ir.lit(isPrimary)));
+			if (newsSourceOrigin) {
+				whereParts.push(ir.eq(ir.col('news_source_origin'), ir.lit(newsSourceOrigin)));
+			}
+			if (objectSourceOrigin) {
+				whereParts.push(ir.eq(ir.col('object_source_origin'), ir.lit(objectSourceOrigin)));
+			}
+			if (typeof isPrimary === 'boolean')
+				whereParts.push(ir.eq(ir.col('is_primary'), ir.lit(isPrimary)));
 
 			return {
 				kind: 'select',
@@ -143,7 +158,9 @@ export function compileEmisMartDataset(
 					{ expr: ir.col('news_source_origin') },
 					{ expr: ir.col('object_source_origin') }
 				],
-				...(whereParts.length ? { where: whereParts.length === 1 ? whereParts[0] : ir.and(whereParts) } : {}),
+				...(whereParts.length
+					? { where: whereParts.length === 1 ? whereParts[0] : ir.and(whereParts) }
+					: {}),
 				orderBy: [
 					{ expr: ir.col('published_at'), dir: 'desc' },
 					{ expr: ir.col('object_id'), dir: 'asc' }
@@ -162,7 +179,8 @@ export function compileEmisMartDataset(
 
 			const whereParts = [];
 			if (countryCode) whereParts.push(ir.eq(ir.col('country_code'), ir.lit(countryCode)));
-			if (objectTypeCode) whereParts.push(ir.eq(ir.col('object_type_code'), ir.lit(objectTypeCode)));
+			if (objectTypeCode)
+				whereParts.push(ir.eq(ir.col('object_type_code'), ir.lit(objectTypeCode)));
 			if (status) whereParts.push(ir.eq(ir.col('status'), ir.lit(status)));
 			if (sourceOrigin) whereParts.push(ir.eq(ir.col('source_origin'), ir.lit(sourceOrigin)));
 			if (geometryType) whereParts.push(ir.eq(ir.col('geometry_type'), ir.lit(geometryType)));
@@ -190,10 +208,57 @@ export function compileEmisMartDataset(
 					{ expr: ir.col('created_at') },
 					{ expr: ir.col('updated_at') }
 				],
-				...(whereParts.length ? { where: whereParts.length === 1 ? whereParts[0] : ir.and(whereParts) } : {}),
+				...(whereParts.length
+					? { where: whereParts.length === 1 ? whereParts[0] : ir.and(whereParts) }
+					: {}),
 				orderBy: [
 					{ expr: ir.col('object_type_code'), dir: 'asc' },
 					{ expr: ir.col('name'), dir: 'asc' }
+				],
+				limit
+			};
+		}
+
+		case EMIS_MART_DATASETS.shipRouteVessels: {
+			const flag = asString(p.flag);
+			const vesselType = asString(p.vesselType);
+			const limit = clampLimit(p.limit, 1000);
+
+			const whereParts = [];
+			const from = typeof query.filters?.dateFrom === 'string' ? query.filters.dateFrom : undefined;
+			const to = typeof query.filters?.dateTo === 'string' ? query.filters.dateTo : undefined;
+
+			if (from) whereParts.push(ir.gte(ir.col('last_fetched_at'), ir.lit(from)));
+			if (to) whereParts.push(ir.lte(ir.col('last_fetched_at'), ir.lit(to)));
+			if (flag) whereParts.push(ir.eq(ir.col('flag'), ir.lit(flag)));
+			if (vesselType) whereParts.push(ir.eq(ir.col('vessel_type'), ir.lit(vesselType)));
+
+			return {
+				kind: 'select',
+				from: { kind: 'dataset', id: datasetId },
+				select: [
+					{ expr: ir.col('ship_hbk_id') },
+					{ expr: ir.col('ship_id') },
+					{ expr: ir.col('imo') },
+					{ expr: ir.col('mmsi') },
+					{ expr: ir.col('vessel_name') },
+					{ expr: ir.col('vessel_type') },
+					{ expr: ir.col('flag') },
+					{ expr: ir.col('callsign') },
+					{ expr: ir.col('first_fetched_at') },
+					{ expr: ir.col('last_fetched_at') },
+					{ expr: ir.col('last_route_date_utc') },
+					{ expr: ir.col('points_count') },
+					{ expr: ir.col('route_days_count') },
+					{ expr: ir.col('last_latitude') },
+					{ expr: ir.col('last_longitude') }
+				],
+				...(whereParts.length
+					? { where: whereParts.length === 1 ? whereParts[0] : ir.and(whereParts) }
+					: {}),
+				orderBy: [
+					{ expr: ir.col('last_fetched_at'), dir: 'desc' },
+					{ expr: ir.col('ship_hbk_id'), dir: 'asc' }
 				],
 				limit
 			};

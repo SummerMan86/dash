@@ -1,18 +1,3 @@
-<!--
-  Chart Component - ECharts wrapper with Carbon Design System integration
-
-  Features:
-  - Reactive chart updates when options change
-  - Automatic resize handling
-  - Carbon DS color palette integration
-  - Responsive design
-  - Proper cleanup on unmount
-
-  Usage:
-  <Chart options={chartOptions} class="h-96" />
-  <Chart options={chartOptions} autoResize />  <!-- for GridStack/flex containers -->
--->
-
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import * as echarts from 'echarts';
@@ -103,4 +88,22 @@
 	});
 </script>
 
-<div bind:this={chartContainer} class={cn('w-full', autoResize ? 'h-full' : 'h-full min-h-[300px]', className)}></div>
+<!--
+  Chart Component - ECharts wrapper with Carbon Design System integration
+
+  Features:
+  - Reactive chart updates when options change
+  - Automatic resize handling
+  - Carbon DS color palette integration
+  - Responsive design
+  - Proper cleanup on unmount
+
+  Usage:
+  <Chart options={chartOptions} class="h-96" />
+  <Chart options={chartOptions} autoResize />  <!-- for GridStack/flex containers -->
+-->
+
+<div
+	bind:this={chartContainer}
+	class={cn('w-full', autoResize ? 'h-full' : 'h-full min-h-[300px]', className)}
+></div>

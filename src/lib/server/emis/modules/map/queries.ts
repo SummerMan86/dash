@@ -5,7 +5,10 @@ import type {
 	EmisMapNewsQueryInput,
 	EmisMapObjectFeatureCollection,
 	EmisMapObjectFeatureProperties,
-	EmisMapObjectsQueryInput
+	EmisMapObjectsQueryInput,
+	EmisMapVesselFeatureCollection,
+	EmisMapVesselFeatureProperties,
+	EmisMapVesselsQueryInput
 } from '$entities/emis-map';
 
 import { getDb } from '../../infra/db';
@@ -185,6 +188,8 @@ export async function mapNewsQuery(
 		`SELECT
 			n.id,
 			n.title,
+			n.summary,
+			n.url,
 			n.source_id,
 			s.name AS source_name,
 			n.published_at,
@@ -203,6 +208,8 @@ export async function mapNewsQuery(
 		 GROUP BY
 			n.id,
 			n.title,
+			n.summary,
+			n.url,
 			n.source_id,
 			s.name,
 			n.published_at,
@@ -232,13 +239,103 @@ export async function mapNewsQuery(
 				newsType: row.news_type,
 				importance: row.importance,
 				publishedAt: row.published_at.toISOString(),
-				relatedObjectsCount: Number(row.related_objects_count)
+				relatedObjectsCount: Number(row.related_objects_count),
+				summary: row.summary ?? null,
+				url: row.url ?? null
 			};
 
 			return {
 				type: 'Feature',
 				id: row.id,
 				geometry: row.geometry,
+				properties
+			};
+		})
+	};
+}
+
+function buildVesselSubtitle(row: {
+	flag: string | null;
+	vessel_type: string | null;
+	callsign: string | null;
+}): string | null {
+	const parts = [row.vessel_type, row.flag, row.callsign].filter(Boolean);
+	return parts.length ? parts.join(' · ') : null;
+}
+
+export async function mapVesselsQuery(
+	filters: EmisMapVesselsQueryInput
+): Promise<EmisMapVesselFeatureCollection> {
+	const conditions = ['last_latitude IS NOT NULL', 'last_longitude IS NOT NULL'];
+	const values: unknown[] = [];
+
+	const [west, south, east, north] = filters.bbox;
+	values.push(west, east, south, north);
+	conditions.push(`last_longitude >= $1 AND last_longitude <= $2`);
+	conditions.push(`last_latitude >= $3 AND last_latitude <= $4`);
+
+	if (filters.q) {
+		values.push(`%${filters.q}%`);
+		const qParam = `$${values.length}`;
+		conditions.push(
+			`(vessel_name ILIKE ${qParam} OR callsign ILIKE ${qParam} OR CAST(ship_hbk_id AS text) ILIKE ${qParam} OR CAST(imo AS text) ILIKE ${qParam} OR CAST(mmsi AS text) ILIKE ${qParam})`
+		);
+	}
+
+	const limit = clampMapLimit(filters.limit);
+	values.push(limit);
+
+	const db = getDb();
+	const result = await db.query(
+		`SELECT
+			ship_hbk_id,
+			vessel_name,
+			vessel_type,
+			imo,
+			mmsi,
+			flag,
+			callsign,
+			last_fetched_at,
+			last_latitude,
+			last_longitude,
+			points_count,
+			route_days_count
+		 FROM mart.emis_ship_route_vessels
+		 WHERE ${conditions.join(' AND ')}
+		 ORDER BY last_fetched_at DESC, ship_hbk_id ASC
+		 LIMIT $${values.length}`,
+		values
+	);
+
+	return {
+		type: 'FeatureCollection',
+		features: result.rows.map((row) => {
+			const properties: EmisMapVesselFeatureProperties = {
+				id: String(row.ship_hbk_id),
+				kind: 'vessel',
+				title: row.vessel_name,
+				subtitle: buildVesselSubtitle(row),
+				colorKey: 'vessel',
+				shipHbkId: Number(row.ship_hbk_id),
+				imo: row.imo === null ? null : Number(row.imo),
+				mmsi: row.mmsi === null ? null : Number(row.mmsi),
+				flag: row.flag,
+				callsign: row.callsign,
+				vesselType: row.vessel_type,
+				lastFetchedAt: row.last_fetched_at.toISOString(),
+				lastLatitude: Number(row.last_latitude),
+				lastLongitude: Number(row.last_longitude),
+				pointsCount: Number(row.points_count ?? 0),
+				routeDaysCount: Number(row.route_days_count ?? 0)
+			};
+
+			return {
+				type: 'Feature',
+				id: row.ship_hbk_id,
+				geometry: {
+					type: 'Point',
+					coordinates: [Number(row.last_longitude), Number(row.last_latitude)]
+				},
 				properties
 			};
 		})

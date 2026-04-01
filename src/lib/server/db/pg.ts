@@ -14,4 +14,3 @@ export function getPgPool(): Pool {
 	pool = new Pool({ connectionString });
 	return pool;
 }
-

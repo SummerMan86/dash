@@ -1,6 +1,9 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+
 	import type { FilterSpec, FilterValue } from '$entities/filter';
 	import { cn } from '$shared/styles/utils';
+	import { Button } from '$shared/ui/button';
 
 	interface Props {
 		spec: FilterSpec;
@@ -11,7 +14,8 @@
 	let { spec, value, onChange }: Props = $props();
 
 	// Get options from spec
-	let options = $derived(spec.options ?? []);
+	let remoteOptions = $state(spec.options ?? []);
+	let options = $derived(remoteOptions);
 
 	// Current selected values as array
 	let selectedValues = $derived.by(() => {
@@ -42,6 +46,18 @@
 		}
 	}
 
+	function handleTriggerKeydown(e: KeyboardEvent) {
+		if (e.key === 'Escape') {
+			isOpen = false;
+			return;
+		}
+
+		if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+			e.preventDefault();
+			isOpen = true;
+		}
+	}
+
 	// Display text
 	let displayText = $derived.by(() => {
 		if (selectedValues.length === 0) return spec.placeholder ?? 'Выберите...';
@@ -51,29 +67,86 @@
 		}
 		return `Выбрано: ${selectedValues.length}`;
 	});
+
+	const controlId = $derived(`filter-${spec.id}`);
+	const listboxId = $derived(`${controlId}-listbox`);
+
+	onMount(() => {
+		const optionsSource = spec.optionsSource;
+		if (!optionsSource || optionsSource.kind !== 'endpoint') return;
+
+		let cancelled = false;
+
+		void fetch(optionsSource.url)
+			.then(async (response) => {
+				if (!response.ok) {
+					throw new Error(`Failed to load filter options: ${response.status}`);
+				}
+
+				const payload = (await response.json()) as { rows?: Array<Record<string, unknown>> };
+				const rows = payload.rows ?? [];
+				if (cancelled) return;
+
+				remoteOptions = rows
+					.map((row) => {
+						const rawValue = row[optionsSource.valueField];
+						if (rawValue === null || rawValue === undefined) return null;
+
+						const rawLabelField = optionsSource.labelField ?? optionsSource.valueField;
+						const rawLabel = row[rawLabelField];
+						const rawDisabled = optionsSource.disabledField
+							? row[optionsSource.disabledField]
+							: undefined;
+
+						return {
+							value: String(rawValue),
+							label:
+								rawLabel === null || rawLabel === undefined ? String(rawValue) : String(rawLabel),
+							disabled: typeof rawDisabled === 'boolean' ? rawDisabled : undefined
+						};
+					})
+					.filter((option): option is NonNullable<typeof option> => option !== null);
+			})
+			.catch(() => {
+				if (!cancelled) {
+					remoteOptions = spec.options ?? [];
+				}
+			});
+
+		return () => {
+			cancelled = true;
+		};
+	});
 </script>
 
 <svelte:window onclick={handleClickOutside} />
 
-<div class="space-y-1">
-	<label class="text-xs text-muted-foreground">{spec.label}</label>
+<div class="multi-select-filter space-y-1">
+	<label class="type-caption text-muted-foreground" for={controlId}>{spec.label}</label>
 	<div class="relative min-w-[150px]">
 		<button
+			id={controlId}
 			type="button"
+			role="combobox"
+			aria-controls={listboxId}
 			aria-haspopup="listbox"
 			aria-expanded={isOpen}
 			class={cn(
-				'flex box-border h-9 w-full items-center justify-between gap-2 rounded-md border border-input bg-background px-3 py-1.5 text-sm',
-				'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+				'type-control box-border flex h-9 w-full items-center justify-between gap-2 rounded-md border border-input bg-background px-3 py-1.5',
+				'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none',
 				'transition-colors',
 				selectedValues.length > 0 && 'border-input-focus',
 				isOpen && 'ring-2 ring-ring ring-offset-2'
 			)}
 			onclick={() => (isOpen = !isOpen)}
+			onkeydown={handleTriggerKeydown}
 		>
 			<span class="min-w-0 flex-1 truncate text-left">{displayText}</span>
 			<svg
-				class={cn('h-4 w-4 shrink-0 text-muted-foreground transition-transform', isOpen && 'rotate-180')}
+				class={cn(
+					'h-4 w-4 shrink-0 text-muted-foreground transition-transform',
+					isOpen && 'rotate-180'
+				)}
 				xmlns="http://www.w3.org/2000/svg"
 				width="16"
 				height="16"
@@ -91,14 +164,16 @@
 
 		{#if isOpen}
 			<div
-				class="absolute left-0 right-0 top-full z-50 mt-1 max-h-64 overflow-auto rounded-md border border-popover-border bg-popover text-popover-foreground shadow-md"
+				id={listboxId}
+				class="absolute top-full right-0 left-0 z-50 mt-1 max-h-64 overflow-auto rounded-md border border-popover-border bg-popover text-popover-foreground shadow-md"
 				role="listbox"
+				aria-multiselectable="true"
 			>
 				<div class="py-1">
 					{#each options as option (option.value)}
 						<label
 							class={cn(
-								'flex cursor-pointer items-center gap-2 px-3 py-2 text-sm hover:bg-muted',
+								'type-control flex cursor-pointer items-center gap-2 px-3 py-2 hover:bg-muted',
 								option.disabled && 'cursor-not-allowed opacity-50'
 							)}
 						>
@@ -115,13 +190,15 @@
 				</div>
 
 				{#if selectedValues.length > 0}
-					<button
+					<Button
 						type="button"
-						class="w-full border-t border-popover-border px-3 py-2 text-left text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+						variant="ghost"
+						size="sm"
+						class="type-caption w-full justify-start rounded-none border-t border-popover-border px-3 text-muted-foreground"
 						onclick={handleClear}
 					>
 						Очистить всё
-					</button>
+					</Button>
 				{/if}
 			</div>
 		{/if}

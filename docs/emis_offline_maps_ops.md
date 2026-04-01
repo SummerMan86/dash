@@ -131,7 +131,105 @@ EMIS_MAP_MODE=online
 - Для coarse world coverage + detail AOI можно держать несколько архивов с разными `maxzoom`.
 - Remote PMTiles URL не считаются доказательством “true offline”.
 
-## 7. Что не входит в текущий слой
+## 7. Как добавить новый регион PMTiles
+
+Чтобы добавить новый регион (например, Сахалин):
+
+1. Открыть `scripts/emis-pmtiles-setup.mjs` и изменить bbox для нужного региона, либо запустить `go-pmtiles extract` вручную:
+
+   ```bash
+   # go-pmtiles должен быть установлен (pnpm map:pmtiles:setup его ставит)
+   go-pmtiles extract /path/to/protomaps-daily.pmtiles sakhalin.pmtiles \
+     --bbox=141.5,46.5,145.0,51.5
+   ```
+
+2. Скопировать новый архив в `static/emis-map/offline/`.
+
+3. Обновить `manifest.json` — добавить новый файл в массив `pmtiles`:
+
+   ```json
+   "pmtiles": [
+     { "file": "world-z7.pmtiles", "bbox": "-180,-85,180,85", "maxzoom": 7 },
+     { "file": "moscow.pmtiles",   "bbox": "37.3,55.55,37.85,55.92", "maxzoom": 15 },
+     { "file": "sakhalin.pmtiles", "bbox": "141.5,46.5,145.0,51.5",  "maxzoom": 15 }
+   ]
+   ```
+
+4. Проверить готовность: `pnpm map:assets:status`.
+
+5. Запустить offline smoke: `CHOKIDAR_USEPOLLING=1 pnpm emis:offline-smoke` — должно быть 9/9.
+
+Порядок файлов в `manifest.pmtiles` важен: runtime выбирает первый файл с наибольшим покрытием bbox из запроса. Для coarse world coverage + detail AOI держите более детальный регион после world-z7.
+
+## 8. Как проверять свежесть assets
+
+Свежесть offline bundle определяется полем `manifest.json::createdAt`.
+
+Проверить вручную:
+
+```bash
+cat static/emis-map/offline/manifest.json | python3 -c "import sys,json; m=json.load(sys.stdin); print(m.get('createdAt','unknown'))"
+```
+
+Для обновления bundle:
+
+- Если используется `pnpm map:pmtiles:setup` (скачивает из Protomaps daily build):
+  - Дата обновления указана в `createdAt` после setup.
+  - Protomaps daily build обновляется ежесуточно по UTC; `source` в manifest содержит URL сборки.
+- Если используется `pnpm map:assets:install` из внешней папки:
+  - `install` перезаписывает `manifest.json` с новым `createdAt`.
+
+Рекомендация: обновлять bundle не реже 1 раза в квартал или после значительных изменений инфраструктуры региона.
+
+## 9. Automated offline smoke
+
+```bash
+CHOKIDAR_USEPOLLING=1 pnpm emis:offline-smoke
+```
+
+Выполняет 9 проверок без `DATABASE_URL`:
+
+| Check                  | Что проверяется                                            |
+| ---------------------- | ---------------------------------------------------------- |
+| `assets:manifest-file` | `manifest.json` существует                                 |
+| `assets:pmtiles`       | хотя бы один `.pmtiles` файл                               |
+| `assets:sprites`       | sprites/ dir не пустой                                     |
+| `assets:fonts`         | fonts/ dir не пустой                                       |
+| `manifest:valid`       | парсится, есть `version` и `pmtiles[]`                     |
+| `manifest:files`       | каждый файл из manifest существует на диске                |
+| `bundle:ready`         | все 4 компонента готовы (статус не `missing-assets`)       |
+| `http:spike-page`      | `/emis/pmtiles-spike` → 200                                |
+| `http:range:pmtiles`   | Range запрос к первому pmtiles → 206, Accept-Ranges: bytes |
+
+Exit code 1 если есть FAIL. Формат вывода: `PASS/FAIL` на каждый check + JSON report.
+
+## 10. Range support в production (adapter-node)
+
+PMTiles требует HTTP Range requests (206 Partial Content). В dev режиме Vite обслуживает static files с поддержкой Range из коробки.
+
+В production важно убедиться, что выбранный adapter поддерживает Range requests:
+
+- **`@sveltejs/adapter-node`** — использует базовый Node.js http server. Начиная с SvelteKit 2.x, статика обслуживается через Vite-generated `handler.js`. Проверить Range support:
+
+  ```bash
+  # После pnpm build + node build/index.js
+  pnpm map:pmtiles:probe -- --url http://127.0.0.1:3000/emis-map/offline/world-z7.pmtiles
+  ```
+
+  Если probe возвращает 200 вместо 206 — нужно перед SvelteKit поставить nginx/caddy с поддержкой Range.
+
+- **Nginx** / **Caddy** — поддерживают Range нативно. Рекомендуется для production deployments с PMTiles.
+
+- **`@sveltejs/adapter-static`** — статика сама по себе не сервит файлы; нужен отдельный HTTP server (nginx / object storage с Range).
+
+После deploy проверять Range поддержку командой:
+
+```bash
+curl -I -H 'Range: bytes=0-9' https://your.domain/emis-map/offline/world-z7.pmtiles
+# Ожидаемый ответ: HTTP/1.1 206 Partial Content + Accept-Ranges: bytes
+```
+
+## 11. Что не входит в текущий слой
 
 Сейчас специально не делаем:
 

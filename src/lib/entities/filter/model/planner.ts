@@ -1,6 +1,13 @@
 import type { JsonValue } from '$entities/dataset';
-import type { FilterSpec, FilterValue, FilterValues, FilterBinding } from './types';
-import { getSpecsForDataset } from './registry';
+import type {
+	FilterSpec,
+	FilterValue,
+	FilterValues,
+	FilterBinding,
+	ResolvedFilterSpec,
+	FilterRuntimeContext
+} from './types';
+import { getResolvedSpecsForTarget, getSpecsForDataset } from './registry';
 
 /**
  * FilterPlan - result of planning filter application for a dataset.
@@ -44,6 +51,16 @@ function transformValue(value: FilterValue, binding: FilterBinding): JsonValue {
 	}
 }
 
+function getServerParamKey(binding: FilterBinding): string | null {
+	if (binding.param) return binding.param;
+	if (binding.field) return binding.field;
+	return null;
+}
+
+function getClientField(binding: FilterBinding): string | null {
+	return binding.field ?? null;
+}
+
 /**
  * Build a client filter function for a single filter.
  */
@@ -52,7 +69,11 @@ function buildClientMatcher(
 	binding: FilterBinding,
 	value: FilterValue
 ): (row: Record<string, JsonValue>) => boolean {
-	const field = binding.field;
+	const field = getClientField(binding);
+
+	if (!field) {
+		return () => true;
+	}
 
 	return (row) => {
 		const rowVal = row[field];
@@ -108,53 +129,59 @@ function buildClientMatcher(
  */
 export function planFiltersForDataset(
 	datasetId: string,
+	effectiveFilters: FilterValues,
+	context?: FilterRuntimeContext
+): FilterPlan {
+	return planFiltersForTarget(datasetId, effectiveFilters, context);
+}
+
+function planFilters(
+	targetId: string,
+	specs: Array<FilterSpec | ResolvedFilterSpec>,
 	effectiveFilters: FilterValues
 ): FilterPlan {
 	const serverParams: Record<string, JsonValue> = {};
 	const clientMatchers: Array<(row: Record<string, JsonValue>) => boolean> = [];
 	const appliedFilters: string[] = [];
 
-	// Get all specs that have bindings for this dataset
-	const specs = getSpecsForDataset(datasetId);
-
 	for (const spec of specs) {
-		const value = effectiveFilters[spec.id];
+		const filterId = 'filterId' in spec ? spec.filterId : spec.id;
+		const value = effectiveFilters[filterId];
 		if (value === null || value === undefined) continue;
 
 		// Skip empty values
 		if (value === '' || (Array.isArray(value) && value.length === 0)) continue;
 
-		const binding = spec.bindings[datasetId];
+		const binding = spec.bindings[targetId];
 		if (!binding) continue;
 
-		appliedFilters.push(spec.id);
+		appliedFilters.push(filterId);
 
-		// Handle dateRange specially (maps to two params: dateFrom/dateTo)
+		// Date ranges emit params only when the target binding explicitly defines them.
 		if (spec.type === 'dateRange' && typeof value === 'object' && !Array.isArray(value)) {
 			const range = value as { from?: string; to?: string };
 
-			if (spec.apply === 'server' || spec.apply === 'hybrid') {
-				// Convention: dateRange uses dateFrom/dateTo params
-				if (range.from) serverParams.dateFrom = range.from;
-				if (range.to) serverParams.dateTo = range.to;
+			if ((spec.apply === 'server' || spec.apply === 'hybrid') && binding.rangeParams) {
+				if (range.from) serverParams[binding.rangeParams.from] = range.from;
+				if (range.to) serverParams[binding.rangeParams.to] = range.to;
 			}
 
-			if (spec.apply === 'client' || spec.apply === 'hybrid') {
+			if ((spec.apply === 'client' || spec.apply === 'hybrid') && getClientField(binding)) {
 				clientMatchers.push(buildClientMatcher(spec, binding, value));
 			}
 
 			continue;
 		}
 
-		// Regular filters
 		if (spec.apply === 'server' || spec.apply === 'hybrid') {
 			const transformed = transformValue(value, binding);
-			if (transformed !== null) {
-				serverParams[binding.field] = transformed;
+			const paramKey = getServerParamKey(binding);
+			if (transformed !== null && paramKey) {
+				serverParams[paramKey] = transformed;
 			}
 		}
 
-		if (spec.apply === 'client' || spec.apply === 'hybrid') {
+		if ((spec.apply === 'client' || spec.apply === 'hybrid') && getClientField(binding)) {
 			clientMatchers.push(buildClientMatcher(spec, binding, value));
 		}
 	}
@@ -172,6 +199,17 @@ export function planFiltersForDataset(
 	};
 }
 
+export function planFiltersForTarget(
+	targetId: string,
+	effectiveFilters: FilterValues,
+	context?: FilterRuntimeContext
+): FilterPlan {
+	const specs = context
+		? getResolvedSpecsForTarget(context, targetId)
+		: getSpecsForDataset(targetId);
+	return planFilters(targetId, specs, effectiveFilters);
+}
+
 /**
  * Extract only server-side filter params for a dataset.
  * Used for building cache keys (client filters should NOT affect cache key).
@@ -182,9 +220,10 @@ export function planFiltersForDataset(
  */
 export function getServerParamsForDataset(
 	datasetId: string,
-	effectiveFilters: FilterValues
+	effectiveFilters: FilterValues,
+	context?: FilterRuntimeContext
 ): Record<string, JsonValue> {
-	const { serverParams } = planFiltersForDataset(datasetId, effectiveFilters);
+	const { serverParams } = planFiltersForDataset(datasetId, effectiveFilters, context);
 	return serverParams;
 }
 
@@ -193,4 +232,12 @@ export function getServerParamsForDataset(
  */
 export function hasFiltersForDataset(datasetId: string): boolean {
 	return getSpecsForDataset(datasetId).length > 0;
+}
+
+export function hasFiltersForTarget(targetId: string, context?: FilterRuntimeContext): boolean {
+	if (context) {
+		return getResolvedSpecsForTarget(context, targetId).length > 0;
+	}
+
+	return hasFiltersForDataset(targetId);
 }

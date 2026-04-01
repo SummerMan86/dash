@@ -11,7 +11,6 @@
   - Icon support
 -->
 
-
 <script lang="ts">
 	// 1. Imports
 	import { cn } from '$shared/styles/utils';
@@ -30,7 +29,7 @@
 		class?: string;
 		children?: Snippet;
 	}
-    // 4. Получение props ($props)  
+	// 4. Получение props ($props)
 	let {
 		variant = 'default',
 		size = 'default',
@@ -60,24 +59,24 @@
 
 		// Outline variant - using Carbon borders
 		outline:
-			'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
+			'border border-outline-border bg-outline text-outline-foreground hover:bg-outline-hover active:bg-outline-active',
 
 		// Secondary action - Carbon gray-80
 		secondary:
 			'bg-secondary text-secondary-foreground hover:bg-secondary-hover active:bg-secondary-active',
 
 		// Ghost - subtle hover only
-		ghost: 'hover:bg-accent hover:text-accent-foreground',
+		ghost: 'bg-ghost text-ghost-foreground hover:bg-ghost-hover active:bg-ghost-active',
 
 		// Link style
-		link: 'text-primary underline-offset-4 hover:underline'
+		link: 'bg-link text-link-foreground underline-offset-4 hover:text-link-hover-foreground hover:underline'
 	};
 
 	// Size variants - same as shadcn-svelte
 	const sizes: Record<ButtonSize, string> = {
 		default: 'h-10 px-4 py-2',
-		sm: 'h-9 rounded-md px-3 text-sm',
-		lg: 'h-11 rounded-md px-8 text-lg',
+		sm: 'h-9 rounded-md px-3',
+		lg: 'h-11 rounded-md px-8 type-control-lg',
 		icon: 'h-10 w-10'
 	};
 </script>
@@ -85,10 +84,12 @@
 <button
 	class={cn(
 		// Base styles
-		'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium',
-		'ring-offset-background transition-colors',
-		'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+		'type-control inline-flex items-center justify-center gap-2 rounded-md whitespace-nowrap',
+		'ring-offset-background',
+		'transition-[background-color,box-shadow,transform] duration-[var(--transition-fast)] ease-[var(--ease-standard)]',
+		'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none',
 		'disabled:pointer-events-none disabled:opacity-50',
+		'active:scale-[0.98]',
 
 		// Apply variant and size
 		variants[variant],
@@ -106,18 +107,12 @@
 	{#if loading}
 		<!-- Loading spinner -->
 		<svg
-			class="animate-spin h-4 w-4"
+			class="h-4 w-4 animate-spin"
 			xmlns="http://www.w3.org/2000/svg"
 			fill="none"
 			viewBox="0 0 24 24"
 		>
-			<circle
-				class="opacity-25"
-				cx="12"
-				cy="12"
-				r="10"
-				stroke="currentColor"
-				stroke-width="4"
+			<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
 			></circle>
 			<path
 				class="opacity-75"

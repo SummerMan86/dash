@@ -34,10 +34,19 @@ export type FilterType = 'dateRange' | 'select' | 'multiSelect' | 'text';
 
 /**
  * Filter scope determines where the filter value is stored.
- * - global: shared across all pages (e.g., date range)
- * - page: local to a specific page (e.g., brand filter on products page)
+ *
+ * New runtime scopes:
+ * - shared: app-wide shared subset across workspaces
+ * - workspace: shared only inside one workspace
+ * - owner: local to one page/widget owner inside a workspace
+ *
+ * Legacy aliases are kept temporarily so old specs do not break:
+ * - global -> shared
+ * - page -> owner
  */
-export type FilterScope = 'global' | 'page';
+export type FilterScope = 'shared' | 'workspace' | 'owner' | 'global' | 'page';
+
+export type NormalizedFilterScope = 'shared' | 'workspace' | 'owner';
 
 /**
  * Filter application mode determines where filtering happens.
@@ -66,14 +75,29 @@ export type ValuesSource = {
 	labelField?: string;
 };
 
+export type EndpointOptionsSource = {
+	kind: 'endpoint';
+	url: string;
+	valueField: string;
+	labelField?: string;
+	disabledField?: string;
+};
+
 /**
  * Binding describes how a filter maps to a specific dataset field.
  */
 export type FilterBinding = {
-	/** Column name in the dataset */
-	field: string;
+	/** Dataset/query field used for client-side matching when needed */
+	field?: string;
+	/** Explicit server param key; falls back to field */
+	param?: string;
 	/** Transform value before applying */
 	transform?: 'string' | 'number' | 'date' | 'array';
+	/** Explicit param names for date ranges */
+	rangeParams?: {
+		from: string;
+		to: string;
+	};
 };
 
 /**
@@ -96,6 +120,10 @@ export type FilterBinding = {
 export type FilterSpec = {
 	/** Unique filter identifier */
 	id: string;
+	/** App-shared bridge key (separate from local authoring id) */
+	sharedKey?: string;
+	/** URL serialization key (separate from local authoring id) */
+	urlKey?: string;
 	/** Filter UI type */
 	type: FilterType;
 	/** Display label */
@@ -111,8 +139,8 @@ export type FilterSpec = {
 	apply: FilterApply;
 
 	/**
-	 * Maps this filter to dataset fields.
-	 * Key = datasetId, Value = how to apply the filter
+	 * Maps this filter to planner targets.
+	 * Key can be a dataset id or any semantic target id (e.g. emis.search.news).
 	 */
 	bindings: Record<string, FilterBinding>;
 
@@ -120,6 +148,8 @@ export type FilterSpec = {
 	options?: FilterOption[];
 	/** Dynamic options from dataset */
 	valuesSource?: ValuesSource;
+	/** Dynamic options from endpoint */
+	optionsSource?: EndpointOptionsSource;
 };
 
 /**
@@ -129,18 +159,39 @@ export type FilterSpec = {
  * - { from?, to? }: dateRange
  * - null: unset
  */
-export type FilterValue =
-	| string
-	| number
-	| string[]
-	| { from?: string; to?: string }
-	| null;
+export type FilterValue = string | number | string[] | { from?: string; to?: string } | null;
 
 /**
  * Runtime filter values storage.
  * Key = FilterSpec.id, Value = current value
  */
 export type FilterValues = Record<string, FilterValue>;
+
+export type FilterRuntimeContext = {
+	workspaceId: string;
+	ownerId: string;
+};
+
+export type ResolvedFilterSpec = Omit<FilterSpec, 'scope'> & {
+	filterId: string;
+	scope: NormalizedFilterScope;
+	registrationKey: string;
+	workspaceId: string;
+	ownerId: string;
+	sharedKey?: string;
+	urlKey: string;
+};
+
+export function normalizeFilterScope(scope: FilterScope): NormalizedFilterScope {
+	switch (scope) {
+		case 'global':
+			return 'shared';
+		case 'page':
+			return 'owner';
+		default:
+			return scope;
+	}
+}
 
 // ============================================================================
 // CONVERSION HELPERS
@@ -179,5 +230,3 @@ export function toLegacyFilterState(values: FilterValues): FilterState {
 
 	return legacy;
 }
-
-

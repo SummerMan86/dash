@@ -2,7 +2,12 @@ import { json, type RequestHandler } from '@sveltejs/kit';
 
 import { mapObjectsQuerySchema } from '$entities/emis-map';
 import { EmisError } from '$lib/server/emis/infra/errors';
-import { handleEmisRoute, parseIntParam } from '$lib/server/emis/infra/http';
+import {
+	EMIS_DEFAULT_MAP_LIMIT,
+	EMIS_MAX_MAP_LIMIT,
+	handleEmisRoute,
+	parseStrictIntParam
+} from '$lib/server/emis/infra/http';
 import { mapObjectsQuery } from '$lib/server/emis/modules/map/queries';
 
 function parseMapObjectsQuery(url: URL) {
@@ -12,7 +17,12 @@ function parseMapObjectsQuery(url: URL) {
 		objectType: url.searchParams.get('objectType') || undefined,
 		country: url.searchParams.get('country') || undefined,
 		status: url.searchParams.get('status') || undefined,
-		limit: parseIntParam(url.searchParams.get('limit'), 200, { min: 1, max: 500 })
+		limit: parseStrictIntParam(url.searchParams.get('limit'), EMIS_DEFAULT_MAP_LIMIT, {
+			min: 1,
+			max: EMIS_MAX_MAP_LIMIT,
+			paramName: 'limit',
+			code: 'INVALID_MAP_OBJECTS_LIMIT'
+		})
 	});
 
 	if (!parsed.success) {

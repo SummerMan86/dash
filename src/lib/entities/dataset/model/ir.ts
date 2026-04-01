@@ -90,5 +90,3 @@ export const ir = {
 		return { kind: 'call', name, args } as const;
 	}
 };
-
-

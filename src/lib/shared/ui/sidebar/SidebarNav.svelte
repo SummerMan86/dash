@@ -23,12 +23,7 @@
 
 <nav class={cn('px-2 py-2', className)} aria-label={ariaLabel}>
 	{#if label}
-		<div
-			class={cn(
-				'mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-muted',
-				$collapsed && 'sr-only'
-			)}
-		>
+		<div class={cn('type-overline mb-2 px-3 text-sidebar-muted', $collapsed && 'sr-only')}>
 			{label}
 		</div>
 	{/if}
@@ -38,5 +33,3 @@
 		{/if}
 	</div>
 </nav>
-
-

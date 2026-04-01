@@ -25,7 +25,7 @@
 <div
 	class={cn(
 		'rounded-lg border border-card-border bg-card text-card-foreground shadow-sm',
-		hover && 'transition-colors hover:bg-card-hover',
+		hover && 'card-interactive hover:bg-card-hover',
 		className
 	)}
 	{...rest}

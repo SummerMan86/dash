@@ -57,8 +57,7 @@ export function compileProductPeriodDataset(
 			if (dateWhere) whereParts.push(dateWhere);
 			if (typeof nmId === 'number') whereParts.push(ir.eq(ir.col('nm_id'), ir.lit(nmId)));
 			if (brandName) whereParts.push(ir.eq(ir.col('brand_name'), ir.lit(brandName)));
-			if (subjectName)
-				whereParts.push(ir.eq(ir.col('subject_name'), ir.lit(subjectName)));
+			if (subjectName) whereParts.push(ir.eq(ir.col('subject_name'), ir.lit(subjectName)));
 
 			return {
 				kind: 'select',

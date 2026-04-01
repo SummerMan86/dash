@@ -41,11 +41,11 @@ export type GridStackNode = {
  * Это type-safe альтернатива строковым литералам.
  */
 export type GridStackEvent =
-	| 'change'      // Виджет перемещён/изменён размер (вызывается многократно)
-	| 'dragstop'    // Перетаскивание завершено
-	| 'resizestop'  // Ресайз завершён
-	| 'added'       // Виджет добавлен
-	| 'removed';    // Виджет удалён
+	| 'change' // Виджет перемещён/изменён размер (вызывается многократно)
+	| 'dragstop' // Перетаскивание завершено
+	| 'resizestop' // Ресайз завершён
+	| 'added' // Виджет добавлен
+	| 'removed'; // Виджет удалён
 
 /** Callback для событий GridStack */
 export type GridStackEventCallback = (e: unknown, items?: GridStackNode[]) => void;

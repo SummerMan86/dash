@@ -19,9 +19,18 @@
 		children?: Snippet;
 	}
 
-	let { defaultDesktopOpen = true, defaultMobileOpen = false, defaultCollapsed = false, children }: Props = $props();
+	let {
+		defaultDesktopOpen = true,
+		defaultMobileOpen = false,
+		defaultCollapsed = false,
+		children
+	}: Props = $props();
 
-	const ctx: SidebarContext = createSidebarContext({ defaultDesktopOpen, defaultMobileOpen, defaultCollapsed });
+	const ctx: SidebarContext = createSidebarContext({
+		defaultDesktopOpen,
+		defaultMobileOpen,
+		defaultCollapsed
+	});
 	setContext(SIDEBAR_CTX, ctx);
 
 	onMount(() => {
@@ -50,5 +59,3 @@
 {#if children}
 	{@render children()}
 {/if}
-
-

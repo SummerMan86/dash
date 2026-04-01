@@ -1,43 +1,200 @@
 # EMIS Session Bootstrap
 
-Использовать как быстрый старт для новой сессии по EMIS.
+Это master doc по EMIS.
+Он владеет текущим состоянием репозитория, doc map и рекомендуемым reading order.
 
-1. Source of truth по scope, invariants и acceptance: [EMIS MVE TZ v2](./emis_mve_tz_v_2.md).
-2. Source of truth по порядку реализации и техрешениям: [EMIS Implementation Spec v1](./emis_implementation_spec_v1.md).
-3. Быстрый summary без перечитывания всего: [EMIS Freeze Note](./emis_freeze_note.md).
-4. EMIS развивается внутри текущего SvelteKit-приложения как `single deployable app`, без немедленного split в монорепо.
-5. Архитектурный стиль: modular monolith, PostGIS входит в базовый фундамент.
-6. Обязательные invariants: canonical identity через DB constraints, единый soft delete contract, audit/provenance/actor attribution, явный FK behavior.
-7. Новый EMIS UI писать сразу на Svelte 5 runes.
-8. Naming default для ранних этапов: плоский namespace `emis-*`.
-9. Исторический roadmap в docs остаётся таким: `Wave A -> Wave B -> Wave C -> Wave D -> Wave E -> Wave F`.
-10. Фактический статус репозитория уже впереди этой очереди: минимальный slice Wave B и Wave C реализован, а offline basemap slice из Wave F частично вытянут раньше.
-11. Что уже считать фактом в коде:
-    - `/emis` уже рабочий workspace;
-    - map/list используют shared filters;
-    - thin search transports `/api/emis/search/objects` и `/api/emis/search/news` уже существуют;
-    - cross-workspace filter MVE уже сделан;
-    - ship-route slice уже встроен в `/emis` поверх `mart_emis`;
-    - `shipHbkId` уже живет в workspace filter runtime и синхронизируется с URL.
-12. Что уже считать фактом в БД:
-    - локальный PostGIS runtime работает через Docker Compose на `localhost:5435`;
-    - migration state дошел до `011`;
-    - `008` закрывает identity/provenance foundation;
-    - `009` создает append-only `audit_log`;
-    - `010` фиксирует `mart.emis_*` BI contracts;
-    - `011` фиксирует `mart.emis_ship_route_vessels`.
-13. Canonical architectural rule: existing dataset/IR abstraction сохраняем для BI/read-side, а новые EMIS operational flows по умолчанию делаем прямыми Postgres-first queries через `/api/emis/* -> server/emis/modules/*`.
-14. `oracle`/`cube` и новые `IR/Provider` capabilities не проектируем заранее; рефакторинг к multi-backend делаем только по факту реального use case.
-15. Текущий basemap contract для EMIS уже активный: `online (MapTiler/custom style) + offline (local PMTiles) + auto fallback`; `/emis/pmtiles-spike` остаётся техмаршрутом для проверок и наблюдаемости.
-16. Ближайший практический фокус теперь такой:
-    - добить UX-hardening `/emis`;
-    - решить, нужен ли `routeMode=points|segments|both` как следующий filter/URL шаг;
-    - затем идти в catalogs/detail pages;
-    - затем подключать реальные audit hooks на write-side.
-17. После этого идти в Wave E: BI wiring, smoke tests, production-shape hardening.
-18. Offline/maps сейчас считать не новой будущей волной, а задачей hardening: расширять offline coverage и дожимать production ops/runbook вокруг MapTiler + PMTiles.
-19. Для нового диалога сначала читать:
-    - этот bootstrap;
-    - затем [EMIS Freeze Note](./emis_freeze_note.md);
-    - затем [EMIS Handoff 2026-03-17](./emis_handoff_2026_03_17.md).
-20. Если вопрос спорный, сначала сверять `freeze note`, потом `ТЗ v2`, потом `implementation spec`, а не принимать новое решение “с нуля”.
+## 1. Канонический старт
+
+- Source of truth по scope, invariants и acceptance:
+  [EMIS MVE TZ v2](./emis_mve_tz_v_2.md)
+- Source of truth по implementation decisions и rollout order:
+  [EMIS Implementation Spec v1](./emis_implementation_spec_v1.md)
+- Frozen decisions и conventions, которые не нужно заново открывать:
+  [EMIS Freeze Note](./emis_freeze_note.md)
+- Runtime/API contract:
+  [EMIS Runtime Contract](../src/lib/server/emis/infra/RUNTIME_CONTRACT.md)
+
+## 2. Что считать текущим состоянием на 1 апреля 2026
+
+### Архитектурная рамка
+
+- EMIS развивается внутри текущего SvelteKit-приложения как `single deployable app`.
+- Базовый стиль: modular monolith с monorepo-ready границами.
+- Для EMIS operational flows default path:
+  `routes/api/emis/* -> server/emis/modules/* -> queries/service/repository -> PostgreSQL/PostGIS`
+- Dataset/IR abstraction сохраняется для BI/read-side и стабильных read-model contracts.
+
+### Что уже реально есть в коде
+
+- `/emis` уже рабочий workspace, а не foundation page.
+- Map/list используют общий filter runtime и shared filters.
+- Search transports уже есть:
+  - `GET /api/emis/search/objects`
+  - `GET /api/emis/search/news`
+- Catalogs/detail routes для objects и news уже есть.
+- Manual create/edit entry points для objects и news уже есть, вместе с production-shaped inline validation и pending states.
+- Ship-route slice уже встроен в `/emis`:
+  - `GET /api/emis/ship-routes/vessels` (с поддержкой `q` для поиска)
+  - `GET /api/emis/ship-routes/points`
+  - `GET /api/emis/ship-routes/segments`
+  - `shipHbkId` живет в workspace runtime и синхронизируется с URL
+  - route UX уже включает `routeMode=points|segments|both` и deep-link на выбранный контекст
+- Vessel current positions slice уже встроен в `/emis`:
+  - `GET /api/emis/map/vessels?bbox=...&q=...&limit=...` — GeoJSON FeatureCollection текущих позиций из `mart.emis_ship_route_vessels`
+  - `/emis?layer=vessels` — отдельный UI-режим с каталогом судов в правой колонке и vessel layer на карте
+  - Map widget: vessel source/layer, click/hover/popup, selection highlight
+  - Фильтры: `layer='vessels'`, `q` привязан к `mapVessels` target
+  - Historical track не загружается автоматически в vessel mode — планируется как следующая волна
+- Write-side audit hooks и actor attribution уже подключены для objects, news и news-object links.
+- BI/read-side уже выведен в три route-level slice:
+  - `/dashboard/emis`
+  - `/dashboard/emis/ship-routes`
+  - `/dashboard/emis/provenance`
+
+### Что уже считать фактом в БД
+
+- Локальный PostGIS runtime работает через Docker Compose на `localhost:5435`.
+- Repo ведется в snapshot-first режиме: текущий source of truth по active DB structure находится в `db/current_schema.sql`.
+- `db/schema_catalog.md` - короткий каталог рабочих app schemas и published SQL contracts.
+- Исторический EMIS foundation archive по migrations покрывает wave `001-011`, но это уже не основной navigation layer.
+- Snapshot baseline включает `emis`, `stg_emis`, `mart_emis`, `mart` и фиксирует:
+  - identity/provenance foundation;
+  - append-only `emis.audit_log`;
+  - `mart.emis_*` BI contracts;
+  - `mart.emis_ship_route_vessels`.
+
+### Что уже закрыто как рабочие slice'ы
+
+- Query/runtime hardening закрыт:
+  list meta, strict params, stable `{ error, code }`, dataset meta/sort conventions.
+- `pnpm emis:smoke` закрепляет read-side и runtime contract, включая vessel current positions.
+- `pnpm emis:write-smoke` закрыт как repeatable write-side smoke:
+  6/6 checks, полный `audit_log` verification.
+- Offline/maps core implementation закрыта:
+  `online | offline | auto`, PMTiles assets, spike route, automated `pnpm emis:offline-smoke` (9/9).
+- `/emis` UX edge-case polish закрыт:
+  skeleton loaders, map spinner, route truncation badge, layer filter disabled states.
+- BI convention audit закрыт (clean):
+  meta/sort/error shape coverage verified, DATASETS registry актуален.
+- Vessel current positions v1 закрыт:
+  map entity contracts, GeoJSON endpoint, vessel layer на карте, vessel mode в `/emis`, catalog search.
+  Historical track остаётся как следующая волна.
+
+### Что остается в практическом фокусе
+
+- MVE closeout / contract hardening:
+  - минимальная operating model фиксация для `viewer` / `editor` / `admin`
+  - centralized write guardrails для production-shaped EMIS writes
+  - dictionary/admin scope decision: seed-managed vs narrow CRUD
+  - health/readiness contract и centralized API error logging
+- Post-MVE next wave:
+  - vessel historical track integration:
+    - опциональная загрузка track при выборе судна из vessel catalog
+    - flyTo на выбранное судно из каталога
+    - viewport-synced vessel search (сейчас каталог глобальный)
+  - production ops hardening для offline maps:
+    - Range support verification в `adapter-node`
+    - asset update pipeline для новых регионов
+
+## 3. Обязательные EMIS conventions
+
+- Canonical identity должна доходить до DB constraints / partial unique indexes.
+- Soft delete semantics должны быть едиными для API, views и recreate/restore flows.
+- Audit trail, actor attribution и provenance входят в target contract.
+- FK behavior и vocabulary boundaries фиксируются явно.
+- Новый EMIS UI писать на Svelte 5 runes.
+- Для новых `entities/features/widgets` по умолчанию использовать плоский namespace `emis-*`.
+
+## 4. Doc Map
+
+- `emis_session_bootstrap.md`
+  Текущее состояние, reading order и doc ownership.
+- `emis_mve_tz_v_2.md`
+  Что и зачем делаем: scope, invariants, acceptance.
+- `emis_implementation_spec_v1.md`
+  Как делаем: структура кода, API, rollout order, DoD.
+- `emis_freeze_note.md`
+  Какие решения уже заморожены и не требуют нового обсуждения.
+- `../src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
+  Runtime/API conventions, audit contract, error/meta shape.
+- `emis_architecture_review.md`
+  Approve checklist, mandatory review cases и финальный verdict format.
+- `emis_mr_template.md`
+  Handoff template для local Git review и branch-based MR summary.
+- `emis_offline_maps_ops.md`
+  Ops/runbook по MapTiler, PMTiles и production caveats.
+- `emis_next_tasks_2026_03_22.md`
+  Активный backlog, разбитый на MVE closeout и post-MVE tracks.
+- `emis_agent_operating_model.md`
+  Agent operating model: роли, границы, escalation rules и рекомендуемые модели.
+- `../src/routes/emis/AGENTS.md`
+  Workspace route contract для `/emis` UI/orchestration layer.
+- `../src/lib/widgets/emis-map/AGENTS.md`
+  Map runtime boundaries, extraction rules и widget ownership.
+- `../src/routes/dashboard/emis/AGENTS.md`
+  BI/read-side route contract для dashboard slices.
+- `archive/emis/*`
+  Исторические snapshots и завершенные wave notes. Не source of truth и не место для новых обновлений.
+
+## 5. Reading Order по сценариям
+
+### Новый диалог или новый агент
+
+1. Этот bootstrap
+2. `emis_mve_tz_v_2.md`
+3. `emis_implementation_spec_v1.md`
+4. `emis_freeze_note.md`
+
+### Задача по API / service / audit
+
+1. Этот bootstrap
+2. `../src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
+3. `src/lib/server/emis/AGENTS.md`
+4. `src/routes/api/emis/AGENTS.md`
+
+### Задача по offline maps
+
+1. Этот bootstrap
+2. `emis_offline_maps_ops.md`
+3. `archive/emis/emis_pmtiles_validation_wave.md`
+
+### Задача по agent workflow / review ownership
+
+1. Этот bootstrap
+2. `emis_agent_operating_model.md`
+3. `emis_architecture_review.md`
+4. `emis_mr_template.md`
+5. `../src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
+
+### Задача по `/emis` workspace UI
+
+1. Этот bootstrap
+2. `../src/routes/emis/AGENTS.md`
+3. `../src/lib/widgets/emis-map/AGENTS.md` - если change касается map layer
+4. `../src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
+
+### Задача по EMIS BI routes
+
+1. Этот bootstrap
+2. `../src/routes/dashboard/emis/AGENTS.md`
+3. `../src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
+4. `../src/lib/server/datasets/AGENTS.md`
+
+### Нужен только исторический контекст
+
+Сначала прочитать этот bootstrap, и только потом:
+
+- `archive/emis/emis_handoff_2026_03_17.md`
+- `archive/emis/emis_pmtiles_validation_wave.md`
+
+## 6. Локальный smoke path
+
+- `pnpm emis:smoke` - read-side и runtime contract
+- `pnpm emis:write-smoke` - write-side + audit verification
+- `pnpm emis:offline-smoke` - offline basemap smoke
+
+На shared-folder mounts использовать:
+
+- `CHOKIDAR_USEPOLLING=1 pnpm emis:smoke`
+- `CHOKIDAR_USEPOLLING=1 pnpm emis:write-smoke`
+- `CHOKIDAR_USEPOLLING=1 pnpm emis:offline-smoke`

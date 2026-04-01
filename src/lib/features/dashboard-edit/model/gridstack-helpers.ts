@@ -65,10 +65,7 @@ export function extractNodeId(node: GridStackNode): string | null {
  *   // Layout изменился, нужно обновить store
  * }
  */
-export function applyLayoutChanges(
-	widget: DashboardWidget,
-	node: GridStackNode
-): DashboardWidget {
+export function applyLayoutChanges(widget: DashboardWidget, node: GridStackNode): DashboardWidget {
 	// Берём новые значения или fallback к существующим
 	const newX = node.x ?? widget.layout.x;
 	const newY = node.y ?? widget.layout.y;

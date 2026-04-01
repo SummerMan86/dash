@@ -23,6 +23,7 @@ export async function objectExists(id: string, client?: PoolClient): Promise<boo
 
 export async function insertObject(
 	input: CreateEmisObjectInput,
+	actorId: string | null,
 	client?: PoolClient
 ): Promise<string> {
 	const db = getDb(client);
@@ -41,13 +42,17 @@ export async function insertObject(
 			geom,
 			centroid,
 			source_note,
-			source_origin
+			source_origin,
+			created_by,
+			updated_by
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb,
 			${geometrySql(11)},
 			ST_Centroid(${geometrySql(11)}),
 			$12,
-			'manual'
+			'manual',
+			$13,
+			$13
 		)
 		RETURNING id`,
 		[
@@ -62,7 +67,8 @@ export async function insertObject(
 			input.description ?? null,
 			jsonOrNull(input.attributes),
 			JSON.stringify(input.geometry),
-			input.sourceNote ?? null
+			input.sourceNote ?? null,
+			actorId
 		]
 	);
 	return result.rows[0].id;
@@ -71,6 +77,7 @@ export async function insertObject(
 export async function updateObject(
 	id: string,
 	patch: UpdateEmisObjectInput,
+	actorId: string | null,
 	client?: PoolClient
 ): Promise<boolean> {
 	const sets: string[] = [];
@@ -102,8 +109,9 @@ export async function updateObject(
 	}
 	if ('sourceNote' in patch) push('source_note', patch.sourceNote ?? null);
 
-	values.push(id);
 	sets.push(`updated_at = now()`);
+	push('updated_by', actorId);
+	values.push(id);
 
 	const db = getDb(client);
 	const result = await db.query(
@@ -116,13 +124,17 @@ export async function updateObject(
 	return (result.rowCount ?? 0) > 0;
 }
 
-export async function softDeleteObject(id: string, client?: PoolClient): Promise<boolean> {
+export async function softDeleteObject(
+	id: string,
+	actorId: string | null,
+	client?: PoolClient
+): Promise<boolean> {
 	const db = getDb(client);
 	const result = await db.query(
 		`UPDATE emis.objects
-		 SET deleted_at = now(), updated_at = now()
+		 SET deleted_at = now(), updated_at = now(), deleted_by = $2, updated_by = $2
 		 WHERE id = $1 AND deleted_at IS NULL`,
-		[id]
+		[id, actorId]
 	);
 	return (result.rowCount ?? 0) > 0;
 }

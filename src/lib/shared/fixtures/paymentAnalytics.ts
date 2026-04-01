@@ -376,5 +376,3 @@ export const mccSummary: MccSummary[] = [
 		rejected_share_pct: 0.94
 	}
 ];
-
-

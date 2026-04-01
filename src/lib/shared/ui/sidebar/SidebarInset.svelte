@@ -20,5 +20,3 @@
 		{@render children()}
 	{/if}
 </main>
-
-

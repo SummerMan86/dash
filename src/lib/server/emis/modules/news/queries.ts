@@ -1,3 +1,5 @@
+import type { PoolClient } from 'pg';
+
 import type {
 	EmisNewsDetail,
 	EmisNewsRelatedObject,
@@ -8,7 +10,7 @@ import type {
 import { getDb } from '../../infra/db';
 
 function clampPageSize(value: number | undefined): number {
-	return Math.max(1, Math.min(100, Math.trunc(value ?? 50)));
+	return Math.max(1, Math.min(200, Math.trunc(value ?? 50)));
 }
 
 export async function listNewsQuery(filters: ListEmisNewsInput): Promise<EmisNewsSummary[]> {
@@ -79,7 +81,7 @@ export async function listNewsQuery(filters: ListEmisNewsInput): Promise<EmisNew
 		 GROUP BY
 			n.id, n.title, n.source_id, s.name, n.published_at,
 			n.country_code, n.region, n.news_type, n.importance, n.geom
-		 ORDER BY n.published_at DESC, n.title ASC
+		 ORDER BY n.published_at DESC, n.id DESC
 		 LIMIT $${values.length - 1}
 		 OFFSET $${values.length}`,
 		values
@@ -100,8 +102,11 @@ export async function listNewsQuery(filters: ListEmisNewsInput): Promise<EmisNew
 	}));
 }
 
-export async function getNewsDetailQuery(id: string): Promise<EmisNewsDetail | null> {
-	const db = getDb();
+export async function getNewsDetailQuery(
+	id: string,
+	client?: PoolClient
+): Promise<EmisNewsDetail | null> {
+	const db = getDb(client);
 	const newsResult = await db.query(
 		`SELECT
 			n.id,

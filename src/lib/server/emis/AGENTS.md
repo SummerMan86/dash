@@ -7,6 +7,7 @@
 - `infra/`
 - `modules/`
 - transport helpers и server rules
+- `infra/RUNTIME_CONTRACT.md` как source of truth по runtime conventions
 
 ## Правило по архитектуре
 
@@ -28,5 +29,7 @@ EMIS встраивается в текущий проект как адапти
 - read scenarios держать в `modules/*/queries.ts`
 - write scenarios держать в `modules/*/service.ts`
 - все SQL-запросы только параметризованные
-- все изменения схемы только через `db/migrations/*`
+- текущую структуру БД читать по `db/current_schema.sql`
+- schema change фиксировать обновлением `db/current_schema.sql` и `db/applied_changes.md`
+- если live DB нужен промежуточный delta before next snapshot export, использовать `db/pending_changes.sql`
 - после каждого завершенного этапа делать локальный git commit

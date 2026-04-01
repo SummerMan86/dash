@@ -5,6 +5,7 @@ export const EMIS_FILTER_TARGETS = {
 	searchNews: 'emis.search.news',
 	mapObjects: 'emis.map.objects',
 	mapNews: 'emis.map.news',
+	mapVessels: 'emis.map.vessels',
 	shipRoutePoints: 'emis.route.points',
 	shipRouteSegments: 'emis.route.segments'
 } as const;
@@ -23,10 +24,17 @@ export const EMIS_PRIMARY_FILTER_IDS = [
 
 export const EMIS_SHIP_ROUTE_FILTER_IDS = ['shipHbkId'] as const;
 
+const shipRouteModeOptions: FilterOption[] = [
+	{ value: 'both', label: 'Точки и сегменты' },
+	{ value: 'points', label: 'Только точки' },
+	{ value: 'segments', label: 'Только сегменты' }
+];
+
 const layerOptions: FilterOption[] = [
 	{ value: 'all', label: 'Все слои' },
 	{ value: 'objects', label: 'Только объекты' },
-	{ value: 'news', label: 'Только новости' }
+	{ value: 'news', label: 'Только новости' },
+	{ value: 'vessels', label: 'Суда' }
 ];
 
 const objectStatusOptions: FilterOption[] = [
@@ -60,7 +68,8 @@ export const emisWorkspaceFilters: FilterSpec[] = [
 			[EMIS_FILTER_TARGETS.searchObjects]: { param: 'q' },
 			[EMIS_FILTER_TARGETS.searchNews]: { param: 'q' },
 			[EMIS_FILTER_TARGETS.mapObjects]: { param: 'q' },
-			[EMIS_FILTER_TARGETS.mapNews]: { param: 'q' }
+			[EMIS_FILTER_TARGETS.mapNews]: { param: 'q' },
+			[EMIS_FILTER_TARGETS.mapVessels]: { param: 'q' }
 		}
 	},
 	{
@@ -189,9 +198,20 @@ export const emisWorkspaceFilters: FilterSpec[] = [
 		},
 		optionsSource: {
 			kind: 'endpoint',
-			url: '/api/emis/dictionaries/vessels',
+			url: '/api/emis/ship-routes/vessels',
 			valueField: 'shipHbkId',
 			labelField: 'vesselLabel'
 		}
+	},
+	{
+		id: 'routeMode',
+		urlKey: 'routeMode',
+		type: 'select',
+		label: 'Route mode',
+		scope: 'workspace',
+		apply: 'client',
+		defaultValue: 'both',
+		bindings: {},
+		options: shipRouteModeOptions
 	}
 ];

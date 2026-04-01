@@ -5,7 +5,12 @@
  * Requires TELEGRAM_BOT_TOKEN environment variable.
  */
 
-import type { INotificationChannel, NotificationPayload, SendResult, AlertCondition } from '../model/types';
+import type {
+	INotificationChannel,
+	NotificationPayload,
+	SendResult,
+	AlertCondition
+} from '../model/types';
 
 const TELEGRAM_API_BASE = 'https://api.telegram.org/bot';
 
@@ -31,16 +36,25 @@ function formatCondition(condition: AlertCondition): string {
 
 function formatMatchedItem(item: Record<string, unknown>, index: number): string {
 	// Pick most relevant fields for display
-	const relevantKeys = ['nm_id', 'title', 'vendor_code', 'brand_name', 'office_name', 'stock_count', 'lost_orders_sum'];
+	const relevantKeys = [
+		'nm_id',
+		'title',
+		'vendor_code',
+		'brand_name',
+		'office_name',
+		'stock_count',
+		'lost_orders_sum'
+	];
 	const displayParts: string[] = [];
 
 	for (const key of relevantKeys) {
 		if (key in item && item[key] !== null && item[key] !== undefined) {
 			const value = item[key];
 			// Truncate long strings
-			const displayValue = typeof value === 'string' && value.length > 30
-				? value.substring(0, 30) + '...'
-				: String(value);
+			const displayValue =
+				typeof value === 'string' && value.length > 30
+					? value.substring(0, 30) + '...'
+					: String(value);
 			displayParts.push(`${key}: ${displayValue}`);
 		}
 	}

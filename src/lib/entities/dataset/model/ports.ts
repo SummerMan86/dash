@@ -30,5 +30,3 @@ export interface Provider {
 	 */
 	execute: (ir: DatasetIr, ctx: ServerContext) => Promise<DatasetResponse>;
 }
-
-

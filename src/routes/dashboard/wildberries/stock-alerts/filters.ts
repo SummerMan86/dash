@@ -67,12 +67,17 @@ export const PRESET_LIST: PresetInfo[] = Object.values(SCENARIO_PRESETS);
 export const stockAlertFilters: FilterSpec[] = [
 	{
 		id: 'dateRange',
+		sharedKey: 'dateRange',
+		urlKey: 'dateRange',
 		type: 'dateRange',
 		label: 'Период',
-		scope: 'global',
+		scope: 'shared',
 		apply: 'server',
 		bindings: {
-			'wildberries.fact_product_office_day': { field: 'dt' }
+			'wildberries.fact_product_office_day': {
+				field: 'dt',
+				rangeParams: { from: 'dateFrom', to: 'dateTo' }
+			}
 		}
 	}
 ];

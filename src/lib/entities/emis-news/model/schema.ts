@@ -13,7 +13,7 @@ export const listEmisNewsQuerySchema = z.object({
 	dateFrom: z.string().datetime({ offset: true }).optional(),
 	dateTo: z.string().datetime({ offset: true }).optional(),
 	objectId: z.string().uuid().optional(),
-	limit: z.number().int().min(1).max(100).default(50),
+	limit: z.number().int().min(1).max(200).default(50),
 	offset: z.number().int().min(0).default(0)
 });
 

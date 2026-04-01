@@ -71,7 +71,7 @@
 		<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 			<div>
 				<h1 class="text-2xl font-semibold tracking-tight">DragOverlay Test</h1>
-				<p class="text-sm text-muted-foreground">
+				<p class="type-body-sm text-muted-foreground">
 					Минималистичный drag-and-drop с реальными компонентами
 				</p>
 			</div>
@@ -92,7 +92,7 @@
 		<CardHeader>
 			<CardTitle class="text-sm">Как это работает</CardTitle>
 		</CardHeader>
-		<CardContent class="text-sm text-muted-foreground space-y-2">
+		<CardContent class="type-body-sm space-y-2 text-muted-foreground">
 			<p>• Наведите на виджет — появится иконка drag handle в правом верхнем углу</p>
 			<p>• Перетащите за иконку для перемещения</p>
 			<p>• Resize за углы/края виджета</p>

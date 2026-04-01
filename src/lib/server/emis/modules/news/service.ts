@@ -2,6 +2,8 @@ import type { PoolClient } from 'pg';
 
 import type { CreateEmisNewsInput, UpdateEmisNewsInput } from '$entities/emis-news';
 
+import type { EmisWriteContext } from '../../infra/audit';
+import { insertAuditLog } from '../../infra/audit';
 import { EmisError } from '../../infra/errors';
 import { withTransaction } from '../../infra/db';
 import { countryExists, sourceExists } from '../dictionaries/repository';
@@ -20,30 +22,71 @@ async function validateNewsReferences(
 	}
 }
 
-export async function createNewsService(input: CreateEmisNewsInput) {
+export async function createNewsService(input: CreateEmisNewsInput, context: EmisWriteContext) {
 	return withTransaction(async (client) => {
 		await validateNewsReferences(input, client);
-		const id = await insertNews(input, client);
-		const detail = await getNewsDetailQuery(id);
+		const id = await insertNews(input, context.actorId, client);
+		await insertAuditLog(
+			{
+				entityType: 'news_item',
+				entityId: id,
+				action: 'create',
+				payload: {
+					sourceOrigin: input.isManual ? 'manual' : 'import',
+					title: input.title,
+					sourceId: input.sourceId
+				}
+			},
+			context,
+			client
+		);
+		const detail = await getNewsDetailQuery(id, client);
 		if (!detail) throw new EmisError(500, 'NEWS_CREATE_FAILED', 'Failed to load created news item');
 		return detail;
 	});
 }
 
-export async function updateNewsService(id: string, patch: UpdateEmisNewsInput) {
+export async function updateNewsService(
+	id: string,
+	patch: UpdateEmisNewsInput,
+	context: EmisWriteContext
+) {
 	return withTransaction(async (client) => {
 		if (!(await newsExists(id, client))) {
 			throw new EmisError(404, 'NEWS_NOT_FOUND', 'News item not found');
 		}
 		await validateNewsReferences(patch, client);
-		await updateNews(id, patch, client);
-		const detail = await getNewsDetailQuery(id);
+		await updateNews(id, patch, context.actorId, client);
+		await insertAuditLog(
+			{
+				entityType: 'news_item',
+				entityId: id,
+				action: 'update',
+				payload: {
+					patch
+				}
+			},
+			context,
+			client
+		);
+		const detail = await getNewsDetailQuery(id, client);
 		if (!detail) throw new EmisError(500, 'NEWS_UPDATE_FAILED', 'Failed to load updated news item');
 		return detail;
 	});
 }
 
-export async function softDeleteNewsService(id: string) {
-	const deleted = await softDeleteNews(id);
-	if (!deleted) throw new EmisError(404, 'NEWS_NOT_FOUND', 'News item not found');
+export async function softDeleteNewsService(id: string, context: EmisWriteContext) {
+	return withTransaction(async (client) => {
+		const deleted = await softDeleteNews(id, context.actorId, client);
+		if (!deleted) throw new EmisError(404, 'NEWS_NOT_FOUND', 'News item not found');
+		await insertAuditLog(
+			{
+				entityType: 'news_item',
+				entityId: id,
+				action: 'delete'
+			},
+			context,
+			client
+		);
+	});
 }

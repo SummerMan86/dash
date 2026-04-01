@@ -3,7 +3,12 @@
  */
 
 import { getPgPool } from '$lib/server/db/pg';
-import type { AlertRule, CreateAlertRuleInput, UpdateAlertRuleInput, AlertCondition } from '../model/types';
+import type {
+	AlertRule,
+	CreateAlertRuleInput,
+	UpdateAlertRuleInput,
+	AlertCondition
+} from '../model/types';
 
 type RuleRow = {
 	id: string;
@@ -98,7 +103,10 @@ export async function createRule(input: CreateAlertRuleInput): Promise<AlertRule
 	return rowToRule(result.rows[0]);
 }
 
-export async function updateRule(id: number, input: UpdateAlertRuleInput): Promise<AlertRule | null> {
+export async function updateRule(
+	id: number,
+	input: UpdateAlertRuleInput
+): Promise<AlertRule | null> {
 	const pool = getPgPool();
 
 	const updates: string[] = [];
@@ -185,8 +193,8 @@ export async function linkRuleToRecipients(ruleId: number, recipientIds: number[
 
 export async function unlinkRuleFromRecipient(ruleId: number, recipientId: number): Promise<void> {
 	const pool = getPgPool();
-	await pool.query(
-		'DELETE FROM alerts.rule_recipients WHERE rule_id = $1 AND recipient_id = $2',
-		[ruleId, recipientId]
-	);
+	await pool.query('DELETE FROM alerts.rule_recipients WHERE rule_id = $1 AND recipient_id = $2', [
+		ruleId,
+		recipientId
+	]);
 }

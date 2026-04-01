@@ -28,13 +28,16 @@
 
 	let { status, size = 'md', showLabel = true, class: className }: Props = $props();
 
-	const sizeClasses = $derived(
-		size === 'sm' ? 'px-2 py-0.5 text-xs font-medium' : 'px-2 py-1 text-xs font-medium'
-	);
+	const sizeClasses = $derived(size === 'sm' ? 'px-2 py-0.5 type-badge' : 'px-2 py-1 type-badge');
 </script>
 
 <span
-	class={cn('inline-flex items-center rounded-full', getStatusColor(status), sizeClasses, className)}
+	class={cn(
+		'inline-flex items-center rounded-full',
+		getStatusColor(status),
+		sizeClasses,
+		className
+	)}
 >
 	{#if showLabel}
 		{getStatusLabel(status)}

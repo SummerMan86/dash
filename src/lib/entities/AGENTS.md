@@ -26,7 +26,7 @@
 
 Есть локальный документ:
 
-- `dataset/CLAUDE.md`
+- `dataset/AGENTS.md`
 
 ### `filter/`
 
@@ -42,7 +42,7 @@
 
 Есть локальный документ:
 
-- `filter/CLAUDE.md`
+- `filter/AGENTS.md`
 
 ### `charts/`
 
@@ -74,9 +74,9 @@
 
 ## Порядок чтения
 
-1. `dataset/CLAUDE.md`
+1. `dataset/AGENTS.md`
 2. `dataset/model/*`
-3. `filter/CLAUDE.md`
+3. `filter/AGENTS.md`
 4. `filter/model/*`
 5. `charts/*`
 

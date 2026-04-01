@@ -64,5 +64,12 @@ export const mapNewsQuerySchema = z
 		path: ['dateTo']
 	});
 
+export const mapVesselsQuerySchema = z.object({
+	bbox: mapBboxSchema,
+	q: z.string().trim().min(1).max(255).optional(),
+	limit: z.number().int().min(1).max(500).default(200)
+});
+
 export type MapObjectsQuerySchemaInput = z.infer<typeof mapObjectsQuerySchema>;
 export type MapNewsQuerySchemaInput = z.infer<typeof mapNewsQuerySchema>;
+export type MapVesselsQuerySchemaInput = z.infer<typeof mapVesselsQuerySchema>;

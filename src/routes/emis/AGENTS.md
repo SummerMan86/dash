@@ -1,0 +1,85 @@
+# EMIS Workspace Navigation
+
+Этот файл описывает правила для `src/routes/emis/*`.
+Это workspace/UI слой EMIS, а не место для server business logic или SQL.
+
+## 1. Scope
+
+Здесь живут:
+
+- route composition для `/emis`
+- page-level loading и orchestration
+- URL/search params sync
+- workspace filter runtime wiring
+- selection state и page-local interaction state
+- интеграция с reusable widgets, в первую очередь `EmisMap`
+
+Ключевые файлы:
+
+- `+page.svelte` - основной workspace orchestration layer
+- `+page.server.ts` - server-side data needed for initial page render
+- `filters.ts` - route-local filter spec wiring
+- child routes `news/*`, `objects/*`, `pmtiles-spike/*` - отдельные workspace slices
+
+## 2. What is allowed in route layer
+
+- связать filters, URL state, loaders и widgets
+- держать page-local loading / error / empty states
+- преобразовать server payload в route-local view state
+- координировать, какой widget показывается и в каком режиме
+
+## 3. What must not stay here
+
+- raw SQL
+- HTTP transport logic for `/api/emis/*`
+- reusable map runtime internals
+- shared popup rendering logic
+- entity contracts and reusable Zod schemas
+- heavy business logic that belongs in `src/lib/server/emis/*`
+
+## 4. Extraction rules
+
+`src/routes/emis/+page.svelte` уже oversized.
+Сейчас default expectation для новых задач:
+
+- не добавлять еще один большой inline block, если его можно вынести
+- extract reusable or stateful UI slices into `src/lib/widgets/*` or route-local subcomponents
+- extract non-trivial view-model shaping into route-local helpers or dedicated model files
+
+Хороший кандидат на extraction:
+
+- блок больше `120-150` строк с собственной state machine
+- повторяемая rendering logic
+- isolated selection/loading/runtime logic
+- map-related logic, не относящаяся к page composition
+
+## 5. Route vs widget boundary
+
+В `src/routes/emis/*` оставляем:
+
+- какой слой workspace активен
+- какой endpoint / query нужен текущей странице
+- какой selection state синхронизируется с URL
+
+В `src/lib/widgets/emis-map/*` выносим:
+
+- maplibre lifecycle
+- layer/source wiring
+- PMTiles protocol/runtime
+- popup and overlay rendering internals
+
+## 6. Review cues
+
+При review смотреть в первую очередь:
+
+- route не стал еще более god-component без extraction
+- URL/filter/workspace orchestration не протекла в widgets или server layer
+- новые route-level decisions описаны в docs, если они меняют navigation or ownership
+
+## 7. Reading order
+
+1. `../../../docs/emis_session_bootstrap.md`
+2. `../../../docs/emis_agent_operating_model.md`
+3. `../../../docs/emis_architecture_review.md`
+4. `../../../src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
+5. `../../../src/lib/widgets/emis-map/AGENTS.md` - если change касается map runtime

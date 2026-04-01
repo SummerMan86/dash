@@ -19,8 +19,11 @@ type TableMapping = {
 };
 
 const DATASET_TABLES: Record<string, TableMapping> = {
-	'wildberries.fact_product_period': { schema: 'mart', table: 'fact_product_period' },
-	'wildberries.fact_product_office_day': { schema: 'mart', table: 'fact_product_office_day' }
+	'wildberries.fact_product_period': { schema: 'mart_marketplace', table: 'fact_product_period' },
+	'wildberries.fact_product_office_day': {
+		schema: 'mart_marketplace',
+		table: 'fact_product_office_day'
+	}
 };
 
 // ============================================================================
@@ -77,10 +80,7 @@ function resolveDateRef(ref: string): string {
 // Condition to SQL Conversion
 // ============================================================================
 
-function buildWhereCondition(
-	condition: AlertCondition,
-	builder: SqlBuilder
-): string {
+function buildWhereCondition(condition: AlertCondition, builder: SqlBuilder): string {
 	const { metric, operator, threshold } = condition;
 	const col = qIdent(metric);
 	const param = builder.addParam(threshold);
@@ -104,9 +104,7 @@ function buildScopeFilters(
 	return filters;
 }
 
-function buildDateRangeFilters(
-	dateRange: { from: string; to: string } | undefined
-): string[] {
+function buildDateRangeFilters(dateRange: { from: string; to: string } | undefined): string[] {
 	if (!dateRange) return [];
 
 	const filters: string[] = [];

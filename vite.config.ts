@@ -3,7 +3,8 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 import dotenv from 'dotenv';
 
-// Load .env file for server-side environment variables
+// Load shared map config first, then local overrides
+dotenv.config({ path: '.env.map' });
 dotenv.config();
 
 export default defineConfig({

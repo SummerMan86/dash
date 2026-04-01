@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { FilterSpec, FilterValue } from '$entities/filter';
+	import { Button } from '$shared/ui/button';
 	import { Input } from '$shared/ui/input';
 
 	interface Props {
@@ -31,12 +32,16 @@
 	function handleClear() {
 		onChange(null);
 	}
+
+	const fromId = $derived(`${spec.id}-from`);
+	const toId = $derived(`${spec.id}-to`);
 </script>
 
-<div class="space-y-1">
-	<label class="text-xs text-muted-foreground">{spec.label}</label>
+<fieldset class="space-y-1">
+	<legend class="type-caption text-muted-foreground">{spec.label}</legend>
 	<div class="flex items-center gap-2">
 		<Input
+			id={fromId}
 			type="date"
 			class="w-[140px]"
 			value={range.from ?? ''}
@@ -45,6 +50,7 @@
 		/>
 		<span class="text-muted-foreground">—</span>
 		<Input
+			id={toId}
 			type="date"
 			class="w-[140px]"
 			value={range.to ?? ''}
@@ -52,14 +58,17 @@
 			placeholder="До"
 		/>
 		{#if range.from || range.to}
-			<button
+			<Button
 				type="button"
-				class="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+				variant="ghost"
+				size="icon"
+				class="h-9 w-9 text-muted-foreground"
 				onclick={handleClear}
+				aria-label="Очистить диапазон дат"
 				title="Очистить"
 			>
 				×
-			</button>
+			</Button>
 		{/if}
 	</div>
-</div>
+</fieldset>

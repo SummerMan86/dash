@@ -46,7 +46,7 @@
 </script>
 
 {#if data && data.length >= 2}
-	<svg viewBox="0 0 100 30" class={cn('w-16 h-5 shrink-0', className)} aria-hidden="true">
+	<svg viewBox="0 0 100 30" class={cn('h-5 w-16 shrink-0', className)} aria-hidden="true">
 		<polyline
 			{points}
 			fill="none"

@@ -3,7 +3,12 @@ import type { DatasetIr, IrExpr, IrOrderBy, IrSelectItem } from '$entities/datas
 import type { Provider, ServerContext } from '$entities/dataset';
 import { CONTRACT_VERSION } from '$entities/dataset';
 
-import { kpiSummary, mccSummary, timeseriesDaily, topClients } from '$shared/fixtures/paymentAnalytics';
+import {
+	kpiSummary,
+	mccSummary,
+	timeseriesDaily,
+	topClients
+} from '$shared/fixtures/paymentAnalytics';
 
 type Row = Record<string, JsonValue>;
 
@@ -132,6 +137,14 @@ function inferFields(rows: Row[]) {
 	return Object.keys(sample).map((name) => ({ name, type: 'unknown' as const }));
 }
 
+function serializeOrderBy(orderBy: IrOrderBy[] | undefined) {
+	if (!orderBy?.length) return undefined;
+
+	return orderBy.flatMap((rule) =>
+		rule.expr.kind === 'col' ? [{ field: rule.expr.name, dir: rule.dir }] : []
+	);
+}
+
 export const mockProvider: Provider = {
 	async execute(irQuery: DatasetIr, ctx: ServerContext): Promise<DatasetResponse> {
 		// The execute method is what the BFF calls after compiling DatasetQuery -> IR.
@@ -143,7 +156,8 @@ export const mockProvider: Provider = {
 
 		if (irQuery.where) rows = rows.filter((r) => isTruthy(evalExpr(irQuery.where as IrExpr, r)));
 
-		if (irQuery.orderBy?.length) rows = [...rows].sort((a, b) => compareOrder(irQuery.orderBy, a, b));
+		if (irQuery.orderBy?.length)
+			rows = [...rows].sort((a, b) => compareOrder(irQuery.orderBy, a, b));
 
 		if (typeof irQuery.limit === 'number') rows = rows.slice(0, Math.max(0, irQuery.limit));
 
@@ -157,10 +171,10 @@ export const mockProvider: Provider = {
 			meta: {
 				executedAt: new Date().toISOString(),
 				tenantId: ctx.tenantId,
-				source: 'mock'
+				source: 'mock',
+				limit: typeof irQuery.limit === 'number' ? irQuery.limit : undefined,
+				sort: serializeOrderBy(irQuery.orderBy)
 			}
 		};
 	}
 };
-
-

@@ -5,8 +5,9 @@
 ## Что уже есть
 
 - `shared/ui` и `shared/styles` - базовый design system на Svelte 5 + Tailwind 4
-- `entities/dataset` + `server/*` - BFF-паттерн `DatasetQuery -> IR -> Provider`
-- `entities/filter` + `widgets/filters` - декларативные фильтры и их привязка к датасетам
+- `entities/dataset` + `server/*` - BFF-паттерн `DatasetQuery -> IR -> Provider` для BI/read-side
+- `entities/filter` + `widgets/filters` - декларативные фильтры, workspace runtime, URL sync и target-aware planner
+- `server/emis/*` + `routes/api/emis/*` - Postgres-first operational/server modules для EMIS без лишней generic IR-обвязки
 - `features/dashboard-edit` - редактор дашбордов на GridStack
 - `routes/dashboard/wildberries/*` - прикладные аналитические страницы поверх PostgreSQL
 - `server/alerts` - серверный scheduler и уведомления
@@ -33,6 +34,15 @@ Dev-сервер поднимается на `http://localhost:5173`.
 Для страниц с PostgreSQL-датасетами нужен `.env` с `DATABASE_URL`.
 Для EMIS-команд `db:*` нужна PostgreSQL-инстанция с доступным расширением `PostGIS`.
 
+DB-контур репозитория теперь ведется в snapshot-first режиме:
+
+- текущую структуру читаем по `db/current_schema.sql`;
+- краткую карту модели держим в `db/schema_catalog.md`;
+- короткий журнал DDL-изменений - в `db/applied_changes.md`;
+- `db/seeds/` теперь держит только reference dictionaries;
+- demo objects/news/links вынесены в optional `db/demo-fixtures/` и грузятся отдельно;
+- историческая migration-лента удалена из рабочего дерева, чтобы не перегружать контекст; если когда-то понадобится расследование старого SQL, ориентируемся на `git history`.
+
 ### Локальный PostGIS в Docker
 
 В репозитории есть `docker-compose.yml` для dev-PostgreSQL с PostGIS.
@@ -55,13 +65,19 @@ pnpm db:up
 pnpm db:init
 pnpm db:down
 pnpm db:status
-pnpm db:migrate
+pnpm db:apply
+pnpm db:snapshot:export
+pnpm db:snapshot:verify
 pnpm db:seed
+pnpm db:demo
 pnpm db:reset
 pnpm check
 pnpm lint
 pnpm build
 ```
+
+`pnpm db:reset` поднимает snapshot baseline и reference dictionaries.
+Если нужен демонстрационный EMIS-контент, дополнительно выполнить `pnpm db:demo`.
 
 ## Важные переменные окружения
 
@@ -73,6 +89,7 @@ pnpm build
 - `EMIS_MAPTILER_STYLE_ID` - style id для MapTiler, по умолчанию `streets-v2`
 - `EMIS_MAP_INITIAL_CENTER` - стартовый центр карты в формате `lon,lat`
 - `EMIS_MAP_INITIAL_ZOOM` - стартовый zoom EMIS-карты
+- `STRATEGY_DOCUMENT_BASE_URL` - base URL для открытия source documents из KPI provenance panel
 - `ENABLE_ALERT_SCHEDULER` - выключение фонового scheduler (`false`)
 - `ALERT_SCHEDULE` - cron для alerts
 - `ALERT_TIMEZONE` - timezone для alerts
@@ -80,25 +97,43 @@ pnpm build
 
 ## Основные маршруты
 
-- `/emis` - стартовая точка EMIS foundation
+- `/emis` - EMIS workspace: карта, shared filters и search list
 - `/dashboard` - редактор дашборда
 - `/dashboard/demo` - демо аналитического UI
 - `/dashboard/analytics` - статическая demo-аналитика
+- `/dashboard/strategy-drive` - стратегия, BSC, planning cascade и gap analysis
 - `/dashboard/wildberries/office-day` - таблица офисных остатков
 - `/dashboard/wildberries/product-analytics` - аналитика товара
 - `/dashboard/wildberries/stock-alerts` - анализ рисков по складам
 
+## Фильтрация
+
+Текущий рабочий паттерн для новых страниц:
+
+- страница объявляет `FilterSpec[]`
+- страница создает runtime через `useFilterWorkspace({ workspaceId, ownerId, specs })`
+- `FilterPanel` рендерится с `runtime={...}`
+- `fetchDataset(...)` получает явный `filterContext.snapshot`
+
+Система поддерживает три scope:
+
+- `shared` - app-shared subset между workspace
+- `workspace` - общее состояние внутри workspace
+- `owner` - локальное состояние страницы/виджета
+
+Для cross-page и cross-domain маршрутов используется URL namespace:
+
+- `sf.<sharedKey>`
+- `wf.<workspaceId>._workspace.<urlKey>`
+- `wf.<workspaceId>.<ownerId>.<urlKey>`
+
 ## Документация
 
-- `AGENTS.md` - быстрый навигатор по проекту и иерархии модулей
-- [Текущий анализ проекта](docs/current-project-analysis.md)
-- [EMIS Session Bootstrap](docs/emis_session_bootstrap.md)
-- [EMIS Freeze Note](docs/emis_freeze_note.md)
-- [Обновленное ТЗ EMIS v2](docs/emis_mve_tz_v_2.md)
-- [Implementation Spec EMIS v1](docs/emis_implementation_spec_v1.md)
-- [Offline Maps Ops Guide](docs/emis_offline_maps_ops.md)
-- `CLAUDE.md` - обзор архитектуры и ссылки на модульные docs
-- `src/lib/**/CLAUDE.md` - локальные инструкции по отдельным подсистемам
+- `AGENTS.md` - корневая точка входа по репозиторию, контурам и архитектурным правилам
+- `docs/AGENTS.md` - единственный полный каталог документации и reading order
+- `db/schema_catalog.md` + `db/current_schema.sql` - snapshot-first source of truth по активной структуре БД
+- `CLAUDE.md` - compatibility redirect на `AGENTS.md`
+- локальные `AGENTS.md` / `CLAUDE.md` в подпапках - точечные правила по подсистемам
 
 ## Замечание по структуре
 

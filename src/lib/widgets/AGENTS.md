@@ -1,58 +1,89 @@
 # Widgets Navigation
 
-`src/lib/widgets/` - это слой composite widgets. Они стоят выше `shared/ui`, но ниже page-level маршрутов.
+`src/lib/widgets/` - слой composite widgets.
+Он стоит выше `shared/ui`, но ниже page-level routes.
 
-Есть локальный документ:
+## Purpose
 
-- `CLAUDE.md`
+- собирать shared/ui primitives в готовые reusable widgets
+- держать UI composition без утаскивания raw business logic в pages
+
+Widgets могут использовать `entities` и `shared`, но не должны тянуть `features`, чтобы не плодить circular deps.
 
 ## Что здесь реально используется
 
 ### `filters/`
 
-Главный reusable widget-модуль в проекте:
+Главный reusable widget-модуль:
 
 - `FilterPanel.svelte`
 - `FilterField.svelte`
-- конкретные filter components
+- `DateRangeFilter.svelte`
+- `SelectFilter.svelte`
+- `MultiSelectFilter.svelte`
+- `TextFilter.svelte`
 
 Это UI-обертка над `entities/filter`.
+Новый код должен передавать runtime явно.
+
+Typical usage:
+
+```svelte
+<script>
+	import { useFilterWorkspace } from '$entities/filter';
+	import { FilterPanel } from '$widgets/filters';
+	import { pageFilters } from './filters';
+
+	const filterRuntime = useFilterWorkspace({
+		workspaceId: 'dashboard-wildberries',
+		ownerId: 'office-day',
+		specs: pageFilters
+	});
+</script>
+
+<FilterPanel runtime={filterRuntime} />
+```
 
 ### `stock-alerts/`
 
-Небольшой прикладной widget-модуль для сценария складских алертов:
+Прикладной widget-модуль для складских алертов:
 
 - `ScenarioParams.svelte`
 - `StatusBadge.svelte`
 
 ### `emis-map/`
 
-Новый EMIS widget-модуль для map runtime и дальнейших geospatial сценариев:
+Новый EMIS widget-модуль для geospatial runtime:
 
 - `EmisMap.svelte`
-- чтение server-resolved `mapConfig`
+- layer config
+- popup renderers
 - online/offline basemap mode
 - controlled fallback при отсутствии локального bundle
 
-## Что здесь пока неактивно
+## Conventions
 
-Папки:
+- Widgets должны экспортировать Svelte components, а не raw TS business logic
+- props должны быть typed
+- use design-system tokens instead of raw ad-hoc colors
+
+## Что здесь пока неактивно
 
 - `chart/`
 - `dashboard-container/`
 - `kpi/`
 - `table/`
 
-сейчас не содержат рабочего кода и не являются ключевыми модулями.
+Сейчас это не ключевые рабочие модули.
 
 ## Как читать widgets
 
-1. `CLAUDE.md`
+1. этот `AGENTS.md`
 2. `filters/*`
 3. `stock-alerts/*`
 4. `emis-map/*`
 
-Если нужно понять общую фильтрацию страниц, читай widgets вместе с:
+Если нужно понять общую фильтрацию страниц, читать widgets вместе с:
 
 - `../entities/filter/AGENTS.md`
 - `../shared/AGENTS.md`

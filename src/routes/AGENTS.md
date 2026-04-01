@@ -32,6 +32,10 @@
 - demo pages
 - Wildberries analytics pages
 
+Есть локальный документ:
+
+- `dashboard/AGENTS.md`
+
 ### `api/`
 
 Серверные endpoints:
@@ -47,8 +51,9 @@
 Если нужен UI:
 
 1. `dashboard/+page.svelte`
-2. `dashboard/demo/+page.svelte`
-3. `dashboard/wildberries/AGENTS.md`
+2. `dashboard/AGENTS.md`
+3. `dashboard/demo/+page.svelte`
+4. `dashboard/wildberries/AGENTS.md`
 
 Если нужен API:
 

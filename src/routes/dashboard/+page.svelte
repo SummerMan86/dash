@@ -36,7 +36,7 @@
 	<header class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 		<div>
 			<h1 class="text-2xl font-semibold tracking-tight">Dashboard Editor</h1>
-			<p class="text-sm text-muted-foreground">
+			<p class="type-body-sm text-muted-foreground">
 				GridStack layout (drag + resize) with Svelte stores and Inspector.
 			</p>
 		</div>
@@ -105,7 +105,9 @@
 					</div>
 					<div class="flex items-center justify-between">
 						<span class="text-muted-foreground">Selected</span>
-						<span class="font-medium">{editor.selectedWidget?.id ?? (editor.draft ? 'new' : '—')}</span>
+						<span class="font-medium"
+							>{editor.selectedWidget?.id ?? (editor.draft ? 'new' : '—')}</span
+						>
 					</div>
 					<div class="flex items-center justify-between">
 						<span class="text-muted-foreground">Widgets</span>
@@ -120,7 +122,7 @@
 							{editor.lastError}
 						</div>
 					{/if}
-					<p class="pt-2 text-xs text-muted-foreground">
+					<p class="type-caption pt-2 text-muted-foreground">
 						Drag by the handle ≡ and resize by widget edges.
 					</p>
 				</CardContent>

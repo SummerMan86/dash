@@ -36,7 +36,7 @@
 	const { collapsed } = useSidebar();
 
 	const baseClasses = cn(
-		'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium',
+		'type-nav-item flex items-center gap-3 rounded-md px-3 py-2',
 		'text-sidebar-foreground/80 hover:bg-sidebar-hover hover:text-sidebar-foreground',
 		'transition-colors',
 		active && 'bg-sidebar-active text-sidebar-foreground',

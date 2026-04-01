@@ -10,7 +10,8 @@ export type WildberriesDatasetId = (typeof WILDBERRIES_DATASETS)[keyof typeof WI
 
 function asNumber(value: unknown): number | undefined {
 	if (typeof value === 'number' && Number.isFinite(value)) return value;
-	if (typeof value === 'string' && value.trim() && Number.isFinite(Number(value))) return Number(value);
+	if (typeof value === 'string' && value.trim() && Number.isFinite(Number(value)))
+		return Number(value);
 	return undefined;
 }
 
@@ -37,7 +38,10 @@ function clampLimit(value: unknown, fallback: number): number {
 	return Math.max(0, Math.min(50_000, Math.floor(n)));
 }
 
-export function compileWildberriesDataset(datasetId: WildberriesDatasetId, query: DatasetQuery): DatasetIr {
+export function compileWildberriesDataset(
+	datasetId: WildberriesDatasetId,
+	query: DatasetQuery
+): DatasetIr {
 	switch (datasetId) {
 		case WILDBERRIES_DATASETS.factProductOfficeDay: {
 			const p = (query.params ?? {}) as Record<string, unknown>;
@@ -51,7 +55,8 @@ export function compileWildberriesDataset(datasetId: WildberriesDatasetId, query
 			const dateWhere = dateRangeWhere(query.filters);
 			if (dateWhere) whereParts.push(dateWhere);
 			if (typeof nmId === 'number') whereParts.push(ir.eq(ir.col('nm_id'), ir.lit(nmId)));
-			if (typeof officeId === 'number') whereParts.push(ir.eq(ir.col('office_id'), ir.lit(officeId)));
+			if (typeof officeId === 'number')
+				whereParts.push(ir.eq(ir.col('office_id'), ir.lit(officeId)));
 			if (typeof chrtId === 'number') whereParts.push(ir.eq(ir.col('chrt_id'), ir.lit(chrtId)));
 			if (regionName) whereParts.push(ir.eq(ir.col('region_name'), ir.lit(regionName)));
 
@@ -76,7 +81,9 @@ export function compileWildberriesDataset(datasetId: WildberriesDatasetId, query
 					{ expr: ir.col('sale_rate_days') },
 					{ expr: ir.col('avg_stock_turnover_days') }
 				],
-				...(whereParts.length ? { where: whereParts.length === 1 ? whereParts[0] : ir.and(whereParts) } : {}),
+				...(whereParts.length
+					? { where: whereParts.length === 1 ? whereParts[0] : ir.and(whereParts) }
+					: {}),
 				orderBy: [
 					{ expr: ir.col('dt'), dir: 'desc' },
 					{ expr: ir.col('office_id'), dir: 'asc' },
@@ -87,4 +94,3 @@ export function compileWildberriesDataset(datasetId: WildberriesDatasetId, query
 		}
 	}
 }
-

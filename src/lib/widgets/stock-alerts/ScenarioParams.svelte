@@ -44,7 +44,8 @@
 		L: {
 			label: 'Срок поставки',
 			code: 'L',
-			tooltip: 'Сколько дней проходит от решения о пополнении до момента, когда товар доступен к продаже на складе WB'
+			tooltip:
+				'Сколько дней проходит от решения о пополнении до момента, когда товар доступен к продаже на складе WB'
 		},
 		S: {
 			label: 'Страховой запас',
@@ -59,12 +60,14 @@
 		W: {
 			label: 'Окно анализа',
 			code: 'W',
-			tooltip: 'За сколько последних дней считать средние продажи (короткое окно — чувствительнее к трендам, длинное — стабильнее)'
+			tooltip:
+				'За сколько последних дней считать средние продажи (короткое окно — чувствительнее к трендам, длинное — стабильнее)'
 		},
 		threshold: {
 			label: 'Мин. запас',
 			code: 'L+S',
-			tooltip: 'Минимум дней запаса, который должен оставаться на складе. Равен сумме показателей Срок поставки и Страховой запас'
+			tooltip:
+				'Минимум дней запаса, который должен оставаться на складе. Равен сумме показателей Срок поставки и Страховой запас'
 		}
 	} as const;
 
@@ -81,7 +84,7 @@
 	<!-- Collapsible Header -->
 	<button
 		type="button"
-		class="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-muted/50 transition-colors"
+		class="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-muted/50"
 		onclick={toggle}
 		aria-expanded={isOpen}
 	>
@@ -94,17 +97,17 @@
 			>
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
 			</svg>
-			<span class="text-sm font-medium">Параметры сценария:</span>
-			<span class="text-sm text-muted-foreground">{currentPreset.label}</span>
+			<span class="type-control">Параметры сценария:</span>
+			<span class="type-body-sm text-muted-foreground">{currentPreset.label}</span>
 		</div>
-		<div class="text-xs text-muted-foreground" title={paramDefs.threshold.tooltip}>
+		<div class="type-caption text-muted-foreground" title={paramDefs.threshold.tooltip}>
 			{paramDefs.threshold.label}: {threshold} дн.
 		</div>
 	</button>
 
 	<!-- Collapsible Content -->
 	{#if isOpen}
-		<CardContent class="border-t border-border/50 pt-4 space-y-4">
+		<CardContent class="space-y-4 border-t border-border/50 pt-4">
 			<!-- Preset Buttons -->
 			<div class="flex flex-wrap gap-2">
 				{#each PRESET_LIST as preset (preset.name)}
@@ -123,57 +126,57 @@
 			<div class="grid grid-cols-2 gap-3 sm:grid-cols-5">
 				<!-- L: Срок поставки -->
 				<div
-					class="rounded-md border border-border/50 p-3 text-center cursor-help"
+					class="cursor-help rounded-md border border-border/50 p-3 text-center"
 					title={paramDefs.L.tooltip}
 				>
-					<div class="text-2xl font-bold">{params.L}</div>
-					<div class="text-xs font-medium">{paramDefs.L.label}</div>
-					<div class="text-xs text-muted-foreground">({paramDefs.L.code})</div>
+					<div class="type-kpi-value">{params.L}</div>
+					<div class="type-caption-strong">{paramDefs.L.label}</div>
+					<div class="type-caption text-muted-foreground">({paramDefs.L.code})</div>
 				</div>
 
 				<!-- S: Страховой запас -->
 				<div
-					class="rounded-md border border-border/50 p-3 text-center cursor-help"
+					class="cursor-help rounded-md border border-border/50 p-3 text-center"
 					title={paramDefs.S.tooltip}
 				>
-					<div class="text-2xl font-bold">{params.S}</div>
-					<div class="text-xs font-medium">{paramDefs.S.label}</div>
-					<div class="text-xs text-muted-foreground">({paramDefs.S.code})</div>
+					<div class="type-kpi-value">{params.S}</div>
+					<div class="type-caption-strong">{paramDefs.S.label}</div>
+					<div class="type-caption text-muted-foreground">({paramDefs.S.code})</div>
 				</div>
 
 				<!-- R: Интервал поставок -->
 				<div
-					class="rounded-md border border-border/50 p-3 text-center cursor-help"
+					class="cursor-help rounded-md border border-border/50 p-3 text-center"
 					title={paramDefs.R.tooltip}
 				>
-					<div class="text-2xl font-bold">{params.R}</div>
-					<div class="text-xs font-medium">{paramDefs.R.label}</div>
-					<div class="text-xs text-muted-foreground">({paramDefs.R.code})</div>
+					<div class="type-kpi-value">{params.R}</div>
+					<div class="type-caption-strong">{paramDefs.R.label}</div>
+					<div class="type-caption text-muted-foreground">({paramDefs.R.code})</div>
 				</div>
 
 				<!-- W: Окно анализа -->
 				<div
-					class="rounded-md border border-border/50 p-3 text-center cursor-help"
+					class="cursor-help rounded-md border border-border/50 p-3 text-center"
 					title={paramDefs.W.tooltip}
 				>
-					<div class="text-2xl font-bold">{params.W}</div>
-					<div class="text-xs font-medium">{paramDefs.W.label}</div>
-					<div class="text-xs text-muted-foreground">({paramDefs.W.code})</div>
+					<div class="type-kpi-value">{params.W}</div>
+					<div class="type-caption-strong">{paramDefs.W.label}</div>
+					<div class="type-caption text-muted-foreground">({paramDefs.W.code})</div>
 				</div>
 
 				<!-- Threshold: Мин. запас -->
 				<div
-					class="rounded-md border border-warning/30 bg-warning-muted p-3 text-center cursor-help col-span-2 sm:col-span-1"
+					class="col-span-2 cursor-help rounded-md border border-warning/30 bg-warning-muted p-3 text-center sm:col-span-1"
 					title={paramDefs.threshold.tooltip}
 				>
-					<div class="text-2xl font-bold text-warning">{threshold}</div>
-					<div class="text-xs font-medium">{paramDefs.threshold.label}</div>
-					<div class="text-xs text-muted-foreground">({paramDefs.threshold.code})</div>
+					<div class="type-kpi-value text-warning">{threshold}</div>
+					<div class="type-caption-strong">{paramDefs.threshold.label}</div>
+					<div class="type-caption text-muted-foreground">({paramDefs.threshold.code})</div>
 				</div>
 			</div>
 
 			<!-- Description -->
-			<p class="text-xs text-muted-foreground">
+			<p class="type-caption text-muted-foreground">
 				{currentPreset.description}
 			</p>
 		</CardContent>

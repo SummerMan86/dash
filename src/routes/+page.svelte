@@ -28,7 +28,7 @@
 
 <div class="flex flex-col gap-8">
 	<section>
-		<h1 class="text-4xl font-semibold mb-2">Dashboard Builder</h1>
+		<h1 class="mb-2 text-4xl font-semibold">Dashboard Builder</h1>
 		<p class="text-muted-foreground">
 			Button component adapted from shadcn-svelte with Carbon Design System
 		</p>
@@ -89,8 +89,8 @@
 	<section class="flex flex-col gap-4">
 		<h2 class="text-2xl font-semibold">Real-world Examples</h2>
 
-		<div class="bg-card border border-card-border rounded-lg p-6">
-			<h3 class="text-lg font-semibold mb-4">User Profile</h3>
+		<div class="rounded-lg border border-card-border bg-card p-6">
+			<h3 class="mb-4 text-lg font-semibold">User Profile</h3>
 			<div class="flex gap-3">
 				<Button variant="default">Save Changes</Button>
 				<Button variant="outline">Cancel</Button>
@@ -98,8 +98,8 @@
 			</div>
 		</div>
 
-		<div class="bg-card border border-card-border rounded-lg p-6">
-			<h3 class="text-lg font-semibold mb-4">Dashboard Actions</h3>
+		<div class="rounded-lg border border-card-border bg-card p-6">
+			<h3 class="mb-4 text-lg font-semibold">Dashboard Actions</h3>
 			<div class="flex flex-wrap gap-3">
 				<Button variant="default" size="sm">
 					<svg
@@ -147,32 +147,34 @@
 			<CardContent>
 				<div class="flex flex-col gap-4">
 					<div>
-						<label for="input-text" class="text-sm font-medium mb-2 block">Text Input</label>
+						<label for="input-text" class="mb-2 block text-sm font-medium">Text Input</label>
 						<Input id="input-text" type="text" placeholder="Enter your name" />
 					</div>
 
 					<div>
-						<label for="input-email" class="text-sm font-medium mb-2 block">Email Input</label>
+						<label for="input-email" class="mb-2 block text-sm font-medium">Email Input</label>
 						<Input id="input-email" type="email" placeholder="email@example.com" />
 					</div>
 
 					<div>
-						<label for="input-password" class="text-sm font-medium mb-2 block">Password Input</label>
+						<label for="input-password" class="mb-2 block text-sm font-medium">Password Input</label
+						>
 						<Input id="input-password" type="password" placeholder="••••••••" />
 					</div>
 
 					<div>
-						<label for="input-number" class="text-sm font-medium mb-2 block">Number Input</label>
+						<label for="input-number" class="mb-2 block text-sm font-medium">Number Input</label>
 						<Input id="input-number" type="number" placeholder="42" />
 					</div>
 
 					<div>
-						<label for="input-disabled" class="text-sm font-medium mb-2 block">Disabled Input</label>
+						<label for="input-disabled" class="mb-2 block text-sm font-medium">Disabled Input</label
+						>
 						<Input id="input-disabled" type="text" placeholder="Cannot edit" disabled />
 					</div>
 
 					<div>
-						<label for="input-file" class="text-sm font-medium mb-2 block">File Input</label>
+						<label for="input-file" class="mb-2 block text-sm font-medium">File Input</label>
 						<Input id="input-file" type="file" />
 					</div>
 				</div>
@@ -188,22 +190,20 @@
 			<CardContent>
 				<form class="flex flex-col gap-4">
 					<div>
-						<label for="username" class="text-sm font-medium mb-2 block">Username</label>
+						<label for="username" class="mb-2 block text-sm font-medium">Username</label>
 						<Input id="username" type="text" placeholder="johndoe" required />
-						<p class="text-sm text-muted-foreground mt-1">
-							This will be your public display name.
-						</p>
+						<p class="mt-1 text-sm text-muted-foreground">This will be your public display name.</p>
 					</div>
 
 					<div>
-						<label for="user-email" class="text-sm font-medium mb-2 block">Email</label>
+						<label for="user-email" class="mb-2 block text-sm font-medium">Email</label>
 						<Input id="user-email" type="email" placeholder="john@example.com" required />
 					</div>
 
 					<div>
-						<label for="bio" class="text-sm font-medium mb-2 block">Bio</label>
+						<label for="bio" class="mb-2 block text-sm font-medium">Bio</label>
 						<Input id="bio" type="text" placeholder="Tell us about yourself" />
-						<p class="text-sm text-muted-foreground mt-1">Max 100 characters.</p>
+						<p class="mt-1 text-sm text-muted-foreground">Max 100 characters.</p>
 					</div>
 
 					<Button type="submit" class="w-full">Save Profile</Button>
@@ -212,7 +212,7 @@
 		</Card>
 
 		<!-- Input Sizes -->
-		<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
 			<Card>
 				<CardHeader>
 					<CardTitle class="text-base">Default Size</CardTitle>
@@ -246,7 +246,7 @@
 			<CardContent>
 				<div class="flex flex-col gap-4">
 					<div>
-						<label for="select-country" class="text-sm font-medium mb-2 block">Country</label>
+						<label for="select-country" class="mb-2 block text-sm font-medium">Country</label>
 						<Select id="select-country">
 							<option value="">Select a country</option>
 							<option value="us">United States</option>
@@ -258,7 +258,7 @@
 					</div>
 
 					<div>
-						<label for="select-framework" class="text-sm font-medium mb-2 block">Framework</label>
+						<label for="select-framework" class="mb-2 block text-sm font-medium">Framework</label>
 						<Select id="select-framework">
 							<option value="react">React</option>
 							<option value="svelte" selected>SvelteKit</option>
@@ -269,7 +269,7 @@
 					</div>
 
 					<div>
-						<label for="select-disabled" class="text-sm font-medium mb-2 block"
+						<label for="select-disabled" class="mb-2 block text-sm font-medium"
 							>Disabled Select</label
 						>
 						<Select id="select-disabled" disabled>
@@ -289,7 +289,7 @@
 			<CardContent>
 				<form class="flex flex-col gap-4">
 					<div>
-						<label for="language" class="text-sm font-medium mb-2 block">Language</label>
+						<label for="language" class="mb-2 block text-sm font-medium">Language</label>
 						<Select id="language" required>
 							<option value="">Choose language</option>
 							<option value="en">English</option>
@@ -301,7 +301,7 @@
 					</div>
 
 					<div>
-						<label for="timezone" class="text-sm font-medium mb-2 block">Timezone</label>
+						<label for="timezone" class="mb-2 block text-sm font-medium">Timezone</label>
 						<Select id="timezone">
 							<option value="utc">UTC</option>
 							<option value="est">Eastern Time</option>
@@ -312,7 +312,7 @@
 					</div>
 
 					<div>
-						<label for="theme" class="text-sm font-medium mb-2 block">Theme</label>
+						<label for="theme" class="mb-2 block text-sm font-medium">Theme</label>
 						<Select id="theme">
 							<option value="light">Light</option>
 							<option value="dark">Dark</option>
@@ -326,7 +326,7 @@
 		</Card>
 
 		<!-- Select Sizes -->
-		<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
 			<Card>
 				<CardHeader>
 					<CardTitle class="text-base">Default Size</CardTitle>
@@ -366,7 +366,9 @@
 				<CardDescription>A basic card with header and content</CardDescription>
 			</CardHeader>
 			<CardContent>
-				<p>This is the card content. Cards are flexible containers for grouping related information.</p>
+				<p>
+					This is the card content. Cards are flexible containers for grouping related information.
+				</p>
 			</CardContent>
 		</Card>
 
@@ -384,14 +386,14 @@
 							id="project-name"
 							type="text"
 							placeholder="my-awesome-project"
-							class="mt-2 w-full px-3 py-2 rounded-md border border-input focus:border-input-focus focus:ring-2 focus:ring-ring transition-colors"
+							class="mt-2 w-full rounded-md border border-input px-3 py-2 transition-colors focus:border-input-focus focus:ring-2 focus:ring-ring"
 						/>
 					</div>
 					<div>
 						<label for="framework" class="text-sm font-medium">Framework</label>
 						<select
 							id="framework"
-							class="mt-2 w-full px-3 py-2 rounded-md border border-input focus:border-input-focus focus:ring-2 focus:ring-ring transition-colors"
+							class="mt-2 w-full rounded-md border border-input px-3 py-2 transition-colors focus:border-input-focus focus:ring-2 focus:ring-ring"
 						>
 							<option>Next.js</option>
 							<option selected>SvelteKit</option>
@@ -407,14 +409,14 @@
 		</Card>
 
 		<!-- Dashboard Cards Grid -->
-		<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+		<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
 			<Card hover>
 				<CardHeader>
 					<CardTitle class="text-sm font-medium text-muted-foreground">Total Revenue</CardTitle>
 				</CardHeader>
 				<CardContent>
 					<div class="text-3xl font-bold">$45,231.89</div>
-					<p class="text-sm text-success mt-2">+20.1% from last month</p>
+					<p class="mt-2 text-sm text-success">+20.1% from last month</p>
 				</CardContent>
 			</Card>
 
@@ -424,7 +426,7 @@
 				</CardHeader>
 				<CardContent>
 					<div class="text-3xl font-bold">2,350</div>
-					<p class="text-sm text-success mt-2">+12.5% from last month</p>
+					<p class="mt-2 text-sm text-success">+12.5% from last month</p>
 				</CardContent>
 			</Card>
 
@@ -434,7 +436,7 @@
 				</CardHeader>
 				<CardContent>
 					<div class="text-3xl font-bold">+573</div>
-					<p class="text-sm text-success mt-2">+8.2% from last month</p>
+					<p class="mt-2 text-sm text-success">+8.2% from last month</p>
 				</CardContent>
 			</Card>
 		</div>

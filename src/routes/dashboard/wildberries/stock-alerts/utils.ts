@@ -68,38 +68,3 @@ export function getStatusLabel(status: StockStatus): string {
 			return 'Норма';
 	}
 }
-
-/**
- * Форматирует число с разделителями тысяч (ru-RU)
- */
-export function formatNumber(value: number | null | undefined): string {
-	if (value === null || value === undefined) return '—';
-	return new Intl.NumberFormat('ru-RU').format(value);
-}
-
-/**
- * Форматирует число компактно (1.5K, 2.3M)
- */
-export function formatCompact(value: number | null | undefined): string {
-	if (value === null || value === undefined) return '—';
-	return new Intl.NumberFormat('ru-RU', {
-		notation: 'compact',
-		maximumFractionDigits: 1
-	}).format(value);
-}
-
-/**
- * Форматирует дату в локальном формате
- */
-export function formatDate(value: string | null | undefined): string {
-	if (!value) return '—';
-	try {
-		return new Intl.DateTimeFormat('ru-RU', {
-			day: 'numeric',
-			month: 'short',
-			year: 'numeric'
-		}).format(new Date(value));
-	} catch {
-		return value;
-	}
-}

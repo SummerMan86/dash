@@ -157,10 +157,9 @@ function downloadAssets() {
 		}
 
 		console.log('  Sparse-cloning protomaps/basemaps-assets (fonts + sprites/v4 only)...');
-		run(
-			`git clone --depth=1 --filter=blob:none --sparse "${BASEMAPS_ASSETS_REPO}" "${tmpDir}"`,
-			{ cwd: ROOT }
-		);
+		run(`git clone --depth=1 --filter=blob:none --sparse "${BASEMAPS_ASSETS_REPO}" "${tmpDir}"`, {
+			cwd: ROOT
+		});
 		run(`git sparse-checkout set fonts sprites/v4`, { cwd: tmpDir });
 
 		// Copy fonts
@@ -214,14 +213,10 @@ function writeManifest() {
 
 	const manifestPath = path.join(OFFLINE_DIR, 'manifest.json');
 
-	const pmtilesFiles = readdirSync(OFFLINE_DIR).filter((f) =>
-		f.toLowerCase().endsWith('.pmtiles')
-	);
+	const pmtilesFiles = readdirSync(OFFLINE_DIR).filter((f) => f.toLowerCase().endsWith('.pmtiles'));
 	const fontsDir = path.join(OFFLINE_DIR, 'fonts');
 	const fontStacks = existsSync(fontsDir)
-		? readdirSync(fontsDir).filter(
-				(e) => !e.startsWith('.') && existsSync(path.join(fontsDir, e))
-			)
+		? readdirSync(fontsDir).filter((e) => !e.startsWith('.') && existsSync(path.join(fontsDir, e)))
 		: [];
 	const spritesDir = path.join(OFFLINE_DIR, 'sprites');
 	const spriteVariants = [];
@@ -256,9 +251,7 @@ function writeManifest() {
 function printSummary() {
 	section('Summary');
 
-	const pmtilesFiles = readdirSync(OFFLINE_DIR).filter((f) =>
-		f.toLowerCase().endsWith('.pmtiles')
-	);
+	const pmtilesFiles = readdirSync(OFFLINE_DIR).filter((f) => f.toLowerCase().endsWith('.pmtiles'));
 	const fontsDir = path.join(OFFLINE_DIR, 'fonts');
 	const fontStacks = existsSync(fontsDir)
 		? readdirSync(fontsDir).filter((e) => !e.startsWith('.'))
@@ -271,13 +264,18 @@ function printSummary() {
 	console.log(`  PMTiles files: ${pmtilesFiles.join(', ') || 'none'}`);
 	console.log(`  Font stacks:   ${fontStacks.join(', ') || 'none'}`);
 	console.log(`  Sprite files:  ${spriteFiles.join(', ') || 'none'}`);
-	console.log(`  Manifest:      ${existsSync(path.join(OFFLINE_DIR, 'manifest.json')) ? 'yes' : 'no'}`);
+	console.log(
+		`  Manifest:      ${existsSync(path.join(OFFLINE_DIR, 'manifest.json')) ? 'yes' : 'no'}`
+	);
 	console.log('');
 	console.log('  Next steps:');
 	console.log('    1. pnpm dev');
 	console.log('    2. Open /emis/pmtiles-spike');
 	console.log('    3. Verify all 4 gates in the UI');
-	console.log('    4. Run: pnpm map:pmtiles:probe -- --url http://localhost:5173/emis-map/offline/' + (pmtilesFiles[0] ?? 'moscow.pmtiles'));
+	console.log(
+		'    4. Run: pnpm map:pmtiles:probe -- --url http://localhost:5173/emis-map/offline/' +
+			(pmtilesFiles[0] ?? 'moscow.pmtiles')
+	);
 	console.log('');
 }
 

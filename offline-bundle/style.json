@@ -1,12 +1,12 @@
 {
-  "version": 8,
-  "name": "EMIS Offline Bundle Scaffold",
-  "metadata": {
-    "scaffold": true,
-    "note": "Replace this placeholder style.json with a real offline style before enabling offline mode."
-  },
-  "glyphs": "/emis-map/offline/fonts/{fontstack}/{range}.pbf",
-  "sprite": "/emis-map/offline/sprites/sprite",
-  "sources": {},
-  "layers": []
+	"version": 8,
+	"name": "EMIS Offline Bundle Scaffold",
+	"metadata": {
+		"scaffold": true,
+		"note": "Replace this placeholder style.json with a real offline style before enabling offline mode."
+	},
+	"glyphs": "/emis-map/offline/fonts/{fontstack}/{range}.pbf",
+	"sprite": "/emis-map/offline/sprites/sprite",
+	"sources": {},
+	"layers": []
 }

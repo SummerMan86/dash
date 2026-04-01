@@ -110,5 +110,3 @@ export function compilePaymentDataset(datasetId: PaymentDatasetId, query: Datase
 			};
 	}
 }
-
-

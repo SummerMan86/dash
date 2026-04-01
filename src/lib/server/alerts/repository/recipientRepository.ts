@@ -118,8 +118,5 @@ export async function deleteRecipient(id: number): Promise<boolean> {
 
 export async function verifyRecipient(id: number): Promise<void> {
 	const pool = getPgPool();
-	await pool.query(
-		`UPDATE alerts.recipients SET verified_at = NOW() WHERE id = $1`,
-		[id]
-	);
+	await pool.query(`UPDATE alerts.recipients SET verified_at = NOW() WHERE id = $1`, [id]);
 }

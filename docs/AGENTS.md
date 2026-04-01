@@ -1,62 +1,94 @@
 # Docs Navigation
 
-Папка `docs/` хранит не API reference, а документы уровня анализа, архитектуры и roadmap.
+Этот файл - единственный полный каталог документации в репозитории.
+Архитектурные правила и модульная навигация живут в корневом [AGENTS.md](../AGENTS.md), а `README.md` отвечает только за quick start и описание приложения.
 
-## Что читать и когда
+## 1. Что здесь каталогизируется
 
-- `current-project-analysis.md`
-  Читать, если нужно понять текущее состояние проекта, сильные стороны, риски и что готово для переиспользования.
+- platform / dashboard-builder docs
+- EMIS docs
+- strategy docs
+- historical archives
 
-- `emis_mve_tz_v_2.md`
-  Читать, если нужен обновленный scope EMIS: цели, границы MVE, архитектурные решения, модель данных и критерии приемки.
+## 2. Dashboard-builder / Strategy документация
 
-- `emis_implementation_spec_v1.md`
-  Читать, если нужен уже рабочий план внедрения EMIS в текущий репозиторий: структура папок, миграции, API, этапы и DoD.
+Актуальный verification-runbook по `strategy_entity_* + mart.bsc_*` больше не хранится в этом репозитории отдельно и читается из `agent_pack`.
 
-- `emis_freeze_note.md`
-  Читать, если нужен быстрый вход в контекст EMIS без полного перечитывания ТЗ и spec.
+| Документ                                                                                                                                   | Владеет                                      | Source of truth для                                                                                                                                                                       |
+| ------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `../src/routes/dashboard/wildberries/dwh_for_wildberries_requirements.md`                                                                  | Wildberries DWH contract                     | полный контракт с DWH: витрины `mart.fact_product_office_day` / `mart.fact_product_day`, обязательные колонки, фильтры, conf-таблицы, алерты, рекомендации и требования к качеству данных |
+| `current-project-analysis.md`                                                                                                              | platform analysis и reusable foundation      | текущее состояние платформы, риски и сильные стороны                                                                                                                                      |
+| `BI strategy`                                                                                                                              | local dashboard-builder BI strategy contract | как переложить Power BI strategy/BSC постановку в MVE-архитектуру `dashboard-builder`: витрины, filters, routes и rollout order                                                           |
+| `../src/routes/dashboard/strategy/AGENTS.md`                                                                                               | strategy route development contract          | как развивать serious strategy dashboards: current pages, grain rules, filter contract и rollout path                                                                                     |
+| `../src/lib/server/datasets/AGENTS.md`                                                                                                     | dataset layer routing contract               | как `strategy.*` datasets подключаются в app runtime и когда нужен новый published view                                                                                                   |
+| `../src/lib/server/providers/AGENTS.md`                                                                                                    | provider mapping contract                    | как `strategy.*` datasets маппятся на `mart_strategy.slobi_*` и что обновлять при смене SQL contract                                                                                      |
+| `../db/schema_catalog.md`                                                                                                                  | active app DB catalog                        | какие app-схемы и опубликованные SQL-объекты считаются рабочими в этом репозитории                                                                                                        |
+| `../db/current_schema.sql`                                                                                                                 | active app DB snapshot                       | точная текущая структура схем `emis`, `stg_emis`, `mart_emis`, `mart`                                                                                                                     |
+| `../db/applied_changes.md`                                                                                                                 | active app DB structural log                 | короткий журнал DDL-изменений после snapshot baseline                                                                                                                                     |
+| `/home/orl/Shl/КА/MS BI/bsc_model/agent_pack/docs/imported/dashboard-builder/4. strategy_entity_bsc_mart_pilot_verification_2026_03_21.md` | strategy pilot verification runbook          | refresh и smoke-checks для `strategy_entity_*` + `mart.bsc_*`                                                                                                                             |
+| `archive/strategy-v1/strategy_session_bootstrap.md`                                                                                        | historical strategy bootstrap                | старый entry point по `strategy-drive` / `Strategy DWH v1`                                                                                                                                |
+| `archive/strategy-v1/strategy_dwh_v1.md`                                                                                                   | historical strategy architecture             | старые `strategy.*` data contracts, marts и dataset ids                                                                                                                                   |
+| `archive/strategy-v1/strategy_newcomer_guide.md`                                                                                           | historical strategy onboarding               | старый newcomer context по strategy-срезу                                                                                                                                                 |
+| `archive/strategy-v1/*`                                                                                                                    | historical strategy pack                     | старые audits, handoffs и parallel-intake notes                                                                                                                                           |
 
-- `emis_session_bootstrap.md`
-  Читать, если нужен совсем короткий checklist для старта новой сессии или нового агента.
+## 3. EMIS документация
 
-- `emis_pmtiles_validation_wave.md`
-  Читать, если нужно понять, как был провалидирован PMTiles runtime и зачем в проекте оставлен отдельный `/emis/pmtiles-spike`.
+| Документ                                           | Владеет                                       | Source of truth для                                                   |
+| -------------------------------------------------- | --------------------------------------------- | --------------------------------------------------------------------- |
+| `emis_session_bootstrap.md`                        | текущее состояние, entry point, short doc map | что уже сделано, что сейчас в фокусе, с чего начинать новую сессию    |
+| `emis_mve_tz_v_2.md`                               | scope, invariants, acceptance                 | продуктовые рамки и ограничения                                       |
+| `emis_implementation_spec_v1.md`                   | implementation decisions и rollout order      | структура реализации, API, snapshot-first DB contract и порядок работ |
+| `emis_freeze_note.md`                              | frozen decisions и conventions                | что не нужно переоткрывать без причины                                |
+| `../src/lib/server/emis/infra/RUNTIME_CONTRACT.md` | runtime/API conventions                       | error shape, list meta, audit contract, query limits/sorts            |
+| `emis_architecture_review.md`                      | EMIS architecture approve checklist           | lifecycle review, mandatory approve cases, approve checklist          |
+| `emis_mr_template.md`                              | EMIS MR / handoff template                    | обязательные поля для local MR, branch handoff и review summary       |
+| `emis_offline_maps_ops.md`                         | offline maps ops-runbook                      | эксплуатация MapTiler/PMTiles и production caveats                    |
+| `emis_next_tasks_2026_03_22.md`                    | backlog                                       | remaining tasks и polish stack                                        |
+| `emis_agent_operating_model.md`                    | agent roles and review operating model        | роли агентов, persistent vs on-demand, model choices, review flow     |
+| `../src/routes/emis/AGENTS.md`                     | EMIS workspace route contract                 | что остается в `/emis` route layer и что выносится из workspace       |
+| `../src/lib/widgets/emis-map/AGENTS.md`            | EMIS map runtime contract                     | map runtime boundaries, extraction rules и PMTiles/widget ownership   |
+| `../src/routes/dashboard/emis/AGENTS.md`           | EMIS BI routes contract                       | границы BI route layer, dataset path и extraction rules               |
+| `emis_vessel_current_positions_handoff_plan.md`    | task-specific implementation handoff          | slice `layer=vessels` / current positions в `/emis`                   |
+| `archive/emis/emis_handoff_2026_03_17.md`          | archived EMIS snapshot                        | историческое состояние репозитория на 17 марта 2026                   |
+| `archive/emis/emis_pmtiles_validation_wave.md`     | archived validation note                      | historical context по PMTiles spike/validation wave                   |
 
-## Что считать source of truth для EMIS
+## 4. Reading Order
 
-Если вопрос про продуктовые рамки, данные, ограничения и acceptance:
+### Для platform / dashboard-builder
 
-- главным документом считать `emis_mve_tz_v_2.md`
+1. `README.md`
+2. `current-project-analysis.md`
+3. `../db/schema_catalog.md`
+4. если задача про Wildberries DWH - `../src/routes/dashboard/wildberries/dwh_for_wildberries_requirements.md`
+5. если задача про strategy dashboards - `BI strategy`
+6. если задача про strategy dashboards - `../src/routes/dashboard/strategy/AGENTS.md`
+7. если задача про strategy datasets/runtime - `../src/lib/server/datasets/AGENTS.md`
+8. при необходимости - `/home/orl/Shl/КА/MS BI/bsc_model/agent_pack/docs/imported/dashboard-builder/4. strategy_entity_bsc_mart_pilot_verification_2026_03_21.md`
+9. при необходимости - `archive/strategy-v1/strategy_session_bootstrap.md`
 
-Если вопрос про порядок реализации и технические решения внутри текущего репозитория:
+### Для EMIS
 
-- главным документом считать `emis_implementation_spec_v1.md`
+1. `emis_session_bootstrap.md`
+2. `emis_mve_tz_v_2.md`
+3. `emis_implementation_spec_v1.md`
+4. `emis_freeze_note.md`
+5. `../src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
 
-`emis_freeze_note.md` считать только summary-document, а не самостоятельным источником истины.
-`emis_session_bootstrap.md` считать только ultra-short bootstrap note, а не отдельным документом требований.
+Опционально по задаче:
 
-Для обоих документов считать обязательными следующие инварианты:
+- `emis_architecture_review.md` - если нужен approve checklist или review verdict
+- `emis_mr_template.md` - если готовится handoff / local MR summary
+- `emis_offline_maps_ops.md` - если работа про offline maps или PMTiles
+- `emis_next_tasks_2026_03_22.md` - если нужен backlog
+- `emis_agent_operating_model.md` - если работа про agent workflow, роли или model assignment
+- `../src/routes/emis/AGENTS.md` - если работа про `/emis` workspace layer
+- `../src/lib/widgets/emis-map/AGENTS.md` - если работа про map runtime
+- `../src/routes/dashboard/emis/AGENTS.md` - если работа про BI/dashboard routes
+- `emis_vessel_current_positions_handoff_plan.md` - если работа про vessel current positions slice
+- `archive/emis/*` и `archive/strategy-v1/*` - только если нужен historical context
 
-- canonical identity должна доходить до DB constraints
-- soft delete semantics не должны трактоваться по-разному между API, views и BI
-- audit/provenance/actor attribution входят в target contract
-- FK behavior и vocabulary boundaries должны быть зафиксированы явно
+## 5. Правило ownership
 
-Текущие implementation conventions для EMIS:
-
-- плоский namespace `emis-*` считается нормой для ранних этапов
-- для нового EMIS UI по умолчанию использовать Svelte 5 runes
-
-## Рекомендуемый порядок
-
-1. `current-project-analysis.md`
-2. `emis_session_bootstrap.md`
-3. `emis_freeze_note.md`
-4. `emis_mve_tz_v_2.md`
-5. `emis_implementation_spec_v1.md`
-
-## Как использовать вместе с кодом
-
-- Если анализируешь текущую платформу, после документов переходи в `src/lib/` и `src/routes/`.
-- Если планируешь EMIS, после документов смотри `src/lib/shared/`, `src/lib/entities/`, `src/lib/server/` и `src/routes/`.
-- Если хочешь понять, что уже реально реализовано, документы нужно читать вместе с `README.md`, а не вместо него.
+- Этот файл владеет полным каталогом документации.
+- Корневой `AGENTS.md` владеет архитектурными правилами и развилкой по контурам.
+- `README.md` не должен дублировать doc map; он только отправляет сюда.

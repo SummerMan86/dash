@@ -1,13 +1,18 @@
 <script lang="ts">
 	import { fetchDataset } from '$shared/api';
 	import { useDebouncedLoader } from '$shared/lib/useDebouncedLoader.svelte';
-	import { registerFilters, getEffectiveFilters } from '$entities/filter';
+	import { useFilterWorkspace } from '$entities/filter';
 	import { FilterPanel } from '$widgets/filters';
+	import { Button } from '$shared/ui/button';
 	import { StatCard } from '$shared/ui/stat-card';
 	import { ChartCard } from '$shared/ui/chart-card';
 	import { Chart } from '$shared/ui/chart';
 	import { Sparkline } from '$shared/ui/sparkline';
+	import { Badge } from '$shared/ui/badge';
+	import { Input } from '$shared/ui/input';
+	import { Select } from '$shared/ui/select';
 	import { lineChartPreset, getLineSeries } from '$shared/ui/chart/presets';
+	import { getChartPalette, resolveCssColorVar } from '$shared/styles/tokens';
 	import type { JsonValue } from '$entities/dataset';
 
 	import { productAnalyticsFilters } from './filters';
@@ -38,23 +43,33 @@
 		formatDate,
 		formatRating,
 		truncate
-	} from './utils';
+	} from '$shared/utils';
 
 	// --- Filters ---
-	registerFilters(productAnalyticsFilters);
+	const filterRuntime = useFilterWorkspace({
+		workspaceId: 'dashboard-wildberries',
+		ownerId: 'product-analytics',
+		specs: productAnalyticsFilters
+	});
+	let effectiveFilters = $derived(filterRuntime.effective);
 
 	// --- Data ---
 	let rows = $state<Record<string, JsonValue>[]>([]);
 	let error = $state<string | null>(null);
 
-	const { loading } = useDebouncedLoader({
-		watch: () => getEffectiveFilters(),
+	const loader = useDebouncedLoader({
+		watch: () => $effectiveFilters,
 		delayMs: 300,
 		load: () =>
 			fetchDataset({
 				id: 'wildberries.fact_product_period',
 				params: { limit: 5000 },
-				cache: { ttlMs: 60_000 }
+				cache: { ttlMs: 60_000 },
+				filterContext: {
+					snapshot: filterRuntime.getSnapshot(),
+					workspaceId: filterRuntime.workspaceId,
+					ownerId: filterRuntime.ownerId
+				}
 			}),
 		onData: (data) => {
 			rows = data.rows;
@@ -107,7 +122,7 @@
 
 	let selectedProduct = $derived<ProductSummary | null>(
 		selectedProductId !== null
-			? products.find((p) => p.nm_id === selectedProductId) ?? null
+			? (products.find((p) => p.nm_id === selectedProductId) ?? null)
 			: null
 	);
 
@@ -118,23 +133,26 @@
 	// --- Charts ---
 	let salesChartOptions = $derived.by(() => {
 		if (!dailyTotals.length) return null;
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const preset = lineChartPreset as any;
+		const preset = lineChartPreset;
 		return {
 			...preset,
-			legend: { data: ['Заказы (\u20BD)', 'Выкупы (\u20BD)'], top: 0, textStyle: { fontSize: 11 } },
+			legend: {
+				data: ['Заказы (\u20BD)', 'Выкупы (\u20BD)'],
+				top: 0,
+				textStyle: { fontSize: 11, color: resolveCssColorVar('--color-muted-foreground') }
+			},
 			xAxis: {
 				...preset.xAxis,
 				data: dailyTotals.map((d) => d.date.slice(5))
 			},
 			series: [
 				{
-					...(getLineSeries as Function)(0, { showArea: true }),
+					...getLineSeries(1, { showArea: true }),
 					name: 'Заказы (\u20BD)',
 					data: dailyTotals.map((d) => d.order_sum)
 				},
 				{
-					...(getLineSeries as Function)(1, { showArea: false }),
+					...getLineSeries(2, { showArea: false }),
 					name: 'Выкупы (\u20BD)',
 					data: dailyTotals.map((d) => d.buyout_sum)
 				}
@@ -145,6 +163,8 @@
 	let funnelChartOptions = $derived.by(() => {
 		if (!funnelData.views && !funnelData.orders) return null;
 		const maxVal = Math.max(funnelData.views, 1);
+		const palette = getChartPalette();
+		const buyoutColor = resolveCssColorVar('--color-success');
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		return {
 			grid: { top: 10, right: 80, bottom: 10, left: 100, containLabel: false },
@@ -161,10 +181,10 @@
 				{
 					type: 'bar',
 					data: [
-						{ value: funnelData.views, itemStyle: { color: '#009d9a' } },
-						{ value: funnelData.cart, itemStyle: { color: '#005d5d' } },
-						{ value: funnelData.orders, itemStyle: { color: '#24a148' } },
-						{ value: funnelData.buyouts, itemStyle: { color: '#198038' } }
+						{ value: funnelData.views, itemStyle: { color: palette[0] } },
+						{ value: funnelData.cart, itemStyle: { color: palette[1] } },
+						{ value: funnelData.orders, itemStyle: { color: palette[2] } },
+						{ value: funnelData.buyouts, itemStyle: { color: buyoutColor } }
 					],
 					barWidth: '55%',
 					label: {
@@ -175,7 +195,7 @@
 					itemStyle: { borderRadius: [0, 4, 4, 0] }
 				}
 			]
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		} as any;
 	});
 
@@ -197,71 +217,177 @@
 		if (sortColumn !== col) return '';
 		return sortDir === 'asc' ? ' \u2191' : ' \u2193';
 	}
+
+	type SeverityVariant = 'success' | 'warning' | 'error' | 'info';
+	function severityToVariant(severity: string): SeverityVariant {
+		switch (severity) {
+			case 'critical':
+				return 'error';
+			case 'warning':
+				return 'warning';
+			case 'info':
+				return 'info';
+			default:
+				return 'success';
+		}
+	}
+
+	// --- WB Price Management ---
+	type PriceEditState = 'idle' | 'editing' | 'loading' | 'success' | 'error';
+
+	let priceEditState = $state<PriceEditState>('idle');
+	let priceInput = $state<string>('');
+	let discountInput = $state<string>('');
+	let priceEditError = $state<string>('');
+	let priceEditMode = $state<'price' | 'discount'>('price');
+
+	function openPriceEdit(mode: 'price' | 'discount') {
+		priceEditMode = mode;
+		priceEditState = 'editing';
+		priceEditError = '';
+		if (selectedProduct) {
+			if (mode === 'price') {
+				priceInput = String(selectedProduct.price_max || '');
+			} else {
+				discountInput = '';
+			}
+		}
+	}
+
+	function cancelPriceEdit() {
+		priceEditState = 'idle';
+		priceEditError = '';
+	}
+
+	async function applyPriceChange() {
+		if (!selectedProduct) return;
+
+		const price = priceEditMode === 'price' ? Number(priceInput) : undefined;
+		const discount = priceEditMode === 'discount' ? Number(discountInput) : undefined;
+
+		if (priceEditMode === 'price' && (!price || price <= 0)) {
+			priceEditError = 'Введите корректную цену';
+			return;
+		}
+		if (priceEditMode === 'discount' && (discount === undefined || discount < 0 || discount > 95)) {
+			priceEditError = 'Скидка должна быть от 0 до 95%';
+			return;
+		}
+
+		priceEditState = 'loading';
+		priceEditError = '';
+
+		try {
+			const res = await fetch('/api/wb/prices', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ nmId: selectedProduct.nm_id, price, discount })
+			});
+			const data = await res.json();
+			if (!res.ok) {
+				priceEditState = 'error';
+				priceEditError = data.error ?? 'Неизвестная ошибка';
+			} else {
+				priceEditState = 'success';
+				setTimeout(() => {
+					priceEditState = 'idle';
+				}, 3000);
+			}
+		} catch {
+			priceEditState = 'error';
+			priceEditError = 'Ошибка сети';
+		}
+	}
+
+	// Reset edit state when product changes
+	$effect(() => {
+		selectedProductId;
+		priceEditState = 'idle';
+		priceEditError = '';
+	});
 </script>
 
-<div class="space-y-6 p-6">
+<div class="space-y-6 p-6 pb-12">
 	<!-- Header -->
-	<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+	<div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
 		<div>
-			<h1 class="text-2xl font-semibold text-foreground">Аналитика товаров</h1>
-			<p class="text-sm text-muted-foreground">
+			<h1 class="type-page-title text-foreground">Аналитика товаров</h1>
+			<p class="type-body-sm mt-1 text-muted-foreground">
 				{#if dataDate}Данные на {formatDate(dataDate)}{:else}Загрузка данных\u2026{/if}
-				{#if products.length}&nbsp;&middot;&nbsp;{products.length} товаров{/if}
+				{#if products.length}
+					<span class="mx-1.5 text-border">\u00B7</span>
+					<span>{products.length} товаров</span>
+				{/if}
 			</p>
 		</div>
-		<div class="flex flex-wrap items-center gap-3">
-			<FilterPanel scope="global" direction="horizontal" />
+		<div class="flex flex-wrap items-center gap-2">
+			<FilterPanel runtime={filterRuntime} scope="shared" direction="horizontal" />
 			{#if brands.length > 1}
-				<select
-					class="rounded-md border border-border bg-card px-3 py-1.5 text-sm text-foreground"
-					bind:value={selectedBrand}
-				>
+				<Select class="min-w-[160px]" bind:value={selectedBrand}>
 					<option value="">Все бренды</option>
 					{#each brands as brand}
 						<option value={brand}>{brand}</option>
 					{/each}
-				</select>
+				</Select>
 			{/if}
 			{#if subjects.length > 1}
-				<select
-					class="rounded-md border border-border bg-card px-3 py-1.5 text-sm text-foreground"
-					bind:value={selectedSubject}
-				>
+				<Select class="min-w-[160px]" bind:value={selectedSubject}>
 					<option value="">Все категории</option>
 					{#each subjects as subject}
 						<option value={subject}>{subject}</option>
 					{/each}
-				</select>
+				</Select>
 			{/if}
 		</div>
 	</div>
 
 	{#if error}
-		<div class="rounded-lg border border-error bg-error-muted p-4 text-sm text-error">
+		<div
+			class="flex items-center gap-3 rounded-lg border border-error/30 bg-error-muted p-4 text-sm text-error"
+		>
+			<svg class="h-5 w-5 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+				<path
+					fill-rule="evenodd"
+					d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
+					clip-rule="evenodd"
+				/>
+			</svg>
 			{error}
 		</div>
 	{/if}
 
 	<!-- KPI Grid -->
 	<div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-		<StatCard label="Выручка" value={formatCurrency(kpi.totalRevenue)} loading={loading} />
-		<StatCard label="Заказы" value={formatCompact(kpi.totalOrders)} loading={loading} />
-		<StatCard label="Выкупы" value={formatCompact(kpi.totalBuyouts)} loading={loading} />
-		<StatCard label="% выкупа" value={formatPercent(kpi.avgBuyoutPercent)} loading={loading} />
-		<StatCard label="Потери" value={formatCurrency(kpi.totalLostSales)} loading={loading} />
-		<StatCard label="Ср. рейтинг" value={formatRating(kpi.avgRating)} loading={loading} />
+		<StatCard label="Выручка" value={formatCurrency(kpi.totalRevenue)} loading={loader.loading} />
+		<StatCard label="Заказы" value={formatCompact(kpi.totalOrders)} loading={loader.loading} />
+		<StatCard label="Выкупы" value={formatCompact(kpi.totalBuyouts)} loading={loader.loading} />
+		<StatCard
+			label="% выкупа"
+			value={formatPercent(kpi.avgBuyoutPercent)}
+			loading={loader.loading}
+		/>
+		<StatCard label="Потери" value={formatCurrency(kpi.totalLostSales)} loading={loader.loading} />
+		<StatCard label="Ср. рейтинг" value={formatRating(kpi.avgRating)} loading={loader.loading} />
 	</div>
 
 	<!-- Charts -->
 	{#if dailyTotals.length > 1}
 		<div class="grid gap-4 lg:grid-cols-2">
 			{#if salesChartOptions}
-				<ChartCard title="Динамика продаж" loading={loading}>
+				<ChartCard
+					title="Динамика продаж"
+					subtitle="Заказы и выкупы по дням"
+					loading={loader.loading}
+				>
 					<Chart options={salesChartOptions} autoResize />
 				</ChartCard>
 			{/if}
 			{#if funnelChartOptions}
-				<ChartCard title="Воронка конверсий" loading={loading}>
+				<ChartCard
+					title="Воронка конверсий"
+					subtitle="Суммарные показатели по товарам"
+					loading={loader.loading}
+				>
 					<Chart options={funnelChartOptions} autoResize />
 				</ChartCard>
 			{/if}
@@ -269,284 +395,376 @@
 	{/if}
 
 	<!-- Products Table -->
-	<div class="overflow-x-auto rounded-lg border border-border bg-card">
-		<table class="w-full text-sm">
-			<thead>
-				<tr class="border-b border-border text-left text-xs text-muted-foreground">
-					<th class="px-3 py-3 font-medium">Товар</th>
-					<th
-						class="cursor-pointer px-3 py-3 text-right font-medium hover:text-foreground"
-						onclick={() => toggleSort('order_sum')}
-					>
-						Заказы{sortIcon('order_sum')}
-					</th>
-					<th
-						class="cursor-pointer px-3 py-3 text-right font-medium hover:text-foreground"
-						onclick={() => toggleSort('buyout_sum')}
-					>
-						Выкупы{sortIcon('buyout_sum')}
-					</th>
-					<th
-						class="cursor-pointer px-3 py-3 text-right font-medium hover:text-foreground"
-						onclick={() => toggleSort('buyout_percent')}
-					>
-						% выкупа{sortIcon('buyout_percent')}
-					</th>
-					<th
-						class="cursor-pointer px-3 py-3 text-right font-medium hover:text-foreground"
-						onclick={() => toggleSort('stock_count')}
-					>
-						Остаток{sortIcon('stock_count')}
-					</th>
-					<th
-						class="cursor-pointer px-3 py-3 text-right font-medium hover:text-foreground"
-						onclick={() => toggleSort('lost_orders_sum')}
-					>
-						Потери{sortIcon('lost_orders_sum')}
-					</th>
-					<th
-						class="cursor-pointer px-3 py-3 text-right font-medium hover:text-foreground"
-						onclick={() => toggleSort('product_rating')}
-					>
-						Рейтинг{sortIcon('product_rating')}
-					</th>
-					<th class="px-3 py-3 text-center font-medium">Тренд</th>
-					<th class="px-3 py-3 text-center font-medium">Действия</th>
-				</tr>
-			</thead>
-			<tbody>
-				{#each sortedProducts as product (product.nm_id)}
-					{@const recs = analyzeProduct(product)}
-					{@const worst = getWorstSeverity(recs)}
-					{@const actionCount = recs.filter(
-						(r) => r.severity === 'critical' || r.severity === 'warning'
-					).length}
-					<tr
-						class="cursor-pointer border-b border-border transition-colors hover:bg-muted/50 {selectedProductId === product.nm_id ? 'bg-accent/60' : ''}"
-						onclick={() => selectProduct(product.nm_id)}
-					>
-						<td class="px-3 py-2.5">
-							<div class="flex items-center gap-3">
-								{#if product.main_photo}
-									<img
-										src={product.main_photo}
-										alt=""
-										class="h-10 w-10 rounded-md object-cover"
-										loading="lazy"
-									/>
-								{:else}
-									<div
-										class="flex h-10 w-10 items-center justify-center rounded-md bg-muted text-xs text-muted-foreground"
-									>
-										\u2014
-									</div>
-								{/if}
-								<div class="min-w-0">
-									<div class="truncate font-medium text-foreground" title={product.title}>
-										{truncate(product.title, 35)}
-									</div>
-									<div class="text-xs text-muted-foreground">
-										{product.vendor_code || product.nm_id}
+	<div class="overflow-hidden rounded-lg border border-card-border bg-card shadow-sm">
+		<div class="overflow-x-auto">
+			<table class="w-full text-sm">
+				<thead>
+					<tr class="border-b border-border bg-muted/30">
+						<th class="type-overline px-4 py-3 text-left text-muted-foreground"> Товар </th>
+						{#each [{ col: 'order_sum', label: 'Заказы' }, { col: 'buyout_sum', label: 'Выкупы' }, { col: 'buyout_percent', label: '% выкупа' }, { col: 'stock_count', label: 'Остаток' }, { col: 'lost_orders_sum', label: 'Потери' }, { col: 'product_rating', label: 'Рейтинг' }] as { col, label }}
+							<th
+								class="type-overline cursor-pointer px-4 py-3 text-right text-muted-foreground transition-colors duration-[var(--transition-fast)] hover:text-foreground"
+								onclick={() => toggleSort(col)}
+							>
+								{label}{sortIcon(col)}
+							</th>
+						{/each}
+						<th class="type-overline px-4 py-3 text-center text-muted-foreground"> Тренд </th>
+						<th class="type-overline px-4 py-3 text-center text-muted-foreground"> Статус </th>
+					</tr>
+				</thead>
+				<tbody class="divide-y divide-border/50">
+					{#each sortedProducts as product (product.nm_id)}
+						{@const recs = analyzeProduct(product)}
+						{@const worst = getWorstSeverity(recs)}
+						{@const actionCount = recs.filter(
+							(r) => r.severity === 'critical' || r.severity === 'warning'
+						).length}
+						<tr
+							class="cursor-pointer transition-colors duration-[var(--transition-fast)] hover:bg-muted/40 {selectedProductId ===
+							product.nm_id
+								? 'bg-primary/5 hover:bg-primary/8'
+								: ''}"
+							onclick={() => selectProduct(product.nm_id)}
+						>
+							<td class="px-4 py-3">
+								<div class="flex items-center gap-3">
+									{#if product.main_photo}
+										<img
+											src={product.main_photo}
+											alt=""
+											class="h-10 w-10 rounded-lg object-cover ring-1 ring-border/50"
+											loading="lazy"
+										/>
+									{:else}
+										<div
+											class="type-caption flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-muted-foreground"
+										>
+											\u2014
+										</div>
+									{/if}
+									<div class="min-w-0">
+										<div class="type-control truncate text-foreground" title={product.title}>
+											{truncate(product.title, 35)}
+										</div>
+										<div class="type-caption text-muted-foreground">
+											{product.vendor_code || product.nm_id}
+										</div>
 									</div>
 								</div>
-							</div>
-						</td>
-						<td class="px-3 py-2.5 text-right font-medium">
-							{formatCurrency(product.order_sum)}
-						</td>
-						<td class="px-3 py-2.5 text-right">
-							{formatCurrency(product.buyout_sum)}
-						</td>
-						<td class="px-3 py-2.5 text-right">
-							<span
-								class={product.buyout_percent > 60
-									? 'text-success'
-									: product.buyout_percent < 30
-										? 'text-error'
-										: ''}
-							>
-								{formatPercent(product.buyout_percent)}
-							</span>
-						</td>
-						<td class="px-3 py-2.5 text-right">
-							<span class={product.stock_count <= 0 ? 'font-medium text-error' : ''}>
-								{formatNumber(product.stock_count)}
-							</span>
-						</td>
-						<td class="px-3 py-2.5 text-right">
-							{#if product.lost_orders_sum > 0}
-								<span class="text-error">{formatCurrency(product.lost_orders_sum)}</span>
-							{:else}
-								<span class="text-muted-foreground">\u2014</span>
-							{/if}
-						</td>
-						<td class="px-3 py-2.5 text-right">
-							{formatRating(product.product_rating)}
-						</td>
-						<td class="px-3 py-2.5 text-center">
-							{#if product.daily_orders.length > 1}
-								<Sparkline
-									data={product.daily_orders}
-									color={product.order_count > 0 ? 'primary' : 'error'}
-								/>
-							{/if}
-						</td>
-						<td class="px-3 py-2.5 text-center">
-							{#if actionCount > 0}
+							</td>
+							<td class="px-4 py-3 text-right font-medium tabular-nums">
+								{formatCurrency(product.order_sum)}
+							</td>
+							<td class="px-4 py-3 text-right tabular-nums">
+								{formatCurrency(product.buyout_sum)}
+							</td>
+							<td class="px-4 py-3 text-right tabular-nums">
 								<span
-									class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium {getSeverityBgColor(
-										worst
-									)} {getSeverityColor(worst)}"
+									class={product.buyout_percent > 60
+										? 'font-medium text-success'
+										: product.buyout_percent < 30
+											? 'font-medium text-error'
+											: 'text-muted-foreground'}
 								>
-									{actionCount}
+									{formatPercent(product.buyout_percent)}
 								</span>
-							{:else}
-								<span class="text-success">\u2713</span>
-							{/if}
-						</td>
-					</tr>
-				{/each}
-				{#if !sortedProducts.length && !loading}
-					<tr>
-						<td colspan="9" class="px-3 py-12 text-center text-muted-foreground">
-							Нет данных. Проверьте подключение к БД или измените фильтры.
-						</td>
-					</tr>
-				{/if}
-			</tbody>
-		</table>
+							</td>
+							<td class="px-4 py-3 text-right tabular-nums">
+								{#if product.stock_count <= 0}
+									<Badge variant="error" size="sm">0</Badge>
+								{:else}
+									{formatNumber(product.stock_count)}
+								{/if}
+							</td>
+							<td class="px-4 py-3 text-right tabular-nums">
+								{#if product.lost_orders_sum > 0}
+									<span class="font-medium text-error"
+										>{formatCurrency(product.lost_orders_sum)}</span
+									>
+								{:else}
+									<span class="text-muted-foreground">\u2014</span>
+								{/if}
+							</td>
+							<td class="px-4 py-3 text-right tabular-nums">
+								{formatRating(product.product_rating)}
+							</td>
+							<td class="px-4 py-3 text-center">
+								{#if product.daily_orders.length > 1}
+									<Sparkline
+										data={product.daily_orders}
+										color={product.order_count > 0 ? 'primary' : 'error'}
+									/>
+								{/if}
+							</td>
+							<td class="px-4 py-3 text-center">
+								{#if actionCount > 0}
+									<Badge variant={severityToVariant(worst)} size="sm">
+										{actionCount}
+									</Badge>
+								{:else}
+									<Badge variant="success" size="sm">\u2713</Badge>
+								{/if}
+							</td>
+						</tr>
+					{/each}
+					{#if !sortedProducts.length && !loader.loading}
+						<tr>
+							<td colspan="9" class="px-4 py-16 text-center text-muted-foreground">
+								<div class="flex flex-col items-center gap-2">
+									<svg
+										class="h-8 w-8 text-muted-foreground/50"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="1.5"
+									>
+										<path
+											d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+										/>
+									</svg>
+									<span>Нет данных. Проверьте подключение к БД или измените фильтры.</span>
+								</div>
+							</td>
+						</tr>
+					{/if}
+				</tbody>
+			</table>
+		</div>
 	</div>
 
 	<!-- Product Detail Panel -->
 	{#if selectedProduct}
 		{@const recs = recommendations}
-		<div class="rounded-lg border border-border bg-card" id="product-detail">
+		<div
+			class="overflow-hidden rounded-lg border border-card-border bg-card shadow-sm"
+			id="product-detail"
+		>
 			<!-- Product Header -->
 			<div class="flex items-start gap-4 border-b border-border p-6">
 				{#if selectedProduct.main_photo}
 					<img
 						src={selectedProduct.main_photo}
 						alt=""
-						class="h-20 w-20 rounded-lg object-cover"
+						class="h-20 w-20 rounded-xl object-cover ring-1 ring-border/50"
 					/>
 				{/if}
 				<div class="min-w-0 flex-1">
-					<h2 class="text-lg font-semibold text-foreground">
+					<h2 class="type-section-title text-foreground">
 						{selectedProduct.title || `Товар ${selectedProduct.nm_id}`}
 					</h2>
-					<div class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-						<span>Артикул: {selectedProduct.vendor_code || '\u2014'}</span>
-						<span>Бренд: {selectedProduct.brand_name || '\u2014'}</span>
-						<span>Категория: {selectedProduct.subject_name || '\u2014'}</span>
-						<span>НМ: {selectedProduct.nm_id}</span>
+					<div class="mt-1.5 flex flex-wrap items-center gap-2">
+						<Badge variant="outline"
+							>{selectedProduct.vendor_code || `NM ${selectedProduct.nm_id}`}</Badge
+						>
+						{#if selectedProduct.brand_name}
+							<Badge variant="muted">{selectedProduct.brand_name}</Badge>
+						{/if}
+						{#if selectedProduct.subject_name}
+							<Badge variant="muted">{selectedProduct.subject_name}</Badge>
+						{/if}
 					</div>
 					{#if selectedProduct.price_min || selectedProduct.price_max}
-						<div class="mt-1 text-sm font-medium text-foreground">
-							Цена: {formatNumber(selectedProduct.price_min)}\u2013{formatNumber(
+						<p class="type-control mt-2 text-foreground">
+							{formatNumber(selectedProduct.price_min)}\u2013{formatNumber(
 								selectedProduct.price_max
 							)} \u20BD
-						</div>
+						</p>
 					{/if}
 				</div>
-				<button
-					class="text-muted-foreground hover:text-foreground"
+				<Button
+					variant="ghost"
+					size="icon"
+					class="h-8 w-8 text-muted-foreground"
 					onclick={() => (selectedProductId = null)}
+					aria-label="Закрыть"
 				>
-					\u2715
-				</button>
+					<svg
+						class="h-4 w-4"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+					>
+						<path d="M18 6L6 18M6 6l12 12" />
+					</svg>
+				</Button>
+			</div>
+
+			<!-- Price Management -->
+			<div class="border-b border-border px-6 py-4">
+				<div class="flex flex-wrap items-center gap-3">
+					<div class="flex items-center gap-2 text-sm">
+						<span class="text-muted-foreground">Текущая цена:</span>
+						<span class="font-semibold tabular-nums">
+							{#if selectedProduct.price_min === selectedProduct.price_max}
+								{formatNumber(selectedProduct.price_max)} ₽
+							{:else}
+								{formatNumber(selectedProduct.price_min)}–{formatNumber(selectedProduct.price_max)} ₽
+							{/if}
+						</span>
+					</div>
+
+					{#if priceEditState === 'idle'}
+						<Button variant="outline" size="sm" onclick={() => openPriceEdit('price')}>
+							<svg
+								class="h-3.5 w-3.5"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+							>
+								<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+								<path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+							</svg>
+							Изменить цену
+						</Button>
+						<Button variant="outline" size="sm" onclick={() => openPriceEdit('discount')}>
+							<svg
+								class="h-3.5 w-3.5"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+							>
+								<path
+									d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"
+								/>
+								<line x1="7" y1="7" x2="7.01" y2="7" />
+							</svg>
+							Изменить скидку
+						</Button>
+					{/if}
+
+					{#if priceEditState === 'success'}
+						<span class="type-caption-strong flex items-center gap-1.5 text-success">
+							<svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+								<path
+									fill-rule="evenodd"
+									d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+									clip-rule="evenodd"
+								/>
+							</svg>
+							Отправлено в WB. Изменение появится через 2–5 минут.
+						</span>
+					{/if}
+				</div>
+
+				{#if priceEditState === 'editing' || priceEditState === 'loading' || priceEditState === 'error'}
+					<div class="mt-3 flex flex-wrap items-end gap-3">
+						{#if priceEditMode === 'price'}
+							<div class="flex flex-col gap-1">
+								<label class="type-caption-strong text-muted-foreground" for="price-input">
+									Новая цена (₽, без скидки)
+								</label>
+								<Input
+									id="price-input"
+									type="number"
+									min="1"
+									step="1"
+									class="w-36 tabular-nums"
+									bind:value={priceInput}
+									disabled={priceEditState === 'loading'}
+								/>
+							</div>
+						{:else}
+							<div class="flex flex-col gap-1">
+								<label class="type-caption-strong text-muted-foreground" for="discount-input">
+									Скидка (0–95%)
+								</label>
+								<Input
+									id="discount-input"
+									type="number"
+									min="0"
+									max="95"
+									step="1"
+									class="w-28 tabular-nums"
+									bind:value={discountInput}
+									disabled={priceEditState === 'loading'}
+								/>
+							</div>
+						{/if}
+
+						<div class="flex items-center gap-2">
+							<Button
+								size="sm"
+								loading={priceEditState === 'loading'}
+								onclick={applyPriceChange}
+								disabled={priceEditState === 'loading'}
+							>
+								{priceEditState === 'loading' ? 'Отправка…' : 'Применить'}
+							</Button>
+							<Button
+								variant="outline"
+								size="sm"
+								onclick={cancelPriceEdit}
+								disabled={priceEditState === 'loading'}
+							>
+								Отмена
+							</Button>
+						</div>
+
+						{#if priceEditError}
+							<span class="type-caption text-error">{priceEditError}</span>
+						{/if}
+					</div>
+				{/if}
 			</div>
 
 			<!-- Metrics Grid -->
-			<div class="grid grid-cols-2 gap-4 border-b border-border p-6 sm:grid-cols-3 lg:grid-cols-6">
-				<div>
-					<div class="text-xs text-muted-foreground">Просмотры</div>
-					<div class="text-lg font-semibold">{formatNumber(selectedProduct.open_count)}</div>
-				</div>
-				<div>
-					<div class="text-xs text-muted-foreground">В корзину</div>
-					<div class="text-lg font-semibold">{formatNumber(selectedProduct.cart_count)}</div>
-					<div class="text-xs text-muted-foreground">
-						{formatPercent(selectedProduct.add_to_cart_percent)}
+			<div
+				class="grid grid-cols-2 gap-px border-b border-border bg-border/50 sm:grid-cols-3 lg:grid-cols-6"
+			>
+				{#each [{ label: 'Просмотры', value: formatNumber(selectedProduct.open_count), sub: '', alert: false }, { label: 'В корзину', value: formatNumber(selectedProduct.cart_count), sub: formatPercent(selectedProduct.add_to_cart_percent), alert: false }, { label: 'Заказы', value: formatNumber(selectedProduct.order_count), sub: formatCurrency(selectedProduct.order_sum), alert: false }, { label: 'Выкупы', value: formatNumber(selectedProduct.buyout_count), sub: formatPercent(selectedProduct.buyout_percent), alert: false }, { label: 'Остаток', value: formatNumber(selectedProduct.stock_count), sub: `WB: ${formatNumber(selectedProduct.stocks_wb)}, MP: ${formatNumber(selectedProduct.stocks_mp)}`, alert: selectedProduct.stock_count <= 0 }, { label: 'Рейтинг', value: formatRating(selectedProduct.product_rating), sub: `Отзывы: ${formatRating(selectedProduct.feedback_rating)}`, alert: false }] as m}
+					<div class="bg-card p-4">
+						<div class="type-caption-strong text-muted-foreground">{m.label}</div>
+						<div
+							class="type-section-title mt-1 tabular-nums {m.alert
+								? 'text-error'
+								: 'text-foreground'}"
+						>
+							{m.value}
+						</div>
+						{#if m.sub}
+							<div class="type-caption mt-0.5 text-muted-foreground tabular-nums">{m.sub}</div>
+						{/if}
 					</div>
-				</div>
-				<div>
-					<div class="text-xs text-muted-foreground">Заказы</div>
-					<div class="text-lg font-semibold">{formatNumber(selectedProduct.order_count)}</div>
-					<div class="text-xs text-muted-foreground">
-						{formatCurrency(selectedProduct.order_sum)}
-					</div>
-				</div>
-				<div>
-					<div class="text-xs text-muted-foreground">Выкупы</div>
-					<div class="text-lg font-semibold">{formatNumber(selectedProduct.buyout_count)}</div>
-					<div class="text-xs text-muted-foreground">
-						{formatPercent(selectedProduct.buyout_percent)}
-					</div>
-				</div>
-				<div>
-					<div class="text-xs text-muted-foreground">Остаток</div>
-					<div
-						class="text-lg font-semibold {selectedProduct.stock_count <= 0
-							? 'text-error'
-							: ''}"
-					>
-						{formatNumber(selectedProduct.stock_count)}
-					</div>
-					<div class="text-xs text-muted-foreground">
-						WB: {formatNumber(selectedProduct.stocks_wb)}, MP: {formatNumber(
-							selectedProduct.stocks_mp
-						)}
-					</div>
-				</div>
-				<div>
-					<div class="text-xs text-muted-foreground">Рейтинг</div>
-					<div class="text-lg font-semibold">
-						{formatRating(selectedProduct.product_rating)}
-					</div>
-					<div class="text-xs text-muted-foreground">
-						Отзывы: {formatRating(selectedProduct.feedback_rating)}
-					</div>
-				</div>
+				{/each}
 			</div>
 
 			<!-- Recommendations -->
 			<div class="p-6">
-				<h3 class="mb-4 text-sm font-semibold uppercase tracking-wide text-foreground">
-					Рекомендации к действию
-					<span class="ml-2 text-xs font-normal normal-case tracking-normal text-muted-foreground">
+				<div class="mb-4 flex items-center gap-3">
+					<h3 class="type-overline text-foreground">Рекомендации</h3>
+					<Badge variant="muted">
 						{recs.length}
-						{recs.length === 1 ? 'рекомендация' : recs.length < 5 ? 'рекомендации' : 'рекомендаций'}
-					</span>
-				</h3>
-				<div class="space-y-3">
+					</Badge>
+				</div>
+				<div class="grid gap-3 sm:grid-cols-2">
 					{#each recs as rec}
 						<div
-							class="flex items-start gap-3 rounded-lg border border-border p-4 {getSeverityBgColor(
+							class="flex items-start gap-3 rounded-lg border border-border/60 p-4 transition-colors duration-[var(--transition-fast)] hover:border-border {getSeverityBgColor(
 								rec.severity
 							)}"
 						>
-							<span class="mt-0.5 text-xl leading-none"
-								>{getRecommendationIcon(rec.type)}</span
-							>
+							<span class="mt-0.5 text-lg leading-none">{getRecommendationIcon(rec.type)}</span>
 							<div class="min-w-0 flex-1">
 								<div class="flex items-center gap-2">
-									<span class="font-medium {getSeverityColor(rec.severity)}"
-										>{rec.title}</span
-									>
-									<span
-										class="rounded-full px-2 py-0.5 text-xs {getSeverityBgColor(
-											rec.severity
-										)} {getSeverityColor(rec.severity)}"
-									>
-										{getSeverityLabel(rec.severity)}
+									<span class="type-control {getSeverityColor(rec.severity)}">
+										{rec.title}
 									</span>
+									<Badge variant={severityToVariant(rec.severity)} size="sm">
+										{getSeverityLabel(rec.severity)}
+									</Badge>
 								</div>
-								<p class="mt-1 text-sm text-muted-foreground">{rec.description}</p>
+								<p class="type-caption mt-1 leading-relaxed text-muted-foreground">
+									{rec.description}
+								</p>
 								{#if rec.metric}
-									<p class="mt-1 text-xs text-muted-foreground">{rec.metric}</p>
+									<p class="mt-1.5 text-[11px] text-muted-foreground">{rec.metric}</p>
 								{/if}
 								{#if rec.impact}
-									<p class="mt-1 text-xs font-medium {getSeverityColor(rec.severity)}">
+									<p class="type-caption-strong mt-1 {getSeverityColor(rec.severity)}">
 										{rec.impact}
 									</p>
 								{/if}

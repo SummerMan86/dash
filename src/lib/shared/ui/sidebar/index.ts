@@ -4,5 +4,3 @@ export { default as SidebarTrigger } from './SidebarTrigger.svelte';
 export { default as SidebarInset } from './SidebarInset.svelte';
 export { default as SidebarNav } from './SidebarNav.svelte';
 export { default as SidebarItem } from './SidebarItem.svelte';
-
-

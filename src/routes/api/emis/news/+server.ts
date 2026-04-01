@@ -1,12 +1,34 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 
 import { createEmisNewsSchema, listEmisNewsQuerySchema } from '$entities/emis-news';
+import { resolveEmisWriteContext } from '$lib/server/emis/infra/audit';
 import { EmisError } from '$lib/server/emis/infra/errors';
-import { handleEmisRoute, parseIntParam, parseJsonBody } from '$lib/server/emis/infra/http';
+import {
+	EMIS_DEFAULT_LIST_LIMIT,
+	EMIS_MAX_LIST_LIMIT,
+	EMIS_MAX_OFFSET,
+	handleEmisRoute,
+	jsonEmisList,
+	parseListParams,
+	parseJsonBody
+} from '$lib/server/emis/infra/http';
 import { listNewsQuery } from '$lib/server/emis/modules/news/queries';
 import { createNewsService } from '$lib/server/emis/modules/news/service';
 
+const NEWS_LIST_SORT = [
+	{ field: 'publishedAt', dir: 'desc' as const },
+	{ field: 'id', dir: 'desc' as const }
+];
+
 function parseListQuery(url: URL) {
+	const paging = parseListParams(url.searchParams, {
+		defaultLimit: EMIS_DEFAULT_LIST_LIMIT,
+		maxLimit: EMIS_MAX_LIST_LIMIT,
+		maxOffset: EMIS_MAX_OFFSET,
+		limitCode: 'INVALID_NEWS_LIMIT',
+		offsetCode: 'INVALID_NEWS_OFFSET'
+	});
+
 	const parsed = listEmisNewsQuerySchema.safeParse({
 		q: url.searchParams.get('q')?.trim() || undefined,
 		source: url.searchParams.get('source') || undefined,
@@ -15,8 +37,8 @@ function parseListQuery(url: URL) {
 		dateFrom: url.searchParams.get('dateFrom') || undefined,
 		dateTo: url.searchParams.get('dateTo') || undefined,
 		objectId: url.searchParams.get('objectId') || undefined,
-		limit: parseIntParam(url.searchParams.get('limit'), 50, { min: 1, max: 100 }),
-		offset: parseIntParam(url.searchParams.get('offset'), 0, { min: 0, max: 10_000 })
+		limit: paging.limit,
+		offset: paging.offset
 	});
 
 	if (!parsed.success) {
@@ -33,11 +55,15 @@ function parseListQuery(url: URL) {
 export const GET: RequestHandler = handleEmisRoute(async ({ url }) => {
 	const query = parseListQuery(url);
 	const rows = await listNewsQuery(query);
-	return json({ rows, meta: { count: rows.length } });
+	return jsonEmisList(rows, {
+		limit: query.limit,
+		offset: query.offset,
+		sort: NEWS_LIST_SORT
+	});
 }, 'Failed to load EMIS news');
 
 export const POST: RequestHandler = handleEmisRoute(async ({ request }) => {
 	const body = await parseJsonBody(request, createEmisNewsSchema);
-	const created = await createNewsService(body);
+	const created = await createNewsService(body, resolveEmisWriteContext(request, 'api'));
 	return json(created, { status: 201 });
 }, 'Failed to create EMIS news item');

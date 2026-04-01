@@ -18,5 +18,4 @@ export * from './model/store.svelte';
 export * from './model/serialization';
 export * from './model/registry';
 export * from './model/planner';
-
-
+export * from './model/workspace.svelte';

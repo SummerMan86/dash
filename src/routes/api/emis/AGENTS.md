@@ -21,3 +21,8 @@
 `routes/api/emis/* -> $entities/emis-* + $lib/server/emis/infra/* + $lib/server/emis/modules/*`
 
 Это должен быть тонкий слой над server namespace.
+
+## Runtime contract
+
+See `src/lib/server/emis/infra/RUNTIME_CONTRACT.md` for canonical conventions:
+limits, error shape, meta format, sort defaults, parameter parsing rules.

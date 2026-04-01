@@ -45,12 +45,29 @@ export type EmisMapConfig = {
 	initialCenter: [number, number];
 	initialZoom: number;
 	offlineAssets: EmisMapAssetStatus;
+	mapLanguage: string | null;
 	checkedAt: string;
 };
 
 export type EmisMapBBox = [number, number, number, number];
 
-export type EmisMapFeatureKind = 'object' | 'news';
+export type EmisMapFeatureKind = 'object' | 'news' | 'vessel';
+export type EmisMapRouteFeatureKind = 'route-point' | 'route-segment';
+
+export type EmisMapFeatureRef = {
+	id: string;
+	kind: EmisMapFeatureKind;
+};
+
+export type EmisMapRouteFeatureRef =
+	| {
+			kind: 'route-point';
+			routePointId: number;
+	  }
+	| {
+			kind: 'route-segment';
+			segmentSeqShip: number;
+	  };
 
 type EmisMapFeatureBaseProperties = {
 	id: string;
@@ -81,6 +98,8 @@ export type EmisMapNewsFeatureProperties = EmisMapFeatureBaseProperties & {
 	importance: number | null;
 	publishedAt: string;
 	relatedObjectsCount: number;
+	summary: string | null;
+	url: string | null;
 };
 
 export type EmisMapObjectFeatureCollection = GeoJSON.FeatureCollection<
@@ -92,6 +111,42 @@ export type EmisMapNewsFeatureCollection = GeoJSON.FeatureCollection<
 	GeoJSON.Point,
 	EmisMapNewsFeatureProperties
 >;
+
+export type EmisMapSelectedFeature =
+	| EmisMapObjectFeatureProperties
+	| EmisMapNewsFeatureProperties
+	| EmisMapVesselFeatureProperties;
+
+export type EmisMapSelectedRoutePoint = {
+	kind: 'route-point';
+	routePointId: number;
+	shipHbkId: number;
+	vesselName: string;
+	pointSeqShip: number;
+	fetchedAt: string;
+	latitude: number;
+	longitude: number;
+	speed: number | null;
+	course: number | null;
+	heading: number | null;
+};
+
+export type EmisMapSelectedRouteSegment = {
+	kind: 'route-segment';
+	shipHbkId: number;
+	vesselName: string;
+	segmentSeqShip: number;
+	fromFetchedAt: string;
+	fromLatitude: number;
+	fromLongitude: number;
+	toLatitude: number;
+	toLongitude: number;
+	gapMinutes: number | null;
+	fromSpeed: number | null;
+	fromCourse: number | null;
+};
+
+export type EmisMapSelectedRouteFeature = EmisMapSelectedRoutePoint | EmisMapSelectedRouteSegment;
 
 export type EmisMapObjectsQueryInput = {
 	bbox: EmisMapBBox;
@@ -113,6 +168,32 @@ export type EmisMapNewsQueryInput = {
 	objectId?: string;
 	limit?: number;
 };
+
+export type EmisMapVesselsQueryInput = {
+	bbox: EmisMapBBox;
+	q?: string;
+	limit?: number;
+};
+
+export type EmisMapVesselFeatureProperties = EmisMapFeatureBaseProperties & {
+	kind: 'vessel';
+	shipHbkId: number;
+	imo: number | null;
+	mmsi: number | null;
+	flag: string | null;
+	callsign: string | null;
+	vesselType: string | null;
+	lastFetchedAt: string;
+	lastLatitude: number;
+	lastLongitude: number;
+	pointsCount: number;
+	routeDaysCount: number;
+};
+
+export type EmisMapVesselFeatureCollection = GeoJSON.FeatureCollection<
+	GeoJSON.Point,
+	EmisMapVesselFeatureProperties
+>;
 
 export type EmisPmtilesFileInfo = {
 	name: string;

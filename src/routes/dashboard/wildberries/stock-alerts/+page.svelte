@@ -9,16 +9,11 @@
 	import { StatCard } from '$shared/ui/stat-card';
 	import { Select } from '$shared/ui/select';
 	import type { DatasetResponse, JsonValue } from '$entities/dataset';
-	import { registerFilters, filterStoreV2 } from '$entities/filter';
+	import { useFilterWorkspace } from '$entities/filter';
 	import { FilterPanel } from '$widgets/filters';
 	import { StatusBadge, ScenarioParams } from '$widgets/stock-alerts';
 
-	import {
-		stockAlertFilters,
-		DEFAULT_PRESET,
-		getPresetParams,
-		type PresetName
-	} from './filters';
+	import { stockAlertFilters, DEFAULT_PRESET, getPresetParams, type PresetName } from './filters';
 	import type { OfficeAggregation, StockAlertKpi } from './types';
 	import {
 		aggregateByOffice,
@@ -28,12 +23,15 @@
 		getUniqueRegions,
 		getSkuForOffice
 	} from './aggregation';
-	import { formatNumber, formatCompact, formatDate, getStatusTextColor } from './utils';
+	import { formatNumber, formatCompact, formatDate } from '$shared/utils';
+	import { getStatusTextColor } from './utils';
 
 	const datasetId = 'wildberries.fact_product_office_day';
-
-	// Register filter specs on mount
-	registerFilters(stockAlertFilters);
+	const filterRuntime = useFilterWorkspace({
+		workspaceId: 'dashboard-wildberries',
+		ownerId: 'stock-alerts',
+		specs: stockAlertFilters
+	});
 
 	// State
 	let error = $state<string | null>(null);
@@ -67,7 +65,7 @@
 	let scenarioParams = $derived(getPresetParams(selectedPreset));
 
 	// Subscribe to filter changes
-	let effectiveFilters = $derived(filterStoreV2.effective);
+	let effectiveFilters = $derived(filterRuntime.effective);
 
 	// Derived: unique regions for filter dropdown
 	let regions = $derived.by(() => {
@@ -121,7 +119,7 @@
 		return getSkuForOffice(data.rows, selectedOfficeId, scenarioParams);
 	});
 
-	const { reload: load, loading } = useDebouncedLoader({
+	const loader = useDebouncedLoader({
 		watch: () => $effectiveFilters,
 		delayMs: 250,
 		load: async () => {
@@ -130,7 +128,12 @@
 			return await fetchDataset({
 				id: datasetId,
 				params: { limit: 50000 },
-				cache: { ttlMs: 60_000 } // Cache for 1 minute
+				cache: { ttlMs: 60_000 }, // Cache for 1 minute
+				filterContext: {
+					snapshot: filterRuntime.getSnapshot(),
+					workspaceId: filterRuntime.workspaceId,
+					ownerId: filterRuntime.ownerId
+				}
 			});
 		},
 		onData: (result) => {
@@ -148,7 +151,7 @@
 		selectedOfficeId = null;
 	});
 
-	onMount(load);
+	onMount(loader.reload);
 
 	function handleOfficeClick(office: OfficeAggregation) {
 		selectedOfficeId = selectedOfficeId === office.office_id ? null : office.office_id;
@@ -159,11 +162,11 @@
 	<title>Wildberries | Анализ складов</title>
 </svelte:head>
 
-<div class="min-h-screen bg-background p-6 lg:p-8 space-y-6">
+<div class="min-h-screen space-y-6 bg-background p-6 lg:p-8">
 	<!-- Header -->
 	<header class="space-y-1">
-		<h1 class="text-2xl font-semibold tracking-tight">Оперативный анализ складов</h1>
-		<p class="text-sm text-muted-foreground">
+		<h1 class="type-page-title">Оперативный анализ складов</h1>
+		<p class="type-body-sm text-muted-foreground">
 			{#if dataDate}
 				Дата среза: <span class="font-medium">{formatDate(dataDate)}</span>
 			{:else}
@@ -181,11 +184,11 @@
 		<CardContent class="pt-6">
 			<div class="flex flex-wrap items-end gap-4">
 				<!-- Global filters via FilterPanel -->
-				<FilterPanel scope="global" />
+				<FilterPanel runtime={filterRuntime} scope="shared" />
 
 				<!-- Region filter (local) -->
 				<div class="space-y-1">
-					<label for="region-select" class="text-xs text-muted-foreground">Регион</label>
+					<label for="region-select" class="type-caption text-muted-foreground">Регион</label>
 					<Select
 						id="region-select"
 						value={selectedRegion}
@@ -200,13 +203,22 @@
 				</div>
 
 				<!-- Reload button -->
-				<Button onclick={load} disabled={loading} variant="outline" class="h-9">
-					{loading ? 'Загрузка...' : 'Обновить'}
+				<Button onclick={loader.reload} disabled={loader.loading} variant="outline" class="h-9">
+					{loader.loading ? 'Загрузка...' : 'Обновить'}
 				</Button>
 			</div>
 
 			{#if error}
-				<div class="mt-4 rounded-md border border-border/50 bg-destructive/10 p-3 text-sm text-destructive">
+				<div
+					class="mt-4 flex items-center gap-3 rounded-lg border border-error/30 bg-error-muted p-4 text-sm text-error"
+				>
+					<svg class="h-5 w-5 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+						<path
+							fill-rule="evenodd"
+							d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
+							clip-rule="evenodd"
+						/>
+					</svg>
 					{error}
 				</div>
 			{/if}
@@ -214,10 +226,7 @@
 	</Card>
 
 	<!-- Scenario Parameters -->
-	<ScenarioParams
-		selectedPreset={selectedPreset}
-		onPresetChange={handlePresetChange}
-	/>
+	<ScenarioParams {selectedPreset} onPresetChange={handlePresetChange} />
 
 	<!-- KPI Grid -->
 	<section>
@@ -225,27 +234,27 @@
 			<StatCard
 				label="Складов в риске"
 				value={kpi.officesAtRisk > 0 ? `${kpi.officesAtRisk} из ${kpi.totalOffices}` : '0'}
-				loading={loading && !data}
+				loading={loader.loading && !data}
 			/>
 			<StatCard
 				label="SKU в дефиците"
 				value={formatCompact(kpi.skuDeficit)}
-				loading={loading && !data}
+				loading={loader.loading && !data}
 			/>
 			<StatCard
 				label="SKU в зоне риска"
 				value={formatCompact(kpi.skuRisk)}
-				loading={loading && !data}
+				loading={loader.loading && !data}
 			/>
 			<StatCard
 				label="Общий остаток"
 				value={formatCompact(kpi.totalStock)}
-				loading={loading && !data}
+				loading={loader.loading && !data}
 			/>
 			<StatCard
 				label="SKU в норме"
 				value={formatCompact(kpi.skuOk)}
-				loading={loading && !data}
+				loading={loader.loading && !data}
 			/>
 		</div>
 	</section>
@@ -256,12 +265,12 @@
 			<CardTitle>Склады WB — статус</CardTitle>
 		</CardHeader>
 		<CardContent>
-			{#if loading && !data}
-				<div class="text-sm text-muted-foreground">Загрузка...</div>
+			{#if loader.loading && !data}
+				<div class="type-body-sm text-muted-foreground">Загрузка...</div>
 			{:else if !officeAggregations.length}
-				<div class="text-sm text-muted-foreground">Нет данных</div>
+				<div class="type-body-sm text-muted-foreground">Нет данных</div>
 			{:else}
-				<div class="text-xs text-muted-foreground mb-2">
+				<div class="type-caption mb-2 text-muted-foreground">
 					Складов: {officeAggregations.length}
 					{#if selectedRegion}
 						<span class="mx-1">•</span>
@@ -273,26 +282,26 @@
 					<table class="w-full text-sm">
 						<thead class="bg-muted/30">
 							<tr>
-								<th class="px-3 py-2 text-left font-medium text-muted-foreground">Склад</th>
-								<th class="px-3 py-2 text-left font-medium text-muted-foreground">Регион</th>
-								<th class="px-3 py-2 text-right font-medium text-muted-foreground">SKU</th>
-								<th class="px-3 py-2 text-right font-medium text-muted-foreground">Дефицит</th>
-								<th class="px-3 py-2 text-right font-medium text-muted-foreground">Риск</th>
-								<th class="px-3 py-2 text-right font-medium text-muted-foreground">Норма</th>
-								<th class="px-3 py-2 text-right font-medium text-muted-foreground">Остаток</th>
-								<th class="px-3 py-2 text-center font-medium text-muted-foreground">Статус</th>
+								<th class="type-overline px-3 py-2 text-left text-muted-foreground">Склад</th>
+								<th class="type-overline px-3 py-2 text-left text-muted-foreground">Регион</th>
+								<th class="type-overline px-3 py-2 text-right text-muted-foreground">SKU</th>
+								<th class="type-overline px-3 py-2 text-right text-muted-foreground">Дефицит</th>
+								<th class="type-overline px-3 py-2 text-right text-muted-foreground">Риск</th>
+								<th class="type-overline px-3 py-2 text-right text-muted-foreground">Норма</th>
+								<th class="type-overline px-3 py-2 text-right text-muted-foreground">Остаток</th>
+								<th class="type-overline px-3 py-2 text-center text-muted-foreground">Статус</th>
 							</tr>
 						</thead>
 						<tbody>
 							{#each officeAggregations as office (office.office_id)}
 								<tr
 									class={cn(
-										'border-t border-border/40 cursor-pointer hover:bg-muted/20 transition-colors',
+										'cursor-pointer border-b border-border/50 transition-colors hover:bg-muted/40',
 										selectedOfficeId === office.office_id && 'bg-muted/30'
 									)}
 									onclick={() => handleOfficeClick(office)}
 								>
-									<td class="px-3 py-2 whitespace-nowrap font-medium">
+									<td class="px-3 py-2 font-medium whitespace-nowrap">
 										{office.office_name || `#${office.office_id}`}
 									</td>
 									<td class="px-3 py-2 whitespace-nowrap text-muted-foreground">
@@ -301,13 +310,22 @@
 									<td class="px-3 py-2 text-right whitespace-nowrap">
 										{formatNumber(office.total_sku)}
 									</td>
-									<td class={cn('px-3 py-2 text-right whitespace-nowrap', getStatusTextColor('DEFICIT'))}>
+									<td
+										class={cn(
+											'px-3 py-2 text-right whitespace-nowrap',
+											getStatusTextColor('DEFICIT')
+										)}
+									>
 										{office.deficit_count > 0 ? formatNumber(office.deficit_count) : '—'}
 									</td>
-									<td class={cn('px-3 py-2 text-right whitespace-nowrap', getStatusTextColor('RISK'))}>
+									<td
+										class={cn('px-3 py-2 text-right whitespace-nowrap', getStatusTextColor('RISK'))}
+									>
 										{office.risk_count > 0 ? formatNumber(office.risk_count) : '—'}
 									</td>
-									<td class={cn('px-3 py-2 text-right whitespace-nowrap', getStatusTextColor('OK'))}>
+									<td
+										class={cn('px-3 py-2 text-right whitespace-nowrap', getStatusTextColor('OK'))}
+									>
 										{formatNumber(office.ok_count)}
 									</td>
 									<td class="px-3 py-2 text-right whitespace-nowrap">
@@ -339,27 +357,30 @@
 				</div>
 			</CardHeader>
 			<CardContent>
-				<div class="text-xs text-muted-foreground mb-2">
+				<div class="type-caption mb-2 text-muted-foreground">
 					Всего SKU: {selectedOfficeSku.length}
 				</div>
 
-				<div class="overflow-auto rounded-md border border-border/50 max-h-96">
+				<div class="max-h-96 overflow-auto rounded-md border border-border/50">
 					<table class="w-full text-sm">
-						<thead class="bg-muted/30 sticky top-0">
+						<thead class="sticky top-0 bg-muted/30">
 							<tr>
-								<th class="px-3 py-2 text-left font-medium text-muted-foreground">nm_id</th>
-								<th class="px-3 py-2 text-left font-medium text-muted-foreground">Размер</th>
-								<th class="px-3 py-2 text-right font-medium text-muted-foreground">Остаток</th>
-								<th class="px-3 py-2 text-right font-medium text-muted-foreground">Покрытие (дн)</th>
-								<th class="px-3 py-2 text-right font-medium text-muted-foreground">К клиентам</th>
-								<th class="px-3 py-2 text-right font-medium text-muted-foreground">От клиентов</th>
-								<th class="px-3 py-2 text-center font-medium text-muted-foreground">Статус</th>
+								<th class="type-overline px-3 py-2 text-left text-muted-foreground">nm_id</th>
+								<th class="type-overline px-3 py-2 text-left text-muted-foreground">Размер</th>
+								<th class="type-overline px-3 py-2 text-right text-muted-foreground">Остаток</th>
+								<th class="type-overline px-3 py-2 text-right text-muted-foreground"
+									>Покрытие (дн)</th
+								>
+								<th class="type-overline px-3 py-2 text-right text-muted-foreground">К клиентам</th>
+								<th class="type-overline px-3 py-2 text-right text-muted-foreground">От клиентов</th
+								>
+								<th class="type-overline px-3 py-2 text-center text-muted-foreground">Статус</th>
 							</tr>
 						</thead>
 						<tbody>
 							{#each selectedOfficeSku.slice(0, 100) as sku (sku.nm_id + '-' + sku.chrt_id)}
-								<tr class="border-t border-border/40">
-									<td class="px-3 py-2 whitespace-nowrap font-mono text-xs">
+								<tr class="border-b border-border/50">
+									<td class="px-3 py-2 font-mono text-xs whitespace-nowrap">
 										{sku.nm_id}
 									</td>
 									<td class="px-3 py-2 whitespace-nowrap text-muted-foreground">
@@ -386,12 +407,11 @@
 					</table>
 				</div>
 				{#if selectedOfficeSku.length > 100}
-					<div class="mt-2 text-xs text-muted-foreground">
+					<div class="type-caption mt-2 text-muted-foreground">
 						Показаны первые 100 из {selectedOfficeSku.length} SKU
 					</div>
 				{/if}
 			</CardContent>
 		</Card>
 	{/if}
-
 </div>

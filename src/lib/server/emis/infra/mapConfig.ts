@@ -101,48 +101,10 @@ function resolveInitialView(
 	};
 }
 
-function buildConfig({
-	requestedMode,
-	effectiveMode,
-	runtimeStatus,
-	source,
-	onlineProvider,
-	onlineStyleUrl,
-	offlinePmtilesUrl,
-	offlinePmtilesName,
-	offlinePmtilesSources,
-	offlineSpriteUrl,
-	offlineGlyphsUrl,
-	offlineManifest,
-	autoFallbackEnabled,
-	statusMessage,
-	warnings,
-	initialCenter,
-	initialZoom,
-	offlineAssets,
-	checkedAt
-}: Omit<EmisMapConfig, 'assetRootUrl'>): EmisMapConfig {
+function buildConfig(input: Omit<EmisMapConfig, 'assetRootUrl'>): EmisMapConfig {
 	return {
-		requestedMode,
-		effectiveMode,
-		runtimeStatus,
-		source,
-		onlineProvider,
-		onlineStyleUrl,
-		offlinePmtilesUrl,
-		offlinePmtilesName,
-		offlinePmtilesSources,
-		offlineSpriteUrl,
-		offlineGlyphsUrl,
-		offlineManifest,
-		autoFallbackEnabled,
-		assetRootUrl: EMIS_OFFLINE_ASSET_ROOT_URL,
-		statusMessage,
-		warnings,
-		initialCenter,
-		initialZoom,
-		offlineAssets,
-		checkedAt
+		...input,
+		assetRootUrl: EMIS_OFFLINE_ASSET_ROOT_URL
 	};
 }
 
@@ -176,6 +138,8 @@ export async function getEmisMapConfig(): Promise<EmisMapConfig> {
 		manifest: bundleStatus.manifestReady && Boolean(bundleStatus.manifest)
 	};
 
+	const mapLanguage = process.env.EMIS_MAP_LANGUAGE?.trim() || null;
+
 	const shared = {
 		onlineProvider: onlineConfig.provider,
 		onlineStyleUrl: onlineConfig.styleUrl,
@@ -188,6 +152,7 @@ export async function getEmisMapConfig(): Promise<EmisMapConfig> {
 		warnings,
 		initialCenter,
 		initialZoom,
+		mapLanguage,
 		offlineAssets,
 		checkedAt
 	};

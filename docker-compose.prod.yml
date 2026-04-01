@@ -1,0 +1,22 @@
+services:
+  app:
+    image: docker.io/s67918470/dashboard-builder:latest
+    # For local builds, comment out `image` above and uncomment:
+    # build: .
+    network_mode: host
+    env_file:
+      - .env.map
+      - .env.production
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/api/emis/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

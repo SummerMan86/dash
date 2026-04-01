@@ -15,6 +15,23 @@
 
 Главная рекомендация: не делать резкий физический split в монорепо прямо сейчас. Сначала стоит стабилизировать текущий репозиторий как "platform-ready single app", а EMIS запускать как отдельный домен внутри него с границами, совместимыми с будущим монорепо.
 
+### Update от 16 марта 2026
+
+Часть рисков, описанных ниже, уже частично закрыта:
+
+- filter lifecycle для active Wildberries routes и `/emis` больше не держится только на top-level `registerFilters(...)`;
+- в проекте появился workspace-aware runtime (`useFilterWorkspace(...)`) с URL sync и target-aware planning;
+- `/emis` уже стал рабочим map/list workspace;
+- блок про accessibility warnings в filter widgets ниже устарел: после последних правок `pnpm check` уже проходит без этих warning.
+
+### Update от 17 марта 2026
+
+Для части проекта вне EMIS дополнительно зафиксирована platform policy:
+
+- source-agnostic путь `fetchDataset -> /api/datasets/:id -> compileDataset -> provider` сохраняется как canonical contract для BI/read-side;
+- это считается осознанной платформенной абстракцией, а не переусложнением, пока scope ограничен non-EMIS analytical flows;
+- alerts, proxy endpoints и EMIS operational/query transport в это правило не включаются.
+
 ## 2. Что представляет собой проект сейчас
 
 ### Текущий профиль проекта
@@ -50,12 +67,11 @@
 
 Паттерн `fetchDataset -> /api/datasets/:id -> compileDataset -> provider` уже задает хороший каркас для аналитических read-моделей. Это особенно полезно для EMIS, где будут:
 
-- списки объектов;
-- списки новостей;
-- выдача слоев карты;
-- BI-срезы поверх оперативных данных.
+- BI-срезы поверх оперативных данных;
+- documentированные views/read models;
+- табличные аналитические контракты, которые действительно должны жить в общей BI abstraction.
 
-Сильная сторона в том, что UI не знает ничего о SQL и источнике данных, а сервер уже умеет держать устойчивый контракт.
+Сильная сторона в том, что UI не знает ничего о SQL и источнике данных, а сервер уже умеет держать устойчивый контракт. Но это стоит сохранять именно как BI/read-side contract, а не распространять автоматически на EMIS map/search/detail flows.
 
 ### 3.2. Неплохая модульность внутри одного приложения
 
@@ -127,21 +143,31 @@ Wildberries-модули показывают, что команда уже ид
 
 Для EMIS это значит, что read-модели можно переиспользовать, но сначала желательно усилить платформенный слой.
 
-### 4.4. Filter lifecycle пока недоведён до устойчивого multi-page сценария
+### 4.4. Filter lifecycle был проблемой и частично закрыт, но legacy-хвост еще остается
 
-На страницах фильтры регистрируются через `registerFilters(...)`, но:
+Изначально на страницах фильтры регистрировались через `registerFilters(...)`, и это создавало явные риски:
 
 - `unregisterFilters(...)` не используется;
 - page-scoped filters пока фактически не заведены в рабочий цикл;
 - `setActivePage(...)` в реальных страницах не применяется.
 
-Пока это не ломает текущий проект критично, но для EMIS, где будет больше экранов и перекрестных фильтров, это уже риск.
+После platform upgrade часть этого уже исправлена:
+
+- active Wildberries routes и `/emis` используют `useFilterWorkspace(...)`;
+- lifecycle теперь закрывается через mount/unmount cleanup;
+- URL sync и target-aware planner уже работают в реальном коде.
+
+Но риск еще не исчез полностью:
+
+- legacy API и старый singleton-режим все еще остаются в кодовой базе;
+- не все маршруты проекта переведены на новый runtime;
+- cleanup старых подходов пока намеренно отложен.
 
 ### 4.5. Операционный контур пока фрагментарный
 
 В проекте уже есть scheduler alerts, но пока нет полноценного platform baseline:
 
-- миграций для основной бизнес-схемы;
+- snapshot-first source of truth по основной бизнес-схеме;
 - seed-процесса как стандарта;
 - единых smoke/integration тестов;
 - явного разделения boot-процессов app/runtime/background tasks.
@@ -150,7 +176,7 @@ Wildberries-модули показывают, что команда уже ид
 
 ### 4.6. Качество baseline пока неровное
 
-По быстрой проверке состояния проекта:
+По быстрой проверке состояния проекта на 14 марта 2026:
 
 - `pnpm check` проходит без ошибок, но есть 4 warning по accessibility в filter widgets;
 - `pnpm build` проходит, но есть warning по `useDebouncedLoader`, accessibility warnings и предупреждение о крупном client chunk;
@@ -160,17 +186,17 @@ Wildberries-модули показывают, что команда уже ид
 
 ## 5. Что можно переиспользовать для EMIS
 
-| Текущий модуль                         | Можно использовать в EMIS     | Комментарий                                                              |
-| -------------------------------------- | ----------------------------- | ------------------------------------------------------------------------ |
-| `shared/ui`                            | Да                            | Базовый UI-kit, карточки, формы, badge, chart wrappers                   |
-| `shared/styles`                        | Да                            | Токены и системные стили имеет смысл сделать общей платформенной базой   |
-| `shared/api/fetchDataset.ts`           | Да                            | Особенно для аналитических read-моделей и BI-виджетов                    |
-| `entities/dataset`                     | Да                            | Хороший foundation для query/read side                                   |
-| `entities/filter`                      | Да, после доработки lifecycle | Подходит для синхронизации list/map/dashboard filters                    |
-| `server/providers/postgresProvider.ts` | Частично                      | Паттерн полезен, но нужен registry и более зрелый coverage               |
-| `server/alerts`                        | Частично                      | Может лечь в будущие уведомления EMIS                                    |
-| `features/dashboard-edit`              | Опционально                   | Полезно только если EMIS позже получит конструктор аналитических панелей |
-| Wildberries-страницы                   | Скорее как reference          | Паттерны да, доменная логика - нет                                       |
+| Текущий модуль                         | Можно использовать в EMIS | Комментарий                                                                           |
+| -------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------- |
+| `shared/ui`                            | Да                        | Базовый UI-kit, карточки, формы, badge, chart wrappers                                |
+| `shared/styles`                        | Да                        | Токены и системные стили имеет смысл сделать общей платформенной базой                |
+| `shared/api/fetchDataset.ts`           | Да                        | Особенно для аналитических read-моделей и BI-виджетов, не для EMIS operational paths  |
+| `entities/dataset`                     | Да                        | Хороший foundation для BI/read side и stable views/read models                        |
+| `entities/filter`                      | Да                        | Runtime уже усилен для active routes; legacy cleanup и дальнейший hardening еще нужны |
+| `server/providers/postgresProvider.ts` | Частично                  | Паттерн полезен, но нужен registry и более зрелый coverage                            |
+| `server/alerts`                        | Частично                  | Может лечь в будущие уведомления EMIS                                                 |
+| `features/dashboard-edit`              | Опционально               | Полезно только если EMIS позже получит конструктор аналитических панелей              |
+| Wildberries-страницы                   | Скорее как reference      | Паттерны да, доменная логика - нет                                                    |
 
 ## 6. Что стоит исправить в текущем проекте до или параллельно старту EMIS
 
@@ -192,7 +218,7 @@ Wildberries-модули показывают, что команда уже ид
 
 Для EMIS потребуется не только чтение, но и запись. Поэтому до активной разработки EMIS нужно подготовить:
 
-- миграции для основной БД;
+- snapshot baseline и documented patch workflow для основной БД;
 - seed-механизм;
 - repository/service слой для CRUD;
 - минимальные integration tests на ключевые data flows.
@@ -205,6 +231,11 @@ Wildberries-модули показывают, что команда уже ид
 - page scope;
 - явную активную страницу;
 - правила совместного использования filters между list/map/inspector.
+
+Update от 16 марта 2026:
+
+- этот приоритет уже частично закрыт для active routes;
+- следующая задача здесь не "изобрести runtime", а дочистить legacy paths и унифицировать remaining pages.
 
 ### Приоритет 4. Развести app boot и background jobs
 
@@ -263,7 +294,7 @@ Scheduler полезен, но для платформы лучше, чтобы:
 
 - согласовать обновленное ТЗ;
 - сформировать data model;
-- выбрать стратегию migrations/seed;
+- выбрать стратегию snapshot/seed и optional delta patch;
 - определить write API и read-model API;
 - выделить geo/map слой.
 
@@ -299,7 +330,7 @@ Scheduler полезен, но для платформы лучше, чтобы:
    - app shell;
    - README/docs;
    - lifecycle filters;
-   - решение по migrations.
+   - решение по snapshot-first DB contract.
 
 ## 10. Техническая проверка на момент анализа
 
@@ -315,3 +346,9 @@ Scheduler полезен, но для платформы лучше, чтобы:
   - запуску alert scheduler на server boot
 - `pnpm lint`:
   не проходит из-за накопленных форматировочных расхождений (`Prettier --check`)
+
+Update от 16 марта 2026:
+
+- `pnpm check` уже проходит без прежних accessibility warning в filter widgets;
+- `pnpm build` по-прежнему требует внимания из-за `useDebouncedLoader`, крупных client chunks и старта alert scheduler на server boot;
+- `pnpm lint` как и раньше не считается зеленым baseline из-за накопленного formatting drift.

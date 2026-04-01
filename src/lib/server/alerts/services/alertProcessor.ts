@@ -13,7 +13,12 @@ import { getRecipientsForRule } from '../repository/recipientRepository';
 import { recordHistory } from '../repository/alertHistoryRepository';
 import { evaluateCondition, generateDedupKey } from './conditionEvaluator';
 import { createTelegramChannel } from '../channels/telegramChannel';
-import type { INotificationChannel, NotificationPayload, AlertRule, AlertRecipient } from '../model/types';
+import type {
+	INotificationChannel,
+	NotificationPayload,
+	AlertRule,
+	AlertRecipient
+} from '../model/types';
 
 // ============================================================================
 // Channel Registry
@@ -59,7 +64,9 @@ async function processRule(rule: AlertRule): Promise<void> {
 		// 1. Evaluate condition
 		const evalResult = await evaluateCondition(rule);
 
-		console.log(`[AlertProcessor] Rule ${rule.id} evaluated: triggered=${evalResult.triggered}, count=${evalResult.matchedCount}`);
+		console.log(
+			`[AlertProcessor] Rule ${rule.id} evaluated: triggered=${evalResult.triggered}, count=${evalResult.matchedCount}`
+		);
 
 		if (!evalResult.triggered) {
 			// Update check time even if not triggered
@@ -81,12 +88,17 @@ async function processRule(rule: AlertRule): Promise<void> {
 
 		// 4. Send to each recipient
 		for (const recipient of recipients) {
-			await sendToRecipient(rule, recipient, evalResult.matchedData, evalResult.matchedCount, dedupKey);
+			await sendToRecipient(
+				rule,
+				recipient,
+				evalResult.matchedData,
+				evalResult.matchedCount,
+				dedupKey
+			);
 		}
 
 		// 5. Update rule check time
 		await updateRuleCheckTime(rule.id, true);
-
 	} catch (err) {
 		console.error(`[AlertProcessor] Error processing rule ${rule.id}:`, err);
 		// Don't throw - continue with other rules
@@ -145,7 +157,9 @@ async function sendToRecipient(
 	if (result.success) {
 		console.log(`[AlertProcessor] Alert sent to ${recipient.channel}:${recipient.address}`);
 	} else {
-		console.error(`[AlertProcessor] Failed to send to ${recipient.channel}:${recipient.address}: ${result.error}`);
+		console.error(
+			`[AlertProcessor] Failed to send to ${recipient.channel}:${recipient.address}: ${result.error}`
+		);
 	}
 }
 
@@ -157,7 +171,11 @@ async function sendToRecipient(
  * Process all enabled alert rules.
  * Called by the scheduler on cron schedule.
  */
-export async function processAlerts(): Promise<{ processed: number; triggered: number; errors: number }> {
+export async function processAlerts(): Promise<{
+	processed: number;
+	triggered: number;
+	errors: number;
+}> {
 	console.log('[AlertProcessor] Starting alert processing...');
 
 	const rules = await getEnabledRules();
@@ -182,7 +200,9 @@ export async function processAlerts(): Promise<{ processed: number; triggered: n
 		}
 	}
 
-	console.log(`[AlertProcessor] Completed: processed=${processed}, triggered=${triggered}, errors=${errors}`);
+	console.log(
+		`[AlertProcessor] Completed: processed=${processed}, triggered=${triggered}, errors=${errors}`
+	);
 
 	return { processed, triggered, errors };
 }

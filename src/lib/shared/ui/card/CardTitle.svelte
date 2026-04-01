@@ -15,7 +15,7 @@
 	let { class: className, children, ...rest }: Props = $props();
 </script>
 
-<h3 class={cn('text-2xl font-semibold leading-none tracking-tight', className)} {...rest}>
+<h3 class={cn('type-section-title text-foreground', className)} {...rest}>
 	{#if children}
 		{@render children()}
 	{/if}

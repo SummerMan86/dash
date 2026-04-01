@@ -1,5 +1,4 @@
 <script lang="ts">
-
 </script>
 
 <header>
@@ -33,5 +32,5 @@
 
 	path {
 		fill: var(--background);
-	}	
+	}
 </style>

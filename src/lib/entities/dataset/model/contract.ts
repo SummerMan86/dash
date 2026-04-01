@@ -57,7 +57,14 @@ export type DatasetQueryV1 = {
 
 export type DatasetQuery = DatasetQueryV1;
 
-export type DatasetFieldType = 'string' | 'number' | 'boolean' | 'date' | 'datetime' | 'json' | 'unknown';
+export type DatasetFieldType =
+	| 'string'
+	| 'number'
+	| 'boolean'
+	| 'date'
+	| 'datetime'
+	| 'json'
+	| 'unknown';
 
 export type DatasetField = {
 	name: string;
@@ -85,9 +92,13 @@ export type DatasetResponseV1 = {
 		executedAt?: string;
 		tenantId?: string;
 		source?: 'mock' | 'oracle' | 'postgres' | 'cube' | 'unknown';
+		limit?: number;
+		offset?: number;
+		sort?: Array<{
+			field: string;
+			dir: 'asc' | 'desc';
+		}>;
 	};
 };
 
 export type DatasetResponse = DatasetResponseV1;
-
-

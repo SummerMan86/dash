@@ -10,7 +10,7 @@
 
 Простейший, но очень полезный маршрут для понимания data pipeline:
 
-- регистрирует filters
+- создает filter workspace runtime
 - вызывает `fetchDataset`
 - показывает таблицу
 - работает с PostgreSQL dataset напрямую
@@ -36,7 +36,7 @@
 
 Показывает:
 
-- local + global filters
+- shared + owner filters
 - derived KPI
 - custom widgets
 - operational analysis view
@@ -47,8 +47,15 @@
 2. `stock-alerts/+page.svelte`
 3. `product-analytics/+page.svelte`
 
+## DWH-контракт
+
+Полная спецификация требований к DWH (таблицы витрин, обязательные колонки, фильтры, параметры расчёта, алерты и рекомендации) описана в [`dwh_for_wildberries_requirements.md`](./dwh_for_wildberries_requirements.md).
+
 ## На что обращать внимание
 
 - page-level вычисления лежат прямо рядом с route (`aggregation.ts`, `utils.ts`, `filters.ts`);
+- active routes используют `useFilterWorkspace(...)`, а не top-level `registerFilters(...)`;
+- shared `dateRange` живет в workspace `dashboard-wildberries` и может переиспользоваться между маршрутами;
+- migrated routes передают явный `filterContext.snapshot` в `fetchDataset(...)`;
 - это хороший reference для будущих доменных модулей, но не идеальная конечная архитектура;
 - при развитии EMIS стоит брать отсюда паттерны, а не копировать структуру один в один.

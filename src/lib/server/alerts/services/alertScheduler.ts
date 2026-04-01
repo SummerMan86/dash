@@ -7,6 +7,7 @@
  */
 
 import cron, { type ScheduledTask } from 'node-cron';
+import type { DatabaseError } from 'pg';
 import { getPgPool } from '$lib/server/db/pg';
 import { processAlerts } from './alertProcessor';
 
@@ -20,10 +21,47 @@ const LOCK_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 
 let schedulerTask: ScheduledTask | null = null;
 let isRunning = false;
+let isStarting = false;
+let lockTableAvailable: boolean | null = null;
+let missingLockTableLogged = false;
 
 // ============================================================================
 // Distributed Locking
 // ============================================================================
+
+function isMissingRelationError(error: unknown): error is DatabaseError {
+	return typeof error === 'object' && error !== null && 'code' in error && error.code === '42P01';
+}
+
+function logMissingLockTableOnce(): void {
+	if (missingLockTableLogged) return;
+	missingLockTableLogged = true;
+	console.warn(
+		'[AlertScheduler] alerts.scheduler_locks is missing, scheduler disabled until alerts schema is applied'
+	);
+}
+
+async function ensureLockTableAvailable(): Promise<boolean> {
+	if (lockTableAvailable !== null) return lockTableAvailable;
+
+	try {
+		const pool = getPgPool();
+		const result = await pool.query<{ exists: string | null }>(
+			`SELECT to_regclass('alerts.scheduler_locks') AS exists`
+		);
+		lockTableAvailable = result.rows[0]?.exists === 'alerts.scheduler_locks';
+		if (!lockTableAvailable) logMissingLockTableOnce();
+		return lockTableAvailable;
+	} catch (error) {
+		if (isMissingRelationError(error)) {
+			lockTableAvailable = false;
+			logMissingLockTableOnce();
+			return false;
+		}
+
+		throw error;
+	}
+}
 
 /**
  * Try to acquire distributed lock.
@@ -31,6 +69,8 @@ let isRunning = false;
  */
 async function tryAcquireLock(): Promise<boolean> {
 	try {
+		if (!(await ensureLockTableAvailable())) return false;
+
 		const pool = getPgPool();
 		const now = new Date();
 		const expiresAt = new Date(now.getTime() + LOCK_DURATION_MS);
@@ -49,6 +89,12 @@ async function tryAcquireLock(): Promise<boolean> {
 
 		return (result.rowCount ?? 0) === 1;
 	} catch (err) {
+		if (isMissingRelationError(err)) {
+			lockTableAvailable = false;
+			logMissingLockTableOnce();
+			return false;
+		}
+
 		console.error('[AlertScheduler] Failed to acquire lock:', err);
 		return false;
 	}
@@ -59,6 +105,8 @@ async function tryAcquireLock(): Promise<boolean> {
  */
 async function releaseLock(): Promise<void> {
 	try {
+		if (!(await ensureLockTableAvailable())) return;
+
 		const pool = getPgPool();
 		await pool.query(
 			`DELETE FROM alerts.scheduler_locks
@@ -66,6 +114,12 @@ async function releaseLock(): Promise<void> {
 			[LOCK_NAME, INSTANCE_ID]
 		);
 	} catch (err) {
+		if (isMissingRelationError(err)) {
+			lockTableAvailable = false;
+			logMissingLockTableOnce();
+			return;
+		}
+
 		console.error('[AlertScheduler] Failed to release lock:', err);
 	}
 }
@@ -75,6 +129,8 @@ async function releaseLock(): Promise<void> {
  */
 async function extendLock(): Promise<boolean> {
 	try {
+		if (!(await ensureLockTableAvailable())) return false;
+
 		const pool = getPgPool();
 		const expiresAt = new Date(Date.now() + LOCK_DURATION_MS);
 
@@ -86,7 +142,13 @@ async function extendLock(): Promise<boolean> {
 		);
 
 		return (result.rowCount ?? 0) === 1;
-	} catch {
+	} catch (err) {
+		if (isMissingRelationError(err)) {
+			lockTableAvailable = false;
+			logMissingLockTableOnce();
+			return false;
+		}
+
 		return false;
 	}
 }
@@ -123,7 +185,6 @@ async function runScheduledCheck(): Promise<void> {
 		} finally {
 			clearInterval(lockExtender);
 		}
-
 	} catch (err) {
 		console.error('[AlertScheduler] Error during processing:', err);
 	} finally {
@@ -142,7 +203,7 @@ async function runScheduledCheck(): Promise<void> {
  * Default: '0 9 * * *' (daily at 9:00 AM)
  */
 export function startAlertScheduler(): void {
-	if (schedulerTask) {
+	if (schedulerTask || isStarting) {
 		console.warn('[AlertScheduler] Already running');
 		return;
 	}
@@ -161,12 +222,25 @@ export function startAlertScheduler(): void {
 		return;
 	}
 
-	schedulerTask = cron.schedule(cronExpression, runScheduledCheck, {
-		timezone: process.env.ALERT_TIMEZONE || 'Europe/Moscow'
-	});
+	isStarting = true;
+	void (async () => {
+		try {
+			if (!(await ensureLockTableAvailable())) return;
 
-	console.log(`[AlertScheduler] Started with schedule: ${cronExpression} (TZ: ${process.env.ALERT_TIMEZONE || 'Europe/Moscow'})`);
-	console.log(`[AlertScheduler] Instance ID: ${INSTANCE_ID}`);
+			schedulerTask = cron.schedule(cronExpression, runScheduledCheck, {
+				timezone: process.env.ALERT_TIMEZONE || 'Europe/Moscow'
+			});
+
+			console.log(
+				`[AlertScheduler] Started with schedule: ${cronExpression} (TZ: ${process.env.ALERT_TIMEZONE || 'Europe/Moscow'})`
+			);
+			console.log(`[AlertScheduler] Instance ID: ${INSTANCE_ID}`);
+		} catch (error) {
+			console.error('[AlertScheduler] Failed to initialize:', error);
+		} finally {
+			isStarting = false;
+		}
+	})();
 }
 
 /**
@@ -191,7 +265,11 @@ export function isSchedulerRunning(): boolean {
 /**
  * Manually trigger alert check (for testing)
  */
-export async function triggerAlertCheck(): Promise<{ processed: number; triggered: number; errors: number }> {
+export async function triggerAlertCheck(): Promise<{
+	processed: number;
+	triggered: number;
+	errors: number;
+}> {
 	console.log('[AlertScheduler] Manual trigger requested');
 	return processAlerts();
 }

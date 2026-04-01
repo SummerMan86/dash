@@ -17,7 +17,11 @@ export async function newsExists(id: string, client?: PoolClient): Promise<boole
 	return (result.rowCount ?? 0) > 0;
 }
 
-export async function insertNews(input: CreateEmisNewsInput, client?: PoolClient): Promise<string> {
+export async function insertNews(
+	input: CreateEmisNewsInput,
+	actorId: string | null,
+	client?: PoolClient
+): Promise<string> {
 	const db = getDb(client);
 	const geometry = input.geometry ? JSON.stringify(input.geometry) : null;
 	const result = await db.query(
@@ -37,13 +41,17 @@ export async function insertNews(input: CreateEmisNewsInput, client?: PoolClient
 			geom,
 			is_manual,
 			meta,
-			source_origin
+			source_origin,
+			created_by,
+			updated_by
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8::timestamptz, $9, $10, $11, $12,
 			CASE WHEN $13::text IS NULL THEN NULL ELSE ${newsGeometrySql(13)} END,
 			$14,
 			$15::jsonb,
-			CASE WHEN $14 THEN 'manual' ELSE 'import' END
+			CASE WHEN $14 THEN 'manual' ELSE 'import' END,
+			$16,
+			$16
 		)
 		RETURNING id`,
 		[
@@ -61,7 +69,8 @@ export async function insertNews(input: CreateEmisNewsInput, client?: PoolClient
 			input.importance ?? null,
 			geometry,
 			input.isManual ?? false,
-			JSON.stringify(input.meta ?? {})
+			JSON.stringify(input.meta ?? {}),
+			actorId
 		]
 	);
 	return result.rows[0].id;
@@ -70,6 +79,7 @@ export async function insertNews(input: CreateEmisNewsInput, client?: PoolClient
 export async function updateNews(
 	id: string,
 	patch: UpdateEmisNewsInput,
+	actorId: string | null,
 	client?: PoolClient
 ): Promise<boolean> {
 	const sets: string[] = [];
@@ -107,8 +117,9 @@ export async function updateNews(
 		sets.push(`meta = $${values.length}::jsonb`);
 	}
 
-	values.push(id);
 	sets.push(`updated_at = now()`);
+	push('updated_by', actorId);
+	values.push(id);
 
 	const db = getDb(client);
 	const result = await db.query(
@@ -121,13 +132,17 @@ export async function updateNews(
 	return (result.rowCount ?? 0) > 0;
 }
 
-export async function softDeleteNews(id: string, client?: PoolClient): Promise<boolean> {
+export async function softDeleteNews(
+	id: string,
+	actorId: string | null,
+	client?: PoolClient
+): Promise<boolean> {
 	const db = getDb(client);
 	const result = await db.query(
 		`UPDATE emis.news_items
-		 SET deleted_at = now(), updated_at = now()
+		 SET deleted_at = now(), updated_at = now(), deleted_by = $2, updated_by = $2
 		 WHERE id = $1 AND deleted_at IS NULL`,
-		[id]
+		[id, actorId]
 	);
 	return (result.rowCount ?? 0) > 0;
 }

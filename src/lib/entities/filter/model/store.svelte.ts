@@ -1,8 +1,15 @@
 import { get, writable, derived, type Readable, type Writable } from 'svelte/store';
 
-import type { FilterState, FilterValue, FilterValues } from './types';
+import type {
+	FilterState,
+	FilterValue,
+	FilterValues,
+	ResolvedFilterSpec,
+	FilterRuntimeContext,
+	NormalizedFilterScope
+} from './types';
 import { toLegacyFilterState } from './types';
-import { getSpec } from './registry';
+import { getResolvedSpecForFilter, getResolvedSpecsForRuntime, getSpec } from './registry';
 
 // ============================================================================
 // LEGACY API (backward compatibility)
@@ -195,7 +202,9 @@ export function createFilterStoreV2(
 			if (scope === 'page') {
 				const pageId = s.activePageId;
 				if (!pageId) {
-					console.warn(`setFilter: cannot set page-scoped filter "${filterId}" without active page`);
+					console.warn(
+						`setFilter: cannot set page-scoped filter "${filterId}" without active page`
+					);
 					return s;
 				}
 				const pageValues = { ...(s.pages[pageId] ?? {}) };
@@ -302,6 +311,234 @@ export function createFilterStoreV2(
 }
 
 // ============================================================================
+// WORKSPACE RUNTIME STORE
+// ============================================================================
+
+type WorkspaceRuntimeState = {
+	shared: FilterValues;
+	workspace: Record<string, FilterValues>;
+	owner: Record<string, Record<string, FilterValues>>;
+	active: FilterRuntimeContext | null;
+};
+
+const initialRuntimeState: WorkspaceRuntimeState = {
+	shared: {},
+	workspace: {},
+	owner: {},
+	active: null
+};
+
+export const filterRuntimeState = writable<WorkspaceRuntimeState>(initialRuntimeState);
+
+function getRuntimeSpecs(
+	context: FilterRuntimeContext,
+	resolvedSpecs?: ResolvedFilterSpec[]
+): ResolvedFilterSpec[] {
+	return resolvedSpecs ?? getResolvedSpecsForRuntime(context);
+}
+
+function getWorkspaceValues(state: WorkspaceRuntimeState, workspaceId: string): FilterValues {
+	return state.workspace[workspaceId] ?? {};
+}
+
+function getOwnerValues(
+	state: WorkspaceRuntimeState,
+	workspaceId: string,
+	ownerId: string
+): FilterValues {
+	return state.owner[workspaceId]?.[ownerId] ?? {};
+}
+
+function getStoredValueForSpec(
+	state: WorkspaceRuntimeState,
+	spec: ResolvedFilterSpec
+): FilterValue | undefined {
+	switch (spec.scope) {
+		case 'shared':
+			return spec.sharedKey ? state.shared[spec.sharedKey] : undefined;
+		case 'workspace':
+			return getWorkspaceValues(state, spec.workspaceId)[spec.urlKey];
+		case 'owner':
+			return getOwnerValues(state, spec.workspaceId, spec.ownerId)[spec.urlKey];
+	}
+}
+
+function buildRuntimeSnapshot(
+	state: WorkspaceRuntimeState,
+	specs: ResolvedFilterSpec[],
+	includeDefaults: boolean
+): FilterValues {
+	const snapshot: FilterValues = {};
+
+	for (const spec of specs) {
+		const storedValue = getStoredValueForSpec(state, spec);
+		if (storedValue !== undefined) {
+			snapshot[spec.filterId] = storedValue;
+			continue;
+		}
+
+		if (includeDefaults && spec.defaultValue !== undefined) {
+			snapshot[spec.filterId] = spec.defaultValue;
+		}
+	}
+
+	return snapshot;
+}
+
+function applyRuntimeMutation(
+	state: WorkspaceRuntimeState,
+	spec: ResolvedFilterSpec,
+	value: FilterValue
+): WorkspaceRuntimeState {
+	const sanitized = sanitizeValue(value);
+	const next = {
+		...state,
+		shared: state.shared,
+		workspace: state.workspace,
+		owner: state.owner
+	};
+
+	if (spec.scope === 'shared') {
+		if (!spec.sharedKey) return state;
+		const current = state.shared[spec.sharedKey] ?? null;
+		if (isEqualFilterValue(current, sanitized)) return state;
+
+		const sharedValues = { ...state.shared };
+		if (sanitized === null) delete sharedValues[spec.sharedKey];
+		else sharedValues[spec.sharedKey] = sanitized;
+
+		next.shared = sharedValues;
+		return next;
+	}
+
+	if (spec.scope === 'workspace') {
+		const currentWorkspace = getWorkspaceValues(state, spec.workspaceId);
+		const current = currentWorkspace[spec.urlKey] ?? null;
+		if (isEqualFilterValue(current, sanitized)) return state;
+
+		const workspaceValues = { ...currentWorkspace };
+		if (sanitized === null) delete workspaceValues[spec.urlKey];
+		else workspaceValues[spec.urlKey] = sanitized;
+
+		next.workspace = {
+			...state.workspace,
+			[spec.workspaceId]: workspaceValues
+		};
+		return next;
+	}
+
+	const currentOwnerValues = getOwnerValues(state, spec.workspaceId, spec.ownerId);
+	const current = currentOwnerValues[spec.urlKey] ?? null;
+	if (isEqualFilterValue(current, sanitized)) return state;
+
+	const ownerValues = { ...currentOwnerValues };
+	if (sanitized === null) delete ownerValues[spec.urlKey];
+	else ownerValues[spec.urlKey] = sanitized;
+
+	next.owner = {
+		...state.owner,
+		[spec.workspaceId]: {
+			...(state.owner[spec.workspaceId] ?? {}),
+			[spec.ownerId]: ownerValues
+		}
+	};
+	return next;
+}
+
+export function setActiveFilterRuntime(context: FilterRuntimeContext | null): void {
+	filterRuntimeState.update((state) => ({ ...state, active: context }));
+}
+
+export function getActiveFilterRuntime(): FilterRuntimeContext | null {
+	return get(filterRuntimeState).active;
+}
+
+export function getRuntimeRawSnapshot(
+	context: FilterRuntimeContext,
+	resolvedSpecs?: ResolvedFilterSpec[]
+): FilterValues {
+	return buildRuntimeSnapshot(
+		get(filterRuntimeState),
+		getRuntimeSpecs(context, resolvedSpecs),
+		false
+	);
+}
+
+export function getRuntimeSnapshotForState(
+	state: WorkspaceRuntimeState,
+	context: FilterRuntimeContext,
+	resolvedSpecs: ResolvedFilterSpec[],
+	includeDefaults = true
+): FilterValues {
+	return buildRuntimeSnapshot(state, getRuntimeSpecs(context, resolvedSpecs), includeDefaults);
+}
+
+export function getRuntimeFilterSnapshot(
+	context: FilterRuntimeContext,
+	resolvedSpecs?: ResolvedFilterSpec[]
+): FilterValues {
+	return buildRuntimeSnapshot(
+		get(filterRuntimeState),
+		getRuntimeSpecs(context, resolvedSpecs),
+		true
+	);
+}
+
+export function setRuntimeFilter(
+	context: FilterRuntimeContext,
+	filterId: string,
+	value: FilterValue,
+	resolvedSpecs?: ResolvedFilterSpec[]
+): void {
+	const spec =
+		getRuntimeSpecs(context, resolvedSpecs).find((item) => item.filterId === filterId) ??
+		getResolvedSpecForFilter(context, filterId);
+	if (!spec) return;
+
+	filterRuntimeState.update((state) => applyRuntimeMutation(state, spec, value));
+}
+
+export function setRuntimeFilters(
+	context: FilterRuntimeContext,
+	values: FilterValues,
+	resolvedSpecs?: ResolvedFilterSpec[]
+): void {
+	const specs = getRuntimeSpecs(context, resolvedSpecs);
+	const specsByFilterId = new Map(specs.map((spec) => [spec.filterId, spec]));
+
+	filterRuntimeState.update((state) => {
+		let nextState = state;
+
+		for (const [filterId, value] of Object.entries(values)) {
+			const spec = specsByFilterId.get(filterId);
+			if (!spec) continue;
+			nextState = applyRuntimeMutation(nextState, spec, value);
+		}
+
+		return nextState;
+	});
+}
+
+export function resetRuntimeScope(
+	context: FilterRuntimeContext,
+	scope: NormalizedFilterScope | 'all',
+	resolvedSpecs?: ResolvedFilterSpec[]
+): void {
+	const specs = getRuntimeSpecs(context, resolvedSpecs).filter(
+		(spec) => scope === 'all' || spec.scope === scope
+	);
+	if (specs.length === 0) return;
+
+	filterRuntimeState.update((state) => {
+		let nextState = state;
+		for (const spec of specs) {
+			nextState = applyRuntimeMutation(nextState, spec, null);
+		}
+		return nextState;
+	});
+}
+
+// ============================================================================
 // GLOBAL SINGLETONS
 // ============================================================================
 
@@ -333,6 +570,10 @@ export function getFilterSnapshot(): FilterState {
  * This is the main function for getting current filters.
  */
 export function getEffectiveFilters(): FilterValues {
+	const activeRuntime = getActiveFilterRuntime();
+	if (activeRuntime) {
+		return getRuntimeFilterSnapshot(activeRuntime);
+	}
 	return filterStoreV2.getEffectiveSnapshot();
 }
 
@@ -341,7 +582,7 @@ export function getEffectiveFilters(): FilterValues {
  * Useful for code that still expects FilterState.
  */
 export function getEffectiveFiltersLegacy(): FilterState {
-	const values = filterStoreV2.getEffectiveSnapshot();
+	const values = getEffectiveFilters();
 	return toLegacyFilterState(values);
 }
 

@@ -1,8 +1,178 @@
 @import './lib/shared/styles/tokens/tokens.css';
 @import '@fontsource/ibm-plex-sans/400.css';
+@import '@fontsource/ibm-plex-sans/500.css';
 @import '@fontsource/ibm-plex-sans/600.css';
 @import 'gridstack/dist/gridstack.min.css';
 
 body {
 	font-family: var(--font-family);
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+.type-page-title,
+.type-section-title,
+.type-card-title,
+.type-body-sm,
+.type-caption,
+.type-caption-strong,
+.type-overline,
+.type-control,
+.type-control-lg,
+.type-badge,
+.type-nav-item,
+.type-kpi-value {
+	font-style: normal;
+}
+
+.type-page-title {
+	font-size: var(--type-page-title-size);
+	font-weight: var(--type-page-title-weight);
+	line-height: var(--type-page-title-line-height);
+	letter-spacing: var(--type-page-title-tracking);
+	text-transform: var(--type-page-title-transform);
+}
+
+.type-section-title {
+	font-size: var(--type-section-title-size);
+	font-weight: var(--type-section-title-weight);
+	line-height: var(--type-section-title-line-height);
+	letter-spacing: var(--type-section-title-tracking);
+	text-transform: var(--type-section-title-transform);
+}
+
+.type-card-title {
+	font-size: var(--type-card-title-size);
+	font-weight: var(--type-card-title-weight);
+	line-height: var(--type-card-title-line-height);
+	letter-spacing: var(--type-card-title-tracking);
+	text-transform: var(--type-card-title-transform);
+}
+
+.type-body-sm {
+	font-size: var(--type-body-sm-size);
+	font-weight: var(--type-body-sm-weight);
+	line-height: var(--type-body-sm-line-height);
+	letter-spacing: var(--type-body-sm-tracking);
+	text-transform: var(--type-body-sm-transform);
+}
+
+.type-caption {
+	font-size: var(--type-caption-size);
+	font-weight: var(--type-caption-weight);
+	line-height: var(--type-caption-line-height);
+	letter-spacing: var(--type-caption-tracking);
+	text-transform: var(--type-caption-transform);
+}
+
+.type-caption-strong {
+	font-size: var(--type-caption-strong-size);
+	font-weight: var(--type-caption-strong-weight);
+	line-height: var(--type-caption-strong-line-height);
+	letter-spacing: var(--type-caption-strong-tracking);
+	text-transform: var(--type-caption-strong-transform);
+}
+
+.type-overline {
+	font-size: var(--type-overline-size);
+	font-weight: var(--type-overline-weight);
+	line-height: var(--type-overline-line-height);
+	letter-spacing: var(--type-overline-tracking);
+	text-transform: var(--type-overline-transform);
+}
+
+.type-control {
+	font-size: var(--type-control-size);
+	font-weight: var(--type-control-weight);
+	line-height: var(--type-control-line-height);
+	letter-spacing: var(--type-control-tracking);
+	text-transform: var(--type-control-transform);
+}
+
+.type-control-lg {
+	font-size: var(--type-control-lg-size);
+	font-weight: var(--type-control-lg-weight);
+	line-height: var(--type-control-lg-line-height);
+	letter-spacing: var(--type-control-lg-tracking);
+	text-transform: var(--type-control-lg-transform);
+}
+
+.type-badge {
+	font-size: var(--type-badge-size);
+	font-weight: var(--type-badge-weight);
+	line-height: var(--type-badge-line-height);
+	letter-spacing: var(--type-badge-tracking);
+	text-transform: var(--type-badge-transform);
+}
+
+.type-nav-item {
+	font-size: var(--type-nav-item-size);
+	font-weight: var(--type-nav-item-weight);
+	line-height: var(--type-nav-item-line-height);
+	letter-spacing: var(--type-nav-item-tracking);
+	text-transform: var(--type-nav-item-transform);
+}
+
+.type-kpi-value {
+	font-size: var(--type-kpi-value-size);
+	font-weight: var(--type-kpi-value-weight);
+	line-height: var(--type-kpi-value-line-height);
+	letter-spacing: var(--type-kpi-value-tracking);
+	text-transform: var(--type-kpi-value-transform);
+}
+
+/* ========================================
+   INTERACTION UTILITIES
+   Apply design-token motion + shadow
+   ======================================== */
+
+/* Card hover: shadow lift */
+.card-interactive {
+	transition:
+		box-shadow var(--transition-moderate) var(--ease-standard),
+		transform var(--transition-moderate) var(--ease-standard);
+}
+.card-interactive:hover {
+	box-shadow: var(--shadow-md);
+	transform: translateY(-1px);
+}
+
+/* Subtle shimmer for skeleton loading */
+@keyframes shimmer {
+	0% {
+		background-position: -200% 0;
+	}
+	100% {
+		background-position: 200% 0;
+	}
+}
+.skeleton-shimmer {
+	background: linear-gradient(
+		90deg,
+		var(--color-muted) 25%,
+		var(--color-gray-20) 50%,
+		var(--color-muted) 75%
+	);
+	background-size: 200% 100%;
+	animation: shimmer 1.8s ease-in-out infinite;
+}
+
+/* Focus glow ring (for inputs/selects) */
+.focus-glow:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 25%, transparent);
+	border-color: var(--color-primary);
+}
+
+/* EMIS vessel hover tooltip — compact, no arrow, non-interactive */
+.emis-vessel-tooltip {
+	pointer-events: none;
+}
+.emis-vessel-tooltip .maplibregl-popup-tip {
+	display: none;
+}
+.emis-vessel-tooltip .maplibregl-popup-content {
+	padding: 6px 10px;
+	border-radius: 6px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }

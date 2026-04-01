@@ -66,10 +66,7 @@ export async function recordHistory(input: CreateHistoryInput): Promise<AlertHis
 	return rowToHistory(result.rows[0]);
 }
 
-export async function getHistoryForRule(
-	ruleId: number,
-	limit = 100
-): Promise<AlertHistoryEntry[]> {
+export async function getHistoryForRule(ruleId: number, limit = 100): Promise<AlertHistoryEntry[]> {
 	const pool = getPgPool();
 	const result = await pool.query<HistoryRow>(
 		`SELECT id, rule_id, recipient_id, triggered_at, condition_snapshot,
@@ -83,10 +80,7 @@ export async function getHistoryForRule(
 	return result.rows.map(rowToHistory);
 }
 
-export async function getRecentHistory(
-	sellerId: number,
-	limit = 50
-): Promise<AlertHistoryEntry[]> {
+export async function getRecentHistory(sellerId: number, limit = 50): Promise<AlertHistoryEntry[]> {
 	const pool = getPgPool();
 	const result = await pool.query<HistoryRow>(
 		`SELECT h.id, h.rule_id, h.recipient_id, h.triggered_at, h.condition_snapshot,

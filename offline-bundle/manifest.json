@@ -1,5 +1,5 @@
 {
-  "scaffold": true,
-  "status": "placeholder",
-  "note": "Populate tiles, sprites, fonts and replace style.json with a real bundle before install/use."
+	"scaffold": true,
+	"status": "placeholder",
+	"note": "Populate tiles, sprites, fonts and replace style.json with a real bundle before install/use."
 }

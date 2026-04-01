@@ -25,7 +25,7 @@
 	class={cn(
 		'inline-flex h-8 w-8 items-center justify-center rounded-md',
 		'text-muted-foreground hover:text-foreground',
-		'hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+		'hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
 		'transition-colors',
 		className
 	)}
@@ -39,12 +39,22 @@
 		<path d="M9 3v18" stroke="currentColor" stroke-width="2" />
 		{#if $collapsed}
 			<!-- Стрелка вправо (развернуть) -->
-			<path d="M14 12l3 3m0-6l-3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+			<path
+				d="M14 12l3 3m0-6l-3 3"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			/>
 		{:else}
 			<!-- Стрелка влево (свернуть) -->
-			<path d="M17 12l-3-3m0 6l3-3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+			<path
+				d="M17 12l-3-3m0 6l3-3"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			/>
 		{/if}
 	</svg>
 </button>
-
-

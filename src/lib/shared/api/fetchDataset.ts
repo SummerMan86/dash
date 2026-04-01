@@ -4,13 +4,17 @@ import {
 	getFilterSnapshot,
 	getEffectiveFilters,
 	planFiltersForDataset,
-	hasFiltersForDataset
+	hasFiltersForDataset,
+	hasFiltersForTarget,
+	getActiveFilterRuntime,
+	type FilterRuntimeContext,
+	type FilterValues
 } from '$entities/filter';
 
 type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
 /**
- * `fetchDataset()` is the ONLY function UI code should use to load datasets.
+ * `fetchDataset()` is the canonical facade for dataset-backed BI/read-side UI.
  *
  * Why a single facade is useful:
  * - global filters are merged in one place (no filter duplication across widgets)
@@ -19,6 +23,10 @@ type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Respo
  *
  * Typical flow:
  * Widget -> fetchDataset({ id, params }) -> HTTP POST /api/datasets/:id -> DatasetResponse
+ *
+ * Note:
+ * - dedicated operational flows (for example `/api/emis/*`) may call their own transport directly
+ * - this helper is intentionally scoped to dataset/IR-backed contracts
  */
 export type FetchDatasetArgs = {
 	id: DatasetId;
@@ -50,6 +58,11 @@ export type FetchDatasetArgs = {
 	 * Skip client-side filtering (useful for raw data access).
 	 */
 	skipClientFilter?: boolean;
+	filterContext?: {
+		snapshot?: Record<string, JsonValue>;
+		workspaceId?: string;
+		ownerId?: string;
+	};
 };
 
 type CacheEntry = { expiresAt: number; value: DatasetResponse };
@@ -78,14 +91,25 @@ function makeKey(id: DatasetId, query: DatasetQuery): string {
 export async function fetchDataset(args: FetchDatasetArgs): Promise<DatasetResponse> {
 	const doFetch: FetchLike | undefined =
 		args.fetch ?? (typeof fetch !== 'undefined' ? (fetch as FetchLike) : undefined);
-	if (!doFetch) throw new Error('fetchDataset: no fetch available (provide args.fetch in SSR/load)');
+	if (!doFetch)
+		throw new Error('fetchDataset: no fetch available (provide args.fetch in SSR/load)');
 
 	// Get effective filters from the new store
-	const effectiveFilters = getEffectiveFilters();
+	const effectiveFilters =
+		(args.filterContext?.snapshot as FilterValues | undefined) ?? getEffectiveFilters();
+	const runtimeContext: FilterRuntimeContext | undefined =
+		args.filterContext?.workspaceId && args.filterContext?.ownerId
+			? {
+					workspaceId: args.filterContext.workspaceId,
+					ownerId: args.filterContext.ownerId
+				}
+			: (getActiveFilterRuntime() ?? undefined);
 
 	// Plan filter application (if filters are registered for this dataset)
-	const plan = hasFiltersForDataset(args.id)
-		? planFiltersForDataset(args.id, effectiveFilters)
+	const plan = (
+		runtimeContext ? hasFiltersForTarget(args.id, runtimeContext) : hasFiltersForDataset(args.id)
+	)
+		? planFiltersForDataset(args.id, effectiveFilters, runtimeContext)
 		: null;
 
 	// Build merged filters:
@@ -167,11 +191,10 @@ export async function fetchDataset(args: FetchDatasetArgs): Promise<DatasetRespo
 		const data = (await res.json()) as DatasetResponse;
 		if (ttlMs > 0) memoryCache.set(key, { expiresAt: now + ttlMs, value: data });
 		return data;
-	})()
-		.finally(() => {
-			// Always remove the in-flight marker when done (success or failure).
-			inFlight.delete(key);
-		});
+	})().finally(() => {
+		// Always remove the in-flight marker when done (success or failure).
+		inFlight.delete(key);
+	});
 
 	inFlight.set(key, p);
 

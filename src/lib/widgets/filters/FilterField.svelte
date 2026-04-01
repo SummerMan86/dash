@@ -1,5 +1,10 @@
 <script lang="ts">
-	import type { FilterSpec, FilterValue } from '$entities/filter';
+	import type {
+		FilterSpec,
+		FilterValue,
+		FilterWorkspaceRuntime,
+		ResolvedFilterSpec
+	} from '$entities/filter';
 	import { filterStoreV2 } from '$entities/filter';
 	import DateRangeFilter from './DateRangeFilter.svelte';
 	import SelectFilter from './SelectFilter.svelte';
@@ -7,17 +12,27 @@
 	import TextFilter from './TextFilter.svelte';
 
 	interface Props {
-		spec: FilterSpec;
+		spec: FilterSpec | ResolvedFilterSpec;
+		runtime?: FilterWorkspaceRuntime;
 	}
 
-	let { spec }: Props = $props();
+	let { spec, runtime }: Props = $props();
+
+	function getFilterId(currentSpec: FilterSpec | ResolvedFilterSpec): string {
+		return 'filterId' in currentSpec ? currentSpec.filterId : currentSpec.id;
+	}
 
 	// Get current value from store
-	let effectiveValues = $derived(filterStoreV2.effective);
-	let value = $derived($effectiveValues[spec.id] ?? spec.defaultValue ?? null);
+	let effectiveValues = $derived(runtime ? runtime.effective : filterStoreV2.effective);
+	let value = $derived($effectiveValues[getFilterId(spec)] ?? spec.defaultValue ?? null);
 
 	function onChange(newValue: FilterValue) {
-		filterStoreV2.setFilter(spec.id, newValue);
+		if (runtime) {
+			runtime.setFilter(getFilterId(spec), newValue);
+			return;
+		}
+
+		filterStoreV2.setFilter(getFilterId(spec), newValue);
 	}
 </script>
 

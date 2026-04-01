@@ -1,0 +1,67 @@
+export type EmisShipRouteVessel = {
+	shipHbkId: number;
+	shipId: number | null;
+	imo: number | null;
+	mmsi: number | null;
+	vesselName: string;
+	vesselType: string | null;
+	flag: string | null;
+	callsign: string | null;
+	firstFetchedAt: string | null;
+	lastFetchedAt: string;
+	lastRouteDateUtc: string | null;
+	pointsCount: number;
+	routeDaysCount: number;
+	lastLatitude: number | null;
+	lastLongitude: number | null;
+};
+
+export type EmisShipRoutePoint = {
+	routePointId: number;
+	shipHbkId: number;
+	shipId: number | null;
+	imo: number | null;
+	mmsi: number | null;
+	vesselName: string;
+	vesselType: string | null;
+	flag: string | null;
+	callsign: string | null;
+	routeDateUtc: string | null;
+	pointSeqShip: number;
+	pointSeqDay: number | null;
+	fetchedAt: string;
+	loadedAt: string | null;
+	latitude: number;
+	longitude: number;
+	speed: number | null;
+	course: number | null;
+	heading: number | null;
+	gapMinutesFromPrev: number | null;
+	gapMinutesToNext: number | null;
+};
+
+export type EmisShipRouteSegment = {
+	shipHbkId: number;
+	shipId: number | null;
+	imo: number | null;
+	mmsi: number | null;
+	vesselName: string;
+	vesselType: string | null;
+	flag: string | null;
+	callsign: string | null;
+	segmentSeqShip: number;
+	routeDateUtc: string | null;
+	fromRoutePointId: number | null;
+	toRoutePointId: number | null;
+	fromFetchedAt: string;
+	toFetchedAt: string | null;
+	fromLatitude: number;
+	fromLongitude: number;
+	toLatitude: number;
+	toLongitude: number;
+	fromSpeed: number | null;
+	fromCourse: number | null;
+	fromHeading: number | null;
+	gapMinutes: number | null;
+	sameCoordinatesAsNext: boolean | null;
+};

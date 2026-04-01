@@ -1,6 +1,10 @@
 import type { DatasetId, DatasetIr, DatasetQuery } from '$entities/dataset';
 
-import { PAYMENT_DATASETS, compilePaymentDataset, type PaymentDatasetId } from './definitions/paymentAnalytics';
+import {
+	PAYMENT_DATASETS,
+	compilePaymentDataset,
+	type PaymentDatasetId
+} from './definitions/paymentAnalytics';
 import {
 	WILDBERRIES_DATASETS,
 	compileWildberriesDataset,
@@ -17,17 +21,17 @@ import {
 	type EmisMartDatasetId
 } from './definitions/emisMart';
 import {
-	EMIS_SHIP_ROUTE_DATASETS,
-	compileEmisShipRouteDataset,
-	type EmisShipRouteDatasetId
-} from './definitions/emisShipRoutes';
+	STRATEGY_MART_DATASETS,
+	compileStrategyMartDataset,
+	type StrategyMartDatasetId
+} from './definitions/strategyMart';
 
 type KnownDatasetId =
 	| PaymentDatasetId
 	| WildberriesDatasetId
 	| ProductPeriodDatasetId
 	| EmisMartDatasetId
-	| EmisShipRouteDatasetId;
+	| StrategyMartDatasetId;
 
 /**
  * Dataset compiler entrypoint.
@@ -44,7 +48,7 @@ export function isKnownDatasetId(id: string): id is KnownDatasetId {
 		Object.values(WILDBERRIES_DATASETS).includes(id as WildberriesDatasetId) ||
 		Object.values(PRODUCT_PERIOD_DATASETS).includes(id as ProductPeriodDatasetId) ||
 		Object.values(EMIS_MART_DATASETS).includes(id as EmisMartDatasetId) ||
-		Object.values(EMIS_SHIP_ROUTE_DATASETS).includes(id as EmisShipRouteDatasetId)
+		Object.values(STRATEGY_MART_DATASETS).includes(id as StrategyMartDatasetId)
 	);
 }
 
@@ -61,11 +65,9 @@ export function compileDataset(datasetId: DatasetId, query: DatasetQuery): Datas
 	if (Object.values(EMIS_MART_DATASETS).includes(datasetId as EmisMartDatasetId)) {
 		return compileEmisMartDataset(datasetId as EmisMartDatasetId, query);
 	}
-	if (Object.values(EMIS_SHIP_ROUTE_DATASETS).includes(datasetId as EmisShipRouteDatasetId)) {
-		return compileEmisShipRouteDataset(datasetId as EmisShipRouteDatasetId, query);
+	if (Object.values(STRATEGY_MART_DATASETS).includes(datasetId as StrategyMartDatasetId)) {
+		return compileStrategyMartDataset(datasetId as StrategyMartDatasetId, query);
 	}
 	// This error code is used by the HTTP layer to return 404.
 	throw Object.assign(new Error(`Unknown datasetId: ${datasetId}`), { code: 'DATASET_NOT_FOUND' });
 }
-
-

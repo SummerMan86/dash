@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { FilterSpec, FilterValue } from '$entities/filter';
+	import { Button } from '$shared/ui/button';
 	import { Input } from '$shared/ui/input';
 
 	interface Props {
@@ -26,12 +27,15 @@
 	function handleClear() {
 		onChange(null);
 	}
+
+	const controlId = $derived(`filter-${spec.id}`);
 </script>
 
 <div class="space-y-1">
-	<label class="text-xs text-muted-foreground">{spec.label}</label>
+	<label class="type-caption text-muted-foreground" for={controlId}>{spec.label}</label>
 	<div class="relative min-w-[150px]">
 		<Input
+			id={controlId}
 			type="text"
 			class="pr-10"
 			value={currentValue}
@@ -39,14 +43,17 @@
 			placeholder={spec.placeholder ?? 'Введите...'}
 		/>
 		{#if currentValue}
-			<button
+			<Button
 				type="button"
-				class="absolute right-1 top-1/2 -translate-y-1/2 inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+				variant="ghost"
+				size="icon"
+				class="absolute top-1/2 right-1 h-7 w-7 -translate-y-1/2 text-muted-foreground"
 				onclick={handleClear}
+				aria-label="Очистить текстовый фильтр"
 				title="Очистить"
 			>
 				×
-			</button>
+			</Button>
 		{/if}
 	</div>
 </div>

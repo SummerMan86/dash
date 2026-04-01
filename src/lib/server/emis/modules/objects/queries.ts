@@ -1,3 +1,5 @@
+import type { PoolClient } from 'pg';
+
 import type {
 	EmisObjectDetail,
 	EmisObjectRelatedNews,
@@ -8,7 +10,7 @@ import type {
 import { getDb } from '../../infra/db';
 
 function clampPageSize(value: number | undefined): number {
-	return Math.max(1, Math.min(100, Math.trunc(value ?? 50)));
+	return Math.max(1, Math.min(200, Math.trunc(value ?? 50)));
 }
 
 export async function listObjectsQuery(
@@ -58,7 +60,7 @@ export async function listObjectsQuery(
 		 JOIN emis.object_types ot
 		   ON ot.id = o.object_type_id
 		 WHERE ${conditions.join(' AND ')}
-		 ORDER BY o.updated_at DESC, o.name ASC
+		 ORDER BY o.name ASC, o.id ASC
 		 LIMIT $${values.length - 1}
 		 OFFSET $${values.length}`,
 		values
@@ -78,8 +80,11 @@ export async function listObjectsQuery(
 	}));
 }
 
-export async function getObjectDetailQuery(id: string): Promise<EmisObjectDetail | null> {
-	const db = getDb();
+export async function getObjectDetailQuery(
+	id: string,
+	client?: PoolClient
+): Promise<EmisObjectDetail | null> {
+	const db = getDb(client);
 	const objectResult = await db.query(
 		`SELECT
 			o.id,

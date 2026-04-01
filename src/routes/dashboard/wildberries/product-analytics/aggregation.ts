@@ -10,7 +10,16 @@ import { asFactRow } from './types';
 
 function num(v: unknown): number {
 	if (typeof v === 'number' && Number.isFinite(v)) return v;
+	if (typeof v === 'string') {
+		const n = parseFloat(v);
+		if (Number.isFinite(n)) return n;
+	}
 	return 0;
+}
+
+// Negative values are ETL sentinel (-3 = "data unavailable"). Clamp to 0.
+function numPos(v: unknown): number {
+	return Math.max(0, num(v));
 }
 
 function str(v: unknown): string {
@@ -70,10 +79,10 @@ export function aggregateProducts(rows: Record<string, JsonValue>[]): ProductSum
 			order_sum += num(r.order_sum);
 			buyout_count += num(r.buyout_count);
 			buyout_sum += num(r.buyout_sum);
-			lost_orders_count += num(r.lost_orders_count);
-			lost_orders_sum += num(r.lost_orders_sum);
-			lost_buyouts_count += num(r.lost_buyouts_count);
-			lost_buyouts_sum += num(r.lost_buyouts_sum);
+			lost_orders_count += numPos(r.lost_orders_count);
+			lost_orders_sum += numPos(r.lost_orders_sum);
+			lost_buyouts_count += numPos(r.lost_buyouts_count);
+			lost_buyouts_sum += numPos(r.lost_buyouts_sum);
 			to_client_count += num(r.to_client_count);
 			from_client_count += num(r.from_client_count);
 			add_to_wishlist_count += num(r.add_to_wishlist_count);
@@ -197,7 +206,14 @@ export function getDailyTotals(rows: Record<string, JsonValue>[]): DailyTotal[] 
 		if (!dt) continue;
 		let day = byDate.get(dt);
 		if (!day) {
-			day = { date: dt, order_count: 0, order_sum: 0, buyout_count: 0, buyout_sum: 0, open_count: 0 };
+			day = {
+				date: dt,
+				order_count: 0,
+				order_sum: 0,
+				buyout_count: 0,
+				buyout_sum: 0,
+				open_count: 0
+			};
 			byDate.set(dt, day);
 		}
 		day.order_count += num(row.order_count);

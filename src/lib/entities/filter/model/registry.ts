@@ -1,4 +1,5 @@
-import type { FilterSpec, FilterValues, FilterValue } from './types';
+import type { FilterSpec, FilterValues, ResolvedFilterSpec, FilterRuntimeContext } from './types';
+import { normalizeFilterScope } from './types';
 
 /**
  * FilterRegistry - manages filter specifications.
@@ -28,6 +29,95 @@ const state: RegistryState = {
 	specs: new Map(),
 	defaults: {}
 };
+
+type WorkspaceRegistryState = {
+	runtimes: Map<string, Map<string, ResolvedFilterSpec>>;
+};
+
+const workspaceState: WorkspaceRegistryState = {
+	runtimes: new Map()
+};
+
+function makeRuntimeKey(workspaceId: string, ownerId: string): string {
+	return `${workspaceId}::${ownerId}`;
+}
+
+export function makeRegistrationKey(
+	workspaceId: string,
+	ownerId: string,
+	filterId: string
+): string {
+	return `${workspaceId}:${ownerId}:${filterId}`;
+}
+
+export function resolveFilterSpecsForRuntime(
+	context: FilterRuntimeContext,
+	specs: FilterSpec[]
+): ResolvedFilterSpec[] {
+	return specs.map((spec) => ({
+		...spec,
+		filterId: spec.id,
+		scope: normalizeFilterScope(spec.scope),
+		registrationKey: makeRegistrationKey(context.workspaceId, context.ownerId, spec.id),
+		workspaceId: context.workspaceId,
+		ownerId: context.ownerId,
+		sharedKey: spec.sharedKey,
+		urlKey: spec.urlKey ?? spec.id
+	}));
+}
+
+export function registerWorkspaceFilters(
+	context: FilterRuntimeContext,
+	specs: FilterSpec[]
+): ResolvedFilterSpec[] {
+	const resolved = resolveFilterSpecsForRuntime(context, specs);
+	const runtimeKey = makeRuntimeKey(context.workspaceId, context.ownerId);
+	const runtimeSpecs =
+		workspaceState.runtimes.get(runtimeKey) ?? new Map<string, ResolvedFilterSpec>();
+
+	for (const spec of resolved) {
+		runtimeSpecs.set(spec.registrationKey, spec);
+	}
+
+	workspaceState.runtimes.set(runtimeKey, runtimeSpecs);
+	return resolved;
+}
+
+export function unregisterWorkspaceFilters(
+	context: FilterRuntimeContext,
+	registrationKeys: string[]
+): void {
+	const runtimeKey = makeRuntimeKey(context.workspaceId, context.ownerId);
+	const runtimeSpecs = workspaceState.runtimes.get(runtimeKey);
+	if (!runtimeSpecs) return;
+
+	for (const key of registrationKeys) {
+		runtimeSpecs.delete(key);
+	}
+
+	if (runtimeSpecs.size === 0) {
+		workspaceState.runtimes.delete(runtimeKey);
+	}
+}
+
+export function getResolvedSpecsForRuntime(context: FilterRuntimeContext): ResolvedFilterSpec[] {
+	const runtimeKey = makeRuntimeKey(context.workspaceId, context.ownerId);
+	return Array.from(workspaceState.runtimes.get(runtimeKey)?.values() ?? []);
+}
+
+export function getResolvedSpecForFilter(
+	context: FilterRuntimeContext,
+	filterId: string
+): ResolvedFilterSpec | undefined {
+	return getResolvedSpecsForRuntime(context).find((spec) => spec.filterId === filterId);
+}
+
+export function getResolvedSpecsForTarget(
+	context: FilterRuntimeContext,
+	targetId: string
+): ResolvedFilterSpec[] {
+	return getResolvedSpecsForRuntime(context).filter((spec) => targetId in spec.bindings);
+}
 
 /**
  * Register filter specifications.
@@ -74,9 +164,7 @@ export function getSpecsByScope(scope: 'global' | 'page'): FilterSpec[] {
  * Get specs that apply to a specific dataset.
  */
 export function getSpecsForDataset(datasetId: string): FilterSpec[] {
-	return Array.from(state.specs.values()).filter(
-		(s) => s.bindings && datasetId in s.bindings
-	);
+	return Array.from(state.specs.values()).filter((s) => s.bindings && datasetId in s.bindings);
 }
 
 /**
@@ -106,6 +194,7 @@ export function hasFilter(filterId: string): boolean {
 export function clearRegistry(): void {
 	state.specs.clear();
 	state.defaults = {};
+	workspaceState.runtimes.clear();
 }
 
 /**

@@ -1,5 +1,5 @@
 import type { ProductSummary } from './types';
-import { formatNumber, formatCurrency, formatPercent } from './utils';
+import { formatNumber, formatCurrency, formatPercent } from '$shared/utils';
 
 export type RecommendationType =
 	| 'restock'
@@ -67,7 +67,11 @@ export function analyzeProduct(product: ProductSummary): Recommendation[] {
 	}
 
 	// 4. PRICE_DOWN: low cart conversion with decent views
-	if (product.add_to_cart_percent > 0 && product.add_to_cart_percent < 3 && product.open_count > 50) {
+	if (
+		product.add_to_cart_percent > 0 &&
+		product.add_to_cart_percent < 3 &&
+		product.open_count > 50
+	) {
 		recs.push({
 			type: 'price_down',
 			severity: 'warning',

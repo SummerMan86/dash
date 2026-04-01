@@ -63,15 +63,15 @@
 {#if $openDesktop}
 	<aside
 		class={cn(
-			'hidden lg:flex lg:flex-col lg:sticky lg:top-0 lg:h-screen lg:shrink-0',
+			'hidden lg:sticky lg:top-0 lg:flex lg:h-screen lg:shrink-0 lg:flex-col',
 			'border-r border-sidebar-border bg-sidebar text-sidebar-foreground',
-			'transition-[width] duration-200 ease-out overflow-hidden',
+			'overflow-hidden transition-[width] duration-200 ease-out',
 			className
 		)}
 		style="width: {desktopWidth}px;"
 		data-collapsed={$collapsed}
 	>
-		<div class="flex h-full flex-col overflow-y-auto overflow-x-hidden">
+		<div class="flex h-full flex-col overflow-x-hidden overflow-y-auto">
 			{#if children}
 				{@render children()}
 			{/if}
@@ -84,7 +84,7 @@
 	<!-- Overlay -->
 	<button
 		type="button"
-		class="fixed inset-0 z-40 bg-black/50 lg:hidden animate-in fade-in duration-200"
+		class="animate-in fade-in fixed inset-0 z-40 bg-black/50 duration-200 lg:hidden"
 		aria-label="Close sidebar overlay"
 		onclick={() => close()}
 	></button>
@@ -93,7 +93,7 @@
 	<div
 		class={cn(
 			'fixed inset-y-0 z-50 lg:hidden',
-			'bg-sidebar text-sidebar-foreground shadow-xl border-r border-sidebar-border',
+			'border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-xl',
 			'animate-in slide-in-from-left duration-200',
 			side === 'left' ? 'left-0' : 'right-0',
 			className
@@ -107,17 +107,22 @@
 		<div class="flex items-center justify-end p-2">
 			<button
 				type="button"
-				class="inline-flex h-8 w-8 items-center justify-center rounded-md text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-foreground transition-colors"
+				class="inline-flex h-8 w-8 items-center justify-center rounded-md text-sidebar-muted transition-colors hover:bg-sidebar-hover hover:text-sidebar-foreground"
 				aria-label="Close sidebar"
 				onclick={() => close()}
 			>
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-					<path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+					<path
+						d="M18 6L6 18M6 6l12 12"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+					/>
 				</svg>
 			</button>
 		</div>
 
-		<div class="px-3 pb-3 overflow-y-auto">
+		<div class="overflow-y-auto px-3 pb-3">
 			{#if children}
 				{@render children()}
 			{/if}

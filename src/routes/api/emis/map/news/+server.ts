@@ -2,7 +2,12 @@ import { json, type RequestHandler } from '@sveltejs/kit';
 
 import { mapNewsQuerySchema } from '$entities/emis-map';
 import { EmisError } from '$lib/server/emis/infra/errors';
-import { handleEmisRoute, parseIntParam } from '$lib/server/emis/infra/http';
+import {
+	EMIS_DEFAULT_MAP_LIMIT,
+	EMIS_MAX_MAP_LIMIT,
+	handleEmisRoute,
+	parseStrictIntParam
+} from '$lib/server/emis/infra/http';
 import { mapNewsQuery } from '$lib/server/emis/modules/map/queries';
 
 function parseMapNewsQuery(url: URL) {
@@ -15,7 +20,12 @@ function parseMapNewsQuery(url: URL) {
 		dateFrom: url.searchParams.get('dateFrom') || undefined,
 		dateTo: url.searchParams.get('dateTo') || undefined,
 		objectId: url.searchParams.get('objectId') || undefined,
-		limit: parseIntParam(url.searchParams.get('limit'), 200, { min: 1, max: 500 })
+		limit: parseStrictIntParam(url.searchParams.get('limit'), EMIS_DEFAULT_MAP_LIMIT, {
+			min: 1,
+			max: EMIS_MAX_MAP_LIMIT,
+			paramName: 'limit',
+			code: 'INVALID_MAP_NEWS_LIMIT'
+		})
 	});
 
 	if (!parsed.success) {

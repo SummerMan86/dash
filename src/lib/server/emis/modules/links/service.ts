@@ -1,5 +1,7 @@
 import type { AttachNewsObjectsSchemaInput, UpdateNewsObjectLinkInput } from '$entities/emis-link';
 
+import type { EmisWriteContext } from '../../infra/audit';
+import { insertAuditLog } from '../../infra/audit';
 import { EmisError } from '../../infra/errors';
 import { withTransaction } from '../../infra/db';
 import { newsExists } from '../news/repository';
@@ -8,7 +10,8 @@ import { upsertNewsObjectLinks, updateNewsObjectLink, deleteNewsObjectLink } fro
 
 export async function attachNewsObjectsService(
 	newsId: string,
-	input: AttachNewsObjectsSchemaInput
+	input: AttachNewsObjectsSchemaInput,
+	context: EmisWriteContext
 ) {
 	return withTransaction(async (client) => {
 		if (!(await newsExists(newsId, client))) {
@@ -21,14 +24,33 @@ export async function attachNewsObjectsService(
 			}
 		}
 
-		await upsertNewsObjectLinks(newsId, input.links, client);
+		const links = await upsertNewsObjectLinks(newsId, input.links, context.actorId, client);
+		for (const link of links) {
+			await insertAuditLog(
+				{
+					entityType: 'news_object_link',
+					entityId: link.id,
+					action: 'attach',
+					payload: {
+						newsId: link.newsId,
+						objectId: link.objectId,
+						linkType: link.linkType,
+						isPrimary: link.isPrimary,
+						confidence: link.confidence
+					}
+				},
+				context,
+				client
+			);
+		}
 	});
 }
 
 export async function updateNewsObjectLinkService(
 	newsId: string,
 	objectId: string,
-	patch: UpdateNewsObjectLinkInput
+	patch: UpdateNewsObjectLinkInput,
+	context: EmisWriteContext
 ) {
 	return withTransaction(async (client) => {
 		if (!(await newsExists(newsId, client))) {
@@ -37,12 +59,47 @@ export async function updateNewsObjectLinkService(
 		if (!(await objectExists(objectId, client))) {
 			throw new EmisError(404, 'OBJECT_NOT_FOUND', 'Object not found');
 		}
-		const updated = await updateNewsObjectLink(newsId, objectId, patch, client);
+		const updated = await updateNewsObjectLink(newsId, objectId, patch, context.actorId, client);
 		if (!updated) throw new EmisError(404, 'LINK_NOT_FOUND', 'News-object link not found');
+		await insertAuditLog(
+			{
+				entityType: 'news_object_link',
+				entityId: updated.id,
+				action: 'update',
+				payload: {
+					newsId: updated.newsId,
+					objectId: updated.objectId,
+					linkType: updated.linkType,
+					patch
+				}
+			},
+			context,
+			client
+		);
 	});
 }
 
-export async function deleteNewsObjectLinkService(newsId: string, objectId: string) {
-	const deleted = await deleteNewsObjectLink(newsId, objectId);
-	if (!deleted) throw new EmisError(404, 'LINK_NOT_FOUND', 'News-object link not found');
+export async function deleteNewsObjectLinkService(
+	newsId: string,
+	objectId: string,
+	context: EmisWriteContext
+) {
+	return withTransaction(async (client) => {
+		const deleted = await deleteNewsObjectLink(newsId, objectId, client);
+		if (!deleted) throw new EmisError(404, 'LINK_NOT_FOUND', 'News-object link not found');
+		await insertAuditLog(
+			{
+				entityType: 'news_object_link',
+				entityId: deleted.id,
+				action: 'detach',
+				payload: {
+					newsId: deleted.newsId,
+					objectId: deleted.objectId,
+					linkType: deleted.linkType
+				}
+			},
+			context,
+			client
+		);
+	});
 }

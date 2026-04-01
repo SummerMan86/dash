@@ -1,0 +1,11 @@
+node_modules
+.svelte-kit
+.env
+.env.*
+!.env.production.example
+archive/
+docs/
+static/emis-map/offline/
+.git
+.vscode
+*.md

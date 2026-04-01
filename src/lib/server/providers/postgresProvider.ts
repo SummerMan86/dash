@@ -6,21 +6,25 @@ import { CONTRACT_VERSION } from '$entities/dataset';
 import pg from 'pg';
 import { getPgPool } from '$lib/server/db/pg';
 
-// pg returns bigint (OID 20) as string by default to avoid precision loss.
-// Our dashboard metrics fit safely in JS number (< 2^53), so parse as float.
+// pg returns bigint (OID 20) and numeric (OID 1700) as strings by default to avoid precision loss.
+// Our dashboard metrics fit safely in JS number (< 2^53), so parse them as float.
 pg.types.setTypeParser(20, (val: string) => parseFloat(val));
+pg.types.setTypeParser(1700, (val: string) => parseFloat(val));
 
 type ColumnType = DatasetField['type'];
 
 type DatasetSqlMapping = {
 	relation: { schema: string; table: string };
 	columns: Record<string, ColumnType>;
+	extraFields?: DatasetField[];
+	postProcessRows?: (rows: Array<Record<string, JsonValue>>) => Array<Record<string, JsonValue>>;
 };
 
 const DATASETS: Record<string, DatasetSqlMapping> = {
 	'wildberries.fact_product_office_day': {
-		relation: { schema: 'mart', table: 'fact_product_office_day' },
+		relation: { schema: 'mart_marketplace', table: 'fact_product_office_day' },
 		columns: {
+			seller_id: 'number',
 			nm_id: 'number',
 			chrt_id: 'number',
 			office_id: 'number',
@@ -41,8 +45,9 @@ const DATASETS: Record<string, DatasetSqlMapping> = {
 		}
 	},
 	'wildberries.fact_product_period': {
-		relation: { schema: 'mart', table: 'fact_product_day' },
+		relation: { schema: 'mart_marketplace', table: 'fact_product_day' },
 		columns: {
+			seller_id: 'number',
 			nm_id: 'number',
 			dt: 'date',
 			loaded_at: 'datetime',
@@ -144,42 +149,6 @@ const DATASETS: Record<string, DatasetSqlMapping> = {
 			updated_at: 'datetime'
 		}
 	},
-	'emis.ship_route_points': {
-		relation: { schema: 'mart_emis', table: 'vsl_route_point_hist' },
-		columns: {
-			route_point_id: 'number',
-			load_batch_id: 'number',
-			ship_hbk_id: 'number',
-			ship_id: 'number',
-			imo: 'number',
-			mmsi: 'number',
-			vessel_name: 'string',
-			vessel_type: 'string',
-			flag: 'string',
-			callsign: 'string',
-			route_date_utc: 'date',
-			point_seq_ship: 'number',
-			point_seq_day: 'number',
-			fetched_at: 'datetime',
-			loaded_at: 'datetime',
-			latitude: 'number',
-			longitude: 'number',
-			speed: 'number',
-			course: 'number',
-			heading: 'number',
-			prev_route_point_id: 'number',
-			prev_fetched_at: 'datetime',
-			prev_latitude: 'number',
-			prev_longitude: 'number',
-			gap_minutes_from_prev: 'number',
-			same_coordinates_as_prev: 'boolean',
-			next_route_point_id: 'number',
-			next_fetched_at: 'datetime',
-			next_latitude: 'number',
-			next_longitude: 'number',
-			gap_minutes_to_next: 'number'
-		}
-	},
 	'emis.ship_route_vessels': {
 		relation: { schema: 'mart', table: 'emis_ship_route_vessels' },
 		columns: {
@@ -200,32 +169,133 @@ const DATASETS: Record<string, DatasetSqlMapping> = {
 			last_longitude: 'number'
 		}
 	},
-	'emis.ship_route_segments': {
-		relation: { schema: 'mart_emis', table: 'vsl_route_segment_hist' },
+	'strategy.entity_overview': {
+		relation: { schema: 'mart_strategy', table: 'slobi_entity_overview' },
 		columns: {
-			ship_hbk_id: 'number',
-			ship_id: 'number',
-			imo: 'number',
-			mmsi: 'number',
-			vessel_name: 'string',
-			vessel_type: 'string',
-			flag: 'string',
-			callsign: 'string',
-			segment_seq_ship: 'number',
-			route_date_utc: 'date',
-			from_route_point_id: 'number',
-			to_route_point_id: 'number',
-			from_fetched_at: 'datetime',
-			to_fetched_at: 'datetime',
-			from_latitude: 'number',
-			from_longitude: 'number',
-			to_latitude: 'number',
-			to_longitude: 'number',
-			from_speed: 'number',
-			from_course: 'number',
-			from_heading: 'number',
-			gap_minutes: 'number',
-			same_coordinates_as_next: 'boolean'
+			strategy_entity_id: 'string',
+			source_run_id: 'string',
+			entity_origin: 'string',
+			entity_name: 'string',
+			entity_semantics: 'string',
+			binding_model: 'string',
+			resolution_status: 'string',
+			strategy_tactic_label: 'string',
+			ksu_flag: 'string',
+			active_flag: 'boolean',
+			department_code: 'string',
+			perspective_code: 'string',
+			horizon_code: 'string',
+			multi_perspective_flag: 'boolean',
+			has_confirmed_evidence_flag: 'boolean',
+			has_derived_only_flag: 'boolean',
+			document_count: 'number',
+			goal_count: 'number',
+			task_count: 'number',
+			kpi_count: 'number',
+			candidate_metric_count: 'number',
+			gap_count: 'number',
+			total_kpi_count: 'number',
+			kpi_with_target: 'number',
+			kpi_with_actual: 'number',
+			avg_achievement_pct: 'number',
+			weighted_score: 'number',
+			weight_pct: 'number',
+			weight_missing_flag: 'boolean',
+			coverage_items_total: 'number',
+			weak_entity_flag: 'boolean',
+			score_band: 'string'
+		}
+	},
+	'strategy.scorecard_overview': {
+		relation: { schema: 'mart_strategy', table: 'slobi_scorecard_overview' },
+		columns: {
+			department_code: 'string',
+			department_name: 'string',
+			department_order: 'number',
+			perspective_code: 'string',
+			perspective_name: 'string',
+			perspective_order: 'number',
+			horizon_code: 'string',
+			horizon_name: 'string',
+			horizon_order: 'number',
+			total_kpi_count: 'number',
+			kpi_with_target: 'number',
+			kpi_with_actual: 'number',
+			avg_achievement_pct: 'number',
+			weighted_score: 'number',
+			goal_count: 'number',
+			task_count: 'number',
+			gap_count: 'number',
+			weight_pct: 'number',
+			weight_missing_flag: 'boolean',
+			weight_as_of_date: 'date',
+			weighted_score_total: 'number',
+			missing_weight_rows: 'number'
+		}
+	},
+	'strategy.performance_detail': {
+		relation: { schema: 'mart_strategy', table: 'slobi_performance_detail' },
+		columns: {
+			performance_entity_key: 'string',
+			source_run_id: 'string',
+			strategy_entity_id: 'string',
+			entity_name: 'string',
+			entity_semantics: 'string',
+			department_code: 'string',
+			perspective_code: 'string',
+			horizon_code: 'string',
+			status_label: 'string',
+			year_num: 'number',
+			period_label: 'string',
+			fact_id: 'string',
+			doc_id: 'string',
+			fact_id_count: 'number',
+			entity_link_count: 'number',
+			fact_name: 'string',
+			fact_class: 'string',
+			metric_code: 'string',
+			unit: 'string',
+			target_value: 'number',
+			actual_value: 'number',
+			forecast_value: 'number',
+			threshold_value: 'number',
+			achievement_pct: 'number',
+			deviation_abs: 'number',
+			has_target_flag: 'boolean',
+			has_actual_flag: 'boolean',
+			created_at: 'datetime'
+		}
+	},
+	'strategy.cascade_detail': {
+		relation: { schema: 'mart_strategy', table: 'slobi_cascade_detail' },
+		columns: {
+			path_id: 'string',
+			source_run_id: 'string',
+			strategy_entity_id: 'string',
+			entity_name: 'string',
+			entity_semantics: 'string',
+			department_code: 'string',
+			perspective_code: 'string',
+			horizon_code: 'string',
+			cascade_group_key: 'string',
+			completeness_status: 'string',
+			path_status: 'string',
+			cycle_flag: 'boolean',
+			orphan_flag: 'boolean',
+			doc_id: 'string',
+			document_full_name: 'string',
+			document_type: 'string',
+			registry_matched_flag: 'boolean',
+			root_fact_id: 'string',
+			root_fact_name: 'string',
+			task_fact_id: 'string',
+			task_fact_name: 'string',
+			kpi_fact_id: 'string',
+			kpi_fact_name: 'string',
+			leaf_fact_id: 'string',
+			leaf_fact_name: 'string',
+			path_depth: 'number',
+			created_at: 'datetime'
 		}
 	}
 };
@@ -270,7 +340,8 @@ function castParam(param: string, colType: ColumnType): string {
 function exprToSql(expr: IrExpr, b: SqlBuilder, mapping: DatasetSqlMapping): string {
 	switch (expr.kind) {
 		case 'col': {
-			if (!mapping.columns[expr.name]) throw new Error(`postgresProvider: unknown column "${expr.name}"`);
+			if (!mapping.columns[expr.name])
+				throw new Error(`postgresProvider: unknown column "${expr.name}"`);
 			return qIdent(expr.name);
 		}
 		case 'lit': {
@@ -322,9 +393,14 @@ function exprToSql(expr: IrExpr, b: SqlBuilder, mapping: DatasetSqlMapping): str
 	}
 }
 
-function selectItemSql(item: IrSelectItem, b: SqlBuilder, mapping: DatasetSqlMapping): { sql: string; name?: string } {
+function selectItemSql(
+	item: IrSelectItem,
+	b: SqlBuilder,
+	mapping: DatasetSqlMapping
+): { sql: string; name?: string } {
 	// MVP restriction: select items should be simple columns (optional alias).
-	if (item.expr.kind !== 'col') throw new Error(`postgresProvider: only column select items supported in MVP`);
+	if (item.expr.kind !== 'col')
+		throw new Error(`postgresProvider: only column select items supported in MVP`);
 
 	const colName = item.expr.name;
 	if (!mapping.columns[colName]) throw new Error(`postgresProvider: unknown column "${colName}"`);
@@ -334,11 +410,17 @@ function selectItemSql(item: IrSelectItem, b: SqlBuilder, mapping: DatasetSqlMap
 	return { sql: as ? `${base} AS ${as}` : base, name: item.as ?? colName };
 }
 
-function orderBySql(orderBy: IrOrderBy[] | undefined, b: SqlBuilder, mapping: DatasetSqlMapping): string {
+function orderBySql(
+	orderBy: IrOrderBy[] | undefined,
+	b: SqlBuilder,
+	mapping: DatasetSqlMapping
+): string {
 	if (!orderBy?.length) return '';
 	const parts = orderBy.map((rule) => {
-		if (rule.expr.kind !== 'col') throw new Error(`postgresProvider: ORDER BY supports only columns in MVP`);
-		if (!mapping.columns[rule.expr.name]) throw new Error(`postgresProvider: unknown ORDER BY column "${rule.expr.name}"`);
+		if (rule.expr.kind !== 'col')
+			throw new Error(`postgresProvider: ORDER BY supports only columns in MVP`);
+		if (!mapping.columns[rule.expr.name])
+			throw new Error(`postgresProvider: unknown ORDER BY column "${rule.expr.name}"`);
 		return `${qIdent(rule.expr.name)} ${rule.dir.toUpperCase()}`;
 	});
 	return ` ORDER BY ${parts.join(', ')}`;
@@ -348,10 +430,28 @@ function inferFields(
 	mapping: DatasetSqlMapping,
 	items: Array<{ outputName: string; sourceCol: string }>
 ): DatasetField[] {
-	return items.map(({ outputName, sourceCol }) => ({
+	const fields = items.map(({ outputName, sourceCol }) => ({
 		name: outputName,
 		type: mapping.columns[sourceCol] ?? 'unknown'
 	}));
+
+	if (!mapping.extraFields?.length) return fields;
+
+	const knownNames = new Set(fields.map((field) => field.name));
+	for (const field of mapping.extraFields) {
+		if (knownNames.has(field.name)) continue;
+		fields.push(field);
+	}
+
+	return fields;
+}
+
+function serializeOrderBy(orderBy: IrOrderBy[] | undefined) {
+	if (!orderBy?.length) return undefined;
+
+	return orderBy.flatMap((rule) =>
+		rule.expr.kind === 'col' ? [{ field: rule.expr.name, dir: rule.dir }] : []
+	);
 }
 
 export const postgresProvider: Provider = {
@@ -396,7 +496,8 @@ export const postgresProvider: Provider = {
 
 		// pg returns `unknown` values. DatasetResponse requires JsonValue, so we pass through
 		// primitives and JSON-serializable values as-is (SvelteKit will JSON.stringify).
-		const rows = res.rows as Array<Record<string, JsonValue>>;
+		const rawRows = res.rows as Array<Record<string, JsonValue>>;
+		const rows = mapping.postProcessRows ? mapping.postProcessRows(rawRows) : rawRows;
 
 		return {
 			contractVersion: CONTRACT_VERSION,
@@ -406,7 +507,9 @@ export const postgresProvider: Provider = {
 			meta: {
 				executedAt: new Date().toISOString(),
 				tenantId: ctx.tenantId,
-				source: 'postgres'
+				source: 'postgres',
+				limit: typeof irQuery.limit === 'number' ? irQuery.limit : undefined,
+				sort: serializeOrderBy(irQuery.orderBy)
 			}
 		};
 	}

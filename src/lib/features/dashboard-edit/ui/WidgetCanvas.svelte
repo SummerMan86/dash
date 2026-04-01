@@ -397,10 +397,7 @@
 	});
 </script>
 
-<div
-	bind:this={gridEl}
-	class={cn('grid-stack', className)}
->
+<div bind:this={gridEl} class={cn('grid-stack', className)}>
 	{#each widgets as item (item.id)}
 		<div
 			class="grid-stack-item"
