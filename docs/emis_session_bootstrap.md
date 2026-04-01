@@ -127,6 +127,7 @@
   Активный backlog, разбитый на MVE closeout и post-MVE tracks.
 - `emis_agent_operating_model.md`
   Agent operating model: роли, границы, escalation rules и рекомендуемые модели.
+  Здесь же лежат canonical local Git / worktree rules для параллельной работы нескольких агентов.
 - `../src/routes/emis/AGENTS.md`
   Workspace route contract для `/emis` UI/orchestration layer.
 - `../src/lib/widgets/emis-map/AGENTS.md`
@@ -165,6 +166,12 @@
 3. `emis_architecture_review.md`
 4. `emis_mr_template.md`
 5. `../src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
+
+### Задача по parallel agent work / local Git orchestration
+
+1. Этот bootstrap
+2. `emis_agent_operating_model.md`
+3. `emis_mr_template.md`
 
 ### Задача по `/emis` workspace UI
 
