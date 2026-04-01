@@ -2,38 +2,54 @@
 
 ## Как это работает
 
-При каждой задаче, которая изменяет код, основной агент (Claude Opus) запускает **Review Gate** — параллельную проверку через 4 субагента. Каждый субагент получает `git diff` и анализирует изменения в своей области.
+Claude Opus выступает как **lead-orchestrator** — принимает задачу, реализует, запускает Review Gate, агрегирует результаты. Тебе не нужно вручную роутить сообщения между агентами.
 
 ```
 Ты даёшь задачу
     │
     ▼
-Основной агент выполняет работу
+Claude Opus (lead-orchestrator)
+    │
+    ├─ планирует и реализует
+    │  (или spawn worker в worktree для параллельной работы)
     │
     ▼
 git diff (что изменилось)
     │
-    ├─► security-reviewer    (Claude Sonnet)  ─ уязвимости
-    ├─► architecture-reviewer (Claude Sonnet) ─ архитектура
-    ├─► docs-reviewer        (Claude Sonnet)  ─ документация
-    └─► codex-reviewer       (Codex/GPT)     ─ второе мнение
+    ├─► security-reviewer    (Sonnet)    ─ уязвимости + write-side guardrails
+    ├─► architecture-reviewer (Sonnet)   ─ архитектура + complexity guardrails
+    ├─► docs-reviewer        (Sonnet)    ─ документация + contracts + runtime
+    ├─► codex-reviewer       (Codex/GPT) ─ качество кода + naming + conventions
+    └─► ui-reviewer          (Sonnet/Opus, если фронтенд) ─ рендеринг, a11y
     │
     ▼
-Сводка Review Gate
+Claude Opus агрегирует findings
+    │
+    ├─ исправляет non-critical issues
+    ├─ эскалирует CRITICAL к тебе
+    │
+    ▼
+Ты подтверждаешь merge (или request changes)
 ```
 
-Субагенты **read-only** — они анализируют, но не редактируют файлы. Исправления делает основной агент после твоего подтверждения.
+Субагенты-ревьюеры **read-only** — они анализируют, но не редактируют файлы. Исправления делает Claude Opus после твоего подтверждения.
 
-## Текущие субагенты
+Для критических изменений (новый contract/schema/cross-module) ты можешь передать diff отдельному Codex/GPT-5.4 как внешнему `lead-integrator`.
 
-| Файл                       | Роль          | Модель        | Что проверяет                                                 |
-| -------------------------- | ------------- | ------------- | ------------------------------------------------------------- |
-| `security-reviewer.md`     | Безопасность  | Claude Sonnet | SQL injection, XSS, утечки секретов, SSRF, command injection  |
-| `architecture-reviewer.md` | Архитектура   | Claude Sonnet | FSD boundaries, server isolation, IR contract, import aliases |
-| `docs-reviewer.md`         | Документация  | Claude Sonnet | Актуальность AGENTS.md, CLAUDE.md, schema docs                |
-| `codex-reviewer.md`        | Второе мнение | Codex (GPT)   | Общий аудит через `codex exec --sandbox read-only`            |
-| `ui-reviewer.md`           | UI smoke-test | Claude Sonnet | Рендеринг, console errors, базовые клики (Chrome)             |
-| `ui-reviewer-deep.md`      | UI/UX эксперт | Claude Opus   | Layout, a11y, interaction flows, design system compliance     |
+## EMIS Operating Model Mapping
+
+Имена агентов здесь привязаны к built-in dispatch Claude Code. В EMIS operating model используются алиасы, расширяющие scope.
+
+Canonical role definitions: [`docs/emis_agent_roles.md`](../../docs/emis_agent_roles.md)
+
+| Built-in name (dispatch) | EMIS alias | Модель | Что проверяет |
+| ------------------------- | ----------------------- | ------------- | ------------- |
+| `security-reviewer` | `security-reviewer` | Claude Sonnet | SQL injection, XSS, секреты, SSRF, write-side guardrails |
+| `architecture-reviewer` | `architecture-reviewer` | Claude Sonnet | FSD boundaries, server isolation, EMIS layers, complexity guardrails |
+| `docs-reviewer` | `docs-contracts-reviewer` | Claude Sonnet | AGENTS.md, CLAUDE.md, schema docs, RUNTIME_CONTRACT, schema_catalog |
+| `codex-reviewer` | `code-reviewer` | Codex (GPT) | Naming, framework conventions, maintainability via `codex exec` |
+| `ui-reviewer` | `ui-reviewer` (smoke) | Claude Sonnet | Рендеринг, console errors, базовые клики (Chrome) |
+| `ui-reviewer-deep` | `ui-reviewer` (deep) | Claude Opus | Layout, a11y, interaction flows, design system compliance |
 
 UI-ревьюеры — **условные**: запускаются только при изменениях фронтенда (`.svelte`, `.css`, routes) и только если dev server запущен. Требуют Chrome-расширение.
 

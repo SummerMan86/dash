@@ -20,137 +20,161 @@ Its goals:
 
 The recommended baseline is intentionally small:
 
-1. `user-orchestrator`
-2. `lead-integrator`
-3. `architecture-reviewer`
-4. `security-reviewer`
-5. `docs-contracts-reviewer`
-6. `code-reviewer`
-7. `worker`
-8. `ui-reviewer` only when frontend changes are involved
+1. `user` — task owner, final merge authority
+2. `lead-orchestrator` (Claude Opus) — consolidated lead + orchestrator + worker
+3. `architecture-reviewer` (Claude Sonnet subagent)
+4. `security-reviewer` (Claude Sonnet subagent)
+5. `docs-reviewer` / EMIS alias: `docs-contracts-reviewer` (Claude Sonnet subagent)
+6. `codex-reviewer` / EMIS alias: `code-reviewer` (Codex/GPT via `codex exec`)
+7. `worker` (Claude subagent in worktree, when parallel work needed)
+8. `ui-reviewer` / `ui-reviewer-deep` — only when frontend changes are involved
 
-The `user-orchestrator` is explicit here because the current collaboration model assumes independent agent conversations plus local Git as the transport layer.
+Agent names follow the Claude Code built-in dispatch names (`.claude/agents/`). EMIS aliases are used in discussions and handoff notes where the built-in name does not fully convey the EMIS-specific scope.
 
-Without that role, the operating model leaves unclear who routes tasks, branch references, and review feedback between agents.
+Full role mapping: [emis_agent_roles.md — Role Mapping](./emis_agent_roles.md#role-mapping).
 
-In the intended default setup:
+### Default mode: consolidated lead-orchestrator
 
-- `lead-integrator` owns task decomposition, integration judgment, and final verdict
-- Claude Agents Team owns most bounded implementation work as the default `worker` layer
-- reviewer roles validate the produced diff before the task is considered done
-- `code-reviewer` gives a GPT-5.4 code-quality pass focused on implementation quality rather than architecture ownership
+In the default setup, **Claude Opus** consolidates the roles of `lead-integrator`, `user-orchestrator` (for agent-to-agent routing), and `worker` into a single persistent session:
 
-Role names are intentionally close to the repository-level Review Gate, but not identical.
-This document uses EMIS-first names and defines explicit aliases in section 8 before merge/review work starts.
+- receives the task from the user
+- decomposes and plans the implementation
+- implements directly or spawns worker subagents in worktrees
+- spawns all reviewer subagents in parallel after implementation
+- aggregates findings and applies fixes or escalates to the user
+- `codex-reviewer` (via `codex exec --sandbox read-only`) provides the independent cross-model second opinion
+
+The user retains final authority over:
+
+- merge decisions
+- scope changes and priority
+- critical escalations (see section 3)
+
+### When to use a separate external lead
+
+For critical changes that benefit from a fully independent integration review, the user may route the diff to a separate GPT-5.4 / Codex session as `lead-integrator`. This is recommended when:
+
+- a new shared contract or DB schema is introduced
+- the change crosses multiple EMIS modules or alters operational vs BI/read-side boundaries
+- the user wants an independent architectural verdict from a different model family
+
+In this mode, the user acts as `user-orchestrator` and routes handoff notes between Claude Opus (worker) and Codex (lead) manually.
 
 Do not split the system into too many permanent specialists unless the project becomes materially larger.
 At the current scale, map-specific, BI-specific, or DB-specific reviewers would create more coordination overhead than value.
 
 ## 3. Primary Operating Loop
 
-The default operating loop is:
+### Default mode: consolidated (Claude Opus as lead-orchestrator)
 
-1. A new task arrives.
-2. `lead-integrator` clarifies scope, defines bounded subtasks, and identifies touch points.
-3. The subtasks go to the `worker` layer, which by default means Claude Agents Team.
-4. Workers implement their slices in separate branches/worktrees and hand back a structured summary.
-5. Reviewer roles inspect the produced diff:
-   - `architecture-reviewer`
-   - `security-reviewer`
-   - `docs-contracts-reviewer`
-   - `code-reviewer`
-   - `ui-reviewer` when frontend changes are involved
-6. `lead-integrator` aggregates findings and gives the final verdict:
-   - `approve`
-   - `request changes`
-   - `needs design decision`
-7. If review requests changes, the task goes back to the worker layer.
-8. If the verdict is `approve`, the change is ready for integration.
+```
+User → task
+         ↓
+  Claude Opus (lead-orchestrator)
+    1. Clarifies scope, plans implementation
+    2. Implements directly (or spawns worker subagents in worktrees)
+    3. Spawns reviewer subagents in parallel:
+       ├─ architecture-reviewer  (Sonnet)
+       ├─ security-reviewer      (Sonnet)
+       ├─ docs-reviewer          (Sonnet)
+       ├─ codex-reviewer         (Codex/GPT via codex exec)
+       └─ ui-reviewer            (Sonnet/Opus, if frontend changed)
+    4. Aggregates findings
+    5. Applies fixes or escalates to user
+         ↓
+  User → confirms merge (or requests changes)
+```
 
-When agents are running in separate windows or separate tools, the `user-orchestrator` remains the communication bridge between them.
+The user does not need to route messages between agents — Claude Opus handles all inter-agent communication within one session.
+
+### Escalation to user
+
+Claude Opus escalates to the user (instead of self-approving) when:
+
+- review findings include `CRITICAL` severity
+- the task requires a scope change or new priority decision
+- the change introduces a new shared contract, DB schema, or cross-module boundary shift
+- `codex-reviewer` and Claude reviewers produce conflicting findings
+- the implementation requires a design decision not covered by existing docs
+
+### External lead mode (optional)
+
+For critical changes, the user may route the diff to a separate Codex/GPT-5.4 session:
+
+1. Claude Opus implements and hands off via [worker handoff template](./emis_worker_handoff_template.md).
+2. User passes the handoff + `base..feature` diff to the external lead.
+3. External lead reviews and returns verdict.
+4. User routes verdict back to Claude Opus.
+
+This mode preserves full model-family independence for the integration decision.
 
 ## 4. Persistent vs On-Demand
 
-### Persistent agents
+### Persistent (lives across tasks within one session)
 
-These are worth keeping alive within one session because they own long-lived invariants:
+- **Claude Opus** (`lead-orchestrator`) — the main session, holds full project context, orchestrates everything
 
-- `lead-integrator`
+### Persistent subagents (spawned once, reused via SendMessage)
+
+These are spawned on first review and kept alive for subsequent tasks in the same session:
+
 - `architecture-reviewer`
 - `security-reviewer`
-- `docs-contracts-reviewer`
-- `code-reviewer`
+- `docs-reviewer`
+- `codex-reviewer`
 
-### On-demand agents
+### On-demand subagents
 
-These should run only when the task actually needs them:
+These are spawned only when the task needs them:
 
-- `ui-reviewer`
-- `worker`
-
-Reason:
-
-- UI review is not necessary for backend-only or docs-only changes.
-- Workers should own a bounded slice, finish it, and hand the result back.
+- `ui-reviewer` / `ui-reviewer-deep` — only for frontend changes
+- `worker` — only when the task needs parallel implementation in a separate worktree
 
 ## 5. Role Definitions
 
-### 5.0. `user-orchestrator`
+Full role definitions for reviewer and worker agents — mission, scope, checks, output format, escalation rules, and constraints — are in **[emis_agent_roles.md](./emis_agent_roles.md)**.
+
+This section defines the roles that are not implemented as `.claude/agents/` subagents.
+
+### 5.0. `user`
 
 **Mission**
 
-Stay in contact with each independent agent and route work between them.
-
-**Why this context must stay explicit**
-
-- Independent agents do not automatically see each other's local conversations.
-- Local Git is the shared transport, but the user remains the communication bridge.
+Own the project, set priorities, confirm merges.
 
 **Scope**
 
-- assign tasks
-- provide branch names, commit ranges, and handoff context
-- decide when work goes to review
-- decide when approved work is merged
-
-**Main checks**
-
-- every worker has a bounded task and a target branch
-- the lead receives the correct base branch and feature branch for review
-- unresolved review comments are routed back to the correct agent
-
-**Escalate when**
-
-- two agents claim the same ownership slice;
-- review feedback conflicts across agents;
-- the branch structure no longer reflects the intended integration order.
+- assign tasks to Claude Opus
+- confirm or reject merge after review summary
+- escalation decisions when Claude Opus flags them
+- optionally route critical diffs to an external lead (Codex/GPT-5.4)
 
 **Do not**
 
-- assume independent agents can see or coordinate with each other automatically;
-- treat local Git history as self-explanatory without a short handoff.
+- need to manually route messages between subagents (Claude Opus handles that)
+- need to copy-paste diffs or handoff notes between windows in default mode
 
-### 5.1. `lead-integrator`
+### 5.1. `lead-orchestrator` (Claude Opus)
 
 **Mission**
 
-Own the whole EMIS change as a system, not just as a diff.
+Own the whole EMIS change as a system. Decompose, implement, orchestrate reviews, aggregate findings, and either fix or escalate.
 
-**Why this context must stay separate**
+**Why consolidated**
 
-- It carries the full architecture map.
-- It decides placement, boundaries, and acceptable complexity.
-- It is responsible for final approve/reject and tradeoff decisions.
+- Eliminates the user-as-message-broker bottleneck for routine tasks.
+- Claude Opus holds the full project context within one session.
+- `codex-reviewer` (via `codex exec`) provides the independent cross-model review signal.
+- Subagent reviewers (Sonnet) provide specialized independent checks.
 
 **Scope**
 
-- whole diff
-- task decomposition and ownership split
-- cross-layer consequences
-- architectural placement
-- complexity control
-- integration of worker outputs
-- final decision on approve / request changes / needs redesign
+- task decomposition and planning
+- implementation (directly or via worker subagents)
+- spawning and coordinating reviewer subagents
+- aggregating review findings
+- applying fixes for non-critical findings
+- escalating to user for critical findings or scope decisions
 
 **Main checks**
 
@@ -159,260 +183,37 @@ Own the whole EMIS change as a system, not just as a diff.
 - does the change respect EMIS operational vs BI/read-side boundaries?
 - does the task need follow-up refactoring before more feature growth?
 
-**Escalate when**
+**Escalate to user when**
 
-- the task changes the placement of responsibilities between layers;
-- a file is becoming a god-component or god-module;
-- a change introduces a new contract or affects several slices at once;
-- workers disagree or produce conflicting implementations.
+- review findings include `CRITICAL` severity
+- the task requires a scope change or priority decision
+- a new shared contract, DB schema, or cross-module boundary shift is introduced
+- `codex-reviewer` and Claude reviewers produce conflicting findings
+- a design decision is not covered by existing docs
 
 **Do not**
 
-- micromanage trivial implementation details;
-- duplicate all specialized review work;
-- let "it works" override structural regressions.
+- self-approve and merge without user confirmation
+- skip Review Gate for code changes
+- suppress or downplay `CRITICAL` findings from any reviewer
+- let "it works" override structural regressions
 
-### 5.2. `architecture-reviewer`
+### 5.2. `lead-integrator` (external, optional)
+
+**When used**
+
+Only when the user explicitly routes a diff to a separate Codex/GPT-5.4 session for an independent integration verdict. See section 3 "External lead mode".
 
 **Mission**
 
-Check boundaries, imports, layering, and complexity drift.
-
-**Why this context must stay separate**
-
-- Architecture drift is usually gradual and easy to miss in feature work.
-- This role should focus only on structural correctness, not product behavior.
+Provide an independent integration review from a different model family.
 
 **Scope**
 
-- changed files
-- direct imports around changed files
-- FSD boundaries
-- server-only isolation
-- EMIS route/service/query/repository boundaries
-- complexity warnings for oversized files
-
-**Main checks**
-
-- `routes/api/emis/*` stay thin
-- SQL remains in `server/emis/modules/*`
-- `entities/emis-*` remain contracts/schemas/types only
-- client code does not import `$lib/server/*`
-- operational flows do not leak into dataset/IR abstraction without a real BI reason
-
-**Escalate when**
-
-- a route starts accumulating business logic;
-- a query/service boundary becomes blurred;
-- a file keeps growing instead of being decomposed;
-- a new shared abstraction is introduced without clear reuse pressure.
-
-**Do not**
-
-- comment on security unless it directly follows from a boundary issue;
-- block work over stylistic preferences alone.
-
-### 5.3. `security-reviewer`
-
-**Mission**
-
-Check EMIS changes for security regressions and unsafe data handling.
-
-**Why this context must stay separate**
-
-- Security review is orthogonal to architecture and should not be diluted by broader comments.
-
-**Scope**
-
-- changed files only
-- SQL safety
-- XSS / unsafe rendering
-- secrets
-- command injection
-- SSRF
-- write-side guardrails
-
-**Main checks**
-
-- all SQL stays parameterized
-- no raw SQL in routes
-- no unsafe `{@html}` without sanitization
-- no hardcoded secrets or leaked credentials
-- no untrusted URL fetches without validation
-- write-side flows do not silently accept unsafe defaults in production-shaped mode
-
-**Escalate when**
-
-- any critical issue appears;
-- a contract allows unsafe writes or destructive behavior;
-- a change weakens auditability.
-
-**Do not**
-
-- rewrite the whole task as a generic secure-coding lecture;
-- report non-security style observations as findings.
-
-### 5.4. `docs-contracts-reviewer`
-
-**Mission**
-
-Keep docs, DB truth, runtime contracts, and code in sync.
-
-**Why this context must stay separate**
-
-- In EMIS, docs are part of the architecture.
-- Drift between code and declared contracts accumulates silently and hurts onboarding.
-
-**Scope**
-
-- `AGENTS.md`
-- `docs/AGENTS.md`
-- `docs/emis_*`
-- `db/current_schema.sql`
-- `db/applied_changes.md`
-- `db/schema_catalog.md`
-- `src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
-- dataset contracts that surface into BI/read-side
-
-**Main checks**
-
-- new route or endpoint appears in docs where needed
-- schema changes update DB docs
-- runtime behavior changes update runtime contract docs
-- new active slices get local navigation docs when complexity justifies it
-
-**Escalate when**
-
-- the code changed a contract but docs still describe the old one;
-- a new active slice has no discoverable navigation entry;
-- a DB change is only reflected in code or in prose, but not both.
-
-**Do not**
-
-- request docs updates for trivial cosmetic changes;
-- treat docs as optional afterthoughts.
-
-### 5.5. `code-reviewer`
-
-**Mission**
-
-Review the diff for implementation quality, code clarity, framework conventions, and maintainability.
-
-**Why this context must stay separate**
-
-- Architecture review and code-quality review are related but not the same.
-- This role should focus on how the code is written, not on repo-wide ownership decisions.
-- It gives an explicit GPT-5.4 second opinion on code quality before final approval.
-
-**Scope**
-
-- changed files
-- implementation quality
-- naming quality
-- framework conventions
-- maintainability and local complexity
-- obvious unnecessary abstraction or duplication
-
-**Main checks**
-
-- naming is coherent and intention-revealing
-- Svelte code follows the repository's Svelte 5 runes direction where applicable
-- code avoids outdated patterns when the active codebase already has a better convention
-- logic is not harder to read than necessary
-- helper extraction and file shape are reasonable for the size of the change
-- no obvious wasteful or accidental complexity is introduced
-
-**Hard rules**
-
-- only report issues that materially affect readability, maintainability, framework correctness, or implementation quality
-- prefer concrete code-level findings over generic "best practices" advice
-- treat style-only nits as non-findings unless they hide a maintenance problem
-- if a formatter, linter, or type checker would catch it automatically, do not treat it as a high-value review finding by default
-
-**Escalate when**
-
-- the code technically works but is likely to create maintenance drag;
-- the implementation ignores established framework conventions;
-- a simpler implementation would materially reduce complexity;
-- a naming scheme makes the change hard to reason about.
-
-**Do not**
-
-- relitigate architecture ownership already covered by `lead-integrator` or `architecture-reviewer`;
-- block work over purely stylistic preference without a maintainability reason;
-- duplicate security findings as code-style comments.
-- turn the review into an abstract lecture about best practices without tying findings to the actual diff.
-
-### 5.6. `worker`
-
-**Mission**
-
-Implement one bounded slice quickly and hand it back cleanly.
-
-**Why this context must stay separate**
-
-- Workers should stay focused on execution, not on holding the whole project in memory.
-- In the default team model, this layer is primarily implemented by Claude Agents Team.
-
-**Scope**
-
-- one endpoint
-- one widget
-- one form
-- one BI page
-- one DB patch
-- one focused refactor slice
-
-**Required handoff**
-
-- what changed
-- which files were touched
-- what assumptions were made
-- which checks were run
-- what remains risky or unresolved
-
-**Escalate when**
-
-- the task crosses into another ownership slice;
-- placement is ambiguous;
-- the required fix becomes architectural rather than local.
-
-**Do not**
-
-- spread into unrelated files;
-- invent new abstractions "for the future";
-- silently rewrite the task.
-
-### 5.7. `ui-reviewer`
-
-**Mission**
-
-Check that a frontend change still loads, renders, and behaves coherently.
-
-**Why this context stays on-demand**
-
-- It is expensive compared to simple code review.
-- It is only useful when `.svelte`, route UI, form UX, or map interactions changed.
-
-**Scope**
-
-- blank screens
-- console errors
-- broken interactions
-- missing content
-- severe layout regressions
-- obvious accessibility failures in changed flows
-
-**Escalate when**
-
-- the page does not load;
-- console errors appear;
-- the changed flow is visually or interactively broken.
-
-**Do not**
-
-- block a task over subjective design taste alone;
-- comment on backend structure.
+- whole diff (`git diff base..feature`)
+- cross-layer consequences
+- architectural placement
+- final decision: approve / request changes / needs redesign
 
 ## 6. Non-Negotiable EMIS Invariants
 
@@ -445,64 +246,57 @@ This is especially important for:
 
 ## 8. Review Flow
 
-Recommended flow for code changes:
+### Default flow (consolidated lead-orchestrator)
 
-1. `lead-integrator` receives the task and decomposes it into bounded subtasks.
-2. `lead-integrator` assigns a bounded subtask to a worker.
-3. Before implementation, worker declares touch points and assumptions:
-   - files to change
-   - layers touched
-   - DB/docs impact
-4. Worker implements the slice in its ownership boundary.
-5. Worker runs the required local checks.
-6. Worker hands off the change with a short summary:
-   - what changed
-   - why the code lives here
-   - what remains risky
-7. Specialized reviewers inspect the diff:
-   - architecture
-   - security
-   - docs/contracts
-   - code quality/framework conventions
-   - UI if needed
-8. `lead-integrator` gives the final decision:
-   - `approve`
-   - `request changes`
-   - `needs design decision`
+1. User assigns task to Claude Opus.
+2. Claude Opus plans the implementation and declares touch points.
+3. Claude Opus implements (directly or via worker subagents).
+4. Claude Opus spawns reviewer subagents in parallel on the diff:
+   - `architecture-reviewer` (Sonnet)
+   - `security-reviewer` (Sonnet)
+   - `docs-reviewer` (Sonnet)
+   - `codex-reviewer` (Codex/GPT via `codex exec`)
+   - `ui-reviewer` if frontend changed (Sonnet or Opus)
+5. Claude Opus aggregates findings:
+   - fixes non-critical issues directly
+   - presents review summary to user
+   - escalates `CRITICAL` findings or design decisions
+6. User confirms merge or requests changes.
 
-By default, this means:
+### External lead flow (for critical changes)
 
-- `lead-integrator` decomposes and integrates
-- Claude Agents Team implements
-- reviewer roles validate before final accept
-- `code-reviewer` gives the dedicated GPT-5.4 implementation-quality pass
+1. Claude Opus implements and produces a [worker handoff](./emis_worker_handoff_template.md).
+2. User passes the handoff + branch range to external Codex/GPT-5.4 lead.
+3. External lead reviews and returns verdict via [review handoff](./emis_review_handoff_template.md).
+4. User routes verdict back to Claude Opus.
+5. Claude Opus applies fixes if needed, user confirms merge.
 
-### Required reviewer independence
+### Reviewer independence
 
-The lead and code-quality pass may use the same model family, but they must not collapse into one review voice.
+Independence is maintained through model diversity:
 
-Minimum rule set:
+- `codex-reviewer` runs via `codex exec --sandbox read-only` — a separate model (GPT) that sees only the diff, not the Claude Opus conversation context
+- `architecture-reviewer`, `security-reviewer`, `docs-reviewer` run as Sonnet subagents with their own isolated context — they receive the diff, not the full orchestrator reasoning
+- In external lead mode, the lead is a completely separate session/model
 
-- `lead-integrator` and `code-reviewer` must run as separate sessions/agents
-- `code-reviewer` reviews a concrete diff such as `git diff base..feature`, not just chat context
-- `code-reviewer` should not review its own implementation branch as the only quality gate
-- if the lead also authored non-trivial code, require at least one independent reviewer pass before approval
-- for small low-risk fixes, the lead may integrate directly, but the repository Review Gate still applies
+Minimum rules:
 
-The lead should be mandatory for:
+- `codex-reviewer` always reviews a concrete diff, not chat context
+- reviewer subagents are read-only — they do not modify files
+- Claude Opus must not suppress or downplay findings from any reviewer
+- for critical changes (see section 2), an external lead pass is recommended
 
-- new route or endpoint
-- new shared contract
-- new DB schema or published view changes
-- changes in `server/emis/modules/*`
-- changes that affect `/emis` workspace orchestration
-- changes that alter operational vs BI/read-side boundaries
+### Review tiers
 
-Lightweight review is acceptable for:
+Not every change needs the full review gate:
 
-- local UI polish without behavior change
-- copy/text/style-only fixes
-- small bugfix inside an existing bounded module
+| Tier | When | Review |
+| ---- | ---- | ------ |
+| **Tier 1** (cosmetic) | copy/text/style-only, no logic change | Claude Opus self-review + user confirm |
+| **Tier 2** (bounded) | single-module bugfix, small feature | Full Review Gate (4 reviewers) |
+| **Tier 3** (critical) | new route/contract/schema, cross-module | Full Review Gate + external lead recommended |
+
+Claude Opus determines the tier and includes it in the review summary. The user may override.
 
 ### Compatibility with repository Review Gate
 
@@ -513,21 +307,24 @@ For EMIS work, use the following mapping:
 - `lead-integrator` is the final approver and owner of integration decisions
 - `architecture-reviewer` maps directly to the root architecture review
 - `security-reviewer` maps directly to the root security review
-- `docs-contracts-reviewer` is the EMIS-specific extension of the root `docs-reviewer`
-- `code-reviewer` is the EMIS implementation-quality pass and, in practice, fulfills the root `codex-reviewer` second-opinion role
+- `docs-reviewer` (EMIS alias: `docs-contracts-reviewer`) is the EMIS-specific extension of the root docs review
+- `codex-reviewer` (EMIS alias: `code-reviewer`) is the EMIS implementation-quality pass via Codex/GPT-5.4
 
 Practical alias table:
 
-| EMIS operating model       | Root Review Gate role | Notes                                                                  |
-| -------------------------- | --------------------- | ---------------------------------------------------------------------- |
-| `architecture-reviewer`    | `architecture-reviewer` | same responsibility                                                    |
-| `security-reviewer`        | `security-reviewer`   | same responsibility                                                    |
-| `docs-contracts-reviewer`  | `docs-reviewer`       | EMIS name makes runtime/db contract ownership explicit                 |
-| `code-reviewer`            | `codex-reviewer`      | EMIS version is framed as implementation-quality review plus 2nd view  |
-| `ui-reviewer`              | `ui-reviewer`         | same responsibility                                                    |
+| `.claude/agents/` name (dispatch) | EMIS alias | Root Review Gate role | Notes |
+| ---------------------------------- | ----------------------- | --------------------- | ----- |
+| `architecture-reviewer` | `architecture-reviewer` | `architecture-reviewer` | same name everywhere |
+| `security-reviewer` | `security-reviewer` | `security-reviewer` | same name everywhere |
+| `docs-reviewer` | `docs-contracts-reviewer` | `docs-reviewer` | EMIS alias makes runtime/db contract ownership explicit |
+| `codex-reviewer` | `code-reviewer` | `codex-reviewer` | EMIS alias emphasizes implementation-quality review |
+| `ui-reviewer` | `ui-reviewer` | `ui-reviewer` | same name everywhere |
+| `ui-reviewer-deep` | `ui-reviewer` (deep) | `ui-reviewer` | Opus-level UX/a11y audit |
 
-When a workflow or automation expects root role names, prefer the root names in commands and handoff notes.
-When discussing EMIS-specific responsibility boundaries, use the EMIS names from this document.
+Full role definitions: [emis_agent_roles.md](./emis_agent_roles.md).
+
+When a workflow or automation expects built-in agent names, use the `.claude/agents/` column.
+When discussing EMIS-specific responsibility boundaries, EMIS aliases are acceptable.
 
 If there is any conflict, the root `AGENTS.md` remains the higher-level repository rule, and this document explains how EMIS applies it in practice.
 
@@ -535,35 +332,32 @@ If there is any conflict, the root `AGENTS.md` remains the higher-level reposito
 
 Current assumption: Git collaboration is local-first, without requiring remote MR infrastructure.
 
-Recommended flow:
+### Default flow (consolidated)
 
-1. `user-orchestrator` assigns a bounded task to one worker.
-2. The worker creates or receives a dedicated local feature branch.
-3. The worker makes local commits and prepares a short handoff:
-   - what changed
-   - touched files
-   - assumptions
-   - checks run
-   - open risks
-4. The user passes the lead:
-   - `base branch`
-   - `feature branch`
-   - optional `commit range`
-   - the worker handoff note
-5. `lead-integrator` reviews `git diff base..feature` and any relevant files.
-6. Specialized reviewers inspect the same diff when needed.
-7. Final decision is one of:
-   - `approve`
-   - `request changes`
-   - `needs redesign`
-8. Merge happens only after lead approval and explicit user confirmation.
+1. User assigns task to Claude Opus.
+2. Claude Opus works in the main checkout or creates a feature branch.
+3. For parallel subtasks, Claude Opus spawns worker subagents in separate worktrees.
+4. After implementation, Claude Opus runs Review Gate on the diff.
+5. Claude Opus presents review summary to the user.
+6. Merge happens only after user confirmation.
 
-Important constraints:
+### External lead flow
 
-- agents should not assume they can see local branches created in another runtime unless the user exposes them
-- local Git is the transport of record, but the user is still the routing layer for independent agents
+1. User assigns task to Claude Opus.
+2. Claude Opus implements in a feature branch.
+3. Claude Opus produces a [worker handoff](./emis_worker_handoff_template.md) with:
+   - `base branch`, `feature branch`, optional `commit range`
+   - what changed, assumptions, checks run, risks
+4. User passes the handoff to external lead (Codex/GPT-5.4).
+5. External lead reviews `git diff base..feature`.
+6. User routes verdict back to Claude Opus.
+7. Merge happens only after lead approval and user confirmation.
+
+### Important constraints
+
 - review comments should point to a branch, file, or commit range, not only to chat context
 - branch handoff must always include an explicit base branch; do not assume `main` if the user named another baseline
+- in external lead mode, agents in separate runtimes cannot see each other's local branches unless the user exposes them
 
 ### Local worktree rules
 
@@ -599,62 +393,38 @@ Current practical recommendation for this repository:
 
 ## 10. Recommended Model Choices
 
-When both Codex and Claude are available, model diversity is useful.
-The best default for this repository is:
+Model diversity reduces correlated blind spots. The default assignment optimizes for minimal user overhead while preserving independent review signals.
 
-- use Codex as the lead/integrator;
-- use Claude reviewers for fast independent review passes;
-- use a GPT-5.4 `code-reviewer` pass for implementation quality and framework conventions;
-- use Claude Agents Team as the default worker pool;
-- use Codex workers selectively for integration-heavy or architecture-sensitive implementation slices.
+### Default assignment (consolidated mode)
 
-### Default assignment
+| Role | Model | Why |
+| ---- | ----- | --- |
+| `lead-orchestrator` | Claude Opus | strongest context, orchestration, and implementation |
+| `architecture-reviewer` | Claude Sonnet (subagent) | fast, cheap, good at structural review |
+| `security-reviewer` | Claude Sonnet (subagent) | efficient risk scanning |
+| `docs-reviewer` | Claude Sonnet (subagent) | consistency checks across docs and contracts |
+| `codex-reviewer` | Codex/GPT via `codex exec` | cross-model independent second opinion |
+| `worker` (parallel) | Claude Sonnet/Opus (subagent in worktree) | bounded implementation |
+| `ui-reviewer` | Claude Sonnet (subagent + Chrome) | quick smoke validation |
+| `ui-reviewer-deep` | Claude Opus (subagent + Chrome) | nuanced UX/a11y audit |
 
-| Role                       | Recommended default  | Why                                                                 |
-| -------------------------- | -------------------- | ------------------------------------------------------------------- |
-| `lead-integrator`          | Codex `gpt-5.4`      | strongest coding/integration judgment and best fit for approve flow |
-| `architecture-reviewer`    | Claude Sonnet        | fast, cheap, good at structural review and diff commentary          |
-| `security-reviewer`        | Claude Sonnet        | efficient independent second perspective for risk scanning          |
-| `docs-contracts-reviewer`  | Claude Sonnet        | strong at consistency checks across docs and contracts              |
-| `code-reviewer`            | Codex `gpt-5.4`      | strongest pass for naming, framework conventions, and code quality  |
-| `worker`                   | Claude Agents Team   | good default for bounded implementation with direct user contact    |
-| `worker` for hard refactor | Codex `gpt-5.4`      | better when the task crosses several modules                        |
-| `ui-reviewer` smoke        | Claude Sonnet        | practical default for quick smoke validation                        |
-| `ui-reviewer` deep         | Claude Opus          | better for nuanced UX and interaction critique                      |
+### External lead assignment (critical changes)
 
-### Practical recommendation for this repository
+| Role | Model | Why |
+| ---- | ----- | --- |
+| `lead-integrator` | Codex `gpt-5.4` (separate session) | independent integration judgment from another model family |
 
-If one agent is explicitly assigned the technical lead role, prefer:
+### Independence guarantees
 
-- `Codex gpt-5.4` as `lead-integrator`
+- `codex-reviewer` always runs via `codex exec --sandbox read-only` — sees only the diff, not the Claude Opus context
+- Sonnet reviewer subagents receive the diff and their role instructions — they do not share the orchestrator's reasoning
+- In external lead mode, the lead is a completely separate session/model/runtime
 
-Then keep the reviewer layer heterogeneous:
-
-- Claude Sonnet for `architecture-reviewer`
-- Claude Sonnet for `security-reviewer`
-- Claude Sonnet for `docs-contracts-reviewer`
-- Codex `gpt-5.4` for `code-reviewer`
-- Claude Sonnet or Opus for `ui-reviewer` depending on depth needed
-
-If both `lead-integrator` and `code-reviewer` are assigned to GPT-5.4, keep them in separate sessions with separate prompts and a branch-based diff as the review input.
-Do not treat a lead's own read-through of its implementation as the `code-reviewer` pass.
-
-Recommended reasoning level for `code-reviewer`:
+### Recommended reasoning level for `codex-reviewer`
 
 - default: `gpt-5.4` with `medium`
 - use `high` for large diffs, framework-heavy frontend changes, or changes where maintainability judgment matters more than speed
-- do not use `mini` as the default code-review pass; reserve it only for very small low-risk diffs if latency/cost matters more than review depth
-
-For implementation work, prefer:
-
-- Claude Agents Team as the default `worker`
-- Codex `gpt-5.4-mini` or `gpt-5.4` only when the task is integration-heavy, refactor-heavy, or likely to require stronger local codebase synthesis
-
-Reason:
-
-- it reduces correlated blind spots;
-- it keeps final architectural ownership in a coding-first lead agent;
-- it gives independent review signals from another model family.
+- do not use `mini` as the default; reserve it only for very small low-risk diffs
 
 ## 11. Minimum Instruction Template Per Agent
 
