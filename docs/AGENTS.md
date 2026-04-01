@@ -41,7 +41,9 @@
 | `emis_freeze_note.md`                              | frozen decisions и conventions                | что не нужно переоткрывать без причины                                |
 | `../src/lib/server/emis/infra/RUNTIME_CONTRACT.md` | runtime/API conventions                       | error shape, list meta, audit contract, query limits/sorts            |
 | `emis_architecture_review.md`                      | EMIS architecture approve checklist           | lifecycle review, mandatory approve cases, approve checklist          |
+| `emis_worker_handoff_template.md`                  | EMIS worker handoff template                  | bounded implementation handoff от worker к lead до reviewer pass      |
 | `emis_mr_template.md`                              | EMIS MR / handoff template                    | обязательные поля для local MR, branch handoff и review summary       |
+| `emis_review_handoff_template.md`                  | EMIS reviewer handoff template                | минимальный пакет для review request/result по `base..feature`        |
 | `emis_offline_maps_ops.md`                         | offline maps ops-runbook                      | эксплуатация MapTiler/PMTiles и production caveats                    |
 | `emis_next_tasks_2026_03_22.md`                    | backlog                                       | remaining tasks и polish stack                                        |
 | `emis_agent_operating_model.md`                    | agent roles and review operating model        | роли агентов, persistent vs on-demand, model choices, review flow     |
@@ -77,7 +79,9 @@
 Опционально по задаче:
 
 - `emis_architecture_review.md` - если нужен approve checklist или review verdict
+- `emis_worker_handoff_template.md` - если implementation slice передается от worker к lead
 - `emis_mr_template.md` - если готовится handoff / local MR summary
+- `emis_review_handoff_template.md` - если готовится review request/result для reviewer roles
 - `emis_offline_maps_ops.md` - если работа про offline maps или PMTiles
 - `emis_next_tasks_2026_03_22.md` - если нужен backlog
 - `emis_agent_operating_model.md` - если работа про agent workflow, роли или model assignment

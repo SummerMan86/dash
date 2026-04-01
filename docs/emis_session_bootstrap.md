@@ -119,8 +119,12 @@
   Runtime/API conventions, audit contract, error/meta shape.
 - `emis_architecture_review.md`
   Approve checklist, mandatory review cases и финальный verdict format.
+- `emis_worker_handoff_template.md`
+  Worker-to-lead handoff template для bounded implementation slice до reviewer pass.
 - `emis_mr_template.md`
   Handoff template для local Git review и branch-based MR summary.
+- `emis_review_handoff_template.md`
+  Review request/result template для reviewer roles и branch-based diff handoff.
 - `emis_offline_maps_ops.md`
   Ops/runbook по MapTiler, PMTiles и production caveats.
 - `emis_next_tasks_2026_03_22.md`
@@ -164,14 +168,18 @@
 1. Этот bootstrap
 2. `emis_agent_operating_model.md`
 3. `emis_architecture_review.md`
-4. `emis_mr_template.md`
-5. `../src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
+4. `emis_worker_handoff_template.md`
+5. `emis_review_handoff_template.md`
+6. `emis_mr_template.md`
+7. `../src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
 
 ### Задача по parallel agent work / local Git orchestration
 
 1. Этот bootstrap
 2. `emis_agent_operating_model.md`
-3. `emis_mr_template.md`
+3. `emis_worker_handoff_template.md`
+4. `emis_review_handoff_template.md`
+5. `emis_mr_template.md`
 
 ### Задача по `/emis` workspace UI
 

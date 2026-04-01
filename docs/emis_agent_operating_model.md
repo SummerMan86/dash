@@ -40,6 +40,9 @@ In the intended default setup:
 - reviewer roles validate the produced diff before the task is considered done
 - `code-reviewer` gives a GPT-5.4 code-quality pass focused on implementation quality rather than architecture ownership
 
+Role names are intentionally close to the repository-level Review Gate, but not identical.
+This document uses EMIS-first names and defines explicit aliases in section 8 before merge/review work starts.
+
 Do not split the system into too many permanent specialists unless the project becomes materially larger.
 At the current scale, map-specific, BI-specific, or DB-specific reviewers would create more coordination overhead than value.
 
@@ -474,6 +477,18 @@ By default, this means:
 - reviewer roles validate before final accept
 - `code-reviewer` gives the dedicated GPT-5.4 implementation-quality pass
 
+### Required reviewer independence
+
+The lead and code-quality pass may use the same model family, but they must not collapse into one review voice.
+
+Minimum rule set:
+
+- `lead-integrator` and `code-reviewer` must run as separate sessions/agents
+- `code-reviewer` reviews a concrete diff such as `git diff base..feature`, not just chat context
+- `code-reviewer` should not review its own implementation branch as the only quality gate
+- if the lead also authored non-trivial code, require at least one independent reviewer pass before approval
+- for small low-risk fixes, the lead may integrate directly, but the repository Review Gate still applies
+
 The lead should be mandatory for:
 
 - new route or endpoint
@@ -498,8 +513,21 @@ For EMIS work, use the following mapping:
 - `lead-integrator` is the final approver and owner of integration decisions
 - `architecture-reviewer` maps directly to the root architecture review
 - `security-reviewer` maps directly to the root security review
-- `docs-contracts-reviewer` is the EMIS-specific extension of the root docs review
-- `code-reviewer` is the default EMIS implementation-quality pass and can fulfill the practical role of the repository-level Codex second opinion
+- `docs-contracts-reviewer` is the EMIS-specific extension of the root `docs-reviewer`
+- `code-reviewer` is the EMIS implementation-quality pass and, in practice, fulfills the root `codex-reviewer` second-opinion role
+
+Practical alias table:
+
+| EMIS operating model       | Root Review Gate role | Notes                                                                  |
+| -------------------------- | --------------------- | ---------------------------------------------------------------------- |
+| `architecture-reviewer`    | `architecture-reviewer` | same responsibility                                                    |
+| `security-reviewer`        | `security-reviewer`   | same responsibility                                                    |
+| `docs-contracts-reviewer`  | `docs-reviewer`       | EMIS name makes runtime/db contract ownership explicit                 |
+| `code-reviewer`            | `codex-reviewer`      | EMIS version is framed as implementation-quality review plus 2nd view  |
+| `ui-reviewer`              | `ui-reviewer`         | same responsibility                                                    |
+
+When a workflow or automation expects root role names, prefer the root names in commands and handoff notes.
+When discussing EMIS-specific responsibility boundaries, use the EMIS names from this document.
 
 If there is any conflict, the root `AGENTS.md` remains the higher-level repository rule, and this document explains how EMIS applies it in practice.
 
@@ -535,6 +563,7 @@ Important constraints:
 - agents should not assume they can see local branches created in another runtime unless the user exposes them
 - local Git is the transport of record, but the user is still the routing layer for independent agents
 - review comments should point to a branch, file, or commit range, not only to chat context
+- branch handoff must always include an explicit base branch; do not assume `main` if the user named another baseline
 
 ### Local worktree rules
 
@@ -556,7 +585,7 @@ Recommended branch naming:
 
 Minimum hygiene rules:
 
-- do not develop in the shared root worktree when parallel agent work is active
+- do not develop in the shared root worktree when parallel agent work is active; keep it for lead review, integration, and conflict resolution only
 - do not reuse another agent's worktree for a different task
 - do not mix two bounded tasks in one branch
 - keep temporary local files out of commits unless they are explicitly part of the task
@@ -564,7 +593,7 @@ Minimum hygiene rules:
 
 Current practical recommendation for this repository:
 
-- keep the main repository checkout as the lead/integrator workspace
+- keep the main repository checkout as the lead/integrator workspace, not as a worker implementation workspace when parallel work is active
 - create separate worktrees for worker branches
 - treat `.claude/worktrees/*`, `tmp/`, scratch files, and other local helper artifacts as non-deliverable by default unless the task explicitly says otherwise
 
@@ -607,6 +636,9 @@ Then keep the reviewer layer heterogeneous:
 - Codex `gpt-5.4` for `code-reviewer`
 - Claude Sonnet or Opus for `ui-reviewer` depending on depth needed
 
+If both `lead-integrator` and `code-reviewer` are assigned to GPT-5.4, keep them in separate sessions with separate prompts and a branch-based diff as the review input.
+Do not treat a lead's own read-through of its implementation as the `code-reviewer` pass.
+
 Recommended reasoning level for `code-reviewer`:
 
 - default: `gpt-5.4` with `medium`
@@ -643,8 +675,13 @@ If an agent cannot be described in these seven fields, its role is probably too 
 The first operating-model doc pack now exists.
 The next useful docs are:
 
-- local `AGENTS.md` for `src/lib/server/emis/`
-- local `AGENTS.md` for `src/routes/api/emis/`
-- a short example pack of worker instructions for common EMIS task types
+- a short example pack of reviewer/worker instructions for common EMIS task types
 
-Until those exist, this document is the canonical place for role boundaries and model choices.
+Already available local navigation docs:
+
+- `src/lib/server/emis/AGENTS.md`
+- `src/routes/api/emis/AGENTS.md`
+- `docs/emis_worker_handoff_template.md`
+- `docs/emis_review_handoff_template.md`
+
+Until the remaining templates exist, this document is the canonical place for role boundaries and model choices.

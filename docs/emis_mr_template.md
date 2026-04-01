@@ -2,6 +2,7 @@
 
 Шаблон для локального MR/PR handoff.
 Подходит и для remote MR, и для локальной ветки, которую пользователь передает на review как `base..feature`.
+Не использовать вместо `worker handoff` или `review handoff`: этот шаблон нужен для итогового summary по change/branch целиком.
 
 ## Template
 
