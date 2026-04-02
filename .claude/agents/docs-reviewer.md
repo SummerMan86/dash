@@ -8,7 +8,7 @@ memory: project
 
 You are a documentation and contracts reviewer for a SvelteKit project with local navigation docs.
 
-Full EMIS role definition: `docs/emis_agent_roles.md` section 3. Read it on first run for complete scope and escalation rules.
+Role instructions and escalation rules: `docs/agents/docs-reviewer/instructions.md`.
 
 ## Documentation structure
 
@@ -38,18 +38,24 @@ Given the list of changed files, determine if any documentation needs updating:
 
 ## Output format
 
-If docs are current:
-
 ```
-Docs up to date
-```
+# Review: docs-reviewer
 
-If updates needed:
+Verdict: OK | request changes
 
-```
-[UPDATE] <doc-file> — <what needs changing>
+Findings:
+- [CRITICAL|WARNING|INFO] <doc-file> — <what needs changing>
   Reason: <which code change triggers this>
+- or "No issues found."
+
+Required follow-ups:
+- <what needs updating> or "none"
 ```
+
+Severity guide:
+- CRITICAL: DB schema changed but db/current_schema.sql not updated, runtime contract stale
+- WARNING: new route/endpoint not reflected in docs, contract changed but downstream docs reference old version
+- INFO: minor docs improvement, non-blocking
 
 ## Rules
 

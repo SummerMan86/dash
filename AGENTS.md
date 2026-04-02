@@ -47,6 +47,17 @@
 2. `docs/AGENTS.md` - полный каталог EMIS docs, ownership и reading order
 3. локальный `AGENTS.md` в `src/lib/server/emis/`, `src/routes/api/emis/`, `src/routes/emis/` и соседних active зонах
 
+### Agent workflow (работа в команде агентов)
+
+Если задача выполняется через GPT-5.4 lead + Claude workers:
+
+1. [docs/agents/user-guide.md](./docs/agents/user-guide.md) — **для пользователя: промпты и сценарии**
+2. [docs/agents/workflow.md](./docs/agents/workflow.md) — процесс, инварианты, коммуникация
+3. [docs/agents/roles.md](./docs/agents/roles.md) — роли и ответственности
+4. [docs/agents/templates.md](./docs/agents/templates.md) — шаблоны
+5. `docs/agents/{role}/instructions.md` — вводные для конкретной роли
+6. `docs/agents/{role}/memory.md` — память роли между сессиями
+
 EMIS-активный контур сейчас находится здесь:
 
 - `src/lib/entities/emis-*`
@@ -150,140 +161,51 @@ EMIS-активный контур сейчас находится здесь:
 - audit trail, actor attribution и provenance входят в target contract
 - FK behavior и vocabulary boundaries должны фиксироваться явно
 
-## 8. Обязательные проверки после каждой задачи (Review Gate)
+## 8. Agent Workflow и Review Gate
 
-После завершения основной работы по задаче, перед тем как показать результат пользователю, выполни Review Gate.
+Полная модель работы агентов: [docs/agents/workflow.md](./docs/agents/workflow.md)
 
-### Субагенты-ревьюеры
+### Модель
 
-Определения субагентов лежат в `.claude/agents/`:
+```
+GPT-5.4 (lead-strategic) → план → Claude Opus (lead-tactical) → workers → review → report → GPT-5.4
+```
 
-- `security-reviewer.md` — OWASP-проверки, SQL injection, XSS, secrets
-- `architecture-reviewer.md` — FSD boundaries, server isolation, IR contract
-- `docs-reviewer.md` — актуальность AGENTS.md, CLAUDE.md, schema docs
-- `codex-reviewer.md` — second opinion через OpenAI Codex CLI (`codex exec --sandbox read-only`)
-- `ui-reviewer.md` — быстрая smoke-проверка UI (Sonnet): страница грузится, console чистый, контент виден
-- `ui-reviewer-deep.md` — экспертный UI/UX аудит (Opus): layout, a11y, interaction flows, design system compliance
+- GPT-5.4 планирует и принимает результаты
+- Claude Opus управляет исполнением
+- Claude Workers реализуют подзадачи
+- Ревьюеры (субагенты) проверяют diff
 
-Первые три используют `model: sonnet` (дешевле, достаточно быстро для review) и `memory: project` (накапливают знания о кодовой базе между сессиями). Codex-reviewer делегирует анализ другой модели — это даёт независимое второе мнение. UI-reviewer использует браузерную автоматизацию через Chrome-расширение — запускается только при изменениях фронтенда (`.svelte`, `.css`, routes).
+### Роли и instructions
 
-### Жизненный цикл (Persistent Reviewers)
+- [docs/agents/roles.md](./docs/agents/roles.md) — таблица ролей
+- `docs/agents/{role}/instructions.md` — вводные для каждой роли
+- `docs/agents/{role}/memory.md` — персистентная память между сессиями
 
-Субагенты-ревьюеры работают как **persistent сессии внутри разговора**:
+### Review Gate
 
-**Первая задача в сессии:**
+После реализации lead-tactical запускает субагентов-ревьюеров параллельно.
+Определения субагентов: `.claude/agents/*.md`
+Детальные instructions: `docs/agents/{name}/instructions.md`
 
-- Spawn 3 субагента параллельно (Agent tool) — они загружают свои `.claude/agents/*.md` определения автоматически
-
-**Последующие задачи:**
-
-- НЕ создавать новых субагентов
-- Использовать `SendMessage` к существующим `security-reviewer`, `architecture-reviewer`, `docs-reviewer`
-- Передавать только новый diff — субагент уже знает проект
-
-**Результат:** первый Review Gate ~30 сек на контекст, все последующие — мгновенный анализ diff.
-
-**Ограничение:** субагенты живут только в рамках одной сессии (одного разговора). При новой сессии — spawn заново. Это неизбежно, но контекст загружается только 1 раз за сессию, а не на каждую задачу.
-
-### Протокол
-
-1. **Собери scope изменений** (основной агент):
-
-   ```bash
-   git diff --name-only   # список изменённых файлов
-   git diff               # полный diff для передачи субагентам
-   ```
-
-2. **Отправь diff ревьюерам** — если субагенты уже запущены, используй SendMessage; если нет — запусти (Agent) параллельно, передав каждому diff и список файлов:
-
-#### Security Reviewer (`security-reviewer`)
-
-- Проверяет изменённый код на:
-  - SQL injection (обход `isSafeIdent`, raw SQL в routes)
-  - XSS в Svelte-шаблонах (`{@html}` без санитизации)
-  - утечки секретов (hardcoded tokens, .env значения в коде)
-  - command injection (непроверенный пользовательский ввод в shell/exec)
-  - SSRF (непроверенные URL в fetch на сервере)
-- Scope: только изменённые файлы из git diff
-- Режим: **read-only**, не редактирует файлы
-- Выход: список найденных проблем с severity (critical / warning / info) или "No issues found"
-
-#### Architecture Reviewer (`architecture-reviewer`)
-
-- Проверяет соответствие архитектурным правилам из секции 7:
-  - FSD: entities не импортируют features/widgets/routes
-  - server-only код (`$lib/server/*`) не импортируется из клиентских модулей
-  - IR контракт: UI не видит SQL, routes не содержат SQL
-  - EMIS boundaries: HTTP-логика не в services, SQL не в routes
-  - import paths используют алиасы (`$lib`, `$shared`, `$entities`, etc.)
-- Scope: изменённые файлы + их импорты (1 уровень вглубь)
-- Режим: **read-only**
-- Выход: список нарушений или "Architecture OK"
-
-#### Docs Reviewer (`docs-reviewer`)
-
-- Проверяет, нужно ли обновить документацию:
-  - Изменились экспорты модуля → обновить ближайший `AGENTS.md` / `CLAUDE.md`
-  - Добавлен новый route / endpoint → отразить в карте маршрутов
-  - Изменился DB schema → обновить `db/current_schema.sql` и `db/applied_changes.md`
-  - Изменился контракт (types, Zod schema) → проверить, что downstream docs актуальны
-- Scope: изменённые файлы → найти ближайшие навигационные документы
-- Режим: **read-only**, формирует список рекомендуемых обновлений
-- Выход: список файлов для обновления с описанием что именно обновить, или "Docs up to date"
-
-#### Codex Reviewer (`codex-reviewer`)
-
-- Делегирует анализ diff в OpenAI Codex CLI (`codex exec --sandbox read-only`)
-- Даёт независимое второе мнение от другой модели (GPT)
-- Scope: тот же diff, что и у остальных ревьюеров
-- Режим: **read-only sandbox** (Codex не может модифицировать файлы)
-- Выход: находки Codex в формате `[SEVERITY] file:line — description`
-
-#### UI Reviewer — два уровня, условный
-
-Оба запускаются **только если изменены фронтенд-файлы** (`.svelte`, `.css`, routes) и dev server запущен.
-
-**`ui-reviewer` (Sonnet)** — быстрый smoke-test, по умолчанию:
-
-- Страница грузится? Console чистый? Контент виден?
-- Клик по основным элементам — ничего не падает?
-- Выход: `UI OK` или `[CRITICAL|WARNING] route — описание`
-
-**`ui-reviewer-deep` (Opus)** — экспертный аудит, по запросу:
-
-- Layout quality, spacing, typography hierarchy
-- Interaction flows: loading states, empty states, error states
-- Accessibility: alt text, labels, contrast, keyboard navigation
-- Design system compliance: токены vs hardcoded values
-- Используй когда: новая страница, редизайн компонента, важная фича
-- Выход: структурированный отчёт по 4 категориям
-
-Выбор уровня: по умолчанию запускается `ui-reviewer` (Sonnet). Для глубокой проверки скажи _"проверь UI на Opus"_ или _"глубокий UI-ревью"_.
-
-3. **Агрегация результатов** (основной агент):
-   - Собери отчёты всех субагентов (4 постоянных + UI-reviewer если был фронтенд)
-   - Покажи пользователю сводку в формате:
-
-   ```
-   ## Review Gate
-   - Security (Claude): [OK | N issues found]
-   - Architecture: [OK | N violations]
-   - Docs: [Up to date | N updates needed]
-   - Codex (second opinion): [OK | N issues found]
-   - UI (Chrome): [OK | N issues found]  ← только при фронтенд-изменениях
-   ```
-
-   - Если есть critical security issues (от любого ревьюера) → исправь сразу, покажи diff
-   - Если есть architecture violations или docs updates → предложи исправления, жди подтверждения
-   - Если Claude и Codex нашли одну и ту же проблему → повышенный приоритет
-   - Если UI-reviewer нашёл blank screen или console errors → приоритетный фикс
+| Ревьюер | Модель | Проверяет |
+|---|---|---|
+| `security-reviewer` | Sonnet | SQL injection, XSS, secrets, SSRF |
+| `architecture-reviewer` | Sonnet | FSD boundaries, server isolation, complexity |
+| `docs-reviewer` | Sonnet | Docs, DB truth, runtime contracts sync |
+| `code-reviewer` | Sonnet | Naming, conventions, maintainability |
+| `ui-reviewer` | Sonnet | Smoke test (только при frontend changes) |
+| `ui-reviewer-deep` | Opus | Deep UX/a11y audit (по запросу) |
 
 ### Когда НЕ запускать Review Gate
 
-- Задача была только чтение/анализ (ни один файл не изменён)
-- Пользователь явно попросил пропустить проверки
-- Изменения только в docs/markdown файлах (запустить только Docs Reviewer)
-- UI-reviewer запускается только при изменениях `.svelte`, `.css`, `routes/` файлов и только если dev server запущен
+- Задача была только чтение/анализ
+- Пользователь явно попросил пропустить
+- Изменения только в markdown (запустить только docs-reviewer)
+
+### Шаблоны
+
+Все шаблоны коммуникации: [docs/agents/templates.md](./docs/agents/templates.md)
 
 ## 9. Git Checkpoints
 

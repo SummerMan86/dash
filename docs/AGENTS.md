@@ -41,12 +41,15 @@
 | `emis_freeze_note.md`                              | frozen decisions и conventions                | что не нужно переоткрывать без причины                                |
 | `../src/lib/server/emis/infra/RUNTIME_CONTRACT.md` | runtime/API conventions                       | error shape, list meta, audit contract, query limits/sorts            |
 | `emis_architecture_review.md`                      | EMIS architecture approve checklist           | lifecycle review, mandatory approve cases, approve checklist          |
-| `emis_worker_handoff_template.md`                  | EMIS worker handoff template                  | bounded implementation handoff от worker к lead до reviewer pass      |
-| `emis_mr_template.md`                              | EMIS MR / handoff template                    | обязательные поля для local MR, branch handoff и review summary       |
-| `emis_review_handoff_template.md`                  | EMIS reviewer handoff template                | минимальный пакет для review request/result по `base..feature`        |
 | `emis_offline_maps_ops.md`                         | offline maps ops-runbook                      | эксплуатация MapTiler/PMTiles и production caveats                    |
 | `emis_next_tasks_2026_03_22.md`                    | backlog                                       | remaining tasks и polish stack                                        |
-| `emis_agent_operating_model.md`                    | agent roles and review operating model        | роли агентов, persistent vs on-demand, model choices, review flow     |
+| `agents/workflow.md`                               | agent workflow и инварианты                   | процесс GPT-5.4 → Claude → review, правила, коммуникация             |
+| `agents/roles.md`                                  | agent role map                                | все роли, dispatch names, кто что делает                              |
+| `agents/templates.md`                              | agent communication templates                 | план, задача, handoff, report, review request/result                  |
+| `agents/lead-strategic/instructions.md`            | GPT-5.4 lead instructions                     | как планировать, декомпозировать, принимать результаты                 |
+| `agents/lead-tactical/instructions.md`             | Claude Opus tactical lead instructions        | как управлять workers, review gate, report                            |
+| `agents/worker/instructions.md`                    | Claude worker instructions                    | как выполнять задачи, self-check, handoff                             |
+| `agents/reviewer-*/instructions.md`                | reviewer role instructions                    | checks, output format, scope для каждого ревьюера                     |
 | `../src/routes/emis/AGENTS.md`                     | EMIS workspace route contract                 | что остается в `/emis` route layer и что выносится из workspace       |
 | `../src/lib/widgets/emis-map/AGENTS.md`            | EMIS map runtime contract                     | map runtime boundaries, extraction rules и PMTiles/widget ownership   |
 | `../src/routes/dashboard/emis/AGENTS.md`           | EMIS BI routes contract                       | границы BI route layer, dataset path и extraction rules               |
@@ -79,17 +82,16 @@
 Опционально по задаче:
 
 - `emis_architecture_review.md` - если нужен approve checklist или review verdict
-- `emis_worker_handoff_template.md` - если implementation slice передается от worker к lead
-- `emis_mr_template.md` - если готовится handoff / local MR summary
-- `emis_review_handoff_template.md` - если готовится review request/result для reviewer roles
 - `emis_offline_maps_ops.md` - если работа про offline maps или PMTiles
 - `emis_next_tasks_2026_03_22.md` - если нужен backlog
-- `emis_agent_operating_model.md` - если работа про agent workflow, роли или model assignment
+- `agents/workflow.md` - если нужен agent workflow, процесс, инварианты
+- `agents/roles.md` - если нужны роли агентов
+- `agents/templates.md` - если нужны шаблоны коммуникации между агентами
 - `../src/routes/emis/AGENTS.md` - если работа про `/emis` workspace layer
 - `../src/lib/widgets/emis-map/AGENTS.md` - если работа про map runtime
 - `../src/routes/dashboard/emis/AGENTS.md` - если работа про BI/dashboard routes
 - `emis_vessel_current_positions_handoff_plan.md` - если работа про vessel current positions slice
-- `archive/emis/*` и `archive/strategy-v1/*` - только если нужен historical context
+- `archive/emis/*`, `archive/agents/*` и `archive/strategy-v1/*` - только если нужен historical context
 
 ## 5. Правило ownership
 

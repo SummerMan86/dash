@@ -166,20 +166,17 @@
 ### Задача по agent workflow / review ownership
 
 1. Этот bootstrap
-2. `emis_agent_operating_model.md`
-3. `emis_architecture_review.md`
-4. `emis_worker_handoff_template.md`
-5. `emis_review_handoff_template.md`
-6. `emis_mr_template.md`
-7. `../src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
+2. `agents/workflow.md` — процесс, инварианты, review gate
+3. `agents/roles.md` — роли агентов
+4. `agents/templates.md` — шаблоны коммуникации
+5. `emis_architecture_review.md`
+6. `../src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
 
 ### Задача по parallel agent work / local Git orchestration
 
 1. Этот bootstrap
-2. `emis_agent_operating_model.md`
-3. `emis_worker_handoff_template.md`
-4. `emis_review_handoff_template.md`
-5. `emis_mr_template.md`
+2. `agents/workflow.md` — секции 3, 7
+3. `agents/templates.md` — шаблоны задач и handoff
 
 ### Задача по `/emis` workspace UI
 
