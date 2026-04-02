@@ -156,6 +156,165 @@
 - ST-7 should run only after the integration branch already contains ST-5 and ST-6.
 - ST-8 should not become an open-ended refactor track.
 
+## Lead-Tactical Kickoff
+1. Read this plan end-to-end before delegating anything.
+2. Re-read:
+   - `docs/agents/workflow.md`
+   - `docs/agents/templates.md`
+   - `docs/emis_session_bootstrap.md`
+   - `docs/emis_mve_tz_v_2.md`
+   - `docs/emis_implementation_spec_v1.md`
+   - `docs/emis_freeze_note.md`
+   - `db/schema_catalog.md`
+3. Confirm the current integration branch is:
+   - `feature/emis-foundation-stabilization`
+4. Execute ST-1, ST-2, ST-3 before spawning implementation workers.
+5. After ST-3 is checkpointed, decide whether ST-4, ST-5, ST-6 should be:
+   - sequential with one worker at a time
+   - or partially parallel, but only with disjoint ownership and clear dependency handling
+6. Do not delegate unresolved design questions to workers.
+7. Before each worker task, explicitly state:
+   - files owned by the worker
+   - files out of scope
+   - which prior checkpoint/commit the worker must build on
+8. After each worker handoff:
+   - review placement and scope discipline first
+   - merge into the integration branch
+   - only then hand off the next dependent slice
+9. Run Review Gate on the integrated diff, not on isolated worker prose summaries.
+
+## Worker Task Drafts
+
+### Worker A Draft: ST-4 Centralized Write Policy Helper
+Use this as the starting handoff from `lead-tactical` to a worker.
+
+```md
+# Task: ST-4 Centralized Write Policy Helper
+
+## Что сделать
+Реализовать один reusable helper для production-shaped EMIS write policy.
+Helper должен централизованно решать, разрешен ли write в текущем контексте, и возвращать/пробрасывать стабильную machine-readable ошибку для disallowed writes.
+
+## Scope
+- файлы:
+  - `src/lib/server/emis/infra/*`
+  - `src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
+- слои: `server/emis/infra`, runtime contract
+- НЕ трогать:
+  - `src/routes/api/emis/*`
+  - `src/routes/emis/*`
+  - `db/*`
+
+## Ветки
+- integration branch: `feature/emis-foundation-stabilization`
+- worker branch: `agent/worker/emis-write-policy`
+
+## Архитектурные ограничения
+- Не тащить auth/RBAC framework.
+- Не дублировать policy в нескольких helper'ах.
+- Route-specific logic не должна переехать в `infra`.
+- Runtime contract обновить, если меняется error/code behavior.
+
+## Проверки
+- `pnpm check` если затрагивается typed runtime behavior
+- targeted review of changed files
+
+## Формат сдачи
+Используй `Worker Handoff` из `docs/agents/templates.md`.
+Обязательно укажи:
+- helper API
+- где и как предполагается его вызывать из API routes и manual actions
+- какой failure code введен
+```
+
+### Worker B Draft: ST-5 Write Entry Point Integration
+Use this only after ST-4 is merged into the integration branch.
+
+```md
+# Task: ST-5 Wire Write Policy Into Current EMIS Write Entry Points
+
+## Что сделать
+Подключить уже реализованный centralized write-policy helper ко всем текущим EMIS write entry points:
+- API `POST/PATCH/DELETE`
+- manual UI `new/edit` actions
+
+## Scope
+- файлы:
+  - `src/routes/api/emis/objects/*`
+  - `src/routes/api/emis/news/*`
+  - `src/routes/emis/objects/*/+page.server.ts`
+  - `src/routes/emis/news/*/+page.server.ts`
+- слои: transport routes, SvelteKit form actions
+- НЕ трогать:
+  - `src/lib/server/emis/modules/*`
+  - `db/*`
+  - broad docs rewrite beyond small contract sync
+
+## Ветки
+- integration branch: `feature/emis-foundation-stabilization`
+- worker branch: `agent/worker/emis-write-entrypoints`
+
+## Архитектурные ограничения
+- Route files остаются transport-only.
+- Не дублировать policy logic inline.
+- Не менять domain behavior service/repository слоя без явной необходимости.
+- Если нужна docs sync, ограничить ее runtime-contract related updates.
+
+## Проверки
+- `pnpm check`
+- targeted manual review of all touched write entry points
+
+## Формат сдачи
+Используй `Worker Handoff` из `docs/agents/templates.md`.
+Обязательно перечисли:
+- какие entry points покрыты
+- какие behavior changes появились для denied writes
+- какие файлы остались нетронутыми намеренно
+```
+
+### Worker C Draft: ST-6 Health/Readiness/Error Logging
+Use this after ST-3 is frozen. If ST-4/ST-5 are still in progress, keep the ownership strictly disjoint.
+
+```md
+# Task: ST-6 Health Readiness And Centralized API Error Logging
+
+## Что сделать
+Превратить текущий `/api/emis/health` в явный operational contract и добавить одно централизованное место для EMIS API error logging без утечки credential/token data.
+
+## Scope
+- файлы:
+  - `src/routes/api/emis/health/+server.ts`
+  - `src/lib/server/emis/infra/http.ts`
+  - `src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
+  - optional small docs sync in `docs/emis_session_bootstrap.md` and `docs/emis_next_tasks_2026_03_22.md`
+- слои: transport + infra
+- НЕ трогать:
+  - `src/routes/emis/+page.svelte`
+  - `src/lib/widgets/emis-map/*`
+  - `db/current_schema.sql` unless a true DB contract change is required
+
+## Ветки
+- integration branch: `feature/emis-foundation-stabilization`
+- worker branch: `agent/worker/emis-health-readiness`
+
+## Архитектурные ограничения
+- Health endpoint должен сообщать больше, чем наличие snapshot files.
+- Не строить observability platform.
+- Logging должен быть centralized и safe by default.
+- Не добавлять hidden business logic в route layer.
+
+## Проверки
+- `pnpm check`
+- targeted endpoint contract verification if practical
+
+## Формат сдачи
+Используй `Worker Handoff` из `docs/agents/templates.md`.
+Обязательно укажи:
+- новая shape/semantics health-readiness ответа
+- где теперь централизованно логируются EMIS API failures
+- какие sensitive values intentionally do not get logged
+```
+
 ## Architectural Decisions To Carry Through
 - EMIS remains a modular monolith, not a microservice split project.
 - The foundation is three-layered:
