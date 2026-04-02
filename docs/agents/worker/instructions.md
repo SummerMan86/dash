@@ -14,6 +14,14 @@
 
 Lead-tactical сам смержит твою worker branch в integration branch (`feature/<topic>`).
 
+## Branch And Worktree Discipline
+
+- Работай только в своём `agent/worker/<slug>` branch.
+- Не коммить в integration branch `feature/<topic>`, если lead-tactical явно не сказал работать напрямую там.
+- Не переиспользуй чужой worktree.
+- Если base branch или base commit не указан явно, эскалируй к lead-tactical до начала реализации.
+- Если видишь, что твой scope конфликтует с другим worker ownership slice, не импровизируй, а сразу эскалируй.
+
 ## Self-check перед сдачей
 
 - [ ] TypeScript: нет ошибок в затронутых файлах

@@ -32,6 +32,32 @@ Workers создаются как **teammates** (Agent Teams в tmux), не ка
 
 Если Agent Teams недоступен — fallback: ставь задачу через Agent tool (subagent в worktree).
 
+### Worktree Bootstrap Checklist
+
+Перед запуском каждого нового worker:
+
+1. Проверь, что `lead-tactical` находится в правильной integration branch `feature/<topic>`.
+2. Определи, нужен ли вообще отдельный worker:
+   - если задача простая и локальная, делай в integration branch сам;
+   - если нужен отдельный focus или параллельная работа, создавай worker.
+3. Для worker подготовь отдельные:
+   - worker branch `agent/worker/<task-slug>`
+   - worktree
+4. Не переиспользуй старый или чужой worktree, даже если он "похож".
+5. В handoff worker'у обязательно укажи:
+   - integration branch
+   - worker branch
+   - конкретный base checkpoint / commit, от которого он стартует
+   - owned files
+   - out-of-scope files
+6. Не запускай dependent worker task, если предыдущий обязательный slice еще не влит в integration branch.
+7. После handoff worker'а сначала проверь scope/placement, потом мержи в integration branch, и только после этого запускай Review Gate на интегрированном diff.
+
+Короткое правило:
+- `один worker = один branch = один worktree`
+- Review Gate всегда идет по `main..feature/<topic>`, не по worker branch
+- если есть сомнение, лучше меньше параллелизма, чем запутанная интеграция
+
 ## Review Gate
 
 Ревьюеры создаются как **subagents** (Agent tool), не как teammates.
