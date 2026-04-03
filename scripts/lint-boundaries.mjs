@@ -9,6 +9,9 @@
  */
 
 import { execSync } from 'node:child_process';
+import { readFileSync, unlinkSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 // Only scan directories where boundary rules are defined in eslint.config.js
 const targets = [
@@ -20,21 +23,27 @@ const targets = [
 	'src/routes/dashboard/emis/'
 ].join(' ');
 
-let raw;
+// Write ESLint JSON to a temp file to avoid stdout buffer issues with execSync
+const tmpFile = join(tmpdir(), `lint-boundaries-${process.pid}.json`);
+
 try {
-	raw = execSync(`npx eslint ${targets} --no-warn-ignored -f json`, {
+	execSync(`npx eslint ${targets} --no-warn-ignored -f json -o ${tmpFile}`, {
 		encoding: 'utf8',
-		maxBuffer: 20 * 1024 * 1024, // 20 MB — ESLint JSON output can be large
+		maxBuffer: 20 * 1024 * 1024,
 		stdio: ['pipe', 'pipe', 'pipe']
 	});
-} catch (e) {
-	// ESLint exits 1 when any errors exist (legacy noise); stdout still has JSON
-	raw = e.stdout || '';
+} catch {
+	// ESLint exits 1 when any errors exist (legacy noise); output file is still written
 }
 
-if (!raw) {
-	console.error('No ESLint output. Check that eslint is installed and src/ exists.');
+let raw;
+try {
+	raw = readFileSync(tmpFile, 'utf8');
+} catch {
+	console.error('No ESLint output file. Check that eslint is installed and targets exist.');
 	process.exit(2);
+} finally {
+	try { unlinkSync(tmpFile); } catch { /* ignore cleanup errors */ }
 }
 
 let results;
