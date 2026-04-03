@@ -87,7 +87,28 @@ Verified clean:
 
 ## Review Gate
 
-Pending — will run after commit on integrated diff.
+### Вердикты ревьюеров
+- architecture-reviewer: **OK** — no new violations; all 5 architectural claims verified against live codebase
+- docs-reviewer: **request changes** → fixed → OK (see below)
+- code-reviewer: не запускался (no runtime code changes)
+- security-reviewer: не запускался (no server/import/runtime changes)
+- ui-reviewer: не запускался (no frontend changes)
+
+### Findings по severity
+
+**CRITICAL:** нет
+
+**WARNING (fixed in d78e6d9):**
+- docs-reviewer: AGENTS.md section 5 still listed 7 deleted placeholder dirs → updated to "Deleted placeholders (ST-8)"
+- docs-reviewer: emis_monorepo_target_layout.md legacy table listed deleted dirs → updated
+- docs-reviewer: emis_monorepo_target_layout.md listed shared/config/ as staying in app (deleted) → updated
+- docs-reviewer: server/AGENTS.md Postgres how-to pointed to shim paths → updated to canonical package paths
+- docs-reviewer: lib/AGENTS.md and last_report listed server/providers/ as fully canonical → annotated postgresProvider as MIGRATION shim
+
+**INFO (fixed in d78e6d9):**
+- docs-reviewer: entities/AGENTS.md emis-* section was prescriptive for shim files → simplified to redirect
+- docs-reviewer: datasets/definitions/AGENTS.md missing paymentAnalytics.ts → added
+- docs-reviewer: emis_monorepo_target_layout.md emis-manual-entry/emis-drawer target stale → corrected to "stays in app"
 
 ## Ветки
 

@@ -66,7 +66,7 @@
 
 ### Integration branch
 - `feature/emis-foundation-stabilization`
-- Latest commit: pending (ST-8 docs + cleanup)
+- Commits: `a0ee817` (ST-8 main), `d78e6d9` (Review Gate fixes)
 
 ## Проблемы и workarounds
 
