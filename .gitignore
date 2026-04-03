@@ -28,6 +28,10 @@ vite.config.ts.timestamp-*
 # Claude Code local settings
 .claude/settings.local.json
 .claude/worktrees/
+.claude/agent-memory/
+
+# Build artifacts
+target
 
 # Local binaries (go-pmtiles etc.)
 .bin/

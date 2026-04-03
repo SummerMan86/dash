@@ -56,7 +56,30 @@
 - `pnpm lint:boundaries` — 3 expected gaps (same as before)
 
 ## Review Gate
-_Pending_
+
+### Findings по severity
+
+**CRITICAL** (исправлено):
+- architecture-reviewer: stale `src/` globs в `.svelte.ts`/`.svelte.js`/`.svelte` file patterns в eslint.config.js — boundary rules для Svelte files были silently dead → все globs обновлены на `apps/web/src/`
+- docs-reviewer: bare `src/lib/` и `src/routes/` references в 10+ active docs (emis_architecture_baseline, emis_working_contract, emis_session_bootstrap, workflow.md, current_plan.md и др.) → все обновлены на `apps/web/src/`
+
+**WARNING** (исправлено):
+- docs-reviewer: `docs/agents/docs-reviewer/instructions.md` scope path stale → обновлён
+- docs-reviewer: `docs/agents/workflow.md` EMIS boundary reference stale → обновлён
+- lead-strategic: `.claude/agent-memory/*` и `target` accidental commit → removed from git, added to .gitignore
+
+**INFO** (отмечено):
+- architecture-reviewer: package name `web` vs `@dashboard-builder/web` — rename при ST-6
+- architecture-reviewer: `dotenv` in devDependencies but used in vite.config.ts — acceptable (build-time only)
+- architecture-reviewer: vite.config.ts CWD-dependent env path — low risk under current workflow
+- docs-reviewer: archive docs retain bare `src/` paths — intentionally not updated (historical)
+
+### Вердикты ревьюеров
+- architecture-reviewer: request changes → исправлено → OK
+- docs-reviewer: request changes → исправлено → OK
+- code-reviewer: не запускался (structural move, no logic changes)
+- security-reviewer: не запускался (no runtime behavior change)
+- ui-reviewer: не запускался (no frontend behavior change)
 
 ## Ветки
 - integration branch: `feature/emis-foundation-stabilization`
