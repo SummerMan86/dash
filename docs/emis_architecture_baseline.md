@@ -120,9 +120,8 @@ Canonical path:
 
 - `apps/web/src/routes/emis/+page.svelte` уже oversized и должен расти только через extraction;
 - map-heavy логика по-прежнему требует строгого контроля границы route vs widget;
-- общий repo baseline сейчас не полностью green:
-  `pnpm check` и `pnpm emis:smoke` падают из-за parse error в `apps/web/src/lib/shared/ui/select/Select.svelte`, то есть проблема не в EMIS-слоях, а в shared UI baseline;
-- значит, перед следующей большой EMIS wave полезно сначала вернуть общий app runtime в green state.
+- общий repo baseline green: `pnpm check` — 0 errors, `pnpm build` — success (Select.svelte parse error resolved в ST-4);
+- единственный известный FSD-gap: `fetchDataset.ts` в shared импортирует entities — 3 violations в `pnpm lint:boundaries`, pre-existing, задокументирован.
 
 ## 7. Working Rule For Next EMIS Tasks
 

@@ -4,13 +4,15 @@
 
 ## Что уже есть
 
-- `shared/ui` и `shared/styles` - базовый design system на Svelte 5 + Tailwind 4
-- `entities/dataset` + `server/*` - BFF-паттерн `DatasetQuery -> IR -> Provider` для BI/read-side
-- `entities/filter` + `widgets/filters` - декларативные фильтры, workspace runtime, URL sync и target-aware planner
-- `server/emis/*` + `routes/api/emis/*` - Postgres-first operational/server modules для EMIS без лишней generic IR-обвязки
-- `features/dashboard-edit` - редактор дашбордов на GridStack
-- `routes/dashboard/wildberries/*` - прикладные аналитические страницы поверх PostgreSQL
-- `server/alerts` - серверный scheduler и уведомления
+Краткий обзор ключевых модулей (пути указаны концептуально; физически код живёт в `apps/web/src/lib/` и `packages/`):
+
+- `shared/ui` и `shared/styles` — базовый design system на Svelte 5 + Tailwind 4
+- `entities/dataset` + `server/*` — BFF-паттерн `DatasetQuery -> IR -> Provider` для BI/read-side
+- `entities/filter` + `widgets/filters` — декларативные фильтры, workspace runtime, URL sync и target-aware planner
+- `server/emis/*` + `routes/api/emis/*` — Postgres-first operational/server modules для EMIS без лишней generic IR-обвязки
+- `features/dashboard-edit` — редактор дашбордов на GridStack
+- `routes/dashboard/wildberries/*` — прикладные аналитические страницы поверх PostgreSQL
+- `server/alerts` — серверный scheduler и уведомления
 
 ## Стек
 
@@ -72,8 +74,9 @@ pnpm db:seed
 pnpm db:demo
 pnpm db:reset
 pnpm check
-pnpm lint
 pnpm build
+pnpm lint
+pnpm lint:boundaries
 ```
 
 `pnpm db:reset` поднимает snapshot baseline и reference dictionaries.
@@ -135,9 +138,15 @@ pnpm build
 - `CLAUDE.md` - compatibility redirect на `AGENTS.md`
 - локальные `AGENTS.md` / `CLAUDE.md` в подпапках - точечные правила по подсистемам
 
-## Замечание по структуре
+## Структура репозитория
 
-Сейчас это один SvelteKit-пакет, а не полноценное монорепо. При этом внутренняя архитектура уже достаточно модульная, чтобы использовать репозиторий как базу для EMIS и позже, при необходимости, разнести код на `apps/*` и `packages/*` без полного переписывания.
+Monorepo-style layout: единое SvelteKit-приложение в `apps/web/` + 8 workspace packages в `packages/`:
+
+- `platform-core`, `platform-ui`, `platform-datasets`, `platform-filters` — shared foundation
+- `db` — DB helpers и schema
+- `emis-contracts`, `emis-server`, `emis-ui` — EMIS domain packages
+
+Single-deployable: один runtime, но code ownership и import boundaries разделены по package границам. Подробнее — `AGENTS.md` и `docs/emis_monorepo_target_layout.md`.
 
 ## Локальные git-checkpoints
 

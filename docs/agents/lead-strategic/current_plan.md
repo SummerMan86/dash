@@ -189,22 +189,108 @@
 - depends on: ST-6, ST-7
 - размер: M
 - заметки:
+  - topology decision is already frozen:
+    - stay within single-deployable monorepo
+    - do not reopen "separate EMIS app now?" in this slice
+  - `bi-alerts` and `bi-dashboards` are conditional package targets, not mandatory outputs
   - isolate BI/read-side from EMIS operational packages
   - keep app shell thin
   - decide what remains app-specific glue vs what becomes package-level BI foundation
   - avoid turning dashboard routes into another generic shared package dump
+  - keep deferred post-ST-7 backlog items out of scope unless they directly block BI/dashboard placement
+  - if reusable BI dataset code is touched, report must make the canonical source-of-truth explicit rather than leaving duplicate active-looking locations ambiguous
+
+#### ST-8 Acceptance Checklist
+- packaging verdict:
+  - `last_report.md` must explicitly state for each conditional BI package target:
+    - `bi-alerts` — extracted or intentionally kept in `apps/web`
+    - `bi-dashboards` — extracted or intentionally kept in `apps/web`
+  - if a package is not created, report must justify the missing reuse pressure concretely, not with "later maybe"
+  - do not create speculative packages with no real second consumer or stable package API
+- BI/dataset placement:
+  - canonical home for reusable BI dataset compilers/helpers must be explicit after the slice
+  - if old app-path dataset definitions remain on disk, report must say whether they are:
+    - compatibility shims
+    - dead legacy candidates for ST-10 cleanup
+    - or still canonical by deliberate decision
+  - strategy/wildberries route folders must not become storage for reusable non-route BI foundation
+- app glue boundaries:
+  - all route trees remain in `apps/web/src/routes/*`
+  - `apps/web` remains the leaf consumer/composition layer
+  - report enumerates what intentionally stayed app glue:
+    - route composition
+    - app shell/navigation
+    - SvelteKit-bound helpers
+    - dashboard editor glue if `bi-dashboards` is not justified
+    - alert runtime boot/scheduler glue if `bi-alerts` is not justified
+- EMIS/BI separation:
+  - BI/dashboard code must not import EMIS operational packages directly
+  - EMIS read-side dashboards continue through published views / dataset layer, not through `emis-server`
+  - no new dependency from `platform-*` back into BI/dashboard code
+- docs and navigation:
+  - touched BI/dashboard zones have updated navigation docs where placement changed
+  - touched strategy/Wildberries/dataset docs no longer leave canonical ownership ambiguous
+  - stale references discovered during the slice are either fixed or explicitly listed as deferred
+- verification:
+  - report includes integrated results for:
+    - `pnpm check`
+    - `pnpm build`
+    - `pnpm lint:boundaries`
+  - any pre-existing non-ST-8 gaps remain explicitly listed, not silently absorbed into the slice
+- handoff readiness:
+  - `last_report.md` must separately state:
+    - what BI/dashboard code moved into package boundaries
+    - what intentionally remained app glue and why
+    - whether `bi-alerts` / `bi-dashboards` were created or explicitly deferred
+    - why ST-9 is now safe to start
 
 ### ST-9: Verify Commands, Checks, Docs And Handoff Readiness
 - scope: scripts/docs/verification paths affected by ST-4..ST-8
 - depends on: ST-5, ST-6, ST-7, ST-8
 - размер: M
 - заметки:
+  - this is an integrated-branch verification and docs coherence slice, not a new structural migration
+  - do not reopen package topology or conditional package decisions already accepted in ST-8
   - all moved commands and paths must remain discoverable
   - update reading order, ownership docs, and smoke instructions
+  - normalize canonical branch/path language where previous reports or docs drifted
   - verification target:
     - repo bootstrap still understandable
     - EMIS newcomer path is shorter and more focused
     - shared foundation is explicit rather than tribal
+
+#### ST-9 Acceptance Checklist
+- integrated verification:
+  - run on the integrated branch, not a worker-only diff
+  - report must include current results for:
+    - `pnpm check`
+    - `pnpm build`
+    - `pnpm lint:boundaries`
+  - if any command fails, report must classify:
+    - regression introduced in ST-4..ST-8
+    - or pre-existing baseline issue
+- command discoverability:
+  - root/docs reading path must clearly answer:
+    - how to bootstrap the repo
+    - how to run verification after the migration slices
+    - which command is canonical for boundary-only verification
+  - if wrappers/root scripts exist, docs must prefer one canonical command rather than listing competing variants without guidance
+- docs and navigation coherence:
+  - top-level and local navigation docs touched by ST-4..ST-8 must agree on:
+    - current package layout
+    - current app shell placement
+    - current EMIS package placement
+    - current BI/dashboard app-glue decisions from ST-8
+  - any stale path references discovered in active reading order must be fixed or explicitly listed as deferred
+- branch and handoff coherence:
+  - canonical integration branch naming must be stated consistently across plan/report/docs that are part of the active workflow
+  - if an older branch name remains in historical reports, active docs must make clear what is current vs historical
+  - report must call out any remaining ambiguity in branch protocol instead of leaving mixed naming in active guidance
+- handoff readiness:
+  - `last_report.md` must explicitly state:
+    - why ST-10 is now safe to start
+    - what active source-of-truth docs a newcomer should read first
+    - what residual non-blocking gaps remain after ST-9
 
 ### ST-10: Legacy Docs Cleanup And Archive Normalization
 - scope: `docs/*`, `docs/archive/*`, root navigation docs, agent docs references
@@ -212,6 +298,7 @@
 - размер: M
 - заметки:
   - dedicated docs cleanup slice, not mixed into structural moves
+  - active scope is docs/archive/navigation normalization only
   - цель:
     - убрать лишние active-looking legacy docs из primary reading path
     - нормализовать, что считается:
@@ -224,6 +311,9 @@
     - не удалять исторические материалы без archive destination
     - не держать завершенные wave/handoff docs в active top-level `docs/`, если они больше не нужны в reading order
     - где возможно, prefer archive move + explicit note over silent deletion
+    - классификация `// MIGRATION` shim-зон допустима только как docs inventory; actual shim removal не входит в этот slice
+    - не втягивать в slice deferred technical follow-ups из `P3: Post-Split Architecture Hardening`
+    - не втягивать BI-only debt, не влияющий на docs/archive/navigation normalization
   - expected outputs:
     - reduced top-level docs noise
     - updated `docs/AGENTS.md` catalog
@@ -259,6 +349,57 @@
       - further separation of ops docs if more deployment runbooks appear
       - further separation of strategy docs if more BI/strategy design docs appear
       - any future completed handoff/wave notes that accidentally land in top-level `docs/`
+  - carry-forward docs cleanup candidates confirmed by ST-9:
+    - `README.md` still uses short conceptual paths in "Что уже есть"; normalize only if it improves navigation clarity without making overview prose heavier
+    - `docs/emis_working_contract.md` still contains forward-tense wording about the already-closed `Select.svelte` ST-4 blocker; convert to current-state wording during cleanup
+
+#### ST-10 Acceptance Checklist
+- scope discipline:
+  - touched files stay within docs/navigation/archive surface:
+    - `docs/*`
+    - `docs/archive/*`
+    - `README.md`
+    - root/local navigation docs that reference archived or canonical materials
+  - no runtime code edits
+  - no package topology changes
+  - no actual removal of `// MIGRATION` re-export shims as part of this slice
+- canonical classification:
+  - `docs/AGENTS.md` explicitly distinguishes:
+    - canonical source-of-truth docs
+    - active supporting docs
+    - archive-only / historical docs
+    - completed handoff or wave notes
+  - active reading order does not send newcomers through historical docs by default
+- archive normalization:
+  - completed handoff/wave/task notes no longer look like active top-level docs
+  - archived docs remain discoverable under `docs/archive/*`
+  - archive references are clearly marked historical / not source of truth
+- navigation coherence:
+  - root `AGENTS.md`, `docs/AGENTS.md`, `docs/emis_session_bootstrap.md` and any touched local navigation docs agree on:
+    - current canonical docs
+    - current archive locations
+    - current single-deployable monorepo framing
+  - no reopened debate about topology or package ownership appears in touched docs
+- carry-forward cleanup:
+  - `README.md` conceptual-path wording is either:
+    - normalized for clearer navigation
+    - or explicitly left as conceptual overview without pretending to be path navigation
+  - `docs/emis_working_contract.md` no longer uses forward-tense wording about the already-closed ST-4 `Select.svelte` blocker
+- explicit exclusions:
+  - report must state that ST-10 did not absorb:
+    - `P3: Post-Split Architecture Hardening`
+    - `fetchDataset.ts` boundary-gap remediation
+    - `widgets/stock-alerts` BI-only debt
+    - `emis-server` decoupling / `EmisMap` decomposition / similar runtime cleanup
+  - if `// MIGRATION` shims are mentioned, report must classify them as deferred cleanup inventory unless a docs-only move required a note update
+- verification and handoff:
+  - report confirms no broken references were introduced in touched docs
+  - if no runtime commands were needed, report says so explicitly instead of implying missing verification
+  - `last_report.md` must separately state:
+    - which docs remain canonical
+    - which docs were archived/moved or reclassified
+    - which docs were intentionally left in place and why
+    - what cleanup candidates remain deferred after ST-10
 
 ## Recommended Execution Order
 1. ST-1 topology freeze.
@@ -300,7 +441,7 @@
    - `AGENTS.md`
    - `docs/AGENTS.md`
 3. Confirm the current integration branch is:
-   - `feature/emis-monorepo-readiness`
+   - `feature/emis-foundation-stabilization`
 4. Execute ST-1, ST-2, ST-3, ST-4 before spawning implementation workers.
 5. Do not start physical moves while topology/ownership rules remain ambiguous.
 6. Do not start ST-5 until ST-4 explicitly defines the initial automated architecture guardrails.
@@ -338,7 +479,7 @@
   - DB schema contents
 
 ## Ветки
-- integration branch: `feature/emis-monorepo-readiness`
+- integration branch: `feature/emis-foundation-stabilization`
 - worker branch: `agent/worker/app-extraction`
 
 ## Архитектурные ограничения
@@ -379,7 +520,7 @@
   - app shell/navigation beyond necessary import rewiring
 
 ## Ветки
-- integration branch: `feature/emis-monorepo-readiness`
+- integration branch: `feature/emis-foundation-stabilization`
 - worker branch: `agent/worker/platform-packages`
 
 ## Архитектурные ограничения
@@ -418,7 +559,7 @@
   - second SvelteKit app split
 
 ## Ветки
-- integration branch: `feature/emis-monorepo-readiness`
+- integration branch: `feature/emis-foundation-stabilization`
 - worker branch: `agent/worker/emis-packages`
 
 ## Архитектурные ограничения
@@ -439,7 +580,103 @@
 - what future `apps/emis` split is now enabled by this move
 ```
 
-### Worker D Draft: ST-10 Legacy Docs Cleanup And Archive Normalization
+### Worker D Draft: ST-8 Rationalize BI/Dashboard Packages And Remaining App Glue
+
+```md
+# Task: ST-8 Rationalize BI/Dashboard Packages And Remaining App Glue
+
+## Что сделать
+Закрыть remaining BI/dashboard structural questions после ST-6 и ST-7:
+- отделить reusable BI/dashboard foundation от app-local glue;
+- не переоткрывать topology decision;
+- принять явное решение по conditional targets `bi-alerts` и `bi-dashboards`.
+
+## Scope
+- файлы:
+  - `apps/web/src/routes/dashboard/*`
+  - dataset-related BI code and docs touched by BI/dashboard placement
+  - `apps/web/src/lib/features/dashboard-edit/*`
+  - `apps/web/src/lib/server/alerts/*`
+  - app shell/navigation docs affected by the placement result
+- НЕ трогать:
+  - EMIS operational/server refactors outside direct BI boundary needs
+  - second app split
+  - broad docs archive cleanup outside touched BI/dashboard references
+
+## Ветки
+- integration branch: `feature/emis-foundation-stabilization`
+- worker branch: `agent/worker/bi-dashboard-rationalization`
+
+## Архитектурные ограничения
+- Routes stay in `apps/web`.
+- `bi-alerts` / `bi-dashboards` are optional, only if reuse pressure is real.
+- Do not turn route folders into hidden package-level libraries.
+- BI must not import EMIS operational code directly; use dataset/read-model boundaries.
+- If you keep code in app, say why it is app glue instead of package foundation.
+
+## Проверки
+- imports resolve after any placement change
+- `pnpm check`
+- `pnpm build`
+- `pnpm lint:boundaries`
+- docs/navigation for touched BI zones remain accurate
+
+## Формат сдачи
+Используй `Worker Handoff`.
+Обязательно укажи:
+- package verdict for `bi-alerts`
+- package verdict for `bi-dashboards`
+- canonical home for touched BI dataset/helpers
+- what remained app glue intentionally
+- why ST-9 is or is not unblocked
+```
+
+### Worker E Draft: ST-9 Verify Commands, Checks, Docs And Handoff Readiness
+
+```md
+# Task: ST-9 Verify Commands, Checks, Docs And Handoff Readiness
+
+## Что сделать
+Проверить integrated result после ST-5..ST-8 как единое состояние репозитория:
+- прогнать canonical verification;
+- выровнять docs/navigation/reading order;
+- убрать неоднозначность в branch/path guidance для следующего handoff.
+
+## Scope
+- файлы:
+  - root/docs navigation and workflow docs affected by ST-4..ST-8
+  - touched local `AGENTS.md` and command docs where discoverability drift remains
+  - `docs/agents/lead-tactical/last_report.md` for current handoff
+- НЕ трогать:
+  - new structural moves
+  - package topology decisions already accepted
+  - archive normalization beyond what is needed to keep active reading order coherent
+
+## Ветки
+- integration branch: canonical current integration branch for this wave
+- worker branch: `agent/worker/st9-verification-handoff`
+
+## Архитектурные ограничения
+- Verify integrated state; do not use ST-9 to sneak in extra refactors.
+- Prefer fixing active-doc drift over expanding scope into broad cleanup.
+- If branch naming drift is found, normalize active guidance and clearly mark historical references as historical.
+
+## Проверки
+- `pnpm check`
+- `pnpm build`
+- `pnpm lint:boundaries`
+- active reading-order docs resolve to real current paths
+
+## Формат сдачи
+Используй `Worker Handoff`.
+Обязательно укажи:
+- current canonical verification commands
+- docs/paths/branch references fixed
+- any residual non-blocking gaps
+- why ST-10 is now or is not safe to start
+```
+
+### Worker F Draft: ST-10 Legacy Docs Cleanup And Archive Normalization
 
 ```md
 # Task: ST-10 Legacy Docs Cleanup And Archive Normalization
@@ -458,7 +695,7 @@
   - structural app/package moves
 
 ## Ветки
-- integration branch: `feature/emis-monorepo-readiness`
+- integration branch: `feature/emis-foundation-stabilization`
 - worker branch: `agent/worker/docs-cleanup`
 
 ## Архитектурные ограничения
@@ -466,6 +703,8 @@
 - Prefer archive move + explicit discoverability note over silent deletion.
 - Keep current canonical reading order short and stable.
 - If a document still matters for active work, do not archive it just because it is old.
+- Do not use ST-10 to remove `// MIGRATION` shims or to change runtime/package boundaries.
+- Do not pull deferred `P3` hardening or BI-only debt into this docs slice.
 
 ## Проверки
 - `docs/AGENTS.md` remains coherent
@@ -478,6 +717,7 @@
 - which docs were kept canonical
 - which docs were archived/moved
 - which docs were intentionally left in place and why
+- which deferred cleanup items were explicitly kept out of scope
 ```
 
 ## Architectural Decisions To Carry Through

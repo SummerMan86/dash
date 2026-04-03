@@ -1,138 +1,120 @@
-# Report: ST-8 — Rationalize BI/Dashboard Packages And Remaining App Glue
+# Report: ST-10 — Legacy Docs Cleanup And Archive Normalization
 
 ## Статус
 Выполнено
 
 ## Что сделано
 
-### Packaging Verdicts
+### 1. Canonical doc classification in docs/AGENTS.md
 
-**bi-dashboards: INTENTIONALLY KEPT IN `apps/web`**
+Added explicit classification system with four labels:
+- **canonical** — source of truth for active work, read first
+- **active** — supporting doc, useful but not source of truth
+- **reference** — external pointer, not maintained in this repo
+- **archive** — historical only, not source of truth
 
-Reasons:
-1. No second consumer exists — only `apps/web` routes use `dashboard-edit`
-2. SvelteKit routes (the bulk of BI code) cannot be extracted to packages (framework constraint)
-3. `dashboard-edit` uses `$app/environment` (SvelteKit-specific import)
-4. `fetchDataset` is app-level filter composition (merges runtime filter context, legacy filters, request params) — not a reusable library function
-5. Creating a package for a single consumer is speculative per plan constraints ("do not create speculative packages with no real second consumer")
-6. Self-contained design of `dashboard-edit` means future extraction is trivial when a real second consumer appears
+Restructured sections 2 (Dashboard-builder/Strategy) and 3 (EMIS) into subsections by classification (Canonical / Active / Reference / Archive). Added new section 3a (Agent Workflow) to separate agent docs from EMIS docs.
 
-**bi-alerts: INTENTIONALLY KEPT IN `apps/web`**
+Added missing `archive/emis/emis_todo_vessel_markers.md` to catalog.
 
-Reasons:
-1. No second consumer exists
-2. Tied to SvelteKit app lifecycle — `hooks.server.ts` starts/stops the scheduler
-3. Uses `$lib/server/db/pg` for DB access (app-level infrastructure wiring)
-4. Cross-domain orchestration with env-specific config (Telegram bot tokens, cron schedules, timezone)
-5. Extracting would require abstracting app lifecycle management with no concrete benefit
+### 2. Carry-forward cleanup
 
-### BI/Dataset Canonical Placement
+**emis_working_contract.md** (section 10):
+- Changed stale forward-tense "должен быть resolved до или в ST-4" to past-tense "resolved в ST-4; `pnpm check` green с этого момента"
 
-| Path | Status | Classification |
-|------|--------|---------------|
-| `apps/web/src/lib/features/dashboard-edit/` | Canonical | App-level feature (GridStack editor) |
-| `apps/web/src/lib/shared/api/fetchDataset.ts` | Canonical | App-level BI data access facade |
-| `apps/web/src/lib/server/datasets/definitions/` | Canonical | App-specific dataset IR definitions |
-| `apps/web/src/lib/server/datasets/compile.ts` | MIGRATION shim | Re-export from `platform-datasets/server` — ST-10 cleanup candidate |
-| `apps/web/src/lib/server/alerts/` | Canonical | App-level server subsystem |
-| `apps/web/src/lib/server/providers/` | Mixed | mockProvider canonical; postgresProvider is MIGRATION shim (canonical in platform-datasets) |
-| `apps/web/src/lib/entities/dataset/index.ts` | MIGRATION shim | Re-export from `platform-datasets` |
-| `apps/web/src/lib/entities/filter/index.ts` | MIGRATION shim | Re-export from `platform-filters` |
-| `apps/web/src/lib/entities/charts/` | MIGRATION shim | Re-export from `platform-ui` |
-| `apps/web/src/lib/entities/emis-*/` | MIGRATION shim | Re-exports from `emis-contracts` |
-| `apps/web/src/lib/widgets/filters/` | MIGRATION shim | Re-export from `platform-filters/widgets` |
-| `apps/web/src/lib/widgets/emis-map/` | MIGRATION shim | Re-export from `emis-ui` |
-| `apps/web/src/lib/widgets/emis-status-bar/` | MIGRATION shim | Re-export from `emis-ui` |
-| `apps/web/src/lib/widgets/stock-alerts/` | Canonical | App-level WB stock alert widgets |
-| `apps/web/src/lib/widgets/emis-drawer/` | Canonical | App-level EMIS glue |
-| `apps/web/src/lib/features/emis-manual-entry/` | Canonical | App-level EMIS CMS forms |
+**README.md** ("Что уже есть"):
+- Added clarification note: "пути указаны концептуально; физически код живёт в `apps/web/src/lib/` и `packages/`"
+- Explicitly marks these as conceptual overview, not filesystem navigation
 
-### App Glue Boundaries
+### 3. Root AGENTS.md reading order fix
 
-What intentionally stays as app glue:
+- Added `docs/emis_monorepo_target_layout.md` to EMIS starting path (was missing between baseline and working_contract)
+- Now consistent with docs/AGENTS.md and emis_session_bootstrap.md reading orders
 
-- **Route composition** — all `routes/dashboard/*`, `routes/emis/*`, `routes/api/*` — SvelteKit routes must live in the app
-- **App shell/navigation** — root layout, Header.svelte
-- **SvelteKit-bound helpers** — `fetchDataset` (uses SvelteKit `fetch`), `dashboard-edit` (uses `$app/environment`)
-- **Dashboard editor** — `features/dashboard-edit/` (no second consumer, trivial to extract later)
-- **Alert runtime/scheduler** — `server/alerts/` (app lifecycle dependency via hooks.server.ts)
-- **Dataset definitions** — `server/datasets/definitions/` (app-specific data layer config, not reusable)
-- **Provider routing** — `server/providers/` (app-specific mock/postgres dispatch)
-- **EMIS app glue** — `emis-drawer`, `emis-manual-entry` (depend on app-level composition patterns)
+### 4. Empty directory cleanup
 
-### EMIS/BI Separation
+- Removed empty `docs/emis/` directory (was a cleanup candidate from pre-migration inventory)
 
-Verified clean:
-- BI dashboard routes (strategy, wildberries, analytics) have **zero EMIS imports**
-- EMIS read-side dashboards (`routes/dashboard/emis/`) access data through dataset/IR layer — correct pattern
-- No `platform-*` → BI/dashboard back-dependencies
-- No new cross-domain imports introduced
+### 5. Navigation coherence verification
 
-### Cleanup
+All cross-references verified:
+- 34 referenced files checked — all exist
+- Root AGENTS.md, docs/AGENTS.md, emis_session_bootstrap.md, emis_working_contract.md reading orders are now consistent
+- No broken references in touched docs
+- Archive docs clearly marked as historical / not source of truth
 
-- Deleted 7 empty placeholder directories: `entities/dashboard/`, `entities/widget/`, `widgets/chart/`, `widgets/kpi/`, `widgets/dashboard-container/`, `widgets/table/`, `shared/config/`
-- Updated AGENTS.md navigation docs in: `lib/`, `entities/`, `widgets/`, `routes/dashboard/`, `features/dashboard-edit/`, `server/datasets/`, `server/alerts/`
+## Docs that remain canonical
 
-### Pre-existing Issues (NOT ST-8 scope)
+- `docs/emis_session_bootstrap.md` — EMIS entry point, current state
+- `docs/emis_architecture_baseline.md` — EMIS boundary map
+- `docs/emis_monorepo_target_layout.md` — target layout and migration rules
+- `docs/emis_working_contract.md` — operational rules, placement, DoD
+- `docs/emis_mve_tz_v_2.md` — scope, invariants, acceptance
+- `docs/emis_implementation_spec_v1.md` — implementation decisions
+- `docs/emis_freeze_note.md` — frozen decisions
+- `apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md` — runtime/API conventions
+- `docs/current-project-analysis.md` — platform analysis
+- `docs/strategy/bi_strategy.md` — BI strategy contract
+- `docs/ops/beget_deployment_plan.md` — deployment runbook
+- `docs/agents/workflow.md`, `roles.md`, `templates.md` — agent workflow
+- `docs/emis_monorepo_target_layout.md` — monorepo target layout
+- Local `AGENTS.md` files in route/package directories
 
-- `widgets/stock-alerts/` imports types from `routes/dashboard/wildberries/stock-alerts/` — FSD boundary violation (widgets → routes). Pre-existing.
-- `fetchDataset.ts` lives in `$shared/api/` but imports from `$entities/` — 3 lint:boundaries violations. Pre-existing, documented since ST-4.
-- `cacheKeyQuery` in fetchDataset.ts is redundant (identical to `query`). Pre-existing tech debt.
+## Docs archived/reclassified
+
+- `docs/archive/emis/*` — 4 files, all archive-only (were already in archive, now explicitly classified)
+- `docs/archive/strategy-v1/*` — historical strategy pack (were already in archive, now explicitly classified)
+- `docs/archive/agents/*` — historical agent model (were already in archive, now explicitly classified)
+- Empty `docs/emis/` directory — removed
+
+## Docs intentionally left in place
+
+- `docs/emis_architecture_review.md` — classified as **active** (not canonical, but useful for review tasks)
+- `docs/emis_offline_maps_ops.md` — classified as **active** (ops runbook, used when working on offline maps)
+- `docs/emis_next_tasks_2026_03_22.md` — classified as **active** (backlog, used for task planning)
+
+## Explicit exclusions
+
+ST-10 did NOT absorb:
+- `P3: Post-Split Architecture Hardening` — remains deferred backlog
+- `fetchDataset.ts` boundary-gap remediation — remains pre-existing FSD gap
+- `widgets/stock-alerts` BI-only debt — remains pre-existing FSD violation
+- `emis-server` decoupling / `EmisMap` decomposition / similar runtime cleanup — remains deferred
+- `// MIGRATION` shim removal — shims remain in place (~53 files), classified as docs inventory only
 
 ## Проверки
 
-- `pnpm check`: 0 errors, 0 warnings
-- `pnpm build`: success (built in 10.70s)
-- `pnpm lint:boundaries`: 3 violations (all pre-existing fetchDataset.ts FSD gap, same as before ST-8)
+No runtime commands needed — this slice touched only docs/navigation/archive surface. No new runtime commands, no package topology changes, no code edits.
 
 ## Review Gate
 
 ### Вердикты ревьюеров
-- architecture-reviewer: **OK** — no new violations; all 5 architectural claims verified against live codebase
-- docs-reviewer: **request changes** → fixed → OK (see below)
-- code-reviewer: не запускался (no runtime code changes)
-- security-reviewer: не запускался (no server/import/runtime changes)
-- ui-reviewer: не запускался (no frontend changes)
+- architecture-reviewer: OK — no issues, topology not reopened, classification labels correct
+- docs-reviewer: request changes → fixed
 
 ### Findings по severity
 
 **CRITICAL:** нет
 
-**WARNING (fixed in d78e6d9):**
-- docs-reviewer: AGENTS.md section 5 still listed 7 deleted placeholder dirs → updated to "Deleted placeholders (ST-8)"
-- docs-reviewer: emis_monorepo_target_layout.md legacy table listed deleted dirs → updated
-- docs-reviewer: emis_monorepo_target_layout.md listed shared/config/ as staying in app (deleted) → updated
-- docs-reviewer: server/AGENTS.md Postgres how-to pointed to shim paths → updated to canonical package paths
-- docs-reviewer: lib/AGENTS.md and last_report listed server/providers/ as fully canonical → annotated postgresProvider as MIGRATION shim
+**WARNING (fixed):**
+- `emis_working_contract.md` §12 Reading Order was missing `emis_mve_tz_v_2.md` — inserted as position 5
 
-**INFO (fixed in d78e6d9):**
-- docs-reviewer: entities/AGENTS.md emis-* section was prescriptive for shim files → simplified to redirect
-- docs-reviewer: datasets/definitions/AGENTS.md missing paymentAnalytics.ts → added
-- docs-reviewer: emis_monorepo_target_layout.md emis-manual-entry/emis-drawer target stale → corrected to "stays in app"
+**INFO (fixed):**
+- `docs/AGENTS.md` line 72 — status bar path was imprecise, now lists both `emis-map/` and `emis-status-bar/`
+- `emis_working_contract.md` §4 Ownership — was listing old app paths as canonical, now updated to reflect packages as canonical and app paths as compatibility shims
 
 ## Ветки
 
 - integration branch: `feature/emis-foundation-stabilization`
-- worker branches merged: none (executed directly as lead-tactical)
-- review diff: `git diff main..feature/emis-foundation-stabilization`
-
-## Handoff Readiness
-
-ST-9 is safe to start because:
-1. All BI/dashboard code has explicit canonical placement
-2. Both conditional BI packages (`bi-alerts`, `bi-dashboards`) have explicit verdicts with concrete justification
-3. EMIS/BI separation is verified clean
-4. All verification passes (check 0 errors, build success, lint:boundaries only pre-existing gaps)
-5. Navigation docs are updated for all touched BI/dashboard zones
-6. No ambiguous "later maybe" placements remain
-
-What moved into package boundaries (cumulative ST-6..ST-8):
-- 8 packages: platform-core, platform-ui, platform-datasets, platform-filters, db, emis-contracts, emis-server, emis-ui
-- 0 new packages in ST-8 (both conditional targets deferred with justification)
-
-What intentionally remained app glue:
-- Dashboard editor, fetchDataset, dataset definitions, alerts, providers, EMIS drawer/manual-entry, all routes
+- executed directly as lead-tactical (no worker branch)
 
 ## Вопросы к lead-strategic
 
-Нет. Все packaging decisions обоснованы конкретным отсутствием reuse pressure.
+Нет. ST-10 is a clean docs cleanup pass. All acceptance checklist items are addressed.
+
+### Cleanup candidates that remain deferred after ST-10
+
+- ~53 `// MIGRATION` re-export shims in `apps/web/` — removal is code work, not docs scope
+- `docs/emis_next_tasks_2026_03_22.md` title says "1 April 2026" — will become stale if backlog is updated; no fix needed now
+- Further ops/strategy doc separation if more runbooks or design docs appear
+- Any future completed handoff/wave notes that accidentally land in top-level `docs/`

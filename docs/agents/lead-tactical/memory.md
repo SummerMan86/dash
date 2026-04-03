@@ -64,9 +64,30 @@
 - Dataset definitions confirmed canonical in apps/web/src/lib/server/datasets/definitions/
 - Pre-existing issues documented but not touched: stock-alerts→routes FSD violation, fetchDataset FSD gap, cacheKeyQuery redundancy
 
+### ST-9 (2026-04-03)
+- Verification/docs coherence slice — no structural changes
+- Integrated verification: pnpm check 0 errors, pnpm build success, lint:boundaries 3 pre-existing violations
+- Fixed 6 stale branch name references in current_plan.md (feature/emis-monorepo-readiness → feature/emis-foundation-stabilization)
+- Fixed stale Select.svelte parse error description in emis_architecture_baseline.md (resolved in ST-4, baseline now green)
+- Fixed stale README structural description — now accurately describes 8-package monorepo layout
+- Added `pnpm lint:boundaries` to README commands section
+- Docs audit: 28 local AGENTS.md files verified, all paths correct, reading orders consistent
+- No regressions from ST-4..ST-8
+
+### ST-10 (2026-04-03)
+- Docs-only cleanup slice — no runtime code, no package topology
+- Added explicit doc classification (canonical/active/reference/archive) to docs/AGENTS.md
+- Fixed stale forward-tense in emis_working_contract.md (Select.svelte blocker → past tense)
+- Normalized README.md "Что уже есть" with conceptual-path clarification
+- Added emis_monorepo_target_layout.md to root AGENTS.md EMIS starting path
+- Removed empty docs/emis/ directory
+- Added missing archive/emis/emis_todo_vessel_markers.md to catalog
+- Separated Agent Workflow docs into new section 3a in docs/AGENTS.md
+- All 34 doc references verified — none broken
+
 ### Integration branch
 - `feature/emis-foundation-stabilization`
-- Commits: `a0ee817` (ST-8 main), `d78e6d9` (Review Gate fixes)
+- Commits: `a0ee817` (ST-8 main), `d78e6d9` (Review Gate fixes), ST-9/ST-10 changes uncommitted
 
 ## Проблемы и workarounds
 
@@ -77,12 +98,12 @@
 
 ## Заметки для следующей сессии
 
-- **Следующий шаг: ST-9** (Verify Commands, Checks, Docs And Handoff Readiness)
+- **ST-1 through ST-10 all completed** — full plan executed
 - Package naming: `@dashboard-builder/{name}`, workspace:* protocol
 - Current packages (8): platform-core, db, platform-ui, platform-datasets, platform-filters, emis-contracts, emis-server, emis-ui
 - No BI packages created (bi-dashboards, bi-alerts both deferred with justification)
-- MIGRATION shims still in place — ~53 re-export files to clean up in ST-10
-- Pre-existing carry-forward:
+- MIGRATION shims still in place — ~53 re-export files (code cleanup, not docs scope)
+- Pre-existing carry-forward (all deferred, none blocking):
   - SvelteKit coupling in emis-server (http.ts/audit.ts) — deferred from ST-7
   - EmisMap.svelte 1224 lines — decomposition candidate
   - stock-alerts→routes FSD violation

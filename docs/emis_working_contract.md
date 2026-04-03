@@ -31,14 +31,25 @@
 
 ## 4. Ownership
 
-- `apps/web/src/lib/entities/emis-*` - EMIS entity contracts, DTO, Zod schemas
-- `apps/web/src/lib/features/emis-*` - bounded EMIS forms and interactions
-- `apps/web/src/lib/widgets/emis-*` - reusable EMIS widgets
-- `apps/web/src/lib/server/emis/infra/*` - server infra/helpers
-- `apps/web/src/lib/server/emis/modules/*` - domain backend logic
-- `apps/web/src/routes/api/emis/*` - thin HTTP transport
-- `apps/web/src/routes/emis/*` - workspace/UI orchestration
-- `apps/web/src/routes/dashboard/emis/*` - BI/read-side routes
+Canonical code lives in packages:
+
+- `packages/emis-contracts/` — EMIS entity contracts, DTO, Zod schemas
+- `packages/emis-server/` — server infra + domain backend modules
+- `packages/emis-ui/` — map widgets, status bar
+
+App-level code (stays in `apps/web/`):
+
+- `apps/web/src/lib/features/emis-manual-entry/` — bounded EMIS forms (depends on `$app/forms`)
+- `apps/web/src/lib/widgets/emis-drawer/` — drawer widget (depends on `$widgets/filters`)
+- `apps/web/src/routes/api/emis/*` — thin HTTP transport
+- `apps/web/src/routes/emis/*` — workspace/UI orchestration
+- `apps/web/src/routes/dashboard/emis/*` — BI/read-side routes
+
+Compatibility shims (marked `// MIGRATION`, will be removed):
+
+- `apps/web/src/lib/entities/emis-*` → re-exports from `packages/emis-contracts`
+- `apps/web/src/lib/server/emis/*` → re-exports from `packages/emis-server`
+- `apps/web/src/lib/widgets/emis-map/*` → re-exports from `packages/emis-ui`
 
 ## 5. Non-negotiables
 
@@ -92,7 +103,7 @@
 - structural move не должен менять domain/API logic в том же PR
 - если boundary перемещается, docs и runtime contracts обновляются в том же slice
 - compatibility re-exports допускаются временно и помечаются `// MIGRATION: remove after ...`
-- baseline blocker (`Select.svelte` parse error) должен быть resolved до или в ST-4, не маскируется structural migration
+- baseline blocker (`Select.svelte` parse error) resolved в ST-4; `pnpm check` green с этого момента
 
 Import direction rules и alias policy зафиксированы в target layout doc и обязательны с момента начала physical moves.
 
@@ -110,6 +121,7 @@ Import direction rules и alias policy зафиксированы в target layo
 2. `emis_architecture_baseline.md`
 3. `emis_monorepo_target_layout.md`
 4. этот документ
-5. `emis_implementation_spec_v1.md`
-6. `emis_freeze_note.md`
-7. `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
+5. `emis_mve_tz_v_2.md`
+6. `emis_implementation_spec_v1.md`
+7. `emis_freeze_note.md`
+8. `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`

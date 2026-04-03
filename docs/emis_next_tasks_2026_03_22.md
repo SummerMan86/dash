@@ -472,6 +472,111 @@ Done when:
 
 ---
 
+## Track P3: Post-Split Architecture Hardening
+
+**Layer:** post-MVE next wave.
+
+**Goal**
+
+Close the most important architectural follow-ups revealed by `ST-6` and `ST-7` without mixing them into package-extraction slices.
+
+Scope note:
+
+- this track keeps only EMIS-facing or platform-level residuals that still matter for EMIS evolution
+- BI-only cleanup that does not affect EMIS contracts or platform boundaries should live outside this backlog
+
+### P3.1. Remove SvelteKit coupling from `emis-server`
+
+**Session scope:** server-only refactor, no API behavior change.
+
+Current concern:
+
+- `packages/emis-server` still contains SvelteKit-shaped transport helpers (`http.ts`, write-context handling in `audit.ts`)
+
+Deliver:
+
+- framework-agnostic server helpers stay in `packages/emis-server`
+- SvelteKit-specific request/response glue moves back to app transport layer or a thin app-local shim
+
+Done when:
+
+- `packages/emis-server` no longer depends directly on `@sveltejs/kit`
+- `routes/api/emis/*` still remain thin transport and runtime behavior stays unchanged
+
+### P3.2. Decompose `EmisMap.svelte`
+
+**Session scope:** UI extraction only, no UX redesign.
+
+Current concern:
+
+- `packages/emis-ui/src/emis-map/EmisMap.svelte` is oversized and expensive to evolve safely
+
+Deliver:
+
+- bounded extraction of one or more internal slices such as:
+  - overlay-fetch orchestration
+  - feature normalization
+  - diagnostics/debug HUD
+
+Done when:
+
+- map behavior is unchanged
+- the main file becomes smaller and easier to review for later feature work
+
+### P3.3. Deduplicate `clampPageSize()` in EMIS queries
+
+**Session scope:** small server cleanup only.
+
+Current concern:
+
+- page-size normalization is duplicated between EMIS query modules
+
+Deliver:
+
+- one shared helper for page-size normalization in EMIS server query code
+
+Done when:
+
+- duplicate logic is removed without changing query contract behavior
+
+### P3.4. Stabilize `mapVesselsQuery` parameter assembly
+
+**Session scope:** targeted query hardening only.
+
+Current concern:
+
+- `mapVesselsQuery` still relies on fragile hardcoded bbox parameter positions
+
+Deliver:
+
+- safer parameter construction that is resilient to future query edits
+
+Done when:
+
+- bbox/query parameter ordering no longer depends on manual index bookkeeping
+
+### P3.5. Resolve the remaining `fetchDataset` boundary gap
+
+**Session scope:** platform-side cleanup only.
+
+Current concern:
+
+- `apps/web/src/lib/shared/api/fetchDataset.ts` still causes the 3 known `pnpm lint:boundaries` violations
+- the current helper still carries small local tech debt (`cacheKeyQuery` duplicates `query`)
+
+Deliver:
+
+- move or refactor the remaining cross-package composition so boundary lint can go green
+- remove the redundant local query-copying if it is not needed after the boundary fix
+
+Done when:
+
+- `pnpm lint:boundaries` no longer reports the known `fetchDataset.ts` violations
+- dataset/filter boundary remains explicit rather than hidden behind a temporary shim
+- `fetchDataset.ts` no longer keeps dead query-copying logic just to support the old layout
+
+---
+
 ## Deferred / do not pull into current sessions
 
 These are intentionally outside current active backlog unless product priorities change:
@@ -492,6 +597,7 @@ M3.1 → M3.2 → M3.3 → M3.4
 M4.1 → M4.2 → M4.3
 P1.1 → P1.2 → P1.3 → P1.4 → P1.5
 P2.1 → P2.2 → P2.3
+P3.1 → P3.2 → P3.3 → P3.4 → P3.5
 ```
 
 ## Suggested next dialog
