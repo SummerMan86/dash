@@ -16,6 +16,9 @@ Lead-tactical сам смержит твою worker branch в integration branch
 
 ## Branch And Worktree Discipline
 
+Это worker-side summary, не canonical source of truth.
+Canonical protocol: `docs/agents/workflow.md`, секция 7; orchestration-side checklist: `docs/agents/lead-tactical/instructions.md`, секция `Worktree Bootstrap Checklist`.
+
 - Работай только в своём `agent/worker/<slug>` branch.
 - Не коммить в integration branch `feature/<topic>`, если lead-tactical явно не сказал работать напрямую там.
 - Не переиспользуй чужой worktree.

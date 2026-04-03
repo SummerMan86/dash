@@ -34,6 +34,9 @@ Workers создаются как **teammates** (Agent Teams в tmux), не ка
 
 ### Worktree Bootstrap Checklist
 
+Это role-specific orchestration summary.
+Canonical branch/worktree protocol: `docs/agents/workflow.md`, секция 7 (`Ветки`, `Worktrees`, `Branch integration и Review Gate`).
+
 Перед запуском каждого нового worker:
 
 1. Проверь, что `lead-tactical` находится в правильной integration branch `feature/<topic>`.
