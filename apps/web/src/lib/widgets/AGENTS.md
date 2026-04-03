@@ -10,56 +10,31 @@
 
 Widgets могут использовать `entities` и `shared`, но не должны тянуть `features`, чтобы не плодить circular deps.
 
-## Что здесь реально используется
+## What lives here after ST-8
 
 ### `filters/`
 
-Главный reusable widget-модуль:
-
-- `FilterPanel.svelte`
-- `FilterField.svelte`
-- `DateRangeFilter.svelte`
-- `SelectFilter.svelte`
-- `MultiSelectFilter.svelte`
-- `TextFilter.svelte`
-
-Это UI-обертка над `entities/filter`.
-Новый код должен передавать runtime явно.
-
-Typical usage:
-
-```svelte
-<script>
-	import { useFilterWorkspace } from '$entities/filter';
-	import { FilterPanel } from '$widgets/filters';
-	import { pageFilters } from './filters';
-
-	const filterRuntime = useFilterWorkspace({
-		workspaceId: 'dashboard-wildberries',
-		ownerId: 'office-day',
-		specs: pageFilters
-	});
-</script>
-
-<FilterPanel runtime={filterRuntime} />
-```
+MIGRATION re-export from `@dashboard-builder/platform-filters/widgets`.
+Canonical code lives in `packages/platform-filters`.
 
 ### `stock-alerts/`
 
-Прикладной widget-модуль для складских алертов:
+App-level Wildberries stock alert widgets:
 
 - `ScenarioParams.svelte`
 - `StatusBadge.svelte`
 
-### `emis-map/`
+Note: imports types from `routes/dashboard/wildberries/stock-alerts/` (pre-existing FSD boundary concern, not ST-8 scope).
 
-Новый EMIS widget-модуль для geospatial runtime:
+### `emis-map/` and `emis-status-bar/`
 
-- `EmisMap.svelte`
-- layer config
-- popup renderers
-- online/offline basemap mode
-- controlled fallback при отсутствии локального bundle
+MIGRATION re-exports from `@dashboard-builder/emis-ui`.
+Canonical code lives in `packages/emis-ui`.
+
+### `emis-drawer/`
+
+App-level EMIS glue — detail panel for EMIS map features.
+Stays in app because it depends on `$widgets/filters` cross-widget composition.
 
 ## Conventions
 
@@ -67,23 +42,10 @@ Typical usage:
 - props должны быть typed
 - use design-system tokens instead of raw ad-hoc colors
 
-## Что здесь пока неактивно
-
-- `chart/`
-- `dashboard-container/`
-- `kpi/`
-- `table/`
-
-Сейчас это не ключевые рабочие модули.
-
 ## Как читать widgets
 
 1. этот `AGENTS.md`
-2. `filters/*`
-3. `stock-alerts/*`
-4. `emis-map/*`
-
-Если нужно понять общую фильтрацию страниц, читать widgets вместе с:
-
-- `../entities/filter/AGENTS.md`
-- `../shared/AGENTS.md`
+2. для filter UI — `packages/platform-filters/`
+3. для EMIS map — `packages/emis-ui/`
+4. `stock-alerts/*` — app-level WB widget
+5. `emis-drawer/*` — app-level EMIS glue

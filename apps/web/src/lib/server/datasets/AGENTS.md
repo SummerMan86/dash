@@ -6,8 +6,8 @@
 
 ## Основные файлы
 
-- `compile.ts` - центральный registry/dispatcher
-- `definitions/` - доменные dataset compilers
+- `compile.ts` — MIGRATION re-export from `@dashboard-builder/platform-datasets/server`. Canonical code lives in `packages/platform-datasets/`.
+- `definitions/` — app-specific dataset IR definitions (canonical home, NOT a shim)
 
 ## Что важно
 

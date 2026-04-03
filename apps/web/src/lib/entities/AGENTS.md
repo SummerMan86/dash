@@ -7,9 +7,8 @@
 
 Также есть:
 
-- `charts/` - набор chart presets и helpers
-- `emis-*` - новый набор сущностей и контрактов для EMIS
-- пустые заготовки `dashboard/` и `widget/`
+- `charts/` — re-export from `@dashboard-builder/platform-ui/chart/presets`
+- `emis-*` — MIGRATION re-exports from `@dashboard-builder/emis-contracts`
 
 ## Что здесь важно
 
@@ -82,7 +81,8 @@
 
 ## На что обратить внимание
 
-- `dataset/` и `filter/` фактически играют роль platform-модулей, а не прикладных доменов.
-- Для будущего EMIS именно эти два модуля сейчас важнее всего для read/query части.
-- `dashboard/` и `widget/` пока можно игнорировать: рабочего кода там нет.
-- для EMIS именно `entities/emis-*` теперь является правильной точкой расширения domain contracts.
+- `dataset/` и `filter/` — MIGRATION re-exports from `platform-datasets` / `platform-filters`
+- `emis-*` — MIGRATION re-exports from `emis-contracts`
+- `charts/` — re-export from `platform-ui`
+- All entity files here are compatibility shims. Canonical code lives in `packages/`.
+- These shims will be removed when all consumers migrate to direct package imports (ST-10 cleanup candidate).

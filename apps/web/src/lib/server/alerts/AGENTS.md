@@ -75,6 +75,18 @@ stopAlertScheduler();
 triggerAlertCheck();
 ```
 
+## Package verdict (ST-8)
+
+`bi-alerts` package was evaluated and intentionally deferred:
+
+- No second consumer exists
+- Tied to SvelteKit app lifecycle (`hooks.server.ts` starts/stops scheduler)
+- Uses `$lib/server/db/pg` for DB access (app-level infrastructure)
+- Cross-domain orchestration with env-specific config (Telegram tokens, cron)
+- Extracting would require abstracting app lifecycle management
+
+Canonical home: `apps/web/src/lib/server/alerts/` (app-level server subsystem).
+
 ## When to read this folder
 
 - если меняешь alert processing pipeline

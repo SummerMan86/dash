@@ -53,21 +53,39 @@
 - `lint-boundaries.mjs` must use temp file (`-o`) for stdout buffer reliability
 - `git add -A` caught `.claude/agent-memory/` and `target` — now in `.gitignore`
 
+### ST-8 (2026-04-03)
+- Rationalization slice — no new packages extracted
+- bi-dashboards: KEPT IN APP — no second consumer, SvelteKit routes can't be in packages, `dashboard-edit` uses `$app/environment`, `fetchDataset` is app-level filter composition
+- bi-alerts: KEPT IN APP — no second consumer, tied to hooks.server.ts lifecycle, env-specific config
+- Verified EMIS/BI separation clean — zero cross-imports between BI routes and EMIS packages
+- Deleted 7 empty placeholder directories (entities/dashboard, entities/widget, widgets/chart/kpi/dashboard-container/table, shared/config)
+- Updated 7 AGENTS.md files with canonical placement notes and package verdicts
+- All MIGRATION shims classified explicitly (ST-10 cleanup candidates)
+- Dataset definitions confirmed canonical in apps/web/src/lib/server/datasets/definitions/
+- Pre-existing issues documented but not touched: stock-alerts→routes FSD violation, fetchDataset FSD gap, cacheKeyQuery redundancy
+
+### Integration branch
+- `feature/emis-foundation-stabilization`
+- Latest commit: pending (ST-8 docs + cleanup)
+
+## Проблемы и workarounds
+
+- `pnpm lint` not green (pre-existing Prettier drift) — not blocking
+- ESLint `no-restricted-imports` flat config — each scope needs ONE combined block, `replace_all` on first glob misses subsequent globs in array
+- `lint-boundaries.mjs` must use temp file (`-o`) for stdout buffer reliability
+- `git add -A` caught `.claude/agent-memory/` and `target` — now in `.gitignore`
+
 ## Заметки для следующей сессии
 
-- **Следующий шаг: ST-8** (Rationalize BI/Dashboard Packages And Remaining App Glue)
-- ST-7 lessons:
-  - Same wave approach (leaf first) continued to work well
-  - `$app/forms` prevents extraction of Svelte forms to packages — keep in app
-  - `$widgets/filters` cross-widget dep prevents EmisDrawer extraction — keep in app
-  - emis-server has SvelteKit coupling (http.ts `handleEmisRoute`, audit.ts `resolveEmisWriteContext`) — valid arch concern, deferred to avoid behavior change in extraction slice
-  - EmisMap.svelte is 1224 lines — decomposition candidate for future slice, not ST-7 scope
-  - clampPageSize() duplicated in news/objects queries — pre-existing, not ST-7 scope
-  - Top-level `svelte`/`types` fields in package.json removed when subpath exports are authoritative
-  - Working directory matters with symlinks — use absolute paths for cp/mkdir
+- **Следующий шаг: ST-9** (Verify Commands, Checks, Docs And Handoff Readiness)
 - Package naming: `@dashboard-builder/{name}`, workspace:* protocol
-- Current packages: platform-core, db, platform-ui, platform-datasets, platform-filters, emis-contracts, emis-server, emis-ui
-- Review Gate findings accepted/deferred:
-  - SvelteKit coupling in emis-server — follow-up, not same slice
-  - EmisMap decomposition — follow-up for ST-8 or later
-  - Pre-existing code issues (clampPageSize dup, bbox hardcoded indices) — not ST-7 scope
+- Current packages (8): platform-core, db, platform-ui, platform-datasets, platform-filters, emis-contracts, emis-server, emis-ui
+- No BI packages created (bi-dashboards, bi-alerts both deferred with justification)
+- MIGRATION shims still in place — ~53 re-export files to clean up in ST-10
+- Pre-existing carry-forward:
+  - SvelteKit coupling in emis-server (http.ts/audit.ts) — deferred from ST-7
+  - EmisMap.svelte 1224 lines — decomposition candidate
+  - stock-alerts→routes FSD violation
+  - fetchDataset FSD gap (shared imports entities)
+  - clampPageSize() duplication in news/objects queries
+  - cacheKeyQuery redundancy in fetchDataset

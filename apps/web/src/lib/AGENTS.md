@@ -30,27 +30,36 @@
 - `widgets/filters/`
 - `widgets/stock-alerts/`
 
-## Как сюда встраивается EMIS
+## Package layer vs app layer (ST-8 rationalization)
 
-Для EMIS в `lib/` фиксируем такую модель:
+After ST-6/ST-7 extraction, most reusable foundation lives in `packages/`:
 
-- `entities/emis-*` - contracts и domain DTO
-- `server/emis/infra/*` - backend infrastructure
-- `server/emis/modules/*` - semantic backend modules
-- будущие client-side feature/widgets EMIS появятся только когда начнется UI-слой workspace и карточек
+- `@dashboard-builder/platform-core` — format, useDebouncedLoader
+- `@dashboard-builder/platform-ui` — UI components, chart presets, design tokens
+- `@dashboard-builder/platform-datasets` — DatasetQuery/Response/Ir, compile, postgresProvider
+- `@dashboard-builder/platform-filters` — filter store/planner/widgets
+- `@dashboard-builder/db` — pg pool
+- `@dashboard-builder/emis-contracts` — EMIS entity types
+- `@dashboard-builder/emis-server` — EMIS server modules
+- `@dashboard-builder/emis-ui` — EmisMap, EmisStatusBar
 
-Это помогает не размывать границу между shared platform и новым доменом.
+What remains in `lib/` is **app-level composition and glue**:
 
-## Что здесь пока не стоит переоценивать
+- `entities/` — MIGRATION re-exports from packages (temporary compatibility)
+- `features/dashboard-edit/` — dashboard editor (app feature, no second consumer)
+- `features/emis-manual-entry/` — EMIS CMS forms (app feature, depends on $app/forms)
+- `server/datasets/definitions/` — app-specific dataset IR definitions
+- `server/alerts/` — alert scheduler + Telegram (app lifecycle, hooks.server.ts)
+- `server/providers/` — mockProvider (fixture dep), postgresProvider routing
+- `server/emis/` — MIGRATION re-exports from emis-server package
+- `shared/api/fetchDataset.ts` — BI data access facade (filter composition)
+- `shared/` — MIGRATION re-exports from platform packages
+- `widgets/filters/` — MIGRATION re-export from platform-filters/widgets
+- `widgets/emis-*/` — MIGRATION re-exports / app-specific EMIS UI glue
+- `widgets/stock-alerts/` — Wildberries-specific alert widgets
 
-Внутри `lib/` есть несколько пустых пространств, которые пока не дают архитектурной ценности сами по себе:
+## EMIS vs BI boundary
 
-- `entities/dashboard/`
-- `entities/widget/`
-- `features/dashboard-builder/`
-- `widgets/chart/`
-- `widgets/dashboard-container/`
-- `widgets/kpi/`
-- `widgets/table/`
-
-Если ищешь рабочий код, начинай не с них.
+- BI routes (strategy, wildberries, analytics) must NOT import EMIS operational packages
+- EMIS read-side dashboards (routes/dashboard/emis/) access data through dataset/IR layer
+- Both domains share platform-* packages but do not cross-import

@@ -57,6 +57,17 @@ editor.saveLayout();
 editor.loadLayout();
 ```
 
+## Package verdict (ST-8)
+
+`bi-dashboards` package was evaluated and intentionally deferred:
+
+- No second consumer exists (only `apps/web` routes use this)
+- Uses `$app/environment` (SvelteKit-specific)
+- Creating a package for a single consumer is speculative
+- Self-contained design means future extraction is trivial if needed
+
+Canonical home: `apps/web/src/lib/features/dashboard-edit/` (app-level feature).
+
 ## When to read this folder
 
 - если нужен drag-and-drop layout editor

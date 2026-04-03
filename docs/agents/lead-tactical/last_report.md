@@ -1,106 +1,117 @@
-# Report: ST-7 — Extract EMIS Packages And Isolate EMIS Ownership
+# Report: ST-8 — Rationalize BI/Dashboard Packages And Remaining App Glue
 
 ## Статус
 Выполнено
 
 ## Что сделано
 
-### Wave 1 — emis-contracts (leaf)
-- `packages/emis-contracts` — 7 entity dirs с subpath exports:
-  - emis-geo, emis-dictionary, emis-news, emis-object, emis-link, emis-ship-route, emis-map
-  - Internal cross-entity imports (emis-news/emis-object → emis-geo) переведены на relative paths
-  - Dep: zod
+### Packaging Verdicts
 
-### Wave 2 — emis-server
-- `packages/emis-server` — infra (7 файлов) + modules (6 доменов):
-  - infra: db, errors, http, audit, mapConfig, pmtilesBundle, pmtilesSpike
-  - modules: news, objects, links, dictionaries, map, ship-routes
-  - `$lib/server/db/pg` заменён на `@dashboard-builder/db`
-  - `$entities/emis-*` заменены на `@dashboard-builder/emis-contracts/emis-*`
-  - Deps: emis-contracts, db, zod; peers: @sveltejs/kit, pg; dev: @types/pg
+**bi-dashboards: INTENTIONALLY KEPT IN `apps/web`**
 
-### Wave 3 — emis-ui
-- `packages/emis-ui` — 2 widget группы:
-  - emis-map: EmisMap.svelte, EmisPmtilesSpikeMap.svelte, layer-config.ts, pmtiles-protocol.ts, pmtiles-style.ts, popup-renderers.ts
-  - emis-status-bar: EmisStatusBar.svelte
-  - `$entities/emis-*` → `@dashboard-builder/emis-contracts/emis-*`
-  - `$shared/styles/utils` → `@dashboard-builder/platform-ui`
-  - `$shared/utils` → `@dashboard-builder/platform-core`
-  - `$entities/dataset` → `@dashboard-builder/platform-datasets`
-  - Deps: emis-contracts, platform-core, platform-datasets, platform-ui, @protomaps/basemaps, maplibre-gl, pmtiles; peer: svelte
+Reasons:
+1. No second consumer exists — only `apps/web` routes use `dashboard-edit`
+2. SvelteKit routes (the bulk of BI code) cannot be extracted to packages (framework constraint)
+3. `dashboard-edit` uses `$app/environment` (SvelteKit-specific import)
+4. `fetchDataset` is app-level filter composition (merges runtime filter context, legacy filters, request params) — not a reusable library function
+5. Creating a package for a single consumer is speculative per plan constraints ("do not create speculative packages with no real second consumer")
+6. Self-contained design of `dashboard-edit` means future extraction is trivial when a real second consumer appears
 
-### Intentionally stays in apps/web
-- `emis-drawer` — зависит от `$widgets/filters` (FilterPanel, app-local widget)
-- `emis-manual-entry` — зависит от `$app/forms` (SvelteKit-specific)
-- Все `routes/api/emis/*` — thin HTTP transport (stays in app per addendum)
-- Все `routes/emis/*` и `routes/dashboard/emis/*` — UI/workspace layer
+**bi-alerts: INTENTIONALLY KEPT IN `apps/web`**
 
-### Migration strategy
-- Re-export shims at all old paths (marked `// MIGRATION`)
-- All existing `$entities/emis-*`, `$lib/server/emis/*`, `$widgets/emis-map/*` imports continue working through shims
+Reasons:
+1. No second consumer exists
+2. Tied to SvelteKit app lifecycle — `hooks.server.ts` starts/stops the scheduler
+3. Uses `$lib/server/db/pg` for DB access (app-level infrastructure wiring)
+4. Cross-domain orchestration with env-specific config (Telegram bot tokens, cron schedules, timezone)
+5. Extracting would require abstracting app lifecycle management with no concrete benefit
 
-### Dependency graph (EMIS packages)
-```
-emis-contracts (leaf, depends on zod)
-emis-server → emis-contracts, db, zod; peers: @sveltejs/kit, pg
-emis-ui → emis-contracts, platform-core, platform-datasets, platform-ui, maplibre-gl, pmtiles, @protomaps/basemaps; peer: svelte
-```
+### BI/Dataset Canonical Placement
 
-Boundary invariants verified:
-- emis-server does NOT import from emis-ui
-- emis-ui does NOT import from emis-server
-- Both depend on emis-contracts
+| Path | Status | Classification |
+|------|--------|---------------|
+| `apps/web/src/lib/features/dashboard-edit/` | Canonical | App-level feature (GridStack editor) |
+| `apps/web/src/lib/shared/api/fetchDataset.ts` | Canonical | App-level BI data access facade |
+| `apps/web/src/lib/server/datasets/definitions/` | Canonical | App-specific dataset IR definitions |
+| `apps/web/src/lib/server/datasets/compile.ts` | MIGRATION shim | Re-export from `platform-datasets/server` — ST-10 cleanup candidate |
+| `apps/web/src/lib/server/alerts/` | Canonical | App-level server subsystem |
+| `apps/web/src/lib/server/providers/` | Canonical | App-level provider routing (mock/postgres) |
+| `apps/web/src/lib/entities/dataset/index.ts` | MIGRATION shim | Re-export from `platform-datasets` |
+| `apps/web/src/lib/entities/filter/index.ts` | MIGRATION shim | Re-export from `platform-filters` |
+| `apps/web/src/lib/entities/charts/` | MIGRATION shim | Re-export from `platform-ui` |
+| `apps/web/src/lib/entities/emis-*/` | MIGRATION shim | Re-exports from `emis-contracts` |
+| `apps/web/src/lib/widgets/filters/` | MIGRATION shim | Re-export from `platform-filters/widgets` |
+| `apps/web/src/lib/widgets/emis-map/` | MIGRATION shim | Re-export from `emis-ui` |
+| `apps/web/src/lib/widgets/emis-status-bar/` | MIGRATION shim | Re-export from `emis-ui` |
+| `apps/web/src/lib/widgets/stock-alerts/` | Canonical | App-level WB stock alert widgets |
+| `apps/web/src/lib/widgets/emis-drawer/` | Canonical | App-level EMIS glue |
+| `apps/web/src/lib/features/emis-manual-entry/` | Canonical | App-level EMIS CMS forms |
 
-### Docs updated
-- `AGENTS.md` — EMIS active zones updated to reflect packages as canonical, old paths as shims
-- `docs/emis_architecture_baseline.md` — placement rules updated to point to packages
-- `docs/emis_session_bootstrap.md` — broken reference to widgets/emis-map/AGENTS.md fixed
-- `docs/AGENTS.md` — catalog entry updated
-- `apps/web/src/routes/emis/AGENTS.md` — broken reference fixed
-- `apps/web/src/lib/server/emis/AGENTS.md` — migration note added, placement rules updated
+### App Glue Boundaries
 
-## Verification
-- `pnpm check` — 0 errors, 0 warnings
-- `pnpm build` — success (11.6s)
-- `pnpm lint:boundaries` — 3 pre-existing gaps only (fetchDataset.ts, unchanged since ST-4)
-- 10 workspace projects recognized by pnpm
+What intentionally stays as app glue:
+
+- **Route composition** — all `routes/dashboard/*`, `routes/emis/*`, `routes/api/*` — SvelteKit routes must live in the app
+- **App shell/navigation** — root layout, Header.svelte
+- **SvelteKit-bound helpers** — `fetchDataset` (uses SvelteKit `fetch`), `dashboard-edit` (uses `$app/environment`)
+- **Dashboard editor** — `features/dashboard-edit/` (no second consumer, trivial to extract later)
+- **Alert runtime/scheduler** — `server/alerts/` (app lifecycle dependency via hooks.server.ts)
+- **Dataset definitions** — `server/datasets/definitions/` (app-specific data layer config, not reusable)
+- **Provider routing** — `server/providers/` (app-specific mock/postgres dispatch)
+- **EMIS app glue** — `emis-drawer`, `emis-manual-entry` (depend on app-level composition patterns)
+
+### EMIS/BI Separation
+
+Verified clean:
+- BI dashboard routes (strategy, wildberries, analytics) have **zero EMIS imports**
+- EMIS read-side dashboards (`routes/dashboard/emis/`) access data through dataset/IR layer — correct pattern
+- No `platform-*` → BI/dashboard back-dependencies
+- No new cross-domain imports introduced
+
+### Cleanup
+
+- Deleted 7 empty placeholder directories: `entities/dashboard/`, `entities/widget/`, `widgets/chart/`, `widgets/kpi/`, `widgets/dashboard-container/`, `widgets/table/`, `shared/config/`
+- Updated AGENTS.md navigation docs in: `lib/`, `entities/`, `widgets/`, `routes/dashboard/`, `features/dashboard-edit/`, `server/datasets/`, `server/alerts/`
+
+### Pre-existing Issues (NOT ST-8 scope)
+
+- `widgets/stock-alerts/` imports types from `routes/dashboard/wildberries/stock-alerts/` — FSD boundary violation (widgets → routes). Pre-existing.
+- `fetchDataset.ts` lives in `$shared/api/` but imports from `$entities/` — 3 lint:boundaries violations. Pre-existing, documented since ST-4.
+- `cacheKeyQuery` in fetchDataset.ts is redundant (identical to `query`). Pre-existing tech debt.
+
+## Проверки
+
+- `pnpm check`: 0 errors, 0 warnings
+- `pnpm build`: success (built in 10.70s)
+- `pnpm lint:boundaries`: 3 violations (all pre-existing fetchDataset.ts FSD gap, same as before ST-8)
 
 ## Review Gate
 
-### Вердикты ревьюеров
-- security-reviewer: **OK** — no issues; all SQL parameterized, no secrets in source, write-side guardrails preserved
-- code-reviewer: **OK** — migration structure fully correct; 2 pre-existing warnings noted (not ST-7 scope)
-- docs-reviewer: **request changes** → исправлено → OK (broken references to widgets/emis-map/AGENTS.md, stale zone descriptions)
-- architecture-reviewer: **request changes** → deferred (see below)
-
-### Findings по severity
-
-**Deferred (valid but out of ST-7 scope per addendum):**
-- architecture-reviewer: SvelteKit coupling in emis-server — `handleEmisRoute`, `jsonEmisList`, `jsonEmisError` import from `@sveltejs/kit`; `resolveEmisWriteContext` accepts `Request` object. Valid concern, but fixing requires splitting http.ts into framework-agnostic (package) vs SvelteKit (app shim) parts — this is a behavior-adjacent refactor, deferred per "do NOT fix заодно unless blocker"
-- architecture-reviewer: EmisMap.svelte 1224 lines — decomposition candidate (extract overlay-fetch, feature normalizers, diagnostics HUD). Pre-existing, not introduced by ST-7. Candidate for ST-8 or dedicated follow-up
-
-**Pre-existing (not ST-7 scope):**
-- code-reviewer: `clampPageSize()` duplicated in news/queries.ts and objects/queries.ts
-- code-reviewer: hardcoded bbox param indices in `mapVesselsQuery` (fragile under future edits)
-
-**Fixed in this slice:**
-- docs-reviewer: 3 broken references to `widgets/emis-map/AGENTS.md` → fixed in docs/AGENTS.md, emis_session_bootstrap.md, routes/emis/AGENTS.md
-- docs-reviewer: stale zone descriptions in AGENTS.md and emis_architecture_baseline.md → updated
-- docs-reviewer: stale placement rules in server/emis/AGENTS.md → updated with migration note
-- architecture-reviewer: top-level `svelte`/`types` fields in emis-ui package.json → removed (subpath exports authoritative)
+Pending — will run after commit on integrated diff.
 
 ## Ветки
-- integration branch: `feature/emis-foundation-stabilization`
-- commits: `76d37e1` (main extraction), `be6f660` (memory update)
 
-## Handoff readiness
-- 8 packages total (5 platform + 3 EMIS) extracted and working
-- ST-8 (Rationalize BI/Dashboard Packages) is unblocked
-- Known follow-ups for future slices:
-  - SvelteKit coupling in emis-server (http.ts/audit.ts) — refactor when behavior changes are allowed
-  - EmisMap.svelte decomposition — decompose when touching map functionality
-  - emis-drawer/emis-manual-entry — extract if app-local deps are resolved
-  - fetchDataset cross-package coupling — resolve when filter/dataset boundary stabilizes
+- integration branch: `feature/emis-foundation-stabilization`
+- worker branches merged: none (executed directly as lead-tactical)
+- review diff: `git diff main..feature/emis-foundation-stabilization`
+
+## Handoff Readiness
+
+ST-9 is safe to start because:
+1. All BI/dashboard code has explicit canonical placement
+2. Both conditional BI packages (`bi-alerts`, `bi-dashboards`) have explicit verdicts with concrete justification
+3. EMIS/BI separation is verified clean
+4. All verification passes (check 0 errors, build success, lint:boundaries only pre-existing gaps)
+5. Navigation docs are updated for all touched BI/dashboard zones
+6. No ambiguous "later maybe" placements remain
+
+What moved into package boundaries (cumulative ST-6..ST-8):
+- 8 packages: platform-core, platform-ui, platform-datasets, platform-filters, db, emis-contracts, emis-server, emis-ui
+- 0 new packages in ST-8 (both conditional targets deferred with justification)
+
+What intentionally remained app glue:
+- Dashboard editor, fetchDataset, dataset definitions, alerts, providers, EMIS drawer/manual-entry, all routes
 
 ## Вопросы к lead-strategic
-- нет
+
+Нет. Все packaging decisions обоснованы конкретным отсутствием reuse pressure.
