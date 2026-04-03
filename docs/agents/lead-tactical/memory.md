@@ -33,9 +33,18 @@
 - Orphaned model dirs deleted, dead duplicates cleaned up (code review fix)
 - apps/web renamed to @dashboard-builder/web
 
+### ST-7 (2026-04-03)
+- 3 EMIS packages extracted: emis-contracts, emis-server, emis-ui
+- Wave 1 (leaf): emis-contracts — 7 entity dirs with subpath exports, dep: zod
+- Wave 2: emis-server — infra + modules, deps: emis-contracts, db, @sveltejs/kit (peer), zod, pg (peer), @types/pg (dev)
+- Wave 3: emis-ui — emis-map widgets + emis-status-bar, deps: emis-contracts, platform-core, platform-datasets, platform-ui, maplibre-gl, pmtiles, @protomaps/basemaps
+- Kept in app: emis-drawer (depends on $widgets/filters), emis-manual-entry (depends on $app/forms)
+- Re-export shims at all old paths marked `// MIGRATION`
+- Docs updated: AGENTS.md, emis_architecture_baseline.md, emis_session_bootstrap.md, server/emis/AGENTS.md, docs/AGENTS.md, routes/emis/AGENTS.md
+
 ### Integration branch
 - `feature/emis-foundation-stabilization`
-- Latest commit: `708d9dc` (ST-6: extract shared platform packages)
+- Latest commit: `76d37e1` (ST-7: extract EMIS packages)
 
 ## Проблемы и workarounds
 
@@ -46,25 +55,19 @@
 
 ## Заметки для следующей сессии
 
-- **Следующий шаг: ST-7** (Extract EMIS Packages And Isolate EMIS Ownership)
-- ST-6 lessons:
-  - Wave approach (leaf packages first, dependents second) worked well
-  - Re-export shims are the safest extraction strategy — no consumer changes needed
-  - Packages export source TS/Svelte (no compilation), `svelte` field + exports in package.json
-  - `$app/environment` can't be used in packages — use `typeof window !== 'undefined'`
-  - Delete orphaned source files after extraction, don't leave unmarked dead code
-  - mockProvider (fixture dep) and fetchDataset (cross-package composition) correctly stayed in app
+- **Следующий шаг: ST-8** (Rationalize BI/Dashboard Packages And Remaining App Glue)
+- ST-7 lessons:
+  - Same wave approach (leaf first) continued to work well
+  - `$app/forms` prevents extraction of Svelte forms to packages — keep in app
+  - `$widgets/filters` cross-widget dep prevents EmisDrawer extraction — keep in app
+  - emis-server has SvelteKit coupling (http.ts `handleEmisRoute`, audit.ts `resolveEmisWriteContext`) — valid arch concern, deferred to avoid behavior change in extraction slice
+  - EmisMap.svelte is 1224 lines — decomposition candidate for future slice, not ST-7 scope
+  - clampPageSize() duplicated in news/objects queries — pre-existing, not ST-7 scope
+  - Top-level `svelte`/`types` fields in package.json removed when subpath exports are authoritative
+  - Working directory matters with symlinks — use absolute paths for cp/mkdir
 - Package naming: `@dashboard-builder/{name}`, workspace:* protocol
-- Current packages: platform-core, db, platform-ui, platform-datasets, platform-filters
-- Still needed: emis-contracts, emis-server, emis-ui (ST-7)
-
-### ST-7 tactical addendum (from lead-strategic)
-- Focus only on extracting `emis-contracts`, `emis-server`, `emis-ui`
-- Do NOT move `apps/web/src/routes/*` out of app layer
-- Do NOT change EMIS API/runtime behavior in the same slice
-- `routes/api/emis/*` stays thin transport; move contracts → emis-contracts, backend logic → emis-server, widgets/forms → emis-ui
-- `/dashboard/emis/*` must NOT import operational EMIS packages directly (BI vs operational boundary)
-- emis-server must NOT import from emis-ui (and vice versa) — both depend on emis-contracts
-- Shims: explicit and temporary, no silent duplicate code, each marked `// MIGRATION`
-- fetchDataset transitional gap: do NOT fix "заодно" unless it's a blocker
-- Review Gate: architecture-reviewer + code-reviewer + docs-reviewer + security-reviewer (server code moves)
+- Current packages: platform-core, db, platform-ui, platform-datasets, platform-filters, emis-contracts, emis-server, emis-ui
+- Review Gate findings accepted/deferred:
+  - SvelteKit coupling in emis-server — follow-up, not same slice
+  - EmisMap decomposition — follow-up for ST-8 or later
+  - Pre-existing code issues (clampPageSize dup, bbox hardcoded indices) — not ST-7 scope
