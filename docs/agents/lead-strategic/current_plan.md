@@ -1,160 +1,250 @@
-# Plan: EMIS Foundation Stabilization And Extension Readiness
+# Plan: EMIS Monorepo-Style Separation And Shared Foundation
 
 ## Цель
-Стабилизировать не только текущий MVE-контур EMIS, а именно фундамент системы, чтобы следующие волны развития не превратили приложение в несобираемый монолит:
-- подключение новых источников;
-- расширение write/query flows;
-- эволюция модели данных;
-- переход от плоской модели `news + links` к richer graph/event/provenance model;
-- будущие forecasting / verification / ingestion pipelines;
-- дальнейший рост BI/read-model contracts.
+Подготовить и затем выполнить controlled monorepo-style separation для EMIS, чтобы:
 
-Смысл этого плана:
-- сначала зафиксировать фундаментальные границы и правила эволюции;
-- затем закрыть минимальные operational guardrails;
-- не путать "сделать еще одну фичу" с "подготовить архитектуру к широкому развитию".
+- EMIS перестал жить как "еще один большой модуль внутри dashboard-builder";
+- platform/shared foundation остался общим и переиспользуемым;
+- BI/dashboard и EMIS перестали излишне смешиваться в code ownership и navigation context;
+- проект не раскололся преждевременно на два deployable app, пока это не нужно по runtime/ops.
+
+Ключевое решение этой волны:
+
+- **делаем monorepo-style split по ownership и package boundaries;**
+- **не делаем сразу runtime split на два отдельных приложения;**
+- **сначала получаем single-deployable monorepo-ready repository, потом при необходимости выносим EMIS в отдельный app почти без переписывания.**
 
 Этот план предназначен для передачи `lead-tactical` и исполнения по agent workflow:
-- GPT-5.4 определяет фундаментальные рамки и принимает результат;
-- Claude Opus исполняет план, ставит bounded задачи workers при необходимости;
-- после code/runtime changes обязателен Review Gate;
-- при новых cross-layer design decisions `lead-tactical` не импровизирует, а эскалирует.
+
+- GPT-5.4 фиксирует topology decision и migration strategy;
+- Claude Opus реализует поэтапный migration plan и управляет workers;
+- Review Gate обязателен для runtime/code changes;
+- при новых topology/design вопросах `lead-tactical` не импровизирует, а эскалирует.
 
 ## Подзадачи
 
-### ST-1: Freeze Foundation Architecture For Future Growth
-- scope: `docs/emis_mve_tz_v_2.md`, `docs/emis_implementation_spec_v1.md`, `docs/emis_session_bootstrap.md`, `docs/emis_freeze_note.md`, `db/schema_catalog.md`
+### ST-1: Freeze Target Topology And Split Strategy
+- scope: `docs/emis_architecture_baseline.md`, `docs/emis_working_contract.md`, `docs/emis_session_bootstrap.md`, `docs/current-project-analysis.md`, `AGENTS.md`, `docs/AGENTS.md`
 - depends on: —
 - размер: M
 - заметки:
-  - docs-first architecture freeze
-  - зафиксировать как canonical foundation:
-    - operational write model
-    - staging / ingestion model
-    - published read-model / BI model
-  - явно описать, что current `news_items + news_object_links` — текущий MVE slice, а не final target model для graph analytics
-  - зафиксировать, что будущие `events`, graph edges, verification artifacts, forecasts не должны врастать случайными полями в route/UI слой
-  - зафиксировать, где будут жить:
-    - source ingestion contracts
-    - provenance and canonical identity rules
-    - graph-ready domain contracts
-    - published analytical contracts
-  - цель: снять двусмысленность "доращиваем текущие CRUD-таблицы как придется" vs "строим расширяемое ядро"
+  - docs-first decision slice
+  - явно зафиксировать target state:
+    - monorepo-style repository
+    - one deployable app for current phase
+    - future-ready option for `apps/emis` / `apps/bi`
+  - зафиксировать, что у EMIS и dashboard-builder:
+    - разный product identity
+    - разный UX/design language
+    - разный operational path
+    - общий foundation only where reuse is real
+  - снять двусмысленность между:
+    - "оставляем один app навсегда"
+    - "срочно режем на два приложения"
+  - recommended verdict:
+    - now: single-deployable monorepo
+    - later: optional multi-app split
 
-### ST-2: Define Schema Evolution Policy For Graph/Source Expansion
-- scope: `docs/emis_freeze_note.md`, `docs/emis_session_bootstrap.md`, `db/schema_catalog.md`, optional new section in `docs/emis_implementation_spec_v1.md`, optional `db/applied_changes.md` note if needed
+### ST-2: Define Canonical Repository Layout And Package Ownership
+- scope: new or updated docs under `docs/`, `AGENTS.md`, optional local `AGENTS.md` updates for moved ownership zones
 - depends on: ST-1
-- размер: S
-- заметки:
-  - docs-only decision slice
-  - зафиксировать policy:
-    - raw ingestion data does not become UI contract directly
-    - new source-specific fields do not leak into generic entities without contract review
-    - graph relations are separate domain contracts, not ad hoc extension of `news_object_links`
-    - BI/forecasting reads consume documented views/read models, not operational tables directly
-  - явно разделить:
-    - what is stable public contract
-    - what is internal operational schema
-    - what is allowed to evolve aggressively
-
-### ST-3: Freeze Minimal Operating Model And Dictionary/Admin Scope
-- scope: `docs/emis_mve_tz_v_2.md`, `docs/emis_session_bootstrap.md`, `docs/emis_freeze_note.md`, `docs/emis_next_tasks_2026_03_22.md`, `src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
-- depends on: ST-1
-- размер: S
-- заметки:
-  - docs-only stage; Review Gate: только `docs-reviewer`
-  - зафиксировать без скрытой RBAC-фантазии:
-    - MVE runs in trusted/internal contour
-    - `viewer` = read only
-    - `editor` = writes for current bounded operational slices
-    - `admin` = operational/admin scope only if explicitly implemented
-  - принять одно решение по словарям:
-    - recommended default: `seed-managed only` for MVE
-  - явно разделить:
-    - что enforceится сейчас
-    - что postponed beyond MVE
-
-### ST-4: Design And Implement Centralized Write Policy Helper
-- scope: `src/lib/server/emis/infra/*`, `src/lib/server/emis/infra/RUNTIME_CONTRACT.md`, optional docs alignment in `docs/emis_session_bootstrap.md` and backlog
-- depends on: ST-3
 - размер: M
 - заметки:
-  - один reusable helper для production-shaped write policy
-  - helper должен покрывать both API writes and manual UI actions
-  - policy questions, которые должны быть закрыты в implementation:
-    - require actor header in production-shaped mode or explicit trusted fallback policy
-    - clear dev/local behavior
-    - stable machine-readable failure code for denied write
-  - не тащить auth/RBAC framework; только minimum enforceable guardrail
+  - docs-only architecture slice
+  - зафиксировать target layout примерно такого класса:
+    - `apps/web` (или equivalent current app shell)
+    - `packages/platform-*`
+    - `packages/emis-*`
+    - `packages/bi-*`
+    - `packages/db`
+  - для каждого current active zone определить target home:
+    - `src/lib/shared/*`
+    - `src/lib/entities/filter/*`
+    - `src/lib/entities/dataset/*`
+    - `src/lib/server/datasets/*`
+    - `src/lib/server/emis/*`
+    - `src/routes/emis/*`
+    - `src/routes/dashboard/emis/*`
+  - важно: не оставлять "переедет потом как-нибудь"
 
-### ST-5: Wire Write Policy Into All Current EMIS Write Entry Points
-- scope: `src/routes/api/emis/objects/*`, `src/routes/api/emis/news/*`, `src/routes/emis/objects/*/+page.server.ts`, `src/routes/emis/news/*/+page.server.ts`
+### ST-3: Define Migration Rules, Import Boundaries And Alias Policy
+- scope: `docs/emis_working_contract.md`, `docs/emis_architecture_baseline.md`, `docs/agents/workflow.md`, optional new migration doc if needed
+- depends on: ST-2
+- размер: S
+- заметки:
+  - docs-only ruleset
+  - зафиксировать migration policy:
+    - no big-bang move
+    - migrate by bounded slices
+    - preserve runtime behavior during structure changes
+    - keep old aliases compatible only temporarily
+  - явно описать:
+    - package import direction
+    - what can depend on platform packages
+    - what must not depend back on EMIS packages
+    - when compatibility re-export is allowed
+    - when a move requires docs/runtime contract update
+
+### ST-4: Prepare Workspace Foundation And Baseline Cleanup Plan
+- scope: `pnpm-workspace.yaml`, root `package.json`, root docs for commands/bootstrap, optional new migration doc
+- depends on: ST-1, ST-2, ST-3
+- размер: M
+- заметки:
+  - implementation planning + minimal repo foundation
+  - before large moves, decide:
+    - workspace package globs
+    - root scripts vs app-local scripts
+    - where DB scripts and smoke scripts live
+  - mandatory part of this slice:
+    - explicitly include current shared baseline blocker in plan
+    - current parse/type issues must not be buried under structural migration
+  - if runtime edits start here, keep them minimal and boring
+
+### ST-5: Extract Current App Into `apps/*` Without Behavior Change
+- scope: app root config and source placement; likely `src/*`, `static/*`, `svelte.config.js`, `vite.config.ts`, `tsconfig.json`, app package manifest(s), bootstrap scripts/docs
 - depends on: ST-4
+- размер: L
+- заметки:
+  - first physical move
+  - target outcome:
+    - current SvelteKit runtime lives under one app directory
+    - root becomes workspace orchestrator, not the app itself
+  - no EMIS-vs-BI logic change in this slice
+  - no design refactor in this slice
+  - preserve command ergonomics via root scripts or documented wrappers
+
+### ST-6: Extract Shared Platform Packages
+- scope: current shared reusable foundation, likely from `src/lib/shared/*`, `src/lib/entities/filter/*`, `src/lib/entities/dataset/*`, `src/lib/server/db/*`, selected dataset/provider contracts
+- depends on: ST-5
+- размер: L
+- заметки:
+  - extract only real shared foundation
+  - avoid dumping half the app into `packages/shared`
+  - expected package classes:
+    - UI/styles/utils
+    - filter engine
+    - dataset contracts/runtime
+    - DB/shared infra where reuse is real
+  - if reuse pressure is weak, keep code in app for now
+
+### ST-7: Extract EMIS Packages And Isolate EMIS Ownership
+- scope: EMIS entities/features/widgets/server modules/runtime helpers and related docs/contracts
+- depends on: ST-6
+- размер: L
+- заметки:
+  - extract EMIS into dedicated package boundaries:
+    - entity contracts
+    - server modules
+    - map/runtime widgets where feasible
+    - route-supporting helpers
+  - keep `/routes/emis/*` transport/composition in app layer if needed
+  - do not prematurely split route tree into a second SvelteKit app here
+  - target result:
+    - EMIS code no longer competes with BI code for same ownership namespace
+
+### ST-8: Rationalize BI/Dashboard Packages And Remaining App Glue
+- scope: `src/routes/dashboard/*`, dataset definitions, BI helpers, app shell/navigation docs
+- depends on: ST-6, ST-7
 - размер: M
 - заметки:
-  - transport/action integration only
-  - route files остаются transport-only
-  - не дублировать policy logic в route actions
-  - expected write entry points:
-    - API `POST/PATCH/DELETE`
-    - manual UI `new/edit` actions
+  - isolate BI/read-side from EMIS operational packages
+  - keep app shell thin
+  - decide what remains app-specific glue vs what becomes package-level BI foundation
+  - avoid turning dashboard routes into another generic shared package dump
 
-### ST-6: Define And Implement Health/Readiness/Error-Logging Contract
-- scope: `src/routes/api/emis/health/+server.ts`, `src/lib/server/emis/infra/http.ts`, new infra helper(s) if needed, `src/lib/server/emis/infra/RUNTIME_CONTRACT.md`, `docs/emis_session_bootstrap.md`, `docs/emis_next_tasks_2026_03_22.md`
-- depends on: ST-3
+### ST-9: Verify Commands, Checks, Docs And Handoff Readiness
+- scope: scripts/docs/verification paths affected by ST-4..ST-8
+- depends on: ST-5, ST-6, ST-7, ST-8
 - размер: M
 - заметки:
-  - endpoint must say more than "snapshot files exist"
-  - minimum target:
-    - explicit DB readiness semantics
-    - degraded/unavailable states
-    - one centralized place for EMIS API error logging
-    - no credential/token leakage in logs
-  - keep contract boring and operable; no observability platform buildout
+  - all moved commands and paths must remain discoverable
+  - update reading order, ownership docs, and smoke instructions
+  - verification target:
+    - repo bootstrap still understandable
+    - EMIS newcomer path is shorter and more focused
+    - shared foundation is explicit rather than tribal
 
-### ST-7: Add Contract Checks And Negative-Path Smoke Coverage
-- scope: `scripts/emis-smoke.mjs`, `scripts/emis-write-smoke.mjs`, optional new helper script if needed, docs references to smoke path
-- depends on: ST-5, ST-6
-- размер: S
-- заметки:
-  - add at least:
-    - negative case for denied write / missing required write context
-    - readiness/health contract verification
-  - if practical, add one assertion that documented contract layer is used instead of raw operational shortcut
-  - goal: foundation rules do not live only in prose
-
-### ST-8: Prevent Further Growth Of Oversized `/emis` Route And Map Widget
-- scope: `src/routes/emis/+page.svelte`, `src/routes/emis/AGENTS.md`, `src/lib/widgets/emis-map/EmisMap.svelte`, `src/lib/widgets/emis-map/AGENTS.md`, optional extraction helpers/components if touched by previous tasks
-- depends on: ST-1
+### ST-10: Legacy Docs Cleanup And Archive Normalization
+- scope: `docs/*`, `docs/archive/*`, root navigation docs, agent docs references
+- depends on: ST-1, ST-2, ST-3, ST-9
 - размер: M
 - заметки:
-  - this is a bounded stabilization slice, not a full redesign
-  - acceptable outcomes:
-    - docs-level hard guardrail only, if no feature work touched these files
-    - or small extraction directly caused by ST-5/ST-6 integration
-  - do not start speculative large refactor
-  - if new logic must land in these files, extraction is the default, not further inline growth
+  - dedicated docs cleanup slice, not mixed into structural moves
+  - цель:
+    - убрать лишние active-looking legacy docs из primary reading path
+    - нормализовать, что считается:
+      - canonical source of truth
+      - active supporting doc
+      - historical/archive-only doc
+      - completed handoff note
+  - cleanup policy:
+    - не удалять source-of-truth docs
+    - не удалять исторические материалы без archive destination
+    - не держать завершенные wave/handoff docs в active top-level `docs/`, если они больше не нужны в reading order
+    - где возможно, prefer archive move + explicit note over silent deletion
+  - expected outputs:
+    - reduced top-level docs noise
+    - updated `docs/AGENTS.md` catalog
+    - explicit archive conventions
+    - fewer “looks active but actually finished” documents
+  - current pre-migration inventory:
+    - keep as canonical EMIS docs:
+      - `docs/emis_session_bootstrap.md`
+      - `docs/emis_architecture_baseline.md`
+      - `docs/emis_working_contract.md`
+      - `docs/emis_mve_tz_v_2.md`
+      - `docs/emis_implementation_spec_v1.md`
+      - `docs/emis_freeze_note.md`
+    - keep as active supporting EMIS docs:
+      - `docs/emis_architecture_review.md`
+      - `docs/emis_offline_maps_ops.md`
+      - `docs/emis_next_tasks_2026_03_22.md`
+    - keep as active cross-domain docs:
+      - `docs/current-project-analysis.md`
+      - `docs/strategy/bi_strategy.md`
+      - `docs/ops/beget_deployment_plan.md`
+      - `docs/agents/*`
+      - `docs/AGENTS.md`
+    - already normalized to archive-only:
+      - `docs/archive/emis/emis_vessel_current_positions_handoff_plan.md`
+      - `docs/archive/emis/emis_todo_vessel_markers.md`
+      - `docs/archive/emis/emis_handoff_2026_03_17.md`
+      - `docs/archive/emis/emis_pmtiles_validation_wave.md`
+      - `docs/archive/agents/*`
+      - `docs/archive/strategy-v1/*`
+    - likely later cleanup candidates:
+      - empty `docs/emis/` directory if it remains unused
+      - further separation of ops docs if more deployment runbooks appear
+      - further separation of strategy docs if more BI/strategy design docs appear
+      - any future completed handoff/wave notes that accidentally land in top-level `docs/`
 
 ## Recommended Execution Order
-1. ST-1 architecture freeze for future growth.
-2. ST-2 schema evolution policy for graph/source expansion.
-3. ST-3 operating model + dictionary/admin scope.
-4. ST-4 centralized write-policy helper.
-5. ST-5 write-entry-point integration.
-6. ST-6 health/readiness + centralized error logging.
-7. ST-7 smoke/contract hardening.
-8. ST-8 only as guardrail/extraction work needed by the previous slices.
+1. ST-1 topology freeze.
+2. ST-2 target layout and ownership map.
+3. ST-3 migration rules and alias policy.
+4. ST-4 workspace foundation plan + baseline cleanup plan.
+5. ST-5 move current app into `apps/*`.
+6. ST-6 extract shared platform packages.
+7. ST-7 extract EMIS packages.
+8. ST-8 isolate BI/dashboard packages and remaining app glue.
+9. ST-9 docs/checks/handoff verification.
+10. ST-10 legacy docs cleanup and archive normalization.
 
 ## Worker Strategy
-- Default stance: one worker at a time. Quality > parallelism.
-- `lead-tactical` should do ST-1 and ST-2 directly or with one doc-focused worker, because these tasks define the rest of the wave.
-- Recommended delegation after docs freeze:
-  - Worker A: ST-4 `infra` write-policy helper
-  - Worker B: ST-5 write-entry-point wiring
-  - Worker C: ST-6 health/readiness/error-logging slice
-- Do not run ST-5 before ST-4 is merged into the integration branch.
-- ST-7 should run only after the integration branch already contains ST-5 and ST-6.
-- ST-8 should not become an open-ended refactor track.
+- ST-1 to ST-4 should be owned directly by `lead-tactical` or one doc-focused worker only.
+- Do not delegate structural decisions before topology and ownership are frozen.
+- After ST-4 checkpoint:
+  - Worker A: ST-5 app extraction
+  - Worker B: ST-6 shared platform packages
+  - Worker C: ST-7 EMIS package extraction
+  - Worker D: ST-8 BI/dashboard rationalization
+- ST-6, ST-7, ST-8 may run partially in parallel only if:
+  - package ownership is disjoint
+  - integration branch already contains the result of ST-5
+  - `lead-tactical` clearly assigns write boundaries
+- ST-9 must run on integrated branch, not on isolated worker branches.
+- ST-10 should run only after the new reading order is already stable.
+- Do not mix docs cleanup with app/package moves in the same worker task.
 
 ## Lead-Tactical Kickoff
 1. Read this plan end-to-end before delegating anything.
@@ -162,216 +252,245 @@
    - `docs/agents/workflow.md`
    - `docs/agents/templates.md`
    - `docs/emis_session_bootstrap.md`
-   - `docs/emis_mve_tz_v_2.md`
-   - `docs/emis_implementation_spec_v1.md`
-   - `docs/emis_freeze_note.md`
-   - `db/schema_catalog.md`
+   - `docs/emis_architecture_baseline.md`
+   - `docs/emis_working_contract.md`
+   - `docs/current-project-analysis.md`
+   - `AGENTS.md`
+   - `docs/AGENTS.md`
 3. Confirm the current integration branch is:
-   - `feature/emis-foundation-stabilization`
-4. Execute ST-1, ST-2, ST-3 before spawning implementation workers.
-5. After ST-3 is checkpointed, decide whether ST-4, ST-5, ST-6 should be:
-   - sequential with one worker at a time
-   - or partially parallel, but only with disjoint ownership and clear dependency handling
-6. Do not delegate unresolved design questions to workers.
-7. Before each worker task, explicitly state:
-   - files owned by the worker
-   - files out of scope
-   - which prior checkpoint/commit the worker must build on
-8. After each worker handoff:
-   - review placement and scope discipline first
-   - merge into the integration branch
-   - only then hand off the next dependent slice
-9. Run Review Gate on the integrated diff, not on isolated worker prose summaries.
+   - `feature/emis-monorepo-readiness`
+4. Execute ST-1, ST-2, ST-3, ST-4 before spawning implementation workers.
+5. Do not start physical moves while topology/ownership rules remain ambiguous.
+6. Before each worker task, explicitly state:
+   - owned files/directories
+   - forbidden directories
+   - which checkpoints/commits are already merged into integration branch
+7. After each worker handoff:
+   - review placement and dependency direction first
+   - merge into integration branch
+   - only then hand off the next dependent structural slice
+8. Review Gate runs on integrated diff, not on prose summary.
+9. If migration starts to look like a big-bang rewrite, stop and re-slice.
+10. Execute docs cleanup only after the new canonical docs and paths are already confirmed.
 
 ## Worker Task Drafts
 
-### Worker A Draft: ST-4 Centralized Write Policy Helper
-Use this as the starting handoff from `lead-tactical` to a worker.
+### Worker A Draft: ST-5 Extract Current App Into `apps/*`
 
 ```md
-# Task: ST-4 Centralized Write Policy Helper
+# Task: ST-5 Extract Current App Into apps/*
 
 ## Что сделать
-Реализовать один reusable helper для production-shaped EMIS write policy.
-Helper должен централизованно решать, разрешен ли write в текущем контексте, и возвращать/пробрасывать стабильную machine-readable ошибку для disallowed writes.
+Перевести текущий SvelteKit runtime из repo root в app directory внутри monorepo-style layout без изменения пользовательского поведения.
 
 ## Scope
 - файлы:
-  - `src/lib/server/emis/infra/*`
-  - `src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
-- слои: `server/emis/infra`, runtime contract
+  - app runtime/config files
+  - package/workspace manifests
+  - bootstrap docs and command docs affected by the move
+- слои: app shell, workspace config, repo bootstrap
 - НЕ трогать:
-  - `src/routes/api/emis/*`
-  - `src/routes/emis/*`
-  - `db/*`
+  - EMIS domain logic
+  - BI business logic
+  - DB schema contents
 
 ## Ветки
-- integration branch: `feature/emis-foundation-stabilization`
-- worker branch: `agent/worker/emis-write-policy`
+- integration branch: `feature/emis-monorepo-readiness`
+- worker branch: `agent/worker/app-extraction`
 
 ## Архитектурные ограничения
-- Не тащить auth/RBAC framework.
-- Не дублировать policy в нескольких helper'ах.
-- Route-specific logic не должна переехать в `infra`.
-- Runtime contract обновить, если меняется error/code behavior.
+- No second deployable app.
+- No behavioral refactor hidden inside move.
+- Preserve command ergonomics as much as possible.
+- If alias compatibility is needed, keep it explicit and temporary.
 
 ## Проверки
-- `pnpm check` если затрагивается typed runtime behavior
-- targeted review of changed files
+- repo bootstrap commands still resolve
+- targeted app build/check path documented
 
 ## Формат сдачи
 Используй `Worker Handoff` из `docs/agents/templates.md`.
 Обязательно укажи:
-- helper API
-- где и как предполагается его вызывать из API routes и manual actions
-- какой failure code введен
+- old path -> new path mapping
+- какие root scripts were kept as wrappers
+- какие follow-up moves are now unblocked
 ```
 
-### Worker B Draft: ST-5 Write Entry Point Integration
-Use this only after ST-4 is merged into the integration branch.
+### Worker B Draft: ST-6 Extract Shared Platform Packages
 
 ```md
-# Task: ST-5 Wire Write Policy Into Current EMIS Write Entry Points
+# Task: ST-6 Extract Shared Platform Packages
 
 ## Что сделать
-Подключить уже реализованный centralized write-policy helper ко всем текущим EMIS write entry points:
-- API `POST/PATCH/DELETE`
-- manual UI `new/edit` actions
+Вытащить из текущего app runtime только реально shared foundation в отдельные workspace packages без превращения migration в generic dump.
 
 ## Scope
 - файлы:
-  - `src/routes/api/emis/objects/*`
-  - `src/routes/api/emis/news/*`
-  - `src/routes/emis/objects/*/+page.server.ts`
-  - `src/routes/emis/news/*/+page.server.ts`
-- слои: transport routes, SvelteKit form actions
+  - shared UI/styles/utils
+  - filter engine
+  - dataset contracts/runtime
+  - shared DB/helpers only where reuse is clear
 - НЕ трогать:
-  - `src/lib/server/emis/modules/*`
-  - `db/*`
-  - broad docs rewrite beyond small contract sync
+  - EMIS-specific business logic
+  - dashboard route composition
+  - app shell/navigation beyond necessary import rewiring
 
 ## Ветки
-- integration branch: `feature/emis-foundation-stabilization`
-- worker branch: `agent/worker/emis-write-entrypoints`
+- integration branch: `feature/emis-monorepo-readiness`
+- worker branch: `agent/worker/platform-packages`
 
 ## Архитектурные ограничения
-- Route files остаются transport-only.
-- Не дублировать policy logic inline.
-- Не менять domain behavior service/repository слоя без явной необходимости.
-- Если нужна docs sync, ограничить ее runtime-contract related updates.
+- Extract only real foundation.
+- Do not create one giant `shared-everything` package.
+- Dependency direction must stay one-way toward platform, not back from platform to domain packages.
 
 ## Проверки
-- `pnpm check`
-- targeted manual review of all touched write entry points
+- imports resolve cleanly
+- targeted type/runtime checks for moved packages
 
 ## Формат сдачи
-Используй `Worker Handoff` из `docs/agents/templates.md`.
-Обязательно перечисли:
-- какие entry points покрыты
-- какие behavior changes появились для denied writes
-- какие файлы остались нетронутыми намеренно
-```
-
-### Worker C Draft: ST-6 Health/Readiness/Error Logging
-Use this after ST-3 is frozen. If ST-4/ST-5 are still in progress, keep the ownership strictly disjoint.
-
-```md
-# Task: ST-6 Health Readiness And Centralized API Error Logging
-
-## Что сделать
-Превратить текущий `/api/emis/health` в явный operational contract и добавить одно централизованное место для EMIS API error logging без утечки credential/token data.
-
-## Scope
-- файлы:
-  - `src/routes/api/emis/health/+server.ts`
-  - `src/lib/server/emis/infra/http.ts`
-  - `src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
-  - optional small docs sync in `docs/emis_session_bootstrap.md` and `docs/emis_next_tasks_2026_03_22.md`
-- слои: transport + infra
-- НЕ трогать:
-  - `src/routes/emis/+page.svelte`
-  - `src/lib/widgets/emis-map/*`
-  - `db/current_schema.sql` unless a true DB contract change is required
-
-## Ветки
-- integration branch: `feature/emis-foundation-stabilization`
-- worker branch: `agent/worker/emis-health-readiness`
-
-## Архитектурные ограничения
-- Health endpoint должен сообщать больше, чем наличие snapshot files.
-- Не строить observability platform.
-- Logging должен быть centralized и safe by default.
-- Не добавлять hidden business logic в route layer.
-
-## Проверки
-- `pnpm check`
-- targeted endpoint contract verification if practical
-
-## Формат сдачи
-Используй `Worker Handoff` из `docs/agents/templates.md`.
+Используй `Worker Handoff`.
 Обязательно укажи:
-- новая shape/semantics health-readiness ответа
-- где теперь централизованно логируются EMIS API failures
-- какие sensitive values intentionally do not get logged
+- package list
+- why each extracted slice is truly shared
+- what intentionally stayed in app layer
+```
+
+### Worker C Draft: ST-7 Extract EMIS Packages
+
+```md
+# Task: ST-7 Extract EMIS Packages And Isolate EMIS Ownership
+
+## Что сделать
+Вынести EMIS code into dedicated workspace package boundaries so that EMIS stops competing with BI/platform code inside the same ownership namespace.
+
+## Scope
+- файлы:
+  - EMIS entities/features/widgets
+  - `server/emis/*`
+  - EMIS route-supporting helpers where appropriate
+- НЕ трогать:
+  - broad BI/dashboard refactor
+  - DB schema redesign
+  - second SvelteKit app split
+
+## Ветки
+- integration branch: `feature/emis-monorepo-readiness`
+- worker branch: `agent/worker/emis-packages`
+
+## Архитектурные ограничения
+- Keep operational boundaries intact.
+- Do not move route transport/business logic into the wrong layer.
+- Avoid speculative over-packaging.
+
+## Проверки
+- imports resolve
+- EMIS path remains discoverable in docs
+- targeted EMIS runtime checks where practical
+
+## Формат сдачи
+Используй `Worker Handoff`.
+Обязательно укажи:
+- extracted EMIS package boundaries
+- what remained app glue intentionally
+- what future `apps/emis` split is now enabled by this move
+```
+
+### Worker D Draft: ST-10 Legacy Docs Cleanup And Archive Normalization
+
+```md
+# Task: ST-10 Legacy Docs Cleanup And Archive Normalization
+
+## Что сделать
+Привести docs tree в состояние, где active reading path короткий и очевидный, а historical/completed materials не маскируются под рабочие source-of-truth документы.
+
+## Scope
+- файлы:
+  - `docs/*`
+  - `docs/archive/*`
+  - root/navigation docs that reference moved or archived materials
+- НЕ трогать:
+  - runtime code
+  - DB schema/runtime contracts
+  - structural app/package moves
+
+## Ветки
+- integration branch: `feature/emis-monorepo-readiness`
+- worker branch: `agent/worker/docs-cleanup`
+
+## Архитектурные ограничения
+- Do not delete active source-of-truth docs.
+- Prefer archive move + explicit discoverability note over silent deletion.
+- Keep current canonical reading order short and stable.
+- If a document still matters for active work, do not archive it just because it is old.
+
+## Проверки
+- `docs/AGENTS.md` remains coherent
+- `emis_session_bootstrap.md` reading order stays valid
+- no broken references introduced in touched docs
+
+## Формат сдачи
+Используй `Worker Handoff`.
+Обязательно укажи:
+- which docs were kept canonical
+- which docs were archived/moved
+- which docs were intentionally left in place and why
 ```
 
 ## Architectural Decisions To Carry Through
-- EMIS remains a modular monolith, not a microservice split project.
-- The foundation is three-layered:
-  - operational/domain write model in `emis`
-  - staging/ingestion model in `stg_emis`
-  - published analytical contracts in `mart_emis` / `mart`
-- New source onboarding should land through domain/staging contracts, not through ad hoc route-level logic.
-- Future graph/event/forecasting capabilities should extend the domain model through explicit new contracts and published read models, not by overloading current CRUD DTOs in place.
-- Dataset/IR stays for BI/read-side contracts; it is not the default home for operational growth.
+- EMIS and dashboard-builder/BI share foundation, but not product identity.
+- Physical separation should follow real ownership and context boundaries, not branding alone.
+- Current target topology is **single-deployable monorepo**, not immediate multi-app deployment.
+- `apps/*` + `packages/*` is the default migration direction.
+- Dataset/IR remains a BI/read-side contract, not a home for EMIS operational growth.
+- EMIS operational/server path remains:
+  `routes/api/emis/* -> server/emis/modules/* -> queries/service/repository -> PostgreSQL/PostGIS`
+- Shared packages must stay boring and minimal; no “god package”.
+- Docs cleanup is a separate discipline slice after topology stabilization, not a side effect of random feature work.
 
 ## Ограничения
-- Не открывать заново вопросы monorepo/microservices/topology.
-- Не смешивать foundation stabilization с post-MVE feature implementation:
-  - no vessel historical track
-  - no broad admin UI
-  - no full RBAC/auth project
-  - no full graph model implementation
-  - no forecasting engine implementation
-  - no speculative dataset/IR expansion for operational flows
-- `routes/api/emis/*` остаются transport-only: без SQL и без business logic.
-- Новый shared abstraction добавлять только при явном reuse pressure.
-- Runtime changes обязательно отражать в `src/lib/server/emis/infra/RUNTIME_CONTRACT.md`.
-- Contract-level docs updates должны поддерживать discoverability в `docs/emis_session_bootstrap.md` и `docs/AGENTS.md`.
-- Если меняется DB contract, обновлять `db/current_schema.sql` и `db/applied_changes.md`.
-- Для docs-only slice не трогать runtime code без необходимости.
-- Не продолжать рост `src/routes/emis/+page.svelte` и `src/lib/widgets/emis-map/EmisMap.svelte` без extraction justification.
+- Не открывать заново вопрос "делаем ли прямо сейчас отдельный EMIS deployable".
+- Не начинать с big-bang filesystem rewrite.
+- Не смешивать monorepo migration с feature expansion EMIS.
+- Не смешивать legacy docs cleanup с runtime refactor в одном slice.
+- Не маскировать baseline runtime problems структурными move-коммитами.
+- `routes/api/emis/*` остаются transport-only.
+- EMIS operational logic не уходит в dataset compiler.
+- Runtime/docs contracts должны сохранять discoverability после move.
+- Если structural move меняет DB/runtime contract docs paths, обновлять их в том же slice.
 
 ## Review Gate Expectations
-- ST-1 to ST-3:
+- ST-1 to ST-4:
   - `docs-reviewer`
-  - `architecture-reviewer` if wording changes architecture ownership or published contracts
-- ST-4 to ST-8:
   - `architecture-reviewer`
-  - `security-reviewer`
+- ST-5 to ST-9:
+- ST-5 to ST-9:
+  - `architecture-reviewer`
   - `docs-reviewer`
   - `code-reviewer`
-  - `ui-reviewer` only if `.svelte` UI behavior changed materially
-- Any new contract/schema/cross-layer ambiguity:
-  - escalate to user for GPT-5.4 decision, do not improvise
+  - `security-reviewer` if server/import/runtime behavior changed materially
+  - `ui-reviewer` only if frontend behavior changed materially
+- ST-10:
+  - `docs-reviewer`
+  - `architecture-reviewer` only if cleanup changes ownership or canonical reading order materially
+- Any ambiguity in topology, import direction, or package ownership:
+  - escalate to user for GPT-5.4 decision
 
 ## Git Checkpoints
-- checkpoint 1: architecture freeze for future growth
-- checkpoint 2: schema evolution policy for graph/source expansion
-- checkpoint 3: operating model + dictionary/admin scope freeze
-- checkpoint 4: centralized write-policy helper
-- checkpoint 5: write-entry-point integration
-- checkpoint 6: health/readiness + API error logging
-- checkpoint 7: smoke/contract hardening
-- optional checkpoint 8: bounded extraction if oversized file growth was touched
+- checkpoint 1: topology freeze
+- checkpoint 2: target layout + ownership map
+- checkpoint 3: migration rules + workspace foundation plan
+- checkpoint 4: app extraction into `apps/*`
+- checkpoint 5: shared platform packages
+- checkpoint 6: EMIS package extraction
+- checkpoint 7: BI/dashboard rationalization
+- checkpoint 8: command/docs/check verification
+- checkpoint 9: legacy docs cleanup and archive normalization
 
 ## Ожидаемый результат
-- EMIS gets a documented foundation for broad future growth, not only local MVE polish.
-- The team has one explicit rule set for how operational schema, ingestion schema, and published read models evolve.
-- Future graph/event/forecasting work has a prepared architectural lane instead of growing as accidental extensions of current CRUD slices.
-- Production-shaped writes have one centralized guardrail instead of permissive fallback-only behavior.
-- Dictionary/admin scope stops being ambiguous for future sessions.
-- `/api/emis/health` becomes a real operational contract with readiness semantics.
-- Route-level EMIS failures are logged in one place with consistent format.
-- Smoke coverage checks both happy path and at least the critical negative guardrail path.
-- `lead-tactical` can execute the stabilization wave without reopening core architecture decisions on every next feature.
+- Repo stops being cognitively “one large SvelteKit app with everything mixed by proximity”.
+- EMIS gets clearer ownership and shorter reading path in new dialogs.
+- Shared foundation becomes explicit package-level architecture instead of implicit `src/lib/*` overlap.
+- BI/dashboard and EMIS can evolve independently without immediate deploy split.
+- Future `apps/emis` or `apps/bi` split becomes feasible with bounded follow-up work, not a repo rewrite.
+- Active docs tree becomes shorter and less misleading for new sessions; historical materials stay discoverable but stop polluting the primary context.

@@ -7,7 +7,7 @@
 
 ## С чего начинать
 
-1. `docs/BI strategy`
+1. `docs/strategy/bi_strategy.md`
 2. `../AGENTS.md`
 3. `constants.ts`
 4. `filters.ts`

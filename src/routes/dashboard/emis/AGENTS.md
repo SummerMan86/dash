@@ -71,7 +71,8 @@
 ## 7. Reading order
 
 1. `../../../../docs/emis_session_bootstrap.md`
-2. `../../../../docs/emis_agent_operating_model.md`
-3. `../../../../docs/emis_architecture_review.md`
-4. `../../../../src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
-5. `../../../../src/lib/server/datasets/AGENTS.md` - если change касается dataset runtime
+2. `../../../../docs/agents/workflow.md`
+3. `../../../../docs/agents/templates.md`
+4. `../../../../docs/emis_architecture_review.md`
+5. `../../../../src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
+6. `../../../../src/lib/server/datasets/AGENTS.md` - если change касается dataset runtime

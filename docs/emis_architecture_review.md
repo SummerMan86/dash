@@ -4,8 +4,8 @@
 
 Использовать вместе с:
 
-- [EMIS Agent Operating Model](./emis_agent_operating_model.md)
-- [EMIS MR Template](./emis_mr_template.md)
+- [Agent Workflow](./agents/workflow.md)
+- [Agent Templates](./agents/templates.md)
 - [EMIS Runtime Contract](../src/lib/server/emis/infra/RUNTIME_CONTRACT.md)
 
 ## 1. Default lifecycle

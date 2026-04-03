@@ -5,6 +5,12 @@
 
 ## 1. Канонический старт
 
+- Архитектурная рамка и boundary map для новых задач:
+  [EMIS Architecture Baseline](./emis_architecture_baseline.md)
+- Canonical target layout, zone mapping, import/alias/migration rules:
+  [Monorepo Target Layout](./emis_monorepo_target_layout.md)
+- Короткий рабочий контракт для placement и decision path:
+  [EMIS Working Contract](./emis_working_contract.md)
 - Source of truth по scope, invariants и acceptance:
   [EMIS MVE TZ v2](./emis_mve_tz_v_2.md)
 - Source of truth по implementation decisions и rollout order:
@@ -109,6 +115,12 @@
 
 - `emis_session_bootstrap.md`
   Текущее состояние, reading order и doc ownership.
+- `emis_architecture_baseline.md`
+  Canonical boundary map: platform vs EMIS operational vs EMIS BI.
+- `emis_monorepo_target_layout.md`
+  Canonical target layout, zone mapping, import direction rules, alias policy, migration policy.
+- `emis_working_contract.md`
+  Short operational rules: placement, non-negotiables, review triggers, DoD.
 - `emis_mve_tz_v_2.md`
   Что и зачем делаем: scope, invariants, acceptance.
 - `emis_implementation_spec_v1.md`
@@ -119,19 +131,14 @@
   Runtime/API conventions, audit contract, error/meta shape.
 - `emis_architecture_review.md`
   Approve checklist, mandatory review cases и финальный verdict format.
-- `emis_worker_handoff_template.md`
-  Worker-to-lead handoff template для bounded implementation slice до reviewer pass.
-- `emis_mr_template.md`
-  Handoff template для local Git review и branch-based MR summary.
-- `emis_review_handoff_template.md`
-  Review request/result template для reviewer roles и branch-based diff handoff.
+- `agents/templates.md`
+  Current canonical communication templates for plan, worker handoff, report and review request/result.
+- `agents/workflow.md`
+  Current canonical workflow, review gate and handoff process.
 - `emis_offline_maps_ops.md`
   Ops/runbook по MapTiler, PMTiles и production caveats.
 - `emis_next_tasks_2026_03_22.md`
   Активный backlog, разбитый на MVE closeout и post-MVE tracks.
-- `emis_agent_operating_model.md`
-  Agent operating model: роли, границы, escalation rules и рекомендуемые модели.
-  Здесь же лежат canonical local Git / worktree rules для параллельной работы нескольких агентов.
 - `../src/routes/emis/AGENTS.md`
   Workspace route contract для `/emis` UI/orchestration layer.
 - `../src/lib/widgets/emis-map/AGENTS.md`
@@ -140,15 +147,20 @@
   BI/read-side route contract для dashboard slices.
 - `archive/emis/*`
   Исторические snapshots и завершенные wave notes. Не source of truth и не место для новых обновлений.
+- `archive/agents/*`
+  Historical agent-model and handoff notes. Читать только если нужен historical context по старому process pack.
 
 ## 5. Reading Order по сценариям
 
 ### Новый диалог или новый агент
 
 1. Этот bootstrap
-2. `emis_mve_tz_v_2.md`
-3. `emis_implementation_spec_v1.md`
-4. `emis_freeze_note.md`
+2. `emis_architecture_baseline.md`
+3. `emis_monorepo_target_layout.md`
+4. `emis_working_contract.md`
+5. `emis_mve_tz_v_2.md`
+6. `emis_implementation_spec_v1.md`
+7. `emis_freeze_note.md`
 
 ### Задача по API / service / audit
 

@@ -44,8 +44,10 @@
 Стартовая дорожка:
 
 1. `docs/emis_session_bootstrap.md`
-2. `docs/AGENTS.md` - полный каталог EMIS docs, ownership и reading order
-3. локальный `AGENTS.md` в `src/lib/server/emis/`, `src/routes/api/emis/`, `src/routes/emis/` и соседних active зонах
+2. `docs/emis_architecture_baseline.md`
+3. `docs/emis_working_contract.md`
+4. `docs/AGENTS.md` - полный каталог EMIS docs, ownership и reading order
+5. локальный `AGENTS.md` в `src/lib/server/emis/`, `src/routes/api/emis/`, `src/routes/emis/` и соседних active зонах
 
 ### Agent workflow (работа в команде агентов)
 
@@ -110,6 +112,14 @@ EMIS-активный контур сейчас находится здесь:
 - platform/shared слой;
 - текущий BI/analytics контур;
 - EMIS operational и BI-contour поверх него.
+
+### Target layout и migration rules
+
+Canonical target layout для monorepo-style separation:
+
+→ [docs/emis_monorepo_target_layout.md](./docs/emis_monorepo_target_layout.md)
+
+Описывает: target directory structure (`apps/web` + `packages/*`), маппинг текущих зон, import direction rules, alias policy и migration policy. Physical moves начинаются только после ST-4.
 
 ## 7. Архитектурные правила
 

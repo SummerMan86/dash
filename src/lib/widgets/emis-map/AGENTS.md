@@ -82,6 +82,7 @@ Map widget owns:
 
 1. `../../../../docs/emis_session_bootstrap.md`
 2. `../../../../docs/emis_offline_maps_ops.md` - если change касается PMTiles/offline
-3. `../../../../docs/emis_agent_operating_model.md`
-4. `../../../../docs/emis_architecture_review.md`
-5. `./EmisMap.svelte`
+3. `../../../../docs/agents/workflow.md`
+4. `../../../../docs/agents/templates.md`
+5. `../../../../docs/emis_architecture_review.md`
+6. `./EmisMap.svelte`
