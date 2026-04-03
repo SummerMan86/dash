@@ -57,3 +57,14 @@
 - Package naming: `@dashboard-builder/{name}`, workspace:* protocol
 - Current packages: platform-core, db, platform-ui, platform-datasets, platform-filters
 - Still needed: emis-contracts, emis-server, emis-ui (ST-7)
+
+### ST-7 tactical addendum (from lead-strategic)
+- Focus only on extracting `emis-contracts`, `emis-server`, `emis-ui`
+- Do NOT move `apps/web/src/routes/*` out of app layer
+- Do NOT change EMIS API/runtime behavior in the same slice
+- `routes/api/emis/*` stays thin transport; move contracts → emis-contracts, backend logic → emis-server, widgets/forms → emis-ui
+- `/dashboard/emis/*` must NOT import operational EMIS packages directly (BI vs operational boundary)
+- emis-server must NOT import from emis-ui (and vice versa) — both depend on emis-contracts
+- Shims: explicit and temporary, no silent duplicate code, each marked `// MIGRATION`
+- fetchDataset transitional gap: do NOT fix "заодно" unless it's a blocker
+- Review Gate: architecture-reviewer + code-reviewer + docs-reviewer + security-reviewer (server code moves)
