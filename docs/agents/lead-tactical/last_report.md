@@ -1,84 +1,106 @@
-# Report: ST-6 — Extract Shared Platform Packages
+# Report: ST-7 — Extract EMIS Packages And Isolate EMIS Ownership
 
 ## Статус
 Выполнено
 
 ## Что сделано
 
-### Wave 1 — Leaf packages
-- `packages/platform-core` — format utilities (formatNumber, formatCurrency, etc.) + useDebouncedLoader composable
-- `packages/db` — getPgPool (postgres connection pooling singleton)
+### Wave 1 — emis-contracts (leaf)
+- `packages/emis-contracts` — 7 entity dirs с subpath exports:
+  - emis-geo, emis-dictionary, emis-news, emis-object, emis-link, emis-ship-route, emis-map
+  - Internal cross-entity imports (emis-news/emis-object → emis-geo) переведены на relative paths
+  - Dep: zod
 
-### Wave 2 — Dependent packages
-- `packages/platform-ui` — 15 UI component families (Button, Card, Chart, DataTable, Input, Select, Sidebar, Skeleton, etc.) + styles/tokens (cn, semantic tokens, chart presets)
-- `packages/platform-datasets` — dataset contracts/IR/ports + server compile + dataset definitions + postgresProvider
-- `packages/platform-filters` — filter types/store/planner/registry/workspace + filter widgets (FilterPanel, DateRangeFilter, SelectFilter, etc.)
+### Wave 2 — emis-server
+- `packages/emis-server` — infra (7 файлов) + modules (6 доменов):
+  - infra: db, errors, http, audit, mapConfig, pmtilesBundle, pmtilesSpike
+  - modules: news, objects, links, dictionaries, map, ship-routes
+  - `$lib/server/db/pg` заменён на `@dashboard-builder/db`
+  - `$entities/emis-*` заменены на `@dashboard-builder/emis-contracts/emis-*`
+  - Deps: emis-contracts, db, zod; peers: @sveltejs/kit, pg; dev: @types/pg
 
-### Migration strategy
-- Re-export shims at all old paths (marked `// MIGRATION: remove after {package} import migration`)
-- All existing `$shared/`, `$entities/`, `$lib/server/` imports continue working through shims
-- Consumers will be migrated to `@dashboard-builder/{package}` imports incrementally
+### Wave 3 — emis-ui
+- `packages/emis-ui` — 2 widget группы:
+  - emis-map: EmisMap.svelte, EmisPmtilesSpikeMap.svelte, layer-config.ts, pmtiles-protocol.ts, pmtiles-style.ts, popup-renderers.ts
+  - emis-status-bar: EmisStatusBar.svelte
+  - `$entities/emis-*` → `@dashboard-builder/emis-contracts/emis-*`
+  - `$shared/styles/utils` → `@dashboard-builder/platform-ui`
+  - `$shared/utils` → `@dashboard-builder/platform-core`
+  - `$entities/dataset` → `@dashboard-builder/platform-datasets`
+  - Deps: emis-contracts, platform-core, platform-datasets, platform-ui, @protomaps/basemaps, maplibre-gl, pmtiles; peer: svelte
 
 ### Intentionally stays in apps/web
-- `mockProvider` — depends on app-specific fixtures (`$shared/fixtures/paymentAnalytics`)
-- `fetchDataset` — cross-package composition (imports both datasets AND filters)
-- `shared/config/`, `shared/fixtures/` — app-specific data
-- `shared/styles/tokens/tokens.css` — imported by `app.css`, loaded through app's CSS pipeline
+- `emis-drawer` — зависит от `$widgets/filters` (FilterPanel, app-local widget)
+- `emis-manual-entry` — зависит от `$app/forms` (SvelteKit-specific)
+- Все `routes/api/emis/*` — thin HTTP transport (stays in app per addendum)
+- Все `routes/emis/*` и `routes/dashboard/emis/*` — UI/workspace layer
 
-### Package configuration
-- All packages export source TS/Svelte (no compilation step)
-- Svelte packages: `"svelte"` field + `"exports"` with `"svelte"` condition in package.json
-- Naming: `@dashboard-builder/{name}` scope, `workspace:*` protocol
-- `apps/web` renamed to `@dashboard-builder/web`
+### Migration strategy
+- Re-export shims at all old paths (marked `// MIGRATION`)
+- All existing `$entities/emis-*`, `$lib/server/emis/*`, `$widgets/emis-map/*` imports continue working through shims
 
-### Dependency graph (packages only)
+### Dependency graph (EMIS packages)
 ```
-platform-core (leaf)
-db (leaf, depends on pg)
-platform-ui → clsx, tailwind-merge, echarts; peer: svelte
-platform-datasets → db, pg
-platform-filters → platform-datasets (JsonValue type), platform-ui (cn, Button, Input, Select); peer: svelte
+emis-contracts (leaf, depends on zod)
+emis-server → emis-contracts, db, zod; peers: @sveltejs/kit, pg
+emis-ui → emis-contracts, platform-core, platform-datasets, platform-ui, maplibre-gl, pmtiles, @protomaps/basemaps; peer: svelte
 ```
+
+Boundary invariants verified:
+- emis-server does NOT import from emis-ui
+- emis-ui does NOT import from emis-server
+- Both depend on emis-contracts
+
+### Docs updated
+- `AGENTS.md` — EMIS active zones updated to reflect packages as canonical, old paths as shims
+- `docs/emis_architecture_baseline.md` — placement rules updated to point to packages
+- `docs/emis_session_bootstrap.md` — broken reference to widgets/emis-map/AGENTS.md fixed
+- `docs/AGENTS.md` — catalog entry updated
+- `apps/web/src/routes/emis/AGENTS.md` — broken reference fixed
+- `apps/web/src/lib/server/emis/AGENTS.md` — migration note added, placement rules updated
 
 ## Verification
 - `pnpm check` — 0 errors, 0 warnings
-- `pnpm build` — success (10.9s)
+- `pnpm build` — success (11.6s)
 - `pnpm lint:boundaries` — 3 pre-existing gaps only (fetchDataset.ts, unchanged since ST-4)
-- 7 workspace projects recognized by pnpm
+- 10 workspace projects recognized by pnpm
 
 ## Review Gate
 
+### Вердикты ревьюеров
+- security-reviewer: **OK** — no issues; all SQL parameterized, no secrets in source, write-side guardrails preserved
+- code-reviewer: **OK** — migration structure fully correct; 2 pre-existing warnings noted (not ST-7 scope)
+- docs-reviewer: **request changes** → исправлено → OK (broken references to widgets/emis-map/AGENTS.md, stale zone descriptions)
+- architecture-reviewer: **request changes** → deferred (see below)
+
 ### Findings по severity
 
-**CRITICAL** (исправлено):
-- architecture-reviewer: `import { browser } from '$app/environment'` в `packages/platform-filters/src/model/workspace.svelte.ts` — SvelteKit virtual module в reusable package, сломается вне контекста app → заменён на `typeof window !== 'undefined'`
+**Deferred (valid but out of ST-7 scope per addendum):**
+- architecture-reviewer: SvelteKit coupling in emis-server — `handleEmisRoute`, `jsonEmisList`, `jsonEmisError` import from `@sveltejs/kit`; `resolveEmisWriteContext` accepts `Request` object. Valid concern, but fixing requires splitting http.ts into framework-agnostic (package) vs SvelteKit (app shim) parts — this is a behavior-adjacent refactor, deferred per "do NOT fix заодно unless blocker"
+- architecture-reviewer: EmisMap.svelte 1224 lines — decomposition candidate (extract overlay-fetch, feature normalizers, diagnostics HUD). Pre-existing, not introduced by ST-7. Candidate for ST-8 or dedicated follow-up
 
-**WARNING** (исправлено):
-- architecture-reviewer: orphaned source files в `apps/web/src/lib/entities/filter/model/` и `dataset/model/` без MIGRATION маркеров — dead code, нарушение migration policy → удалены
-- code-reviewer: dead duplicate `cn.ts` рядом с shim → удалён
-- code-reviewer: dead duplicate `semantic.ts` рядом с shim → удалён
-- code-reviewer: `chart/presets.ts` не конвертирован в shim → конвертирован
+**Pre-existing (not ST-7 scope):**
+- code-reviewer: `clampPageSize()` duplicated in news/queries.ts and objects/queries.ts
+- code-reviewer: hardcoded bbox param indices in `mapVesselsQuery` (fragile under future edits)
 
-**INFO** (отмечено):
-- code-reviewer + architecture-reviewer: `pg` в platform-datasets redundant рядом с `@dashboard-builder/db` — корректно (postgresProvider использует `pg.types.setTypeParser` напрямую), MVP coupling
-- old `.svelte` component files остаются в `apps/web/src/lib/shared/ui/*/` — deep path imports (`$shared/ui/chart/presets`) всё ещё резолвятся через них; будут удалены при полной миграции импортов
-
-### Вердикты ревьюеров
-- architecture-reviewer: request changes → исправлено → OK
-- code-reviewer: request changes → исправлено → OK
-- security-reviewer: не запускался (no runtime behavior change, no new endpoints)
-- docs-reviewer: не запускался (docs update deferred to ST-9)
-- ui-reviewer: не запускался (no frontend behavior change)
+**Fixed in this slice:**
+- docs-reviewer: 3 broken references to `widgets/emis-map/AGENTS.md` → fixed in docs/AGENTS.md, emis_session_bootstrap.md, routes/emis/AGENTS.md
+- docs-reviewer: stale zone descriptions in AGENTS.md and emis_architecture_baseline.md → updated
+- docs-reviewer: stale placement rules in server/emis/AGENTS.md → updated with migration note
+- architecture-reviewer: top-level `svelte`/`types` fields in emis-ui package.json → removed (subpath exports authoritative)
 
 ## Ветки
 - integration branch: `feature/emis-foundation-stabilization`
-- commits: `708d9dc` (main extraction), `13aa5f3` (memory update)
+- commits: `76d37e1` (main extraction), `be6f660` (memory update)
 
 ## Handoff readiness
-- 5 platform packages extracted and working
-- ST-7 (EMIS package extraction) is unblocked
-- Remaining migration work: emis-contracts, emis-server, emis-ui (ST-7)
-- fetchDataset cross-package coupling is a known tech debt — resolve when filter/dataset boundary stabilizes
+- 8 packages total (5 platform + 3 EMIS) extracted and working
+- ST-8 (Rationalize BI/Dashboard Packages) is unblocked
+- Known follow-ups for future slices:
+  - SvelteKit coupling in emis-server (http.ts/audit.ts) — refactor when behavior changes are allowed
+  - EmisMap.svelte decomposition — decompose when touching map functionality
+  - emis-drawer/emis-manual-entry — extract if app-local deps are resolved
+  - fetchDataset cross-package coupling — resolve when filter/dataset boundary stabilizes
 
 ## Вопросы к lead-strategic
 - нет
