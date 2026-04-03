@@ -1,94 +1,84 @@
-# Report: ST-5 — Extract Current App Into apps/web
+# Report: ST-6 — Extract Shared Platform Packages
 
 ## Статус
 Выполнено
 
 ## Что сделано
 
-### Physical move
-- `src/` → `apps/web/src/`
-- `static/` → `apps/web/static/`
-- `svelte.config.js` → `apps/web/svelte.config.js`
-- `vite.config.ts` → `apps/web/vite.config.ts`
-- `tsconfig.json` → `apps/web/tsconfig.json`
-- `tailwind.config.js` → `apps/web/tailwind.config.js`
+### Wave 1 — Leaf packages
+- `packages/platform-core` — format utilities (formatNumber, formatCurrency, etc.) + useDebouncedLoader composable
+- `packages/db` — getPgPool (postgres connection pooling singleton)
 
-### Package split
-- Created `apps/web/package.json` with app runtime deps + app-local scripts (dev, build, check)
-- Root `package.json` → workspace orchestrator:
-  - `pnpm dev/build/check` delegated via `pnpm -C apps/web`
-  - Lint/format/boundaries stay at root (workspace-level)
-  - EMIS smoke, DB, strategy scripts stay at root
-  - Root devDependencies: ESLint, Prettier, typescript-eslint (workspace tools only)
+### Wave 2 — Dependent packages
+- `packages/platform-ui` — 15 UI component families (Button, Card, Chart, DataTable, Input, Select, Sidebar, Skeleton, etc.) + styles/tokens (cn, semantic tokens, chart presets)
+- `packages/platform-datasets` — dataset contracts/IR/ports + server compile + dataset definitions + postgresProvider
+- `packages/platform-filters` — filter types/store/planner/registry/workspace + filter widgets (FilterPanel, DateRangeFilter, SelectFilter, etc.)
 
-### Config updates
-- `vite.config.ts`: dotenv paths updated to `../../.env.map` and `../../.env`
-- `eslint.config.js`: svelte config import → `./apps/web/svelte.config.js`, all file globs → `apps/web/src/`
-- `scripts/lint-boundaries.mjs`: target paths → `apps/web/src/`
-- `scripts/emis-smoke.mjs`: spawn CWD → `apps/web/`
-- `.prettierrc`: tailwindStylesheet → `./apps/web/src/app.css`
-- `.prettierignore`: static → `/apps/web/static/`
-- `.gitignore`: added `apps/web/.svelte-kit`, `apps/web/build`, `apps/web/src/Examples/`
+### Migration strategy
+- Re-export shims at all old paths (marked `// MIGRATION: remove after {package} import migration`)
+- All existing `$shared/`, `$entities/`, `$lib/server/` imports continue working through shims
+- Consumers will be migrated to `@dashboard-builder/{package}` imports incrementally
 
-### What stays at root
-- `.env*` files (shared by app and DB scripts)
-- `db/`, `docs/`, `archive/`, `deploy/`
-- `docker-compose*.yml`, `Dockerfile`
-- `pnpm-workspace.yaml`, `pnpm-lock.yaml`
-- `eslint.config.js`, `.prettierrc` (workspace-level config)
-- `scripts/` (all scripts, including smoke and DB)
-- `AGENTS.md`, `CLAUDE.md`, `README.md`
+### Intentionally stays in apps/web
+- `mockProvider` — depends on app-specific fixtures (`$shared/fixtures/paymentAnalytics`)
+- `fetchDataset` — cross-package composition (imports both datasets AND filters)
+- `shared/config/`, `shared/fixtures/` — app-specific data
+- `shared/styles/tokens/tokens.css` — imported by `app.css`, loaded through app's CSS pipeline
 
-### Docs updates
-- All `../src/` relative links in docs → `../apps/web/src/`
-- All `src/lib/` and `src/routes/` references in AGENTS.md → `apps/web/src/lib/` and `apps/web/src/routes/`
-- Updated files: AGENTS.md, docs/AGENTS.md, docs/emis_session_bootstrap.md, docs/emis_architecture_baseline.md, docs/emis_working_contract.md, docs/emis_architecture_review.md, docs/archive/emis/emis_handoff_2026_03_17.md
+### Package configuration
+- All packages export source TS/Svelte (no compilation step)
+- Svelte packages: `"svelte"` field + `"exports"` with `"svelte"` condition in package.json
+- Naming: `@dashboard-builder/{name}` scope, `workspace:*` protocol
+- `apps/web` renamed to `@dashboard-builder/web`
 
-### What was NOT changed
-- No EMIS or BI domain logic changes
-- No API contract changes
-- No import paths in source code (aliases resolve from svelte.config.js, which moved with src/)
-- No DB schema changes
+### Dependency graph (packages only)
+```
+platform-core (leaf)
+db (leaf, depends on pg)
+platform-ui → clsx, tailwind-merge, echarts; peer: svelte
+platform-datasets → db, pg
+platform-filters → platform-datasets (JsonValue type), platform-ui (cn, Button, Input, Select); peer: svelte
+```
 
 ## Verification
-- `pnpm check` — 0 errors, 0 warnings (env from root picked up correctly)
-- `pnpm build` — success
-- `pnpm lint:boundaries` — 3 expected gaps (same as before)
+- `pnpm check` — 0 errors, 0 warnings
+- `pnpm build` — success (10.9s)
+- `pnpm lint:boundaries` — 3 pre-existing gaps only (fetchDataset.ts, unchanged since ST-4)
+- 7 workspace projects recognized by pnpm
 
 ## Review Gate
 
 ### Findings по severity
 
 **CRITICAL** (исправлено):
-- architecture-reviewer: stale `src/` globs в `.svelte.ts`/`.svelte.js`/`.svelte` file patterns в eslint.config.js — boundary rules для Svelte files были silently dead → все globs обновлены на `apps/web/src/`
-- docs-reviewer: bare `src/lib/` и `src/routes/` references в 10+ active docs (emis_architecture_baseline, emis_working_contract, emis_session_bootstrap, workflow.md, current_plan.md и др.) → все обновлены на `apps/web/src/`
+- architecture-reviewer: `import { browser } from '$app/environment'` в `packages/platform-filters/src/model/workspace.svelte.ts` — SvelteKit virtual module в reusable package, сломается вне контекста app → заменён на `typeof window !== 'undefined'`
 
 **WARNING** (исправлено):
-- docs-reviewer: `docs/agents/docs-reviewer/instructions.md` scope path stale → обновлён
-- docs-reviewer: `docs/agents/workflow.md` EMIS boundary reference stale → обновлён
-- lead-strategic: `.claude/agent-memory/*` и `target` accidental commit → removed from git, added to .gitignore
+- architecture-reviewer: orphaned source files в `apps/web/src/lib/entities/filter/model/` и `dataset/model/` без MIGRATION маркеров — dead code, нарушение migration policy → удалены
+- code-reviewer: dead duplicate `cn.ts` рядом с shim → удалён
+- code-reviewer: dead duplicate `semantic.ts` рядом с shim → удалён
+- code-reviewer: `chart/presets.ts` не конвертирован в shim → конвертирован
 
 **INFO** (отмечено):
-- architecture-reviewer: package name `web` vs `@dashboard-builder/web` — rename при ST-6
-- architecture-reviewer: `dotenv` in devDependencies but used in vite.config.ts — acceptable (build-time only)
-- architecture-reviewer: vite.config.ts CWD-dependent env path — low risk under current workflow
-- docs-reviewer: archive docs retain bare `src/` paths — intentionally not updated (historical)
+- code-reviewer + architecture-reviewer: `pg` в platform-datasets redundant рядом с `@dashboard-builder/db` — корректно (postgresProvider использует `pg.types.setTypeParser` напрямую), MVP coupling
+- old `.svelte` component files остаются в `apps/web/src/lib/shared/ui/*/` — deep path imports (`$shared/ui/chart/presets`) всё ещё резолвятся через них; будут удалены при полной миграции импортов
 
 ### Вердикты ревьюеров
 - architecture-reviewer: request changes → исправлено → OK
-- docs-reviewer: request changes → исправлено → OK
-- code-reviewer: не запускался (structural move, no logic changes)
-- security-reviewer: не запускался (no runtime behavior change)
+- code-reviewer: request changes → исправлено → OK
+- security-reviewer: не запускался (no runtime behavior change, no new endpoints)
+- docs-reviewer: не запускался (docs update deferred to ST-9)
 - ui-reviewer: не запускался (no frontend behavior change)
 
 ## Ветки
 - integration branch: `feature/emis-foundation-stabilization`
+- commits: `708d9dc` (main extraction), `13aa5f3` (memory update)
 
 ## Handoff readiness
-- Root is now workspace orchestrator, not the app itself
-- `apps/web/` contains the full SvelteKit runtime
-- All commands work from root via wrappers
-- ST-6 (platform package extraction) is unblocked
+- 5 platform packages extracted and working
+- ST-7 (EMIS package extraction) is unblocked
+- Remaining migration work: emis-contracts, emis-server, emis-ui (ST-7)
+- fetchDataset cross-package coupling is a known tech debt — resolve when filter/dataset boundary stabilizes
 
 ## Вопросы к lead-strategic
 - нет
