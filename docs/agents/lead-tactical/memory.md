@@ -23,9 +23,19 @@
 - All doc `src/` references → `apps/web/src/`
 - pnpm check: 0 errors, build: success, lint:boundaries: 3 expected gaps
 
+### ST-6 (2026-04-03)
+- 5 packages extracted: platform-core, db, platform-ui, platform-datasets, platform-filters
+- Wave 1 (leaf): platform-core (format.ts + useDebouncedLoader) + db (pg.ts)
+- Wave 2: platform-ui (15 UI families + styles/tokens), platform-datasets (contracts/IR + compile + postgresProvider), platform-filters (types/store/planner + filter widgets)
+- Re-export shims at old paths (marked `// MIGRATION`) — all $alias imports continue working
+- mockProvider stays in apps/web (fixture dep), fetchDataset stays in apps/web (cross-package composition)
+- `$app/environment` replaced with `typeof window !== 'undefined'` in platform-filters (arch review fix)
+- Orphaned model dirs deleted, dead duplicates cleaned up (code review fix)
+- apps/web renamed to @dashboard-builder/web
+
 ### Integration branch
 - `feature/emis-foundation-stabilization`
-- Latest commit: `8bcccbd` (ST-5 follow-up: artifact cleanup + Review Gate)
+- Latest commit: `708d9dc` (ST-6: extract shared platform packages)
 
 ## Проблемы и workarounds
 
@@ -36,16 +46,14 @@
 
 ## Заметки для следующей сессии
 
-- **Следующий шаг: ST-6** (Extract Shared Platform Packages)
-- ST-6 план: 2 волны workers в tmux
-  - Волна 1 (параллельно): `platform-core` (utils/helpers) + `db` (connection/pooling) — leaf packages
-  - Волна 2 (после merge волны 1): `platform-ui` + `platform-datasets` + `platform-filters`
-- Workers создаются как teammates в tmux (полный контекст проекта)
-- Reviewers — subagents (Agent tool, session-persistent, Sonnet)
-- Каждый worker package extraction = отдельный worker branch → merge в integration → Review Gate
-- При создании packages обратить внимание на:
-  - package.json exports для SvelteKit consumption (source, не compiled)
-  - svelte пакеты: нужен `svelte` field в package.json
-  - TypeScript: tsconfig per package или shared
-  - Import updates: $alias → @dashboard-builder/package-name
-  - Rename `web` → `@dashboard-builder/web` при первом package addition
+- **Следующий шаг: ST-7** (Extract EMIS Packages And Isolate EMIS Ownership)
+- ST-6 lessons:
+  - Wave approach (leaf packages first, dependents second) worked well
+  - Re-export shims are the safest extraction strategy — no consumer changes needed
+  - Packages export source TS/Svelte (no compilation), `svelte` field + exports in package.json
+  - `$app/environment` can't be used in packages — use `typeof window !== 'undefined'`
+  - Delete orphaned source files after extraction, don't leave unmarked dead code
+  - mockProvider (fixture dep) and fetchDataset (cross-package composition) correctly stayed in app
+- Package naming: `@dashboard-builder/{name}`, workspace:* protocol
+- Current packages: platform-core, db, platform-ui, platform-datasets, platform-filters
+- Still needed: emis-contracts, emis-server, emis-ui (ST-7)
