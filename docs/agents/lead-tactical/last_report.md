@@ -10,7 +10,7 @@
 
 ### Deliverables
 - Новый `docs/emis_monorepo_target_layout.md` — canonical reference:
-  - target layout: `apps/web` + 9 packages (platform-ui, platform-datasets, platform-filters, db, emis-contracts, emis-server, emis-ui, bi-alerts, bi-dashboards)
+  - target layout: `apps/web` + 10 packages (platform-core, platform-ui, platform-datasets, platform-filters, db, emis-contracts, emis-server, emis-ui, bi-alerts, bi-dashboards)
   - маппинг всех текущих active zones → target home
   - dependency graph и import direction rules (6 non-negotiable boundaries)
   - alias policy с removal timeline
@@ -52,6 +52,9 @@
 
 ## Готовность
 Готово к merge после коммита. ST-4 unblocked.
+
+## Post-commit follow-up
+- Split `platform-ui` → `platform-core` + `platform-ui`: generic utils/helpers отделены от UI primitives. Обновлены target layout, zone mapping, dependency graph и rules table.
 
 ## Вопросы к lead-strategic
 - нет

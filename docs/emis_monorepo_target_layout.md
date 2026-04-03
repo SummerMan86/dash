@@ -21,7 +21,8 @@ dashboard-builder/
 │       └── package.json
 │
 ├── packages/
-│   ├── platform-ui/                  # Shared UI primitives, styles, utils
+│   ├── platform-core/               # Generic utilities, helpers, shared non-UI code
+│   ├── platform-ui/                 # UI primitives, styles, design tokens
 │   ├── platform-datasets/           # Dataset contracts, IR, compilation, providers, fetchDataset
 │   ├── platform-filters/            # Filter contracts, store, planner, filter widgets
 │   ├── db/                          # DB connection, pooling, schema scripts, seeds
@@ -44,10 +45,10 @@ dashboard-builder/
 
 | Current path | Target package | Что содержит |
 |---|---|---|
+| `src/lib/shared/utils/*` | `packages/platform-core/` | Generic utilities |
+| `src/lib/shared/lib/*` | `packages/platform-core/` | Shared helpers |
 | `src/lib/shared/ui/*` | `packages/platform-ui/` | UI primitives: button, card, badge, input, select, sidebar, skeleton, data-table, chart wrappers |
 | `src/lib/shared/styles/*` | `packages/platform-ui/` | Design tokens, style utils |
-| `src/lib/shared/utils/*` | `packages/platform-ui/` | Generic utilities |
-| `src/lib/shared/lib/*` | `packages/platform-ui/` | Shared helpers |
 | `src/lib/entities/dataset/*` | `packages/platform-datasets/` | DatasetQuery, DatasetResponse, DatasetIr, provider contracts |
 | `src/lib/shared/api/fetchDataset.ts` | `packages/platform-datasets/` | Client-side dataset facade |
 | `src/lib/server/datasets/*` | `packages/platform-datasets/` | compileDataset, dataset definitions, registry |
@@ -118,25 +119,32 @@ dashboard-builder/
          │          │
          ▼          ▼
   ┌──────────────────────┐
-  │ platform-*,  db      │
+  │ platform-core, db    │  ← leaf foundation, no domain knowledge
+  ├──────────────────────┤
+  │ platform-ui          │  ← depends on platform-core
+  │ platform-datasets    │  ← depends on platform-core, db
+  │ platform-filters     │  ← depends on platform-core, platform-ui
   └──────────────────────┘
 ```
 
-Ключевое: `emis-ui` и `emis-server` — **peer nodes без edge между ними**. Оба зависят от `emis-contracts` и `platform-*`, но не друг от друга.
+Ключевое:
+- `emis-ui` и `emis-server` — **peer nodes без edge между ними**. Оба зависят от `emis-contracts` и `platform-*`, но не друг от друга.
+- `platform-core` — leaf foundation (utils, helpers); `platform-ui` зависит от `platform-core`, но не наоборот.
 
 ### Explicit rules
 
 | Package | Can import from | Cannot import from |
 |---|---|---|
-| `platform-ui` | — (leaf foundation) | everything else |
-| `platform-datasets` | `platform-ui`, `db` | emis-*, bi-*, apps/* |
-| `platform-filters` | `platform-ui`; `platform-datasets` if `getFilterSnapshot` coupling survives | emis-*, bi-*, apps/* |
+| `platform-core` | — (leaf foundation) | everything else |
+| `platform-ui` | `platform-core` | emis-*, bi-*, apps/*, datasets, filters, db |
+| `platform-datasets` | `platform-core`, `db` | emis-*, bi-*, apps/*, platform-ui |
+| `platform-filters` | `platform-core`, `platform-ui`; `platform-datasets` if `getFilterSnapshot` coupling survives | emis-*, bi-*, apps/* |
 | `db` | — (leaf foundation) | everything else |
-| `emis-contracts` | `platform-ui` (types only) | emis-server, emis-ui, bi-*, apps/* |
-| `emis-server` | `emis-contracts`, `platform-datasets`, `db` | emis-ui, bi-*, apps/* |
-| `emis-ui` | `emis-contracts`, `platform-ui`, `platform-filters` | emis-server, bi-*, apps/* |
-| `bi-alerts` | `platform-datasets`, `db` | emis-*, apps/* |
-| `bi-dashboards` | `platform-ui`, `platform-datasets`, `platform-filters` | emis-*, apps/* |
+| `emis-contracts` | `platform-core` (types only) | emis-server, emis-ui, bi-*, apps/*, platform-ui |
+| `emis-server` | `emis-contracts`, `platform-core`, `platform-datasets`, `db` | emis-ui, bi-*, apps/* |
+| `emis-ui` | `emis-contracts`, `platform-core`, `platform-ui`, `platform-filters` | emis-server, bi-*, apps/* |
+| `bi-alerts` | `platform-core`, `platform-datasets`, `db` | emis-*, apps/* |
+| `bi-dashboards` | `platform-core`, `platform-ui`, `platform-datasets`, `platform-filters` | emis-*, apps/* |
 | `apps/web` | всё (leaf consumer) | — |
 
 ### Non-negotiable boundaries
@@ -182,7 +190,7 @@ $widgets  → src/lib/widgets
 
 | Alias | Удаляется после extraction |
 |---|---|
-| `$shared` | `packages/platform-ui/` полностью извлечён |
+| `$shared` | `packages/platform-core/` + `packages/platform-ui/` полностью извлечены |
 | `$entities` | `packages/emis-contracts/` + `packages/platform-datasets/` + `packages/platform-filters/` извлечены |
 | `$features` | `packages/emis-ui/` извлечён (или features остались только в app) |
 | `$widgets` | `packages/emis-ui/` + `packages/platform-filters/` извлечены |
