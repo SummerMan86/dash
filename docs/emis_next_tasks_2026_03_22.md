@@ -56,7 +56,7 @@ Read:
 
 - `docs/emis_mve_tz_v_2.md`
 - `docs/emis_session_bootstrap.md`
-- `src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
+- `apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
 
 Deliver:
 
@@ -95,7 +95,7 @@ Done when:
 
 Suggested ownership:
 
-- `src/lib/server/emis/infra/*`
+- `apps/web/src/lib/server/emis/infra/*`
 
 Deliver:
 
@@ -113,9 +113,9 @@ Done when:
 
 Suggested ownership:
 
-- `src/routes/api/emis/*`
-- `src/routes/emis/*/new`
-- `src/routes/emis/*/edit`
+- `apps/web/src/routes/api/emis/*`
+- `apps/web/src/routes/emis/*/new`
+- `apps/web/src/routes/emis/*/edit`
 
 Deliver:
 
@@ -286,7 +286,7 @@ Done when:
 
 Suggested ownership:
 
-- `src/lib/server/emis/infra/*`
+- `apps/web/src/lib/server/emis/infra/*`
 
 Deliver:
 

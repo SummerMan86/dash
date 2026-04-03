@@ -10,7 +10,7 @@
 - `db/current_schema.sql`
 - `db/applied_changes.md`
 - `db/schema_catalog.md`
-- `src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
+- `apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
 - Локальные `AGENTS.md` / `CLAUDE.md` в модулях
 
 Convention: `AGENTS.md` canonical над `CLAUDE.md` если оба есть.

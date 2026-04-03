@@ -6,7 +6,7 @@ import svelte from 'eslint-plugin-svelte';
 import { defineConfig } from 'eslint/config';
 import globals from 'globals';
 import ts from 'typescript-eslint';
-import svelteConfig from './svelte.config.js';
+import svelteConfig from './apps/web/svelte.config.js';
 
 const gitignorePath = fileURLToPath(new URL('./.gitignore', import.meta.url));
 
@@ -47,7 +47,7 @@ export default defineConfig(
 
 	// FSD: shared — no upper-layer imports, no server imports
 	{
-		files: ['src/lib/shared/**/*.ts', 'src/lib/shared/**/*.svelte.ts', 'src/lib/shared/**/*.svelte.js', 'src/lib/shared/**/*.svelte'],
+		files: ['apps/web/src/lib/shared/**/*.ts', 'apps/web/src/lib/shared/**/*.svelte.ts', 'apps/web/src/lib/shared/**/*.svelte.js', 'apps/web/src/lib/shared/**/*.svelte'],
 		rules: {
 			'no-restricted-imports': ['error', {
 				patterns: [
@@ -61,7 +61,7 @@ export default defineConfig(
 	},
 	// FSD: entities — no features/widgets, no server
 	{
-		files: ['src/lib/entities/**/*.ts', 'src/lib/entities/**/*.svelte.ts', 'src/lib/entities/**/*.svelte.js', 'src/lib/entities/**/*.svelte'],
+		files: ['apps/web/src/lib/entities/**/*.ts', 'apps/web/src/lib/entities/**/*.svelte.ts', 'apps/web/src/lib/entities/**/*.svelte.js', 'apps/web/src/lib/entities/**/*.svelte'],
 		rules: {
 			'no-restricted-imports': ['error', {
 				patterns: [
@@ -74,7 +74,7 @@ export default defineConfig(
 	},
 	// FSD: features — no widgets, no server
 	{
-		files: ['src/lib/features/**/*.ts', 'src/lib/features/**/*.svelte.ts', 'src/lib/features/**/*.svelte.js', 'src/lib/features/**/*.svelte'],
+		files: ['apps/web/src/lib/features/**/*.ts', 'apps/web/src/lib/features/**/*.svelte.ts', 'apps/web/src/lib/features/**/*.svelte.js', 'apps/web/src/lib/features/**/*.svelte'],
 		rules: {
 			'no-restricted-imports': ['error', {
 				patterns: [
@@ -86,7 +86,7 @@ export default defineConfig(
 	},
 	// FSD: widgets — no server
 	{
-		files: ['src/lib/widgets/**/*.ts', 'src/lib/widgets/**/*.svelte.ts', 'src/lib/widgets/**/*.svelte.js', 'src/lib/widgets/**/*.svelte'],
+		files: ['apps/web/src/lib/widgets/**/*.ts', 'apps/web/src/lib/widgets/**/*.svelte.ts', 'apps/web/src/lib/widgets/**/*.svelte.js', 'apps/web/src/lib/widgets/**/*.svelte'],
 		rules: {
 			'no-restricted-imports': ['error', {
 				patterns: [
@@ -97,7 +97,7 @@ export default defineConfig(
 	},
 	// EMIS transport: routes/api/emis — no UI/client code (any, not just EMIS UI)
 	{
-		files: ['src/routes/api/emis/**/*.ts'],
+		files: ['apps/web/src/routes/api/emis/**/*.ts'],
 		rules: {
 			'no-restricted-imports': ['error', {
 				patterns: [
@@ -110,7 +110,7 @@ export default defineConfig(
 	},
 	// Dashboard EMIS routes — no direct EMIS operational server imports
 	{
-		files: ['src/routes/dashboard/emis/**/*.ts', 'src/routes/dashboard/emis/**/*.svelte.ts', 'src/routes/dashboard/emis/**/*.svelte.js', 'src/routes/dashboard/emis/**/*.svelte'],
+		files: ['apps/web/src/routes/dashboard/emis/**/*.ts', 'apps/web/src/routes/dashboard/emis/**/*.svelte.ts', 'apps/web/src/routes/dashboard/emis/**/*.svelte.js', 'apps/web/src/routes/dashboard/emis/**/*.svelte'],
 		rules: {
 			'no-restricted-imports': ['error', {
 				patterns: [

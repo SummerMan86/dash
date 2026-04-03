@@ -200,7 +200,7 @@ git diff main..feature/branch
 
 - `routes/api/emis/*` — только HTTP transport, без SQL и бизнес-логики
 - `server/emis/modules/*/service.ts` — без HTTP-логики (Request/Response)
-- SQL живёт в `src/lib/server/emis/modules/*`, не в routes
+- SQL живёт в `apps/web/src/lib/server/emis/modules/*`, не в routes
 - Zod schemas для EMIS — в `entities/emis-*`, не в route files
 - Operational flows не пушим в dataset/IR abstraction
 

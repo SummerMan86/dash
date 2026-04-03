@@ -1,21 +1,17 @@
 {
-	"name": "dashboard-builder-mvp",
+	"name": "dashboard-builder",
 	"private": true,
-	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
-		"_comment:app": "--- App-local scripts (move to apps/web/package.json in ST-5) ---",
-		"dev": "vite dev",
-		"build": "vite build",
-		"preview": "vite preview",
-		"prepare": "svelte-kit sync || echo ''",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"dev": "pnpm -C apps/web dev",
+		"build": "pnpm -C apps/web build",
+		"preview": "pnpm -C apps/web preview",
+		"check": "pnpm -C apps/web check",
+		"check:watch": "pnpm -C apps/web check:watch",
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint .",
 		"lint:boundaries": "node ./scripts/lint-boundaries.mjs",
 
-		"_comment:emis": "--- EMIS smoke/ops scripts (move to apps/web in ST-5) ---",
 		"emis:smoke": "node ./scripts/emis-smoke.mjs",
 		"emis:write-smoke": "node ./scripts/emis-write-smoke.mjs",
 		"emis:offline-smoke": "node ./scripts/emis-offline-smoke.mjs",
@@ -24,7 +20,6 @@
 		"map:pmtiles:probe": "node ./scripts/emis-pmtiles-spike.mjs probe",
 		"map:pmtiles:setup": "node ./scripts/emis-pmtiles-setup.mjs",
 
-		"_comment:db": "--- DB scripts (stay at root or move to packages/db in ST-6) ---",
 		"db:up": "docker compose up -d",
 		"db:down": "docker compose down",
 		"db:logs": "docker compose logs postgres --tail=100",
@@ -37,7 +32,6 @@
 		"db:snapshot:export": "./scripts/db-export-current-schema.sh",
 		"db:snapshot:verify": "./scripts/db-verify-current-schema.sh",
 
-		"_comment:strategy": "--- Strategy/intake scripts (stay at root or archive) ---",
 		"strategy:agent:queue": "node ./scripts/strategy-agent-queue.mjs",
 		"strategy:agent:intake": "node ./scripts/strategy-agent-intake.mjs",
 		"legacy:strategy-v1:build-full": "python3 ./archive/strategy-v1/scripts/strategy-bulk-build.py",
@@ -45,33 +39,9 @@
 		"intake:psql": "./scripts/dashboard-psql-intake.sh",
 		"intake:psql:file": "./scripts/dashboard-psql-intake-file.sh"
 	},
-	"dependencies": {
-		"@fontsource/fira-mono": "^5.2.7",
-		"@fontsource/ibm-plex-sans": "^5.2.8",
-		"@protomaps/basemaps": "^5.7.2",
-		"clsx": "^2.1.1",
-		"date-fns": "^4.1.0",
-		"echarts": "^6.0.0",
-		"gridstack": "^12.4.1",
-		"maplibre-gl": "^5.20.1",
-		"node-cron": "^4.2.1",
-		"pg": "^8.16.3",
-		"pmtiles": "^4.4.0",
-		"tailwind-merge": "^2.5.4",
-		"zod": "^3.23.8"
-	},
 	"devDependencies": {
 		"@eslint/compat": "^1.4.0",
 		"@eslint/js": "^9.16.0",
-		"@sveltejs/adapter-node": "^5.5.4",
-		"@sveltejs/kit": "^2.48.0",
-		"@sveltejs/vite-plugin-svelte": "^6.2.1",
-		"@tailwindcss/forms": "^0.5.10",
-		"@tailwindcss/vite": "^4.1.14",
-		"@types/node": "^22.10.2",
-		"@types/node-cron": "^3.0.11",
-		"@types/pg": "^8.16.0",
-		"dotenv": "^17.2.3",
 		"eslint": "^9.16.0",
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-svelte": "^3.12.4",
@@ -79,11 +49,6 @@
 		"prettier": "^3.6.2",
 		"prettier-plugin-svelte": "^3.4.0",
 		"prettier-plugin-tailwindcss": "^0.7.1",
-		"svelte": "^5.43.6",
-		"svelte-check": "^4.3.3",
-		"tailwindcss": "^4.1.14",
-		"typescript": "^5.9.3",
-		"typescript-eslint": "^8.46.1",
-		"vite": "^7.1.10"
+		"typescript-eslint": "^8.46.1"
 	}
 }

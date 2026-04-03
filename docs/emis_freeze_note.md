@@ -54,8 +54,8 @@
 - Dataset/IR слой сохраняем для существующего BI/read-side и для стабильных EMIS read-model contracts, но не расширяем его для operational сценариев "на вырост".
 - `oracle`/`cube` не проектируем заранее; новые возможности `IR/Provider` не добавляем до появления реального второго backend.
 - Server-side EMIS живет в:
-  - `src/lib/server/emis/infra/*`
-  - `src/lib/server/emis/modules/*`
+  - `apps/web/src/lib/server/emis/infra/*`
+  - `apps/web/src/lib/server/emis/modules/*`
 - `routes/api/emis/*` остаются тонким transport layer без SQL и бизнес-логики.
 - Runtime conventions для list/meta/error shape и dataset-backed BI reads фиксируются в:
-  - `src/lib/server/emis/infra/RUNTIME_CONTRACT.md`.
+  - `apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`.

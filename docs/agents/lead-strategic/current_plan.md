@@ -58,13 +58,13 @@
     - `packages/bi-*`
     - `packages/db`
   - для каждого current active zone определить target home:
-    - `src/lib/shared/*`
-    - `src/lib/entities/filter/*`
-    - `src/lib/entities/dataset/*`
-    - `src/lib/server/datasets/*`
-    - `src/lib/server/emis/*`
-    - `src/routes/emis/*`
-    - `src/routes/dashboard/emis/*`
+    - `apps/web/src/lib/shared/*`
+    - `apps/web/src/lib/entities/filter/*`
+    - `apps/web/src/lib/entities/dataset/*`
+    - `apps/web/src/lib/server/datasets/*`
+    - `apps/web/src/lib/server/emis/*`
+    - `apps/web/src/routes/emis/*`
+    - `apps/web/src/routes/dashboard/emis/*`
   - важно: не оставлять "переедет потом как-нибудь"
 
 ### ST-3: Define Migration Rules, Import Boundaries And Alias Policy
@@ -156,7 +156,7 @@
   - preserve command ergonomics via root scripts or documented wrappers
 
 ### ST-6: Extract Shared Platform Packages
-- scope: current shared reusable foundation, likely from `src/lib/shared/*`, `src/lib/entities/filter/*`, `src/lib/entities/dataset/*`, `src/lib/server/db/*`, selected dataset/provider contracts
+- scope: current shared reusable foundation, likely from `apps/web/src/lib/shared/*`, `apps/web/src/lib/entities/filter/*`, `apps/web/src/lib/entities/dataset/*`, `apps/web/src/lib/server/db/*`, selected dataset/provider contracts
 - depends on: ST-5
 - размер: L
 - заметки:
@@ -185,7 +185,7 @@
     - EMIS code no longer competes with BI code for same ownership namespace
 
 ### ST-8: Rationalize BI/Dashboard Packages And Remaining App Glue
-- scope: `src/routes/dashboard/*`, dataset definitions, BI helpers, app shell/navigation docs
+- scope: `apps/web/src/routes/dashboard/*`, dataset definitions, BI helpers, app shell/navigation docs
 - depends on: ST-6, ST-7
 - размер: M
 - заметки:
@@ -536,7 +536,7 @@
 ## Ожидаемый результат
 - Repo stops being cognitively “one large SvelteKit app with everything mixed by proximity”.
 - EMIS gets clearer ownership and shorter reading path in new dialogs.
-- Shared foundation becomes explicit package-level architecture instead of implicit `src/lib/*` overlap.
+- Shared foundation becomes explicit package-level architecture instead of implicit `apps/web/src/lib/*` overlap.
 - Migration gets an early automated boundary-check layer instead of relying only on review discipline.
 - BI/dashboard and EMIS can evolve independently without immediate deploy split.
 - Future `apps/emis` or `apps/bi` split becomes feasible with bounded follow-up work, not a repo rewrite.

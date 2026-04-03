@@ -15,12 +15,12 @@ import { join } from 'node:path';
 
 // Only scan directories where boundary rules are defined in eslint.config.js
 const targets = [
-	'src/lib/shared/',
-	'src/lib/entities/',
-	'src/lib/features/',
-	'src/lib/widgets/',
-	'src/routes/api/emis/',
-	'src/routes/dashboard/emis/'
+	'apps/web/src/lib/shared/',
+	'apps/web/src/lib/entities/',
+	'apps/web/src/lib/features/',
+	'apps/web/src/lib/widgets/',
+	'apps/web/src/routes/api/emis/',
+	'apps/web/src/routes/dashboard/emis/'
 ].join(' ');
 
 // Write ESLint JSON to a temp file to avoid stdout buffer issues with execSync

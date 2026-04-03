@@ -28,16 +28,16 @@
 
 Основные активные зоны:
 
-- `src/lib/shared/*`
-- `src/lib/entities/dataset/*`
-- `src/lib/entities/filter/*`
-- `src/lib/server/*`
-- `src/lib/features/dashboard-edit/*`
-- `src/lib/widgets/filters/*`
-- `src/lib/widgets/stock-alerts/*`
-- `src/routes/dashboard/wildberries/*`
-- `src/routes/api/datasets/[id]/+server.ts`
-- `src/routes/api/wb/prices/+server.ts`
+- `apps/web/src/lib/shared/*`
+- `apps/web/src/lib/entities/dataset/*`
+- `apps/web/src/lib/entities/filter/*`
+- `apps/web/src/lib/server/*`
+- `apps/web/src/lib/features/dashboard-edit/*`
+- `apps/web/src/lib/widgets/filters/*`
+- `apps/web/src/lib/widgets/stock-alerts/*`
+- `apps/web/src/routes/dashboard/wildberries/*`
+- `apps/web/src/routes/api/datasets/[id]/+server.ts`
+- `apps/web/src/routes/api/wb/prices/+server.ts`
 
 ### EMIS
 
@@ -47,7 +47,7 @@
 2. `docs/emis_architecture_baseline.md`
 3. `docs/emis_working_contract.md`
 4. `docs/AGENTS.md` - полный каталог EMIS docs, ownership и reading order
-5. локальный `AGENTS.md` в `src/lib/server/emis/`, `src/routes/api/emis/`, `src/routes/emis/` и соседних active зонах
+5. локальный `AGENTS.md` в `apps/web/src/lib/server/emis/`, `apps/web/src/routes/api/emis/`, `apps/web/src/routes/emis/` и соседних active зонах
 
 ### Agent workflow (работа в команде агентов)
 
@@ -62,11 +62,11 @@
 
 EMIS-активный контур сейчас находится здесь:
 
-- `src/lib/entities/emis-*`
-- `src/lib/server/emis/*`
-- `src/routes/api/emis/*`
-- `src/routes/emis/*`
-- `src/routes/dashboard/emis*`
+- `apps/web/src/lib/entities/emis-*`
+- `apps/web/src/lib/server/emis/*`
+- `apps/web/src/routes/api/emis/*`
+- `apps/web/src/routes/emis/*`
+- `apps/web/src/routes/dashboard/emis*`
 - `db/schema_catalog.md`
 - `db/current_schema.sql`
 - `db/pending_changes.sql`
@@ -89,13 +89,13 @@ EMIS-активный контур сейчас находится здесь:
 
 Пока не считать активным рабочим контуром:
 
-- `src/lib/entities/dashboard/`
-- `src/lib/entities/widget/`
-- `src/lib/features/dashboard-builder/`
-- `src/lib/widgets/chart/`
-- `src/lib/widgets/dashboard-container/`
-- `src/lib/widgets/kpi/`
-- `src/lib/widgets/table/`
+- `apps/web/src/lib/entities/dashboard/`
+- `apps/web/src/lib/entities/widget/`
+- `apps/web/src/lib/features/dashboard-builder/`
+- `apps/web/src/lib/widgets/chart/`
+- `apps/web/src/lib/widgets/dashboard-container/`
+- `apps/web/src/lib/widgets/kpi/`
+- `apps/web/src/lib/widgets/table/`
 
 Их стоит воспринимать как пустые или неактуальные пространства, пока там не появится живой код.
 
@@ -141,11 +141,11 @@ Canonical target layout для monorepo-style separation:
 
 Для EMIS принимаем адаптированный FSD-подход, совместимый с текущим проектом:
 
-- `src/lib/entities/emis-*` - контракты, DTO, базовые доменные типы, Zod schemas
-- `src/lib/server/emis/infra/*` - server infrastructure
-- `src/lib/server/emis/modules/*` - семантические backend-модули
-- `src/routes/api/emis/*` - тонкий HTTP transport
-- `src/routes/emis/*` - UI/workspace слой
+- `apps/web/src/lib/entities/emis-*` - контракты, DTO, базовые доменные типы, Zod schemas
+- `apps/web/src/lib/server/emis/infra/*` - server infrastructure
+- `apps/web/src/lib/server/emis/modules/*` - семантические backend-модули
+- `apps/web/src/routes/api/emis/*` - тонкий HTTP transport
+- `apps/web/src/routes/emis/*` - UI/workspace слой
 
 Что это означает на практике:
 

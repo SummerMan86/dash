@@ -6,7 +6,7 @@
 
 - [Agent Workflow](./agents/workflow.md)
 - [Agent Templates](./agents/templates.md)
-- [EMIS Runtime Contract](../src/lib/server/emis/infra/RUNTIME_CONTRACT.md)
+- [EMIS Runtime Contract](../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md)
 
 ## 1. Default lifecycle
 
@@ -33,7 +33,7 @@
 Тяжелый review обязателен, если change затрагивает хотя бы один пункт:
 
 - новый route или новый API endpoint
-- изменение `src/lib/server/emis/modules/*`
+- изменение `apps/web/src/lib/server/emis/modules/*`
 - изменение DB schema или published views
 - новый shared contract, Zod schema или dataset contract
 - рост или переразбиение `/emis` workspace
@@ -72,12 +72,12 @@
 ### Complexity
 
 - change не раздувает и без того большие orchestration files без причины
-- для `src/routes/emis/+page.svelte` и `src/lib/widgets/emis-map/EmisMap.svelte` default expectation — extraction, а не дальнейший inline growth
+- для `apps/web/src/routes/emis/+page.svelte` и `apps/web/src/lib/widgets/emis-map/EmisMap.svelte` default expectation — extraction, а не дальнейший inline growth
 - если файл уже пересек warning threshold, review явно фиксирует, почему это допустимо сейчас
 
 ### Contracts and docs
 
-- runtime behavior updates reflected in `src/lib/server/emis/infra/RUNTIME_CONTRACT.md`, если это нужно
+- runtime behavior updates reflected in `apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`, если это нужно
 - schema changes reflected in `db/current_schema.sql` и `db/applied_changes.md`
 - новый активный slice добавлен в navigation docs
 - `docs/AGENTS.md` и `docs/emis_session_bootstrap.md` не потеряли discoverability

@@ -45,51 +45,51 @@ dashboard-builder/
 
 | Current path | Target package | Что содержит |
 |---|---|---|
-| `src/lib/shared/utils/*` | `packages/platform-core/` | Generic utilities |
-| `src/lib/shared/lib/*` | `packages/platform-core/` | Shared helpers |
-| `src/lib/shared/ui/*` | `packages/platform-ui/` | UI primitives: button, card, badge, input, select, sidebar, skeleton, data-table, chart wrappers |
-| `src/lib/shared/styles/*` | `packages/platform-ui/` | Design tokens, style utils |
-| `src/lib/entities/dataset/*` | `packages/platform-datasets/` | DatasetQuery, DatasetResponse, DatasetIr, provider contracts |
-| `src/lib/shared/api/fetchDataset.ts` | `packages/platform-datasets/` | Client-side dataset facade |
-| `src/lib/server/datasets/*` | `packages/platform-datasets/` | compileDataset, dataset definitions, registry |
-| `src/lib/server/providers/*` | `packages/platform-datasets/` | postgresProvider, mockProvider, provider routing |
-| `src/lib/entities/filter/*` | `packages/platform-filters/` | Filter contracts, store, createFilterStore, planner |
-| `src/lib/widgets/filters/*` | `packages/platform-filters/` | Filter UI widgets |
-| `src/lib/server/db/*` | `packages/db/` | DB connection, pooling, helpers |
+| `apps/web/src/lib/shared/utils/*` | `packages/platform-core/` | Generic utilities |
+| `apps/web/src/lib/shared/lib/*` | `packages/platform-core/` | Shared helpers |
+| `apps/web/src/lib/shared/ui/*` | `packages/platform-ui/` | UI primitives: button, card, badge, input, select, sidebar, skeleton, data-table, chart wrappers |
+| `apps/web/src/lib/shared/styles/*` | `packages/platform-ui/` | Design tokens, style utils |
+| `apps/web/src/lib/entities/dataset/*` | `packages/platform-datasets/` | DatasetQuery, DatasetResponse, DatasetIr, provider contracts |
+| `apps/web/src/lib/shared/api/fetchDataset.ts` | `packages/platform-datasets/` | Client-side dataset facade |
+| `apps/web/src/lib/server/datasets/*` | `packages/platform-datasets/` | compileDataset, dataset definitions, registry |
+| `apps/web/src/lib/server/providers/*` | `packages/platform-datasets/` | postgresProvider, mockProvider, provider routing |
+| `apps/web/src/lib/entities/filter/*` | `packages/platform-filters/` | Filter contracts, store, createFilterStore, planner |
+| `apps/web/src/lib/widgets/filters/*` | `packages/platform-filters/` | Filter UI widgets |
+| `apps/web/src/lib/server/db/*` | `packages/db/` | DB connection, pooling, helpers |
 
 ### EMIS packages
 
 | Current path | Target package | Что содержит |
 |---|---|---|
-| `src/lib/entities/emis-*` | `packages/emis-contracts/` | emis-object, emis-news, emis-link, emis-dictionary, emis-geo, emis-map, emis-ship-route |
-| `src/lib/server/emis/*` | `packages/emis-server/` | modules/*, infra/*, queries/*, repositories/*, services/*, sql/* |
-| `src/lib/features/emis-*` | `packages/emis-ui/` | emis-manual-entry и будущие bounded EMIS interactions |
-| `src/lib/widgets/emis-*` | `packages/emis-ui/` | emis-map, emis-drawer, emis-status-bar |
+| `apps/web/src/lib/entities/emis-*` | `packages/emis-contracts/` | emis-object, emis-news, emis-link, emis-dictionary, emis-geo, emis-map, emis-ship-route |
+| `apps/web/src/lib/server/emis/*` | `packages/emis-server/` | modules/*, infra/*, queries/*, repositories/*, services/*, sql/* |
+| `apps/web/src/lib/features/emis-*` | `packages/emis-ui/` | emis-manual-entry и будущие bounded EMIS interactions |
+| `apps/web/src/lib/widgets/emis-*` | `packages/emis-ui/` | emis-map, emis-drawer, emis-status-bar |
 
 ### Stays in apps/web/
 
 | Current path | Почему остаётся в app |
 |---|---|
-| `src/routes/*` (все route trees) | Routes — app-level composition, не package code |
-| `src/lib/shared/config/*` | App-specific configuration |
-| `src/lib/shared/fixtures/*` | Dev/mock data для app runtime |
-| `src/lib/features/dashboard-edit/*` | BI editor glue; выносить в package только при доказанном reuse |
-| `src/lib/server/alerts/*` | Выносить в `packages/bi-alerts/` только при доказанном reuse |
-| `src/lib/server/strategy/*` | Thin strategy helpers, app-specific |
-| `src/lib/entities/charts/*` | Chart entity, app-level |
-| `src/lib/widgets/stock-alerts/*` | Alert UI, stays with alerts |
+| `apps/web/src/routes/*` (все route trees) | Routes — app-level composition, не package code |
+| `apps/web/src/lib/shared/config/*` | App-specific configuration |
+| `apps/web/src/lib/shared/fixtures/*` | Dev/mock data для app runtime |
+| `apps/web/src/lib/features/dashboard-edit/*` | BI editor glue; выносить в package только при доказанном reuse |
+| `apps/web/src/lib/server/alerts/*` | Выносить в `packages/bi-alerts/` только при доказанном reuse |
+| `apps/web/src/lib/server/strategy/*` | Thin strategy helpers, app-specific |
+| `apps/web/src/lib/entities/charts/*` | Chart entity, app-level |
+| `apps/web/src/lib/widgets/stock-alerts/*` | Alert UI, stays with alerts |
 
 ### Legacy / placeholders (не переезжают)
 
 | Current path | Статус |
 |---|---|
-| `src/lib/entities/dashboard/` | Placeholder, не активный код |
-| `src/lib/entities/widget/` | Placeholder, не активный код |
-| `src/lib/features/dashboard-builder/` | Legacy placeholder |
-| `src/lib/widgets/chart/` | Placeholder |
-| `src/lib/widgets/dashboard-container/` | Placeholder |
-| `src/lib/widgets/kpi/` | Placeholder |
-| `src/lib/widgets/table/` | Placeholder |
+| `apps/web/src/lib/entities/dashboard/` | Placeholder, не активный код |
+| `apps/web/src/lib/entities/widget/` | Placeholder, не активный код |
+| `apps/web/src/lib/features/dashboard-builder/` | Legacy placeholder |
+| `apps/web/src/lib/widgets/chart/` | Placeholder |
+| `apps/web/src/lib/widgets/dashboard-container/` | Placeholder |
+| `apps/web/src/lib/widgets/kpi/` | Placeholder |
+| `apps/web/src/lib/widgets/table/` | Placeholder |
 
 Эти зоны не учитываются в migration plan. Если в них появится живой код, placement решается отдельно.
 
@@ -168,14 +168,14 @@ dashboard-builder/
 
 ## 4. Alias Policy
 
-### Current aliases (svelte.config.js)
+### Current aliases (apps/web/svelte.config.js)
 
 ```js
-$lib     → src/lib
-$shared  → src/lib/shared
-$entities → src/lib/entities
-$features → src/lib/features
-$widgets  → src/lib/widgets
+$lib     → apps/web/src/lib       (resolved relative to svelte.config.js)
+$shared  → apps/web/src/lib/shared
+$entities → apps/web/src/lib/entities
+$features → apps/web/src/lib/features
+$widgets  → apps/web/src/lib/widgets
 ```
 
 ### Rules during migration
@@ -208,7 +208,7 @@ $widgets  → src/lib/widgets
 
 ### Baseline blocker — resolved
 
-**`src/lib/shared/ui/select/Select.svelte`** — parse error resolved в ST-4.
+**`apps/web/src/lib/shared/ui/select/Select.svelte`** — parse error resolved в ST-4.
 `pnpm check` проходит: 0 errors, 0 warnings.
 
 ### Script locations before and after migration

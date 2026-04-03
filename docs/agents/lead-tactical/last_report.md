@@ -1,101 +1,71 @@
-# Report: ST-4 — Workspace Foundation And Baseline Cleanup
+# Report: ST-5 — Extract Current App Into apps/web
 
 ## Статус
 Выполнено
 
 ## Что сделано
 
-### Workspace foundation
-- `pnpm-workspace.yaml`: added `packages/*` and `apps/*` workspace globs (alongside existing `onlyBuiltDependencies`)
-- `package.json`: scripts reorganized into annotated groups with migration notes:
-  - **App-local** (dev, build, check, lint, format) → move to `apps/web/package.json` in ST-5
-  - **EMIS smoke/ops** (emis:smoke, map:*) → move to `apps/web` in ST-5
-  - **DB scripts** (db:up/down/reset/seed/snapshot) → stay at root or move to `packages/db` in ST-6
-  - **Strategy/intake** → stay at root or archive
+### Physical move
+- `src/` → `apps/web/src/`
+- `static/` → `apps/web/static/`
+- `svelte.config.js` → `apps/web/svelte.config.js`
+- `vite.config.ts` → `apps/web/vite.config.ts`
+- `tsconfig.json` → `apps/web/tsconfig.json`
+- `tailwind.config.js` → `apps/web/tailwind.config.js`
 
-### Baseline blocker — resolved
-- `src/lib/shared/ui/select/Select.svelte`: fixed two issues:
-  1. Garbled template (lines 38-43): restored proper `{#if children}{@render children()}{/if}`
-  2. Unescaped single quotes in SVG data URL: URL-encoded as `%27`
-- **`pnpm check` now passes: 0 errors, 0 warnings**
+### Package split
+- Created `apps/web/package.json` with app runtime deps + app-local scripts (dev, build, check)
+- Root `package.json` → workspace orchestrator:
+  - `pnpm dev/build/check` delegated via `pnpm -C apps/web`
+  - Lint/format/boundaries stay at root (workspace-level)
+  - EMIS smoke, DB, strategy scripts stay at root
+  - Root devDependencies: ESLint, Prettier, typescript-eslint (workspace tools only)
 
-### Architecture lint baseline
-- `eslint.config.js`: added 6 `no-restricted-imports` blocks covering:
-  1. **shared** → no entities, features, widgets, server (FSD + client isolation)
-  2. **entities** → no features, widgets, server (FSD + client isolation)
-  3. **features** → no widgets, server (FSD + client isolation)
-  4. **widgets** → no server (client isolation)
-  5. **routes/api/emis** → no UI/client code (transport-only)
-  6. **routes/dashboard/emis** → no EMIS operational server modules (dataset path only)
-- Each file scope has ONE combined `no-restricted-imports` block (ESLint flat config override semantics)
+### Config updates
+- `vite.config.ts`: dotenv paths updated to `../../.env.map` and `../../.env`
+- `eslint.config.js`: svelte config import → `./apps/web/svelte.config.js`, all file globs → `apps/web/src/`
+- `scripts/lint-boundaries.mjs`: target paths → `apps/web/src/`
+- `scripts/emis-smoke.mjs`: spawn CWD → `apps/web/`
+- `.prettierrc`: tailwindStylesheet → `./apps/web/src/app.css`
+- `.prettierignore`: static → `/apps/web/static/`
+- `.gitignore`: added `apps/web/.svelte-kit`, `apps/web/build`, `apps/web/src/Examples/`
 
-### Verification commands
-- `pnpm check` — svelte-check type/parse verification (now green)
-- `pnpm lint:boundaries` — **canonical boundary-only verification**: runs ESLint, filters only `no-restricted-imports` violations, no legacy lint noise. Currently shows 3 expected gaps in `fetchDataset.ts` (resolves at ST-6).
-- `pnpm lint` — full lint (not boundary verification, contains legacy Prettier drift)
+### What stays at root
+- `.env*` files (shared by app and DB scripts)
+- `db/`, `docs/`, `archive/`, `deploy/`
+- `docker-compose*.yml`, `Dockerfile`
+- `pnpm-workspace.yaml`, `pnpm-lock.yaml`
+- `eslint.config.js`, `.prettierrc` (workspace-level config)
+- `scripts/` (all scripts, including smoke and DB)
+- `AGENTS.md`, `CLAUDE.md`, `README.md`
 
-### Known non-enforced gaps (explicitly listed)
-1. `src/lib/shared/api/fetchDataset.ts` imports from `$entities/dataset` and `$entities/filter` — **expected**: fetchDataset belongs in `platform-datasets` package (which CAN import entities/dataset). Resolves at ST-6.
-2. `src/routes/dashboard/emis/vessel-positions/+page.server.ts` imports `$lib/server/emis/infra/mapConfig` — **expected**: mapConfig is shared map infrastructure. Resolves when map config extracts to platform or emis-contracts.
+### Docs updates
+- All `../src/` relative links in docs → `../apps/web/src/`
+- All `src/lib/` and `src/routes/` references in AGENTS.md → `apps/web/src/lib/` and `apps/web/src/routes/`
+- Updated files: AGENTS.md, docs/AGENTS.md, docs/emis_session_bootstrap.md, docs/emis_architecture_baseline.md, docs/emis_working_contract.md, docs/emis_architecture_review.md, docs/archive/emis/emis_handoff_2026_03_17.md
+
+### What was NOT changed
+- No EMIS or BI domain logic changes
+- No API contract changes
+- No import paths in source code (aliases resolve from svelte.config.js, which moved with src/)
+- No DB schema changes
+
+## Verification
+- `pnpm check` — 0 errors, 0 warnings (env from root picked up correctly)
+- `pnpm build` — success
+- `pnpm lint:boundaries` — 3 expected gaps (same as before)
 
 ## Review Gate
-
-### Findings по severity
-
-**CRITICAL** (исправлено):
-- code-reviewer: `.svelte.ts`/`.svelte.js` не покрыты boundary rules — добавлены во все 6 blocks
-- architecture-reviewer: `dashboard/emis` rule ловит `+page.server.ts` без suppress — добавлен inline eslint-disable для known gap (mapConfig)
-
-**WARNING** (исправлено / отклонено):
-- code-reviewer: EMIS API route rule только для EMIS UI, не для всех — расширено на все `$features/*`/`$widgets/*`
-- code-reviewer: `_comment:*` script keys non-standard — принято как convention (readability > clean completions)
-- code-reviewer: alias resolution note — добавлен inline comment
-- architecture-reviewer: добавить `$lib/server/*` restriction для `routes/api/emis` — **отклонено**: canonical EMIS path `routes/api/emis/* → server/emis/modules/*`, API routes ДОЛЖНЫ импортировать из server
-
-**INFO** (отмечено):
-- architecture-reviewer: relative imports (`../../entities/`) могут обойти boundary rules — known ESLint limitation, deferrable
-- architecture-reviewer: workspace globs reference non-existent dirs — expected, activates at ST-5
-- docs-reviewer: DB/smoke script locations not explicit enough — добавлено в report
-
-### Вердикты ревьюеров
-- architecture-reviewer: request changes → исправлено → OK
-- docs-reviewer: OK
-- code-reviewer: request changes → исправлено → OK
-- security-reviewer: не запускался (minimal runtime change)
-- ui-reviewer: не запускался (no behavior change)
+_Pending_
 
 ## Ветки
 - integration branch: `feature/emis-foundation-stabilization`
-- worker branches merged: нет (lead-tactical напрямую)
-- review diff: `git diff main..feature/emis-foundation-stabilization`
 
 ## Handoff readiness
-
-### What closed workspace foundation
-- `pnpm-workspace.yaml` has target globs
-- `package.json` scripts annotated with migration destinations
-- Script locations before and after ST-5:
-  - **App scripts** (dev, build, check, lint): currently at root, move to `apps/web/package.json` in ST-5
-  - **EMIS smoke/ops scripts**: currently at root, move to `apps/web` in ST-5
-  - **DB scripts** (db:up/down/reset/seed/snapshot): stay at root through ST-5, move to `packages/db` no earlier than ST-6
-  - **Strategy/intake scripts**: stay at root or archive
-
-### What closed architecture lint baseline
-- ESLint flat config with 6 boundary rule blocks
-- Covers all required guardrails from ST-4 acceptance checklist
-- 2 known gaps explicitly documented, both resolve during package extraction
-
-### What risks remain before ST-5
-- Pre-existing `pnpm lint` drift (Prettier formatting) — not introduced by ST-4, not blocking
-- Known boundary gaps (2) are expected and resolve at extraction time
-- No runtime behavior was changed beyond Select.svelte template fix
-
-### Why ST-5 is now safe to start
-1. `pnpm check` is green (baseline blocker resolved)
-2. Workspace globs ready for `apps/*` and `packages/*`
-3. Script migration destinations annotated
-4. Architecture boundary lint catches violations during moves
-5. All known gaps are documented, not hidden
+- Root is now workspace orchestrator, not the app itself
+- `apps/web/` contains the full SvelteKit runtime
+- All commands work from root via wrappers
+- ST-6 (platform package extraction) is unblocked
 
 ## Вопросы к lead-strategic
 - нет

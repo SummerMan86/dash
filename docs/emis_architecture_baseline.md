@@ -22,11 +22,11 @@
 
 Здесь живут общие технические и UI-контракты:
 
-- `src/lib/shared/*`
-- `src/lib/entities/dataset/*`
-- `src/lib/entities/filter/*`
-- `src/lib/server/datasets/*`
-- `src/lib/server/providers/*`
+- `apps/web/src/lib/shared/*`
+- `apps/web/src/lib/entities/dataset/*`
+- `apps/web/src/lib/entities/filter/*`
+- `apps/web/src/lib/server/datasets/*`
+- `apps/web/src/lib/server/providers/*`
 
 Этот слой можно использовать из EMIS, но он не должен забирать к себе EMIS-specific business logic.
 
@@ -34,12 +34,12 @@
 
 Здесь живут CRUD, search, map, ship-routes, dictionaries, audit и runtime conventions:
 
-- `src/lib/entities/emis-*`
-- `src/lib/features/emis-*`
-- `src/lib/widgets/emis-*`
-- `src/lib/server/emis/*`
-- `src/routes/api/emis/*`
-- `src/routes/emis/*`
+- `apps/web/src/lib/entities/emis-*`
+- `apps/web/src/lib/features/emis-*`
+- `apps/web/src/lib/widgets/emis-*`
+- `apps/web/src/lib/server/emis/*`
+- `apps/web/src/routes/api/emis/*`
+- `apps/web/src/routes/emis/*`
 
 Canonical path:
 
@@ -49,8 +49,8 @@ Canonical path:
 
 Здесь живут стабильные аналитические read-models поверх published views/datasets:
 
-- `src/routes/dashboard/emis/*`
-- `src/lib/server/datasets/definitions/emisMart.ts`
+- `apps/web/src/routes/dashboard/emis/*`
+- `apps/web/src/lib/server/datasets/definitions/emisMart.ts`
 - `/api/datasets/:id` для `emis.*`
 - `mart.emis_*` и `mart_emis.*` contracts в БД
 
@@ -78,19 +78,19 @@ Canonical path:
 
 ### Куда класть новый код
 
-- новые DTO, Zod schemas, reusable entity contracts: `src/lib/entities/emis-*`
-- новые EMIS forms и bounded UI interactions: `src/lib/features/emis-*`
-- reusable EMIS widgets: `src/lib/widgets/emis-*`
-- server-only infra/helpers: `src/lib/server/emis/infra/*`
-- domain backend logic: `src/lib/server/emis/modules/*`
-- HTTP transport: `src/routes/api/emis/*`
-- workspace/orchestration UI: `src/routes/emis/*`
-- BI pages: `src/routes/dashboard/emis/*`
+- новые DTO, Zod schemas, reusable entity contracts: `apps/web/src/lib/entities/emis-*`
+- новые EMIS forms и bounded UI interactions: `apps/web/src/lib/features/emis-*`
+- reusable EMIS widgets: `apps/web/src/lib/widgets/emis-*`
+- server-only infra/helpers: `apps/web/src/lib/server/emis/infra/*`
+- domain backend logic: `apps/web/src/lib/server/emis/modules/*`
+- HTTP transport: `apps/web/src/routes/api/emis/*`
+- workspace/orchestration UI: `apps/web/src/routes/emis/*`
+- BI pages: `apps/web/src/routes/dashboard/emis/*`
 
 ### Чего не делать
 
-- не писать SQL в `src/routes/api/emis/*`
-- не писать HTTP-логику в `src/lib/server/emis/modules/*/service.ts`
+- не писать SQL в `apps/web/src/routes/api/emis/*`
+- не писать HTTP-логику в `apps/web/src/lib/server/emis/modules/*/service.ts`
 - не добавлять EMIS CRUD/query logic в dataset compiler без published read-model причины
 - не смешивать `/emis` workspace и `/dashboard/emis` BI ownership
 - не складывать reusable EMIS contracts в route files
@@ -99,8 +99,8 @@ Canonical path:
 
 Текущая кодовая база уже соответствует этой схеме:
 
-- `src/routes/api/emis/*` действительно тонко вызывают `server/emis/modules/*`
-- operational SQL сидит в `src/lib/server/emis/modules/*`
+- `apps/web/src/routes/api/emis/*` действительно тонко вызывают `server/emis/modules/*`
+- operational SQL сидит в `apps/web/src/lib/server/emis/modules/*`
 - `/emis` использует shared filter runtime и EMIS widgets как workspace layer
 - `/dashboard/emis/*` использует dataset path для `emis.*`
 - DB source of truth для EMIS ведется snapshot-first через `db/current_schema.sql`
@@ -114,10 +114,10 @@ Canonical path:
 
 Архитектура в целом согласована, но есть несколько важных operational ограничений:
 
-- `src/routes/emis/+page.svelte` уже oversized и должен расти только через extraction;
+- `apps/web/src/routes/emis/+page.svelte` уже oversized и должен расти только через extraction;
 - map-heavy логика по-прежнему требует строгого контроля границы route vs widget;
 - общий repo baseline сейчас не полностью green:
-  `pnpm check` и `pnpm emis:smoke` падают из-за parse error в `src/lib/shared/ui/select/Select.svelte`, то есть проблема не в EMIS-слоях, а в shared UI baseline;
+  `pnpm check` и `pnpm emis:smoke` падают из-за parse error в `apps/web/src/lib/shared/ui/select/Select.svelte`, то есть проблема не в EMIS-слоях, а в shared UI baseline;
 - значит, перед следующей большой EMIS wave полезно сначала вернуть общий app runtime в green state.
 
 ## 7. Working Rule For Next EMIS Tasks
@@ -154,4 +154,4 @@ Target layout описывает *куда* код переедет и *как*.
 4. `emis_working_contract.md`
 5. `emis_implementation_spec_v1.md`
 6. `emis_freeze_note.md`
-7. `../src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
+7. `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`

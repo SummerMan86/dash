@@ -487,19 +487,19 @@ Dataset:
 
 1. Добавить новый dataset compiler, например:
 
-- `src/lib/server/datasets/definitions/strategyMart.ts`
+- `apps/web/src/lib/server/datasets/definitions/strategyMart.ts`
 
 2. Зарегистрировать его в:
 
-- `src/lib/server/datasets/compile.ts`
+- `apps/web/src/lib/server/datasets/compile.ts`
 
 3. Добавить SQL mapping для relations в:
 
-- `src/lib/server/providers/postgresProvider.ts`
+- `apps/web/src/lib/server/providers/postgresProvider.ts`
 
 4. Разрешить `strategy.*` datasets в transport:
 
-- `src/routes/api/datasets/[id]/+server.ts`
+- `apps/web/src/routes/api/datasets/[id]/+server.ts`
 
 ### Важная repo-specific оговорка
 

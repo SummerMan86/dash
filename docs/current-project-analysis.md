@@ -43,22 +43,22 @@
 
 ### Ключевые слои
 
-1. `src/lib/shared/*`
+1. `apps/web/src/lib/shared/*`
    Общие UI-примитивы, chart wrappers, стили, утилиты, API facade.
 
-2. `src/lib/entities/dataset/*`
+2. `apps/web/src/lib/entities/dataset/*`
    Контракты датасетов и промежуточное IR для абстракции над источниками данных.
 
-3. `src/lib/entities/filter/*`
+3. `apps/web/src/lib/entities/filter/*`
    Декларативная система фильтров, registry и store.
 
-4. `src/lib/server/*`
+4. `apps/web/src/lib/server/*`
    BFF-слой: compilation, providers, DB access, alerts.
 
-5. `src/lib/features/dashboard-edit/*`
+5. `apps/web/src/lib/features/dashboard-edit/*`
    Редактор дашбордов на GridStack.
 
-6. `src/routes/dashboard/wildberries/*`
+6. `apps/web/src/routes/dashboard/wildberries/*`
    Реальные прикладные страницы и расчетная аналитика.
 
 ## 3. Что в проекте уже сильное
@@ -212,7 +212,7 @@ Wildberries-модули показывают, что команда уже ид
 
 - привести README и docs в соответствие проекту;
 - определить, какие папки считаются platform/shared;
-- завести отдельное пространство имен под EMIS (`src/lib/domains/emis`, `src/routes/emis`, `src/lib/server/emis` или эквивалент).
+- завести отдельное пространство имен под EMIS (`apps/web/src/lib/domains/emis`, `apps/web/src/routes/emis`, `apps/web/src/lib/server/emis` или эквивалент).
 
 ### Приоритет 2. Усилить baseline данных
 

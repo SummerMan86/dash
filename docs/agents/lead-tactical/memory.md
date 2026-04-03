@@ -6,30 +6,33 @@
 ## Решения и контекст
 
 ### ST-1 + ST-2 + ST-3 (2026-04-03)
-- Выполнены как docs-only slices, lead-tactical напрямую
-- Коммит: `29ad37c` (ST-1+ST-2+ST-3), `e74993f` (platform-core split follow-up)
+- Docs-only slices, lead-tactical напрямую
 - 10 target packages: platform-core, platform-ui, platform-datasets, platform-filters, db, emis-contracts, emis-server, emis-ui, bi-alerts (conditional), bi-dashboards (conditional)
 
 ### ST-4 (2026-04-03)
-- Workspace foundation + baseline cleanup, lead-tactical напрямую
-- Select.svelte baseline blocker — resolved (garbled template + unescaped SVG quotes)
-- pnpm-workspace.yaml — workspace globs added
-- package.json — scripts annotated with migration destinations
-- eslint.config.js — 6 architecture boundary rule blocks
-- Known gaps documented: fetchDataset.ts (resolves at ST-6), mapConfig (resolves at extraction)
-- pnpm check: 0 errors, 0 warnings
+- Select.svelte baseline blocker resolved
+- ESLint 6 architecture boundary rule blocks
+- `pnpm lint:boundaries` — canonical boundary-only verification (writes to temp file)
+
+### ST-5 (2026-04-03)
+- App moved to `apps/web/`: src, static, svelte.config.js, vite.config.ts, tsconfig.json, tailwind.config.js
+- Root → workspace orchestrator with `pnpm -C apps/web` wrappers
+- `.env*` stays at root, vite references `../../.env`
+- No source code import changes (aliases resolve from svelte.config.js)
+- All doc `../src/` links → `../apps/web/src/`
+- pnpm check: 0 errors, build: success, lint:boundaries: 3 expected gaps
 
 ### Integration branch
-- `feature/emis-foundation-stabilization` (не `feature/emis-monorepo-readiness` как в исходном плане)
+- `feature/emis-foundation-stabilization`
 
 ## Проблемы и workarounds
 
-- `pnpm lint` not green (pre-existing Prettier drift) — not introduced by our work, not blocking
-- ESLint `no-restricted-imports` override semantics in flat config — each file scope needs ONE combined block
+- `pnpm lint` not green (pre-existing Prettier drift) — not blocking
+- ESLint `no-restricted-imports` flat config override — each scope needs ONE combined block
+- `lint-boundaries.mjs` must use temp file (`-o`) for stdout buffer reliability
 
 ## Заметки для следующей сессии
 
-- Следующий шаг: ST-5 (Extract Current App Into apps/*)
-- ST-5 — первый physical move, нужен worker в tmux
-- Workers в tmux начинаются с ST-5
-- Все prerequisite для ST-5 закрыты: pnpm check green, workspace globs ready, boundary lint active
+- Следующий шаг: ST-6 (Extract Shared Platform Packages)
+- ST-6 — extract platform-core, platform-ui, platform-datasets, platform-filters, db
+- pnpm-lock.yaml will change after install — needs committing

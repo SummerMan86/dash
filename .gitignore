@@ -6,7 +6,9 @@ node_modules
 .netlify
 .wrangler
 /.svelte-kit
+/apps/web/.svelte-kit
 /build
+/apps/web/build
 
 # OS
 .DS_Store
@@ -33,4 +35,4 @@ vite.config.ts.timestamp-*
 /tmp/
 
 # Misc assets not part of source
-src/Examples/
+apps/web/src/Examples/

@@ -174,4 +174,4 @@
 - [EMIS Session Bootstrap](../../emis_session_bootstrap.md)
 - [EMIS Freeze Note](../../emis_freeze_note.md)
 - [EMIS Implementation Spec v1](../../emis_implementation_spec_v1.md)
-- [EMIS Runtime Contract](../../../src/lib/server/emis/infra/RUNTIME_CONTRACT.md)
+- [EMIS Runtime Contract](../../../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md)

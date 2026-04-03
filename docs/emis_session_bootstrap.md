@@ -18,7 +18,7 @@
 - Frozen decisions и conventions, которые не нужно заново открывать:
   [EMIS Freeze Note](./emis_freeze_note.md)
 - Runtime/API contract:
-  [EMIS Runtime Contract](../src/lib/server/emis/infra/RUNTIME_CONTRACT.md)
+  [EMIS Runtime Contract](../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md)
 
 ## 2. Что считать текущим состоянием на 1 апреля 2026
 
@@ -127,7 +127,7 @@
   Как делаем: структура кода, API, rollout order, DoD.
 - `emis_freeze_note.md`
   Какие решения уже заморожены и не требуют нового обсуждения.
-- `../src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
+- `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
   Runtime/API conventions, audit contract, error/meta shape.
 - `emis_architecture_review.md`
   Approve checklist, mandatory review cases и финальный verdict format.
@@ -139,11 +139,11 @@
   Ops/runbook по MapTiler, PMTiles и production caveats.
 - `emis_next_tasks_2026_03_22.md`
   Активный backlog, разбитый на MVE closeout и post-MVE tracks.
-- `../src/routes/emis/AGENTS.md`
+- `../apps/web/src/routes/emis/AGENTS.md`
   Workspace route contract для `/emis` UI/orchestration layer.
-- `../src/lib/widgets/emis-map/AGENTS.md`
+- `../apps/web/src/lib/widgets/emis-map/AGENTS.md`
   Map runtime boundaries, extraction rules и widget ownership.
-- `../src/routes/dashboard/emis/AGENTS.md`
+- `../apps/web/src/routes/dashboard/emis/AGENTS.md`
   BI/read-side route contract для dashboard slices.
 - `archive/emis/*`
   Исторические snapshots и завершенные wave notes. Не source of truth и не место для новых обновлений.
@@ -165,9 +165,9 @@
 ### Задача по API / service / audit
 
 1. Этот bootstrap
-2. `../src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
-3. `src/lib/server/emis/AGENTS.md`
-4. `src/routes/api/emis/AGENTS.md`
+2. `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
+3. `../apps/web/src/lib/server/emis/AGENTS.md`
+4. `../apps/web/src/routes/api/emis/AGENTS.md`
 
 ### Задача по offline maps
 
@@ -182,7 +182,7 @@
 3. `agents/roles.md` — роли агентов
 4. `agents/templates.md` — шаблоны коммуникации
 5. `emis_architecture_review.md`
-6. `../src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
+6. `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
 
 ### Задача по parallel agent work / local Git orchestration
 
@@ -193,16 +193,16 @@
 ### Задача по `/emis` workspace UI
 
 1. Этот bootstrap
-2. `../src/routes/emis/AGENTS.md`
-3. `../src/lib/widgets/emis-map/AGENTS.md` - если change касается map layer
-4. `../src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
+2. `../apps/web/src/routes/emis/AGENTS.md`
+3. `../apps/web/src/lib/widgets/emis-map/AGENTS.md` - если change касается map layer
+4. `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
 
 ### Задача по EMIS BI routes
 
 1. Этот bootstrap
-2. `../src/routes/dashboard/emis/AGENTS.md`
-3. `../src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
-4. `../src/lib/server/datasets/AGENTS.md`
+2. `../apps/web/src/routes/dashboard/emis/AGENTS.md`
+3. `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
+4. `../apps/web/src/lib/server/datasets/AGENTS.md`
 
 ### Нужен только исторический контекст
 

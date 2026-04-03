@@ -31,20 +31,20 @@
 
 ## 4. Ownership
 
-- `src/lib/entities/emis-*` - EMIS entity contracts, DTO, Zod schemas
-- `src/lib/features/emis-*` - bounded EMIS forms and interactions
-- `src/lib/widgets/emis-*` - reusable EMIS widgets
-- `src/lib/server/emis/infra/*` - server infra/helpers
-- `src/lib/server/emis/modules/*` - domain backend logic
-- `src/routes/api/emis/*` - thin HTTP transport
-- `src/routes/emis/*` - workspace/UI orchestration
-- `src/routes/dashboard/emis/*` - BI/read-side routes
+- `apps/web/src/lib/entities/emis-*` - EMIS entity contracts, DTO, Zod schemas
+- `apps/web/src/lib/features/emis-*` - bounded EMIS forms and interactions
+- `apps/web/src/lib/widgets/emis-*` - reusable EMIS widgets
+- `apps/web/src/lib/server/emis/infra/*` - server infra/helpers
+- `apps/web/src/lib/server/emis/modules/*` - domain backend logic
+- `apps/web/src/routes/api/emis/*` - thin HTTP transport
+- `apps/web/src/routes/emis/*` - workspace/UI orchestration
+- `apps/web/src/routes/dashboard/emis/*` - BI/read-side routes
 
 ## 5. Non-negotiables
 
-- не писать SQL в `src/routes/api/emis/*`
-- не писать HTTP-логику в `src/lib/server/emis/modules/*`
-- не писать client/UI code в `src/lib/server/emis/*`
+- не писать SQL в `apps/web/src/routes/api/emis/*`
+- не писать HTTP-логику в `apps/web/src/lib/server/emis/modules/*`
+- не писать client/UI code в `apps/web/src/lib/server/emis/*`
 - не тянуть EMIS operational logic в dataset compiler без явной BI причины
 - не использовать `/dashboard/emis/*` как backdoor для operational fetch logic
 - не складывать reusable EMIS contracts в route files
@@ -112,4 +112,4 @@ Import direction rules и alias policy зафиксированы в target layo
 4. этот документ
 5. `emis_implementation_spec_v1.md`
 6. `emis_freeze_note.md`
-7. `../src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
+7. `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`

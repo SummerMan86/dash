@@ -9,7 +9,7 @@ Expert-level UX audit: layout quality, accessibility, interaction flows, respons
 
 ## Design system context
 
-Three-layer typography (`type-*` classes), CSS tokens в `src/lib/shared/styles/tokens/tokens.css`, shared UI в `src/lib/shared/ui/`.
+Three-layer typography (`type-*` classes), CSS tokens в `apps/web/src/lib/shared/styles/tokens/tokens.css`, shared UI в `apps/web/src/lib/shared/ui/`.
 
 ## Checks
 

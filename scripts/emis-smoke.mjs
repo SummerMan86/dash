@@ -111,7 +111,7 @@ async function startLocalServer() {
 		{
 			stdio: ['ignore', 'pipe', 'pipe'],
 			env: process.env,
-			cwd: process.cwd()
+			cwd: new URL('../apps/web', import.meta.url).pathname
 		}
 	);
 
