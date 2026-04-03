@@ -10,34 +10,43 @@
 	} from '$entities/emis-map';
 	import type { EmisNewsSummary } from '$entities/emis-news';
 	import type { EmisObjectSummary } from '$entities/emis-object';
-	import type {
-		EmisShipRoutePoint,
-		EmisShipRouteSegment,
-		EmisShipRouteVessel
-	} from '$entities/emis-ship-route';
+	import type { EmisShipRoutePoint, EmisShipRouteSegment } from '$entities/emis-ship-route';
 	import { useFilterWorkspace } from '$entities/filter';
 	import { useDebouncedLoader } from '$shared/lib/useDebouncedLoader.svelte';
 	import { Button } from '$shared/ui/button';
 	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$shared/ui/card';
-	import { Skeleton } from '$shared/ui/skeleton';
 	import { FilterPanel } from '$widgets/filters';
 	import { EmisMap } from '$widgets/emis-map';
 
 	import {
 		emisWorkspaceFilters,
 		EMIS_FILTER_TARGETS,
-		EMIS_PRIMARY_FILTER_IDS,
-		EMIS_SHIP_ROUTE_FILTER_IDS
+		EMIS_PRIMARY_FILTER_IDS
 	} from './filters';
-
-	const SHIP_ROUTE_LIMIT = 5000;
-
-	type SearchResultKind = 'objects' | 'news';
-	type ShipRouteVesselOption = EmisShipRouteVessel & { vesselLabel: string };
-	type RouteMode = 'points' | 'segments' | 'both';
-	type RouteUrlSelection =
-		| { kind: 'route-point'; routePointId: number }
-		| { kind: 'route-segment'; segmentSeqShip: number };
+	import type { SearchResultKind, RouteUrlSelection } from './emisPageHelpers';
+	import {
+		appendQueryParams,
+		fetchJson,
+		parseSearchResultKind,
+		parseRouteMode,
+		parsePositiveIntParam,
+		buildObjectSubtitle,
+		buildNewsSubtitle,
+		toneClass
+	} from './emisPageHelpers';
+	import type { ShipRouteVesselOption } from './emisPageSelection';
+	import {
+		buildRoutePointSelection,
+		buildRouteSegmentSelection,
+		buildVesselSelectionFeature
+	} from './emisPageSelection';
+	import {
+		buildShipRoutePointFeatureCollection,
+		buildShipRouteSegmentFeatureCollection
+	} from './emisPageGeoJson';
+	import SearchResultsPanel from './SearchResultsPanel.svelte';
+	import ShipRoutePanel from './ShipRoutePanel.svelte';
+	import { SHIP_ROUTE_LIMIT } from './emisPageHelpers';
 
 	let { data }: { data: PageData } = $props();
 
@@ -47,6 +56,8 @@
 		specs: emisWorkspaceFilters
 	});
 	let effectiveFilters = $derived(filterRuntime.effective);
+
+	/* ── Page-level state ───────────────────────────────────────────── */
 
 	let preferredResultKind = $state<SearchResultKind>('objects');
 	let objectRows = $state<EmisObjectSummary[]>([]);
@@ -65,100 +76,14 @@
 	let shipRouteCatalogError = $state<string | null>(null);
 	let shipRouteError = $state<string | null>(null);
 
+	/* ── Derived state ──────────────────────────────────────────────── */
+
 	const assetChecklist = [
 		{ key: 'pmtiles', label: '.pmtiles archive', ready: data.mapConfig.offlineAssets.pmtiles },
 		{ key: 'sprites', label: 'sprites', ready: data.mapConfig.offlineAssets.sprites },
 		{ key: 'fonts', label: 'fonts', ready: data.mapConfig.offlineAssets.fonts },
 		{ key: 'manifest', label: 'manifest.json', ready: data.mapConfig.offlineAssets.manifest }
 	];
-
-	function toneClass(ready: boolean) {
-		return ready
-			? 'border-success/30 bg-success-muted/50 text-success-muted-foreground'
-			: 'border-warning/30 bg-warning-muted/40 text-warning-muted-foreground';
-	}
-
-	function appendQueryParams(url: URL, params: Record<string, unknown>) {
-		for (const [key, value] of Object.entries(params)) {
-			if (value === null || value === undefined) continue;
-			if (Array.isArray(value)) {
-				for (const item of value) {
-					url.searchParams.append(key, String(item));
-				}
-				continue;
-			}
-
-			url.searchParams.set(key, String(value));
-		}
-	}
-
-	function formatDate(value: string) {
-		return new Date(value).toLocaleString('ru-RU');
-	}
-
-	function formatCoordinate(value: number) {
-		return value.toFixed(4);
-	}
-
-	function formatMetric(value: number | null, suffix = '') {
-		if (value === null) return 'n/a';
-		return `${value.toFixed(1)}${suffix}`;
-	}
-
-	function parseSearchResultKind(value: string | null | undefined): SearchResultKind | null {
-		return value === 'objects' || value === 'news' ? value : null;
-	}
-
-	function parseRouteMode(value: unknown): RouteMode {
-		return value === 'points' || value === 'segments' ? value : 'both';
-	}
-
-	function parsePositiveIntParam(value: string | null): number | null {
-		if (!value) return null;
-		const parsed = Number(value);
-		return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
-	}
-
-	function getObjectDetailHref(id: string) {
-		return `/emis/objects/${id}`;
-	}
-
-	function getNewsDetailHref(id: string) {
-		return `/emis/news/${id}`;
-	}
-
-	function getSelectedFeatureHref(feature: EmisMapSelectedFeature): string | null {
-		if (feature.kind === 'object') return getObjectDetailHref(feature.id);
-		if (feature.kind === 'news') return getNewsDetailHref(feature.id);
-		return null;
-	}
-
-	async function fetchJson<T>(url: URL): Promise<T> {
-		const response = await fetch(`${url.pathname}?${url.searchParams.toString()}`);
-		if (!response.ok) {
-			const payload = await response.json().catch(() => null);
-			throw new Error(
-				(payload &&
-					typeof payload === 'object' &&
-					'error' in payload &&
-					typeof payload.error === 'string' &&
-					payload.error) ||
-					`Request failed with status ${response.status}`
-			);
-		}
-
-		return (await response.json()) as T;
-	}
-
-	function buildObjectSubtitle(row: EmisObjectSummary) {
-		const parts = [row.objectTypeName, row.region, row.countryCode].filter(Boolean);
-		return parts.length ? parts.join(' • ') : null;
-	}
-
-	function buildNewsSubtitle(row: EmisNewsSummary) {
-		const parts = [row.sourceName, row.newsType, row.region].filter(Boolean);
-		return parts.length ? parts.join(' • ') : null;
-	}
 
 	let activeLayer = $derived.by((): 'all' | 'objects' | 'news' | 'vessels' => {
 		const raw = $effectiveFilters.layer;
@@ -169,7 +94,7 @@
 		const raw = $effectiveFilters.shipHbkId;
 		return typeof raw === 'string' ? raw : '';
 	});
-	let routeMode = $derived.by<RouteMode>(() => parseRouteMode($effectiveFilters.routeMode));
+	let routeMode = $derived.by(() => parseRouteMode($effectiveFilters.routeMode));
 	let routeModeShowsPoints = $derived(routeMode === 'points' || routeMode === 'both');
 	let routeModeShowsSegments = $derived(routeMode === 'segments' || routeMode === 'both');
 	let effectiveFilterSnapshot = $derived(JSON.stringify($effectiveFilters));
@@ -204,51 +129,11 @@
 	let selectedShipRouteVessel = $derived.by(
 		() => shipRouteCatalog.find((vessel) => String(vessel.shipHbkId) === selectedShipHbkId) ?? null
 	);
-	let shipRoutePointFeatureCollection = $derived.by(
-		(): GeoJSON.FeatureCollection<GeoJSON.Point> => ({
-			type: 'FeatureCollection',
-			features: (routeModeShowsPoints ? shipRoutePoints : []).map((point) => ({
-				type: 'Feature',
-				geometry: {
-					type: 'Point',
-					coordinates: [point.longitude, point.latitude]
-				},
-				properties: {
-					routePointId: point.routePointId,
-					shipHbkId: point.shipHbkId,
-					vesselName: point.vesselName,
-					pointSeqShip: point.pointSeqShip,
-					fetchedAt: point.fetchedAt,
-					speed: point.speed,
-					course: point.course,
-					heading: point.heading
-				}
-			}))
-		})
+	let shipRoutePointFeatureCollection = $derived.by(() =>
+		buildShipRoutePointFeatureCollection(shipRoutePoints, routeModeShowsPoints)
 	);
-	let shipRouteSegmentFeatureCollection = $derived.by(
-		(): GeoJSON.FeatureCollection<GeoJSON.LineString> => ({
-			type: 'FeatureCollection',
-			features: (routeModeShowsSegments ? shipRouteSegments : []).map((segment) => ({
-				type: 'Feature',
-				geometry: {
-					type: 'LineString',
-					coordinates: [
-						[segment.fromLongitude, segment.fromLatitude],
-						[segment.toLongitude, segment.toLatitude]
-					]
-				},
-				properties: {
-					shipHbkId: segment.shipHbkId,
-					vesselName: segment.vesselName,
-					segmentSeqShip: segment.segmentSeqShip,
-					fromFetchedAt: segment.fromFetchedAt,
-					gapMinutes: segment.gapMinutes,
-					fromSpeed: segment.fromSpeed,
-					fromCourse: segment.fromCourse
-				}
-			}))
-		})
+	let shipRouteSegmentFeatureCollection = $derived.by(() =>
+		buildShipRouteSegmentFeatureCollection(shipRouteSegments, routeModeShowsSegments)
 	);
 	let latestShipRoutePoints = $derived.by(() =>
 		routeModeShowsPoints ? [...shipRoutePoints].slice(-8).reverse() : []
@@ -259,6 +144,8 @@
 		if (activeLayer === 'news') return 'news';
 		return preferredResultKind;
 	});
+
+	/* ── Selection orchestration ────────────────────────────────────── */
 
 	function setResultKind(nextKind: SearchResultKind) {
 		preferredResultKind = nextKind;
@@ -328,26 +215,7 @@
 	}
 
 	function selectVesselFromCatalog(vessel: ShipRouteVesselOption) {
-		const vesselFeature: EmisMapSelectedFeature = {
-			id: String(vessel.shipHbkId),
-			kind: 'vessel',
-			title: vessel.vesselName,
-			subtitle:
-				[vessel.vesselType, vessel.flag, vessel.callsign].filter(Boolean).join(' · ') || null,
-			colorKey: 'vessel',
-			shipHbkId: vessel.shipHbkId,
-			imo: vessel.imo,
-			mmsi: vessel.mmsi,
-			flag: vessel.flag,
-			callsign: vessel.callsign,
-			vesselType: vessel.vesselType,
-			lastFetchedAt: vessel.lastFetchedAt,
-			lastLatitude: vessel.lastLatitude!,
-			lastLongitude: vessel.lastLongitude!,
-			pointsCount: vessel.pointsCount,
-			routeDaysCount: vessel.routeDaysCount
-		};
-		storeSelection(vesselFeature);
+		storeSelection(buildVesselSelectionFeature(vessel));
 	}
 
 	function clearSelection() {
@@ -355,45 +223,8 @@
 		selectionFilterSnapshot = null;
 	}
 
-	function buildRoutePointSelection(point: EmisShipRoutePoint): EmisMapSelectedRouteFeature {
-		return {
-			kind: 'route-point',
-			routePointId: point.routePointId,
-			shipHbkId: point.shipHbkId,
-			vesselName: point.vesselName,
-			pointSeqShip: point.pointSeqShip,
-			fetchedAt: point.fetchedAt,
-			latitude: point.latitude,
-			longitude: point.longitude,
-			speed: point.speed,
-			course: point.course,
-			heading: point.heading
-		};
-	}
-
-	function buildRouteSegmentSelection(segment: EmisShipRouteSegment): EmisMapSelectedRouteFeature {
-		return {
-			kind: 'route-segment',
-			shipHbkId: segment.shipHbkId,
-			vesselName: segment.vesselName,
-			segmentSeqShip: segment.segmentSeqShip,
-			fromFetchedAt: segment.fromFetchedAt,
-			fromLatitude: segment.fromLatitude,
-			fromLongitude: segment.fromLongitude,
-			toLatitude: segment.toLatitude,
-			toLongitude: segment.toLongitude,
-			gapMinutes: segment.gapMinutes,
-			fromSpeed: segment.fromSpeed,
-			fromCourse: segment.fromCourse
-		};
-	}
-
 	function selectRoutePoint(point: EmisShipRoutePoint) {
 		selectedRouteFeature = buildRoutePointSelection(point);
-	}
-
-	function selectRouteSegment(segment: EmisShipRouteSegment) {
-		selectedRouteFeature = buildRouteSegmentSelection(segment);
 	}
 
 	function handleMapRouteFeatureSelect(feature: EmisMapSelectedRouteFeature) {
@@ -410,6 +241,8 @@
 			selectedRouteFeature.routePointId === routePointId
 		);
 	}
+
+	/* ── URL/route selection sync ───────────────────────────────────── */
 
 	function getRouteSelectionFromUrl(): RouteUrlSelection | null {
 		if (!browser) return null;
@@ -451,13 +284,7 @@
 		selectedRouteFeature = segment ? buildRouteSegmentSelection(segment) : null;
 	}
 
-	function isSelectedObject(id: string) {
-		return selectedFeature?.kind === 'object' && selectedFeature.id === id;
-	}
-
-	function isSelectedNews(id: string) {
-		return selectedFeature?.kind === 'news' && selectedFeature.id === id;
-	}
+	/* ── Data loading ───────────────────────────────────────────────── */
 
 	async function loadSearchResults(kind: SearchResultKind) {
 		const targetId =
@@ -561,6 +388,8 @@
 		};
 	}
 
+	/* ── Loaders ─────────────────────────────────────────────────────── */
+
 	const resultsLoader = useDebouncedLoader({
 		watch: () => ({ filters: $effectiveFilters, kind: effectiveResultKind }),
 		delayMs: 300,
@@ -609,6 +438,8 @@
 				error instanceof Error ? error.message : 'Не удалось загрузить маршрут судна';
 		}
 	});
+
+	/* ── Effects ─────────────────────────────────────────────────────── */
 
 	$effect(() => {
 		const snapshot = effectiveFilterSnapshot;
@@ -821,672 +652,48 @@
 				</CardContent>
 			</Card>
 
-			<Card>
-				<CardHeader>
-					<CardTitle>{isVesselMode ? 'Vessel Catalog' : 'Search Results'}</CardTitle>
-					<CardDescription>
-						{isVesselMode
-							? 'Каталог судов из mart.emis_ship_route_vessels. Выберите судно для центрирования на карте.'
-							: 'Тонкий transport над `listObjectsQuery(...)` и `listNewsQuery(...)`.'}
-					</CardDescription>
-				</CardHeader>
-				<CardContent class="space-y-4">
-					{#if isVesselMode}
-						<div class="flex items-center justify-between gap-3">
-							<div class="type-caption text-muted-foreground">
-								Vessels: <span class="font-mono">{shipRouteCatalog.length}</span>
-							</div>
-							<Button
-								variant="outline"
-								size="sm"
-								onclick={() => void loadShipRouteCatalog()}
-								disabled={shipRouteCatalogLoading}
-							>
-								{shipRouteCatalogLoading ? 'Loading...' : 'Reload'}
-							</Button>
-						</div>
-
-						{#if shipRouteCatalogError}
-							<div
-								class="type-body-sm rounded-xl border border-error/30 bg-error-muted/30 p-3 text-error"
-							>
-								{shipRouteCatalogError}
-							</div>
-						{:else if shipRouteCatalogLoading && shipRouteCatalog.length === 0}
-							<div class="space-y-3">
-								{#each { length: 4 } as _}
-									<div class="space-y-2 rounded-xl border border-border/70 p-3">
-										<Skeleton class="h-4 w-2/3" />
-										<Skeleton class="h-3 w-1/3" />
-									</div>
-								{/each}
-							</div>
-						{:else if shipRouteCatalog.length === 0}
-							<div class="type-body-sm text-muted-foreground">Суда не найдены.</div>
-						{:else}
-							<div class="max-h-[600px] space-y-3 overflow-y-auto">
-								{#each shipRouteCatalog as vessel (vessel.shipHbkId)}
-									{@const isActive =
-										selectedFeature?.kind === 'vessel' &&
-										selectedFeature.id === String(vessel.shipHbkId)}
-									<button
-										type="button"
-										class={`w-full rounded-xl border p-3 text-left transition-colors ${
-											isActive
-												? 'border-info/40 bg-info-muted/30'
-												: 'border-border/70 bg-muted/10 hover:bg-muted/20'
-										}`}
-										onclick={() => selectVesselFromCatalog(vessel)}
-									>
-										<div class="flex items-start justify-between gap-3">
-											<div>
-												<div class="type-body-sm font-medium text-foreground">
-													{vessel.vesselName}
-												</div>
-												<div class="type-caption text-muted-foreground">
-													HBK {vessel.shipHbkId}
-													{#if vessel.imo}
-														<span class="mx-1">·</span>IMO {vessel.imo}
-													{/if}
-													{#if vessel.mmsi}
-														<span class="mx-1">·</span>MMSI {vessel.mmsi}
-													{/if}
-												</div>
-											</div>
-											<div class="type-caption shrink-0 text-right text-muted-foreground">
-												{#if vessel.lastLatitude != null && vessel.lastLongitude != null}
-													<div>
-														{formatCoordinate(vessel.lastLatitude)}, {formatCoordinate(
-															vessel.lastLongitude
-														)}
-													</div>
-												{/if}
-												<div>{vessel.pointsCount} pts / {vessel.routeDaysCount} days</div>
-											</div>
-										</div>
-										{#if vessel.flag || vessel.callsign || vessel.vesselType}
-											<div class="type-caption mt-1 text-muted-foreground">
-												{[vessel.vesselType, vessel.flag, vessel.callsign]
-													.filter(Boolean)
-													.join(' · ')}
-											</div>
-										{/if}
-										<div class="type-caption mt-1 text-muted-foreground">
-											Last seen: {formatDate(vessel.lastFetchedAt)}
-										</div>
-									</button>
-								{/each}
-							</div>
-						{/if}
-					{:else}
-						<div class="flex items-center justify-between gap-3">
-							<div class="type-caption text-muted-foreground">
-								Target: <span class="font-mono">{effectiveResultKind}</span>
-							</div>
-							<div class="type-caption text-muted-foreground">
-								Rows: {resultsMeta?.count ?? 0}
-							</div>
-						</div>
-
-						{#if selectedFeature}
-							<div class="rounded-xl border border-info/30 bg-info-muted/30 p-3">
-								<div class="flex items-start justify-between gap-3">
-									<div class="space-y-1">
-										<div class="type-caption tracking-[0.16em] text-info uppercase">
-											Selected {selectedFeature.kind}
-										</div>
-										<div class="type-body-sm font-medium text-foreground">
-											{selectedFeature.title}
-										</div>
-										{#if selectedFeature.subtitle}
-											<div class="type-caption text-muted-foreground">
-												{selectedFeature.subtitle}
-											</div>
-										{/if}
-									</div>
-									<div class="flex items-center gap-2">
-										{#if getSelectedFeatureHref(selectedFeature)}
-											<a
-												class="type-caption font-medium text-primary underline underline-offset-4"
-												href={getSelectedFeatureHref(selectedFeature)}
-											>
-												Открыть карточку
-											</a>
-										{/if}
-										<Button variant="ghost" size="sm" onclick={clearSelection}>Сбросить</Button>
-									</div>
-								</div>
-
-								<div class="type-caption mt-3 grid gap-1 text-muted-foreground">
-									{#if selectedFeature.kind === 'object'}
-										<div>
-											Status: <span class="font-medium text-foreground"
-												>{selectedFeature.status}</span
-											>
-										</div>
-										<div>
-											Updated:
-											<span class="font-medium text-foreground">
-												{formatDate(selectedFeature.updatedAt)}
-											</span>
-										</div>
-									{:else if selectedFeature.kind === 'news'}
-										<div>
-											Source:
-											<span class="font-medium text-foreground">{selectedFeature.sourceName}</span>
-										</div>
-										<div>
-											Published:
-											<span class="font-medium text-foreground">
-												{formatDate(selectedFeature.publishedAt)}
-											</span>
-										</div>
-										<div>
-											Related:
-											<span class="font-medium text-foreground">
-												{selectedFeature.relatedObjectsCount}
-											</span>
-										</div>
-									{:else if selectedFeature.kind === 'vessel'}
-										<div>
-											HBK: <span class="font-medium text-foreground"
-												>{selectedFeature.shipHbkId}</span
-											>
-										</div>
-										{#if selectedFeature.imo}
-											<div>
-												IMO: <span class="font-medium text-foreground">{selectedFeature.imo}</span>
-											</div>
-										{/if}
-										{#if selectedFeature.mmsi}
-											<div>
-												MMSI: <span class="font-medium text-foreground">{selectedFeature.mmsi}</span
-												>
-											</div>
-										{/if}
-										<div>
-											Last seen:
-											<span class="font-medium text-foreground">
-												{formatDate(selectedFeature.lastFetchedAt)}
-											</span>
-										</div>
-									{/if}
-								</div>
-							</div>
-						{/if}
-
-						{#if resultsError}
-							<div
-								class="type-body-sm rounded-xl border border-error/30 bg-error-muted/30 p-3 text-error"
-							>
-								{resultsError}
-							</div>
-						{:else if resultsLoader.loading && effectiveResultKind === 'objects' && objectRows.length === 0}
-							<div class="space-y-3">
-								{#each { length: 4 } as _}
-									<div class="space-y-2 rounded-xl border border-border/70 p-3">
-										<Skeleton class="h-4 w-2/3" />
-										<Skeleton class="h-3 w-1/3" />
-									</div>
-								{/each}
-							</div>
-						{:else if resultsLoader.loading && effectiveResultKind === 'news' && newsRows.length === 0}
-							<div class="space-y-3">
-								{#each { length: 4 } as _}
-									<div class="space-y-2 rounded-xl border border-border/70 p-3">
-										<Skeleton class="h-4 w-3/4" />
-										<Skeleton class="h-3 w-1/2" />
-										<Skeleton class="h-3 w-1/4" />
-									</div>
-								{/each}
-							</div>
-						{:else if effectiveResultKind === 'objects'}
-							<div class="space-y-3">
-								{#if objectRows.length === 0}
-									<div class="type-body-sm text-muted-foreground">
-										По текущим фильтрам объекты не найдены.
-									</div>
-								{:else}
-									{#each objectRows as row (row.id)}
-										<div
-											class={`rounded-xl border p-3 transition-colors ${
-												isSelectedObject(row.id)
-													? 'border-info/40 bg-info-muted/30'
-													: 'border-border/70 bg-muted/10 hover:bg-muted/20'
-											}`}
-										>
-											<div class="flex items-start justify-between gap-3">
-												<div>
-													<div class="type-body-sm font-medium text-foreground">{row.name}</div>
-													<div class="type-caption text-muted-foreground">
-														{row.objectTypeName}
-														{#if row.region}
-															<span class="mx-1">•</span>{row.region}
-														{/if}
-														{#if row.countryCode}
-															<span class="mx-1">•</span>{row.countryCode}
-														{/if}
-													</div>
-												</div>
-												<div class="type-caption text-muted-foreground">{row.status}</div>
-											</div>
-											<div class="type-caption mt-2 text-muted-foreground">
-												UUID: <span class="font-mono">{row.id}</span>
-											</div>
-											<div class="type-caption mt-1 text-muted-foreground">
-												Updated: {formatDate(row.updatedAt)}
-											</div>
-											<div class="mt-4 flex flex-wrap items-center gap-3">
-												<Button variant="outline" size="sm" onclick={() => selectObjectRow(row)}>
-													Выбрать
-												</Button>
-												<a
-													class="type-caption font-medium text-primary underline underline-offset-4"
-													href={getObjectDetailHref(row.id)}
-												>
-													Открыть карточку
-												</a>
-											</div>
-										</div>
-									{/each}
-								{/if}
-							</div>
-						{:else}
-							<div class="space-y-3">
-								{#if newsRows.length === 0}
-									<div class="type-body-sm text-muted-foreground">
-										По текущим фильтрам новости не найдены.
-									</div>
-								{:else}
-									{#each newsRows as row (row.id)}
-										<div
-											class={`rounded-xl border p-3 transition-colors ${
-												isSelectedNews(row.id)
-													? 'border-info/40 bg-info-muted/30'
-													: 'border-border/70 bg-muted/10 hover:bg-muted/20'
-											}`}
-										>
-											<div class="flex items-start justify-between gap-3">
-												<div>
-													<div class="type-body-sm font-medium text-foreground">{row.title}</div>
-													<div class="type-caption text-muted-foreground">
-														{row.sourceName}
-														{#if row.newsType}
-															<span class="mx-1">•</span>{row.newsType}
-														{/if}
-														{#if row.region}
-															<span class="mx-1">•</span>{row.region}
-														{/if}
-													</div>
-												</div>
-												<div class="type-caption text-muted-foreground">
-													related: {row.relatedObjectsCount}
-												</div>
-											</div>
-											<div class="type-caption mt-2 text-muted-foreground">
-												Published: {formatDate(row.publishedAt)}
-											</div>
-											<div class="mt-4 flex flex-wrap items-center gap-3">
-												<Button variant="outline" size="sm" onclick={() => selectNewsRow(row)}>
-													Выбрать
-												</Button>
-												<a
-													class="type-caption font-medium text-primary underline underline-offset-4"
-													href={getNewsDetailHref(row.id)}
-												>
-													Открыть карточку
-												</a>
-											</div>
-										</div>
-									{/each}
-								{/if}
-							</div>
-						{/if}
-					{/if}
-				</CardContent>
-			</Card>
+			<SearchResultsPanel
+				{isVesselMode}
+				{effectiveResultKind}
+				{shipRouteCatalog}
+				{shipRouteCatalogLoading}
+				{shipRouteCatalogError}
+				loadShipRouteCatalog={() => void loadShipRouteCatalog()}
+				{selectedFeature}
+				{objectRows}
+				{newsRows}
+				resultsLoaderLoading={resultsLoader.loading}
+				{resultsError}
+				{resultsMeta}
+				{selectVesselFromCatalog}
+				{selectObjectRow}
+				{selectNewsRow}
+				{clearSelection}
+			/>
 		</div>
 
 		{#if !isVesselMode}
-			<div class="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
-				<Card>
-					<CardHeader>
-						<CardTitle>Ship Route Slice</CardTitle>
-						<CardDescription>
-							Живой vertical slice поверх прямых `/api/emis/ship-routes/*` queries. Используем
-							`shipHbkId` как главный идентификатор и переиспользуем общий `dateRange`, если он
-							задан в workspace filters.
-						</CardDescription>
-					</CardHeader>
-					<CardContent class="space-y-4">
-						<div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto_auto]">
-							<FilterPanel
-								runtime={filterRuntime}
-								scope="workspace"
-								direction="horizontal"
-								filterIds={[...EMIS_SHIP_ROUTE_FILTER_IDS, 'routeMode']}
-							/>
-							<div class="flex items-end">
-								<Button
-									variant="outline"
-									onclick={() => void loadShipRouteCatalog()}
-									disabled={shipRouteCatalogLoading}
-								>
-									{shipRouteCatalogLoading ? 'Обновляем суда...' : 'Обновить суда'}
-								</Button>
-							</div>
-							<div class="flex items-end">
-								<Button
-									variant="outline"
-									onclick={shipRouteLoader.reload}
-									disabled={shipRouteLoader.loading || !selectedShipHbkId}
-								>
-									{shipRouteLoader.loading ? 'Обновляем трек...' : 'Обновить трек'}
-								</Button>
-							</div>
-						</div>
-
-						{#if shipRouteCatalogError}
-							<div
-								class="type-body-sm rounded-xl border border-error/30 bg-error-muted/30 p-3 text-error"
-							>
-								{shipRouteCatalogError}
-							</div>
-						{/if}
-
-						{#if selectedShipRouteVessel}
-							<div
-								class="grid gap-3 rounded-xl border border-border/70 bg-muted/10 p-4 md:grid-cols-2 xl:grid-cols-4"
-							>
-								<div>
-									<div class="type-caption text-muted-foreground">Vessel</div>
-									<div class="type-body-sm font-medium text-foreground">
-										{selectedShipRouteVessel.vesselName}
-									</div>
-									<div class="type-caption text-muted-foreground">
-										HBK {selectedShipRouteVessel.shipHbkId}
-									</div>
-								</div>
-								<div>
-									<div class="type-caption text-muted-foreground">Latest point</div>
-									<div class="type-body-sm font-medium text-foreground">
-										{formatDate(selectedShipRouteVessel.lastFetchedAt)}
-									</div>
-									<div class="type-caption text-muted-foreground">
-										First seen: {selectedShipRouteVessel.firstFetchedAt
-											? formatDate(selectedShipRouteVessel.firstFetchedAt)
-											: 'n/a'}
-									</div>
-								</div>
-								<div>
-									<div class="type-caption text-muted-foreground">Track shape</div>
-									<div
-										class="type-body-sm flex flex-wrap items-baseline gap-x-1 font-medium text-foreground"
-									>
-										{routeModeShowsPoints ? shipRoutePoints.length : 0} points
-										{#if routeModeShowsPoints && shipRoutePoints.length >= SHIP_ROUTE_LIMIT}
-											<span
-												class="rounded border border-warning/30 bg-warning-muted/40 px-1 py-0.5 text-[10px] font-normal text-warning-foreground"
-												>max</span
-											>
-										{/if}
-										/
-										{routeModeShowsSegments ? shipRouteSegments.length : 0} segments
-										{#if routeModeShowsSegments && shipRouteSegments.length >= SHIP_ROUTE_LIMIT}
-											<span
-												class="rounded border border-warning/30 bg-warning-muted/40 px-1 py-0.5 text-[10px] font-normal text-warning-foreground"
-												>max</span
-											>
-										{/if}
-									</div>
-									<div class="type-caption text-muted-foreground">
-										Mode: {routeMode} • Catalog: {selectedShipRouteVessel.pointsCount} points /
-										{selectedShipRouteVessel.routeDaysCount} days
-									</div>
-								</div>
-								<div>
-									<div class="type-caption text-muted-foreground">Identifiers</div>
-									<div class="type-body-sm font-medium text-foreground">
-										IMO {selectedShipRouteVessel.imo ?? 'n/a'}
-									</div>
-									<div class="type-caption text-muted-foreground">
-										MMSI {selectedShipRouteVessel.mmsi ?? 'n/a'}
-									</div>
-									<div class="type-caption text-muted-foreground">
-										Last pos:
-										{selectedShipRouteVessel.lastLatitude !== null &&
-										selectedShipRouteVessel.lastLongitude !== null
-											? `${formatCoordinate(selectedShipRouteVessel.lastLatitude)}, ${formatCoordinate(selectedShipRouteVessel.lastLongitude)}`
-											: 'n/a'}
-									</div>
-								</div>
-							</div>
-						{/if}
-
-						{#if selectedRouteFeature}
-							<div class="rounded-xl border border-info/30 bg-info-muted/20 p-4">
-								<div class="flex flex-wrap items-start justify-between gap-3">
-									<div class="space-y-1">
-										<div class="type-caption tracking-[0.16em] text-info uppercase">
-											Selected {selectedRouteFeature.kind === 'route-point'
-												? 'route point'
-												: 'route segment'}
-										</div>
-										<div class="type-body-sm font-medium text-foreground">
-											{selectedRouteFeature.vesselName}
-										</div>
-										<div class="type-caption text-muted-foreground">
-											{#if selectedRouteFeature.kind === 'route-point'}
-												Seq #{selectedRouteFeature.pointSeqShip} • {formatDate(
-													selectedRouteFeature.fetchedAt
-												)}
-											{:else}
-												Segment #{selectedRouteFeature.segmentSeqShip} • {formatDate(
-													selectedRouteFeature.fromFetchedAt
-												)}
-											{/if}
-										</div>
-									</div>
-									<Button variant="ghost" size="sm" onclick={clearRouteSelection}>Сбросить</Button>
-								</div>
-								<div class="type-caption mt-3 grid gap-1 text-muted-foreground">
-									{#if selectedRouteFeature.kind === 'route-point'}
-										<div>
-											Coords:
-											<span class="font-medium text-foreground">
-												{formatCoordinate(selectedRouteFeature.latitude)},
-												{formatCoordinate(selectedRouteFeature.longitude)}
-											</span>
-										</div>
-										<div>
-											Speed/Course:
-											<span class="font-medium text-foreground">
-												{formatMetric(selectedRouteFeature.speed, ' kn')} /
-												{formatMetric(selectedRouteFeature.course)}
-											</span>
-										</div>
-									{:else}
-										<div>
-											From:
-											<span class="font-medium text-foreground">
-												{formatCoordinate(selectedRouteFeature.fromLatitude)},
-												{formatCoordinate(selectedRouteFeature.fromLongitude)}
-											</span>
-										</div>
-										<div>
-											To:
-											<span class="font-medium text-foreground">
-												{formatCoordinate(selectedRouteFeature.toLatitude)},
-												{formatCoordinate(selectedRouteFeature.toLongitude)}
-											</span>
-										</div>
-										<div>
-											Gap:
-											<span class="font-medium text-foreground">
-												{formatMetric(selectedRouteFeature.gapMinutes, ' min')}
-											</span>
-										</div>
-									{/if}
-								</div>
-							</div>
-						{/if}
-
-						{#if shipRouteError}
-							<div
-								class="type-body-sm rounded-xl border border-error/30 bg-error-muted/30 p-3 text-error"
-							>
-								{shipRouteError}
-							</div>
-						{:else if shipRouteLoader.loading && !shipRoutePoints.length}
-							<div class="space-y-3">
-								{#each { length: 3 } as _}
-									<div class="space-y-2 rounded-xl border border-border/70 p-3">
-										<Skeleton class="h-3 w-1/4" />
-										<Skeleton class="h-4 w-1/2" />
-									</div>
-								{/each}
-							</div>
-						{:else if !selectedShipHbkId}
-							<div class="type-body-sm text-muted-foreground">
-								Выберите судно через route filter, чтобы открыть ship-track preview.
-							</div>
-						{:else if routeModeShowsPoints && shipRoutePoints.length === 0}
-							<div class="type-body-sm text-muted-foreground">
-								По выбранному судну и текущему периоду маршрутных точек не найдено.
-							</div>
-						{:else if !routeModeShowsPoints && routeModeShowsSegments && shipRouteSegments.length === 0}
-							<div class="type-body-sm text-muted-foreground">
-								По выбранному судну и текущему периоду маршрутных сегментов не найдено.
-							</div>
-						{:else}
-							<div class="grid gap-3 md:grid-cols-3">
-								<div class="rounded-xl border border-border/70 bg-background/80 p-3">
-									<div class="type-caption text-muted-foreground">
-										{routeModeShowsPoints ? 'First point' : 'First segment'}
-									</div>
-									<div class="type-body-sm font-medium text-foreground">
-										{routeModeShowsPoints
-											? formatDate(shipRoutePoints[0].fetchedAt)
-											: formatDate(shipRouteSegments[0].fromFetchedAt)}
-									</div>
-									<div class="type-caption text-muted-foreground">
-										{routeModeShowsPoints
-											? `${formatCoordinate(shipRoutePoints[0].latitude)}, ${formatCoordinate(shipRoutePoints[0].longitude)}`
-											: `${formatCoordinate(shipRouteSegments[0].fromLatitude)}, ${formatCoordinate(shipRouteSegments[0].fromLongitude)}`}
-									</div>
-								</div>
-								<div class="rounded-xl border border-border/70 bg-background/80 p-3">
-									<div class="type-caption text-muted-foreground">
-										{routeModeShowsPoints ? 'Last point' : 'Last segment'}
-									</div>
-									<div class="type-body-sm font-medium text-foreground">
-										{routeModeShowsPoints
-											? formatDate(shipRoutePoints[shipRoutePoints.length - 1].fetchedAt)
-											: formatDate(shipRouteSegments[shipRouteSegments.length - 1].fromFetchedAt)}
-									</div>
-									<div class="type-caption text-muted-foreground">
-										{routeModeShowsPoints
-											? `${formatCoordinate(shipRoutePoints[shipRoutePoints.length - 1].latitude)}, ${formatCoordinate(shipRoutePoints[shipRoutePoints.length - 1].longitude)}`
-											: `${formatCoordinate(shipRouteSegments[shipRouteSegments.length - 1].fromLatitude)}, ${formatCoordinate(shipRouteSegments[shipRouteSegments.length - 1].fromLongitude)}`}
-									</div>
-								</div>
-								<div class="rounded-xl border border-border/70 bg-background/80 p-3">
-									<div class="type-caption text-muted-foreground">
-										{routeModeShowsPoints ? 'Latest speed' : 'Latest segment gap'}
-									</div>
-									<div class="type-body-sm font-medium text-foreground">
-										{routeModeShowsPoints
-											? formatMetric(shipRoutePoints[shipRoutePoints.length - 1].speed, ' kn')
-											: formatMetric(
-													shipRouteSegments[shipRouteSegments.length - 1].gapMinutes,
-													' min'
-												)}
-									</div>
-									<div class="type-caption text-muted-foreground">
-										{routeModeShowsPoints
-											? `Gap from prev: ${formatMetric(shipRoutePoints[shipRoutePoints.length - 1].gapMinutesFromPrev, ' min')}`
-											: `Start speed/course: ${formatMetric(shipRouteSegments[shipRouteSegments.length - 1].fromSpeed, ' kn')} / ${formatMetric(shipRouteSegments[shipRouteSegments.length - 1].fromCourse)}`}
-									</div>
-								</div>
-							</div>
-						{/if}
-					</CardContent>
-				</Card>
-
-				<Card>
-					<CardHeader>
-						<CardTitle>Latest Track Points</CardTitle>
-						<CardDescription>
-							Последние точки выбранного маршрута. Этого достаточно, чтобы быстро проверить,
-							нормально ли `mart_emis` ложится в текущий workspace.
-						</CardDescription>
-					</CardHeader>
-					<CardContent class="space-y-3">
-						{#if latestShipRoutePoints.length === 0}
-							<div class="type-body-sm text-muted-foreground">
-								{#if !routeModeShowsPoints}
-									Сейчас выбран `routeMode={routeMode}`, поэтому список последних точек скрыт.
-								{:else}
-									Здесь появятся точки, как только выберем судно и загрузим маршрут.
-								{/if}
-							</div>
-						{:else}
-							{#each latestShipRoutePoints as point (point.routePointId)}
-								<div class="rounded-xl border border-border/70 bg-muted/10 p-3">
-									<div
-										class={`rounded-xl transition-colors ${
-											isSelectedRoutePoint(point.routePointId) ? 'bg-info-muted/20' : ''
-										}`}
-									>
-										<div class="flex items-start justify-between gap-3">
-											<div>
-												<div class="type-body-sm font-medium text-foreground">
-													Seq #{point.pointSeqShip}
-												</div>
-												<div class="type-caption text-muted-foreground">
-													{formatDate(point.fetchedAt)}
-												</div>
-											</div>
-											<div class="type-caption text-muted-foreground">
-												{formatMetric(point.speed, ' kn')}
-											</div>
-										</div>
-										<div class="type-caption mt-2 grid gap-1 text-muted-foreground">
-											<div>
-												Coords:
-												<span class="font-medium text-foreground">
-													{formatCoordinate(point.latitude)}, {formatCoordinate(point.longitude)}
-												</span>
-											</div>
-											<div>
-												Heading/Course:
-												<span class="font-medium text-foreground">
-													{formatMetric(point.heading)} / {formatMetric(point.course)}
-												</span>
-											</div>
-											<div>
-												Gap prev/next:
-												<span class="font-medium text-foreground">
-													{formatMetric(point.gapMinutesFromPrev, ' min')} /
-													{formatMetric(point.gapMinutesToNext, ' min')}
-												</span>
-											</div>
-										</div>
-										<div class="mt-3 flex flex-wrap items-center gap-3">
-											<Button variant="outline" size="sm" onclick={() => selectRoutePoint(point)}>
-												Выбрать
-											</Button>
-											<div class="type-caption text-muted-foreground">
-												routePointId: <span class="font-mono">{point.routePointId}</span>
-											</div>
-										</div>
-									</div>
-								</div>
-							{/each}
-						{/if}
-					</CardContent>
-				</Card>
-			</div>
+			<ShipRoutePanel
+				{filterRuntime}
+				{shipRouteCatalogLoading}
+				{shipRouteCatalogError}
+				loadShipRouteCatalog={() => void loadShipRouteCatalog()}
+				shipRouteLoaderLoading={shipRouteLoader.loading}
+				shipRouteLoaderReload={shipRouteLoader.reload}
+				{selectedShipHbkId}
+				{selectedShipRouteVessel}
+				{routeMode}
+				{routeModeShowsPoints}
+				{routeModeShowsSegments}
+				{shipRoutePoints}
+				{shipRouteSegments}
+				{selectedRouteFeature}
+				{clearRouteSelection}
+				{shipRouteError}
+				{latestShipRoutePoints}
+				{isSelectedRoutePoint}
+				{selectRoutePoint}
+			/>
 		{/if}
 
 		<div class="grid gap-4 md:grid-cols-3">

@@ -1,6 +1,6 @@
 import type { PageServerLoad } from './$types';
 
-import { getEmisMapConfig } from '$lib/server/emis/infra/mapConfig';
+import { getEmisMapConfig } from '@dashboard-builder/emis-server/infra/mapConfig';
 
 export const load: PageServerLoad = async () => {
 	return {

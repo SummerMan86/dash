@@ -1,6 +1,6 @@
 import type { PageServerLoad } from './$types';
 
-import { getEmisMapConfig } from '$lib/server/emis/infra/mapConfig';
+import { getEmisMapConfig } from '@dashboard-builder/emis-server/infra/mapConfig';
 import { getEmisPmtilesSpikeStatus } from '$lib/server/emis/infra/pmtilesSpike';
 
 export const load: PageServerLoad = async ({ url }) => {

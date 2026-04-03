@@ -99,9 +99,10 @@
 | `agents/roles.md` | agent role map | все роли, dispatch names, кто что делает |
 | `agents/templates.md` | agent communication templates | план, задача, handoff, report, review request/result |
 | `agents/lead-strategic/instructions.md` | GPT-5.4 lead instructions | как планировать, декомпозировать, принимать результаты |
+| `agents/strategic-reviewer/instructions.md` | GPT-5.4 sidecar review instructions | как делать bounded strategic second opinion без нового full-context чата |
 | `agents/lead-tactical/instructions.md` | Claude Opus tactical lead instructions | как управлять workers, review gate, report |
 | `agents/worker/instructions.md` | Claude worker instructions | как выполнять задачи, self-check, handoff |
-| `agents/reviewer-*/instructions.md` | reviewer role instructions | checks, output format, scope для каждого ревьюера |
+| `agents/*-reviewer/instructions.md` | reviewer role instructions | checks, output format, scope для каждого ревьюера |
 
 ### Archive
 

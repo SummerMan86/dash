@@ -198,6 +198,7 @@ GPT-5.4 (lead-strategic) → план → Claude Opus (lead-tactical) → worker
 - [docs/agents/roles.md](./docs/agents/roles.md) — таблица ролей
 - `docs/agents/{role}/instructions.md` — вводные для каждой роли
 - `docs/agents/{role}/memory.md` — персистентная память между сессиями
+- `strategic-reviewer` — optional GPT sidecar для bounded second opinion по `plan/report/diff`; не заменяет финальную приёмку `lead-strategic`
 
 ### Review Gate
 

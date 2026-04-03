@@ -11,6 +11,8 @@
 		"./emis-map/layer-config": "./src/emis-map/layer-config.ts",
 		"./emis-map/pmtiles-protocol": "./src/emis-map/pmtiles-protocol.ts",
 		"./emis-map/pmtiles-style": "./src/emis-map/pmtiles-style.ts",
+		"./emis-map/feature-normalizers": "./src/emis-map/feature-normalizers.ts",
+		"./emis-map/overlay-fetch": "./src/emis-map/overlay-fetch.ts",
 		"./emis-map/popup-renderers": "./src/emis-map/popup-renderers.ts",
 		"./emis-status-bar": {
 			"svelte": "./src/emis-status-bar/index.ts",
@@ -20,7 +22,6 @@
 	"dependencies": {
 		"@dashboard-builder/emis-contracts": "workspace:*",
 		"@dashboard-builder/platform-core": "workspace:*",
-		"@dashboard-builder/platform-datasets": "workspace:*",
 		"@dashboard-builder/platform-ui": "workspace:*",
 		"@protomaps/basemaps": "^5.7.2",
 		"maplibre-gl": "^5.20.1",

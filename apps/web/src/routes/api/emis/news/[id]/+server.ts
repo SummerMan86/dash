@@ -1,11 +1,11 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 
-import { updateEmisNewsSchema } from '$entities/emis-news';
-import { resolveEmisWriteContext } from '$lib/server/emis/infra/audit';
-import { EmisError } from '$lib/server/emis/infra/errors';
+import { updateEmisNewsSchema } from '@dashboard-builder/emis-contracts/emis-news';
+import { resolveEmisWriteContext } from '@dashboard-builder/emis-server/infra/audit';
+import { EmisError } from '@dashboard-builder/emis-server/infra/errors';
 import { handleEmisRoute, parseJsonBody, requireUuid } from '$lib/server/emis/infra/http';
-import { getNewsDetailQuery } from '$lib/server/emis/modules/news/queries';
-import { softDeleteNewsService, updateNewsService } from '$lib/server/emis/modules/news/service';
+import { getNewsDetailQuery } from '@dashboard-builder/emis-server/modules/news/queries';
+import { softDeleteNewsService, updateNewsService } from '@dashboard-builder/emis-server/modules/news/service';
 
 export const GET: RequestHandler = handleEmisRoute(async ({ params }) => {
 	const id = requireUuid(params.id, 'news id');

@@ -174,7 +174,9 @@ Table is append-only: UPDATE/DELETE blocked by trigger.
 
 Return `{ rows: [...] }` without meta (no pagination, no sort; full snapshot payloads).
 
-## Infrastructure helpers (`infra/http.ts`)
+## Infrastructure helpers
+
+### Package-level (framework-agnostic) — `packages/emis-server/src/infra/http.ts`
 
 | Helper                     | Purpose                               |
 | -------------------------- | ------------------------------------- |
@@ -184,7 +186,16 @@ Return `{ rows: [...] }` without meta (no pagination, no sort; full snapshot pay
 | `requireUuid()`            | UUID validation                       |
 | `parseJsonBody()`          | JSON + Zod body parsing               |
 | `normalizeDateTimeParam()` | ISO 8601 normalization                |
+| `buildEmisListMeta()`      | Build meta object standalone          |
+| `clampPageSize()`          | Clamp list page size to safe range    |
+| `clampMapLimit()`          | Clamp map limit to safe range         |
+
+### App-layer transport (SvelteKit) — `apps/web/src/lib/server/emis/infra/http.ts`
+
+| Helper                     | Purpose                               |
+| -------------------------- | ------------------------------------- |
 | `jsonEmisList()`           | Standard `{rows, meta}` response      |
 | `jsonEmisError()`          | Standard `{error, code}` response     |
 | `handleEmisRoute()`        | Error boundary wrapper                |
-| `buildEmisListMeta()`      | Build meta object standalone          |
+
+Routes import all helpers from `$lib/server/emis/infra/http` (which re-exports package helpers and adds transport helpers).

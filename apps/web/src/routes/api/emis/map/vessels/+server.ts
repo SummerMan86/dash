@@ -1,14 +1,14 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 
-import { mapVesselsQuerySchema } from '$entities/emis-map';
-import { EmisError } from '$lib/server/emis/infra/errors';
+import { mapVesselsQuerySchema } from '@dashboard-builder/emis-contracts/emis-map';
+import { EmisError } from '@dashboard-builder/emis-server/infra/errors';
 import {
 	EMIS_DEFAULT_MAP_LIMIT,
 	EMIS_MAX_MAP_LIMIT,
 	handleEmisRoute,
 	parseStrictIntParam
 } from '$lib/server/emis/infra/http';
-import { mapVesselsQuery } from '$lib/server/emis/modules/map/queries';
+import { mapVesselsQuery } from '@dashboard-builder/emis-server/modules/map/queries';
 
 function parseMapVesselsQuery(url: URL) {
 	const parsed = mapVesselsQuerySchema.safeParse({

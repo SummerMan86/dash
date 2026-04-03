@@ -9,7 +9,7 @@ src/
   infra/          — server infrastructure
     db.ts           getDb(), withTransaction() — PostgreSQL access via @dashboard-builder/db
     errors.ts       EmisError class
-    http.ts         request parsing, list helpers, handleEmisRoute wrapper
+    http.ts         request parsing, list helpers, clampPageSize/clampMapLimit (framework-agnostic only)
     audit.ts        audit logging, write context resolution
     mapConfig.ts    map configuration assembly (env + PMTiles status)
     pmtilesBundle.ts  offline PMTiles asset detection
@@ -34,9 +34,11 @@ src/
 - Все SQL-запросы только параметризованные (`$1`, `$2`, ...).
 - Не писать HTTP-логику в `service.ts`.
 - Не писать SQL в route handlers (те остаются в `apps/web/src/routes/api/emis/`).
-- Deps: `emis-contracts`, `db`, `zod`; peers: `@sveltejs/kit`, `pg`.
+- Deps: `emis-contracts`, `db`, `zod`; peers: `pg`.
 - Compatibility shims в `apps/web/src/lib/server/emis/` re-exportят из этого пакета.
 
-## Известные follow-ups
+## Transport ownership
 
-- `http.ts` и `audit.ts` содержат SvelteKit coupling (`RequestHandler`, `Request`) — кандидаты на разделение framework-agnostic / app-glue в будущем slice.
+- This package is **framework-agnostic**: no SvelteKit imports, no HTTP response construction.
+- SvelteKit transport glue (`handleEmisRoute`, `jsonEmisList`, `jsonEmisError`) lives in the app layer: `apps/web/src/lib/server/emis/infra/http.ts`.
+- `audit.ts` uses standard Web API `Request` — already framework-agnostic, no coupling.

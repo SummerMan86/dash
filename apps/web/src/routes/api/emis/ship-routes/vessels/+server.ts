@@ -1,7 +1,7 @@
 import type { RequestHandler } from '@sveltejs/kit';
 
-import { listEmisShipRouteVesselsQuerySchema } from '$entities/emis-ship-route';
-import { EmisError } from '$lib/server/emis/infra/errors';
+import { listEmisShipRouteVesselsQuerySchema } from '@dashboard-builder/emis-contracts/emis-ship-route';
+import { EmisError } from '@dashboard-builder/emis-server/infra/errors';
 import {
 	EMIS_DEFAULT_SHIP_ROUTE_VESSELS_LIMIT,
 	EMIS_MAX_OFFSET,
@@ -10,7 +10,7 @@ import {
 	jsonEmisList,
 	parseListParams
 } from '$lib/server/emis/infra/http';
-import { listShipRouteVesselsQuery } from '$lib/server/emis/modules/ship-routes/queries';
+import { listShipRouteVesselsQuery } from '@dashboard-builder/emis-server/modules/ship-routes/queries';
 
 const SHIP_ROUTE_VESSEL_SORT = [
 	{ field: 'lastFetchedAt', dir: 'desc' as const },

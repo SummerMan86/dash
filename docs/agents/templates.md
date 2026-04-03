@@ -167,3 +167,43 @@ Findings:
 Required follow-ups:
 - <что нужно исправить> или "none"
 ```
+
+## 7. Strategic Review Request (lead-strategic → strategic-reviewer)
+
+Передаётся при запуске optional sidecar-review.
+
+```md
+# Strategic Review Request
+
+Goal:
+<что нужно проверить: plan fit, report quality, acceptance readiness, scope drift>
+
+Inputs:
+- current plan: `docs/agents/lead-strategic/current_plan.md`
+- tactical report: `docs/agents/lead-tactical/last_report.md`
+- changed files: <список>
+- diff: <ссылка/вставка/summary>
+- canonical docs: <2-4 документа максимум>
+
+Questions:
+- <вопрос 1>
+- <вопрос 2>
+```
+
+## 8. Strategic Review Result (strategic-reviewer → lead-strategic)
+
+```md
+# Strategic Review
+
+Verdict: accept-ready | needs follow-up | needs strategic decision
+
+Findings:
+- [CRITICAL|WARNING|INFO] file:line | <описание>
+- или "No issues found."
+
+Plan Fit:
+- <соответствует плану / есть scope drift / есть недоделанный acceptance item>
+
+Recommended next step:
+- <accept | request fixes | re-slice | escalate>
+```

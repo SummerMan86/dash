@@ -8,10 +8,7 @@ import type {
 } from '@dashboard-builder/emis-contracts/emis-news';
 
 import { getDb } from '../../infra/db';
-
-function clampPageSize(value: number | undefined): number {
-	return Math.max(1, Math.min(200, Math.trunc(value ?? 50)));
-}
+import { clampPageSize } from '../../infra/http';
 
 export async function listNewsQuery(filters: ListEmisNewsInput): Promise<EmisNewsSummary[]> {
 	const conditions = ['n.deleted_at IS NULL'];

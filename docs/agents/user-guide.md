@@ -200,6 +200,37 @@ UI (нужен dev server):
 Глубокий UI-ревью новой страницы
 ```
 
+### F2. Strategic sidecar review
+
+Если не хочешь открывать новый GPT-диалог на каждую подзадачу, можно использовать optional `strategic-reviewer` как узкий второй проход.
+
+Что ему давать:
+- `docs/agents/lead-strategic/current_plan.md`
+- `docs/agents/lead-tactical/last_report.md`
+- diff или список changed files
+- 2-4 canonical docs по теме
+
+Что просить:
+
+```
+Сделай strategic sidecar review.
+Проверь:
+- соответствует ли результат плану
+- есть ли scope drift
+- все ли acceptance items закрыты
+- нужен ли strategic decision или можно принимать
+```
+
+Когда это лучше нового чата:
+- идёт одна и та же wave, но задач несколько
+- нужен second opinion без полного re-bootstrap
+- основной `lead-strategic` контекст уже хороший и терять его не хочется
+
+Когда лучше новый чат:
+- началась новая wave
+- слишком много старого контекста и нужен clean reset
+- ключевые решения уже перенесены в `memory.md`, `current_plan.md`, `last_report.md`
+
 ---
 
 ### G. Создание worker-teammate

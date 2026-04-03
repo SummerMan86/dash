@@ -1,9 +1,9 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 
-import { attachNewsObjectsSchema } from '$entities/emis-link';
-import { resolveEmisWriteContext } from '$lib/server/emis/infra/audit';
+import { attachNewsObjectsSchema } from '@dashboard-builder/emis-contracts/emis-link';
+import { resolveEmisWriteContext } from '@dashboard-builder/emis-server/infra/audit';
 import { handleEmisRoute, parseJsonBody, requireUuid } from '$lib/server/emis/infra/http';
-import { attachNewsObjectsService } from '$lib/server/emis/modules/links/service';
+import { attachNewsObjectsService } from '@dashboard-builder/emis-server/modules/links/service';
 
 export const POST: RequestHandler = handleEmisRoute(async ({ params, request }) => {
 	const newsId = requireUuid(params.id, 'news id');

@@ -16,9 +16,14 @@
 
 Ключевые файлы:
 
-- `+page.svelte` - основной workspace orchestration layer
+- `+page.svelte` - workspace orchestration layer (state, effects, loaders, composition)
 - `+page.server.ts` - server-side data needed for initial page render
 - `filters.ts` - route-local filter spec wiring
+- `emisPageHelpers.ts` - pure utility/formatting functions, type aliases, URL helpers
+- `emisPageSelection.ts` - selection builder functions, navigation href helpers, vessel feature builder
+- `emisPageGeoJson.ts` - ship route GeoJSON FeatureCollection builders
+- `SearchResultsPanel.svelte` - right-column panel: vessel catalog / object+news search results
+- `ShipRoutePanel.svelte` - ship route slice card + latest track points card
 - child routes `news/*`, `objects/*`, `pmtiles-spike/*` - отдельные workspace slices
 
 ## 2. What is allowed in route layer
@@ -39,8 +44,8 @@
 
 ## 4. Extraction rules
 
-`src/routes/emis/+page.svelte` уже oversized.
-Сейчас default expectation для новых задач:
+`src/routes/emis/+page.svelte` was decomposed in H-4b (1559 → 767 lines). Panels and helpers are now route-local siblings.
+Default expectation для новых задач:
 
 - не добавлять еще один большой inline block, если его можно вынести
 - extract reusable or stateful UI slices into `src/lib/widgets/*` or route-local subcomponents

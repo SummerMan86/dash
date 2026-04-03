@@ -1,7 +1,7 @@
 import type { RequestHandler } from '@sveltejs/kit';
 
-import { listEmisObjectsQuerySchema } from '$entities/emis-object';
-import { EmisError } from '$lib/server/emis/infra/errors';
+import { listEmisObjectsQuerySchema } from '@dashboard-builder/emis-contracts/emis-object';
+import { EmisError } from '@dashboard-builder/emis-server/infra/errors';
 import {
 	EMIS_DEFAULT_LIST_LIMIT,
 	EMIS_MAX_LIST_LIMIT,
@@ -10,7 +10,7 @@ import {
 	jsonEmisList,
 	parseListParams
 } from '$lib/server/emis/infra/http';
-import { listObjectsQuery } from '$lib/server/emis/modules/objects/queries';
+import { listObjectsQuery } from '@dashboard-builder/emis-server/modules/objects/queries';
 
 const OBJECTS_LIST_SORT = [
 	{ field: 'name', dir: 'asc' as const },

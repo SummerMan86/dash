@@ -18,9 +18,24 @@
 
 ## Направление зависимостей
 
-`routes/api/emis/* -> $entities/emis-* + $lib/server/emis/infra/* + $lib/server/emis/modules/*`
+New routes MUST import directly from canonical packages:
+
+```
+routes/api/emis/* ->
+  @dashboard-builder/emis-contracts/*   (schemas, types, zod validators)
+  @dashboard-builder/emis-server/*      (modules/*, infra/errors, infra/audit, infra/mapConfig)
+  $lib/server/emis/infra/http           (app-owned SvelteKit transport glue)
+  @sveltejs/kit                         (json, RequestHandler)
+```
+
+Do NOT use legacy shim paths (`$entities/emis-*`, `$lib/server/emis/modules/*`, `$lib/server/emis/infra/errors`, `$lib/server/emis/infra/audit`) in new route code. Those re-export shims exist only for backward compatibility of code outside this directory. The `$lib/server/emis/infra/mapConfig` shim has been deleted; all consumers now import directly from `@dashboard-builder/emis-server/infra/mapConfig`.
 
 Это должен быть тонкий слой над server namespace.
+
+## Transport ownership
+
+SvelteKit transport glue (`handleEmisRoute`, `jsonEmisList`, `jsonEmisError`) is app-owned and lives in `$lib/server/emis/infra/http.ts`, not in `@dashboard-builder/emis-server`.
+The package provides only framework-agnostic parsing, validation, constants, and types.
 
 ## Runtime contract
 

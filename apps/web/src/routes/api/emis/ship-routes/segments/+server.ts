@@ -1,7 +1,7 @@
 import type { RequestHandler } from '@sveltejs/kit';
 
-import { listEmisShipRouteSegmentsQuerySchema } from '$entities/emis-ship-route';
-import { EmisError } from '$lib/server/emis/infra/errors';
+import { listEmisShipRouteSegmentsQuerySchema } from '@dashboard-builder/emis-contracts/emis-ship-route';
+import { EmisError } from '@dashboard-builder/emis-server/infra/errors';
 import {
 	EMIS_DEFAULT_SHIP_ROUTE_GEOMETRY_LIMIT,
 	EMIS_MAX_OFFSET,
@@ -11,7 +11,7 @@ import {
 	parseListParams,
 	parseOptionalStrictInt
 } from '$lib/server/emis/infra/http';
-import { listShipRouteSegmentsQuery } from '$lib/server/emis/modules/ship-routes/queries';
+import { listShipRouteSegmentsQuery } from '@dashboard-builder/emis-server/modules/ship-routes/queries';
 
 function parseShipRouteSegmentsQuery(url: URL) {
 	const paging = parseListParams(url.searchParams, {

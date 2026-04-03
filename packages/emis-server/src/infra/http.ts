@@ -1,7 +1,6 @@
-import { json, type RequestHandler } from '@sveltejs/kit';
 import { z } from 'zod';
 
-import { EmisError, isEmisError } from './errors';
+import { EmisError } from './errors';
 
 export const EMIS_DEFAULT_LIST_LIMIT = 50;
 export const EMIS_MAX_LIST_LIMIT = 200;
@@ -180,6 +179,22 @@ export function parseOptionalStrictInt(
 	return parsed;
 }
 
+/**
+ * Clamp a page-size value for list endpoints.
+ * Falls back to EMIS_DEFAULT_LIST_LIMIT when undefined; result is always in [1, EMIS_MAX_LIST_LIMIT].
+ */
+export function clampPageSize(value: number | undefined): number {
+	return Math.max(1, Math.min(EMIS_MAX_LIST_LIMIT, Math.trunc(value ?? EMIS_DEFAULT_LIST_LIMIT)));
+}
+
+/**
+ * Clamp a limit value for map endpoints.
+ * Falls back to EMIS_DEFAULT_MAP_LIMIT when undefined; result is always in [1, EMIS_MAX_MAP_LIMIT].
+ */
+export function clampMapLimit(value: number | undefined): number {
+	return Math.max(1, Math.min(EMIS_MAX_MAP_LIMIT, Math.trunc(value ?? EMIS_DEFAULT_MAP_LIMIT)));
+}
+
 export function normalizeDateTimeParam(value: string | null): string | undefined {
 	if (!value) return undefined;
 	const trimmed = value.trim();
@@ -204,61 +219,3 @@ export function buildEmisListMeta(options: {
 	};
 }
 
-export function jsonEmisList<T>(
-	rows: T[],
-	options: { limit: number; offset?: number; sort: EmisSortRule[] }
-) {
-	return json({
-		rows,
-		meta: buildEmisListMeta({
-			count: rows.length,
-			limit: options.limit,
-			offset: options.offset,
-			sort: options.sort
-		})
-	});
-}
-
-export function jsonEmisError(status: number, code: string, error: string) {
-	return json({ error, code }, { status });
-}
-
-export function handleEmisRoute(
-	handler: RequestHandler,
-	fallbackMessage = 'Unexpected EMIS server error'
-): RequestHandler {
-	return async (event) => {
-		try {
-			return await handler(event);
-		} catch (error) {
-			if (isEmisError(error)) {
-				return jsonEmisError(error.status, error.code, error.message);
-			}
-
-			const message = error instanceof Error ? error.message : '';
-			if (message.includes('DATABASE_URL')) {
-				return jsonEmisError(500, 'EMIS_DATABASE_URL_MISSING', 'DATABASE_URL is not set');
-			}
-			if (message.includes('relation "emis.') || message.includes('schema "emis"')) {
-				return jsonEmisError(
-					503,
-					'EMIS_SCHEMA_UNAVAILABLE',
-					'EMIS schema is not initialized yet. Run db:reset and db:seed first.'
-				);
-			}
-			if (
-				message.includes('relation "mart_emis.') ||
-				message.includes('schema "mart_emis"') ||
-				message.includes('relation "mart.emis_ship_route_vessels"')
-			) {
-				return jsonEmisError(
-					503,
-					'EMIS_SHIP_ROUTE_MART_UNAVAILABLE',
-					'EMIS ship-route marts are not initialized yet. Load the mart_emis slice before using ship routes.'
-				);
-			}
-
-			return jsonEmisError(500, 'EMIS_INTERNAL_ERROR', fallbackMessage);
-		}
-	};
-}

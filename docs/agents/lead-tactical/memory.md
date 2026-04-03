@@ -5,108 +5,101 @@
 
 ## Решения и контекст
 
-### ST-1 + ST-2 + ST-3 (2026-04-03)
-- Docs-only slices, lead-tactical напрямую
-- 10 target packages: platform-core, platform-ui, platform-datasets, platform-filters, db, emis-contracts, emis-server, emis-ui, bi-alerts (conditional), bi-dashboards (conditional)
-- Canonical layout: `docs/emis_monorepo_target_layout.md`
+### Wave ST-1..ST-10 (closed, 2026-04-03)
+- All 10 structural slices accepted on `feature/emis-foundation-stabilization`
+- 8 packages: platform-core, db, platform-ui, platform-datasets, platform-filters, emis-contracts, emis-server, emis-ui
+- BI kept in app (bi-dashboards, bi-alerts) with justification
+- ~53 MIGRATION re-export shims still in place
+- Integration branch: `feature/emis-foundation-stabilization`
 
-### ST-4 (2026-04-03)
-- Select.svelte baseline blocker resolved
-- ESLint 6 architecture boundary rule blocks in `eslint.config.js`
-- `pnpm lint:boundaries` — canonical boundary-only verification (uses temp file for stdout reliability)
+### Wave H (EMIS Post-Split Hardening And Boundary Cleanup)
+- Integration branch: `feature/emis-post-split-hardening` (created from `feature/emis-foundation-stabilization`)
+- Plan: `docs/agents/lead-strategic/current_plan.md`
 
-### ST-5 (2026-04-03)
-- App moved to `apps/web/`: src, static, svelte.config.js, vite.config.ts, tsconfig.json, tailwind.config.js
-- Root → workspace orchestrator with `pnpm -C apps/web` wrappers
-- `.env*` stays at root, vite references `../../.env`
-- ESLint globs, lint-boundaries targets, smoke CWD — all updated to `apps/web/src/`
-- All doc `src/` references → `apps/web/src/`
-- pnpm check: 0 errors, build: success, lint:boundaries: 3 expected gaps
+#### H-1: Make emis-server transport-agnostic (DONE, 2026-04-03)
+- Moved `jsonEmisList`, `jsonEmisError`, `handleEmisRoute` from `packages/emis-server/src/infra/http.ts` → `apps/web/src/lib/server/emis/infra/http.ts`
+- Removed `@sveltejs/kit` from emis-server peerDependencies
+- Package-level http.ts now has only framework-agnostic parsing/validation/constants/types
+- `audit.ts` was already framework-agnostic (Web API `Request`), untouched
+- No route files changed — all 18 handlers still import from `$lib/server/emis/infra/http`
+- No API behavior changes
+- Docs updated: emis-server/AGENTS.md, routes/api/emis/AGENTS.md, RUNTIME_CONTRACT.md
+- Review Gate: 4/4 reviewers ran, all findings addressed
+  - Key fix: restructured imports to avoid confusing `export from` + `import` pattern
+  - Key fix: split RUNTIME_CONTRACT.md helpers table into package-level vs app-layer sections
+- Verification: pnpm check clean, pnpm build success, lint:boundaries 3 pre-existing only
 
-### ST-6 (2026-04-03)
-- 5 packages extracted: platform-core, db, platform-ui, platform-datasets, platform-filters
-- Wave 1 (leaf): platform-core (format.ts + useDebouncedLoader) + db (pg.ts)
-- Wave 2: platform-ui (15 UI families + styles/tokens), platform-datasets (contracts/IR + compile + postgresProvider), platform-filters (types/store/planner + filter widgets)
-- Re-export shims at old paths (marked `// MIGRATION`) — all $alias imports continue working
-- mockProvider stays in apps/web (fixture dep), fetchDataset stays in apps/web (cross-package composition)
-- `$app/environment` replaced with `typeof window !== 'undefined'` in platform-filters (arch review fix)
-- Orphaned model dirs deleted, dead duplicates cleaned up (code review fix)
-- apps/web renamed to @dashboard-builder/web
-
-### ST-7 (2026-04-03)
-- 3 EMIS packages extracted: emis-contracts, emis-server, emis-ui
-- Wave 1 (leaf): emis-contracts — 7 entity dirs with subpath exports, dep: zod
-- Wave 2: emis-server — infra + modules, deps: emis-contracts, db, @sveltejs/kit (peer), zod, pg (peer), @types/pg (dev)
-- Wave 3: emis-ui — emis-map widgets + emis-status-bar, deps: emis-contracts, platform-core, platform-datasets, platform-ui, maplibre-gl, pmtiles, @protomaps/basemaps
-- Kept in app: emis-drawer (depends on $widgets/filters), emis-manual-entry (depends on $app/forms)
-- Re-export shims at all old paths marked `// MIGRATION`
-- Docs updated: AGENTS.md, emis_architecture_baseline.md, emis_session_bootstrap.md, server/emis/AGENTS.md, docs/AGENTS.md, routes/emis/AGENTS.md
-
-### Integration branch
-- `feature/emis-foundation-stabilization`
-- Latest commit: `76d37e1` (ST-7: extract EMIS packages)
-
-## Проблемы и workarounds
-
-- `pnpm lint` not green (pre-existing Prettier drift) — not blocking
-- ESLint `no-restricted-imports` flat config — each scope needs ONE combined block, `replace_all` on first glob misses subsequent globs in array
-- `lint-boundaries.mjs` must use temp file (`-o`) for stdout buffer reliability
-- `git add -A` caught `.claude/agent-memory/` and `target` — now in `.gitignore`
-
-### ST-8 (2026-04-03)
-- Rationalization slice — no new packages extracted
-- bi-dashboards: KEPT IN APP — no second consumer, SvelteKit routes can't be in packages, `dashboard-edit` uses `$app/environment`, `fetchDataset` is app-level filter composition
-- bi-alerts: KEPT IN APP — no second consumer, tied to hooks.server.ts lifecycle, env-specific config
-- Verified EMIS/BI separation clean — zero cross-imports between BI routes and EMIS packages
-- Deleted 7 empty placeholder directories (entities/dashboard, entities/widget, widgets/chart/kpi/dashboard-container/table, shared/config)
-- Updated 7 AGENTS.md files with canonical placement notes and package verdicts
-- All MIGRATION shims classified explicitly (ST-10 cleanup candidates)
-- Dataset definitions confirmed canonical in apps/web/src/lib/server/datasets/definitions/
-- Pre-existing issues documented but not touched: stock-alerts→routes FSD violation, fetchDataset FSD gap, cacheKeyQuery redundancy
-
-### ST-9 (2026-04-03)
-- Verification/docs coherence slice — no structural changes
-- Integrated verification: pnpm check 0 errors, pnpm build success, lint:boundaries 3 pre-existing violations
-- Fixed 6 stale branch name references in current_plan.md (feature/emis-monorepo-readiness → feature/emis-foundation-stabilization)
-- Fixed stale Select.svelte parse error description in emis_architecture_baseline.md (resolved in ST-4, baseline now green)
-- Fixed stale README structural description — now accurately describes 8-package monorepo layout
-- Added `pnpm lint:boundaries` to README commands section
-- Docs audit: 28 local AGENTS.md files verified, all paths correct, reading orders consistent
-- No regressions from ST-4..ST-8
-
-### ST-10 (2026-04-03)
-- Docs-only cleanup slice — no runtime code, no package topology
-- Added explicit doc classification (canonical/active/reference/archive) to docs/AGENTS.md
-- Fixed stale forward-tense in emis_working_contract.md (Select.svelte blocker → past tense)
-- Normalized README.md "Что уже есть" with conceptual-path clarification
-- Added emis_monorepo_target_layout.md to root AGENTS.md EMIS starting path
-- Removed empty docs/emis/ directory
-- Added missing archive/emis/emis_todo_vessel_markers.md to catalog
-- Separated Agent Workflow docs into new section 3a in docs/AGENTS.md
-- All 34 doc references verified — none broken
-
-### Integration branch
-- `feature/emis-foundation-stabilization`
-- Commits: `a0ee817` (ST-8 main), `d78e6d9` (Review Gate fixes), ST-9/ST-10 changes uncommitted
+#### H-2: Remove invalid emis-ui -> platform-datasets edge (DONE, 2026-04-03)
+- Relocated `JsonPrimitive` and `JsonValue` from `platform-datasets/contract.ts` to `platform-core/src/types.ts` (canonical home)
+- `platform-datasets/contract.ts` now imports from `platform-core` and re-exports for backward compatibility
+- Added `@dashboard-builder/platform-core` as dependency of `platform-datasets` (allowed per target graph)
+- `EmisMap.svelte` now imports `JsonValue` from `@dashboard-builder/platform-core`
+- Removed `@dashboard-builder/platform-datasets` from `emis-ui/package.json`
+- Updated `emis-ui/AGENTS.md` to reflect corrected dependency list
+- No behavioral changes, type-only relocation
+- Verification: pnpm check 0 errors, pnpm build success, lint:boundaries 3 pre-existing only (no new violations)
+- Review Gate: 3/3 reviewers passed (architecture, code, docs)
+#### H-3: Normalize EMIS route imports (DONE, 2026-04-03)
+- Replaced all `$entities/emis-*` imports with `@dashboard-builder/emis-contracts/*` (14 import lines across 14 route files)
+- Replaced all `$lib/server/emis/modules/*` imports with `@dashboard-builder/emis-server/modules/*` (18 import lines)
+- Replaced all `$lib/server/emis/infra/errors` imports with `@dashboard-builder/emis-server/infra/errors` (8 import lines)
+- Replaced all `$lib/server/emis/infra/audit` imports with `@dashboard-builder/emis-server/infra/audit` (6 import lines)
+- Replaced `$lib/server/emis/infra/mapConfig` with `@dashboard-builder/emis-server/infra/mapConfig` (1 import line)
+- Kept `$lib/server/emis/infra/http` as-is in all 18 route files (app-owned transport glue)
+- health/+server.ts untouched (no EMIS shim imports)
+- Updated AGENTS.md to prescribe direct package imports, prohibit shim paths for new routes
+- No behavioral changes — import-only normalization
+- Verification: pnpm check 0 errors, pnpm build success, lint:boundaries 3 pre-existing only
+- Review Gate: architecture (PASS), code (PASS), docs (PASS)
+#### H-4a: Decompose EmisMap.svelte pressure (DONE, 2026-04-03)
+- EmisMap.svelte reduced from 1225 to 904 lines (26% reduction, 321 lines removed)
+- Extracted 3 files into `packages/emis-ui/src/emis-map/`:
+  - `feature-normalizers.ts` (179 lines) — 5 pure normalizer functions
+  - `overlay-fetch.ts` (130 lines) — fetch helper, URL builders, layer visibility, types
+  - `DiagnosticsHud.svelte` (148 lines) — diagnostics HUD child component
+- Also removed duplicate `getStatusTone()`, `getActiveBasemapLabel()` from parent
+- Refactored `refreshOverlays()` to use `buildOverlayUrls`, `buildOverlayKey`, `resolveVisibleLayers`
+- Refactored `handleFitBounds()` to use `resolveVisibleLayers`
+- Added 2 subpath exports to package.json: `./emis-map/feature-normalizers`, `./emis-map/overlay-fetch`
+- Updated AGENTS.md with new file listing and subpath table
+- Verification: pnpm check 0 errors, pnpm build success, lint:boundaries 3 pre-existing only
+- H-4b deferred: diff was substantial (365 lines deleted from EmisMap.svelte, 457 lines in new files)
+- Review Gate (run by orchestrator): arch OK, code request-changes (fixed), docs request-changes (fixed)
+  - Fixed: pre-existing bug in `resolveVisibleLayers` — `showVessels` was missing `layer === 'all'`
+  - Fixed: `BasemapSource` type duplication — extracted to `overlay-fetch.ts`, imported in both components
+  - Fixed: stale line count in AGENTS.md follow-up note
+#### H-4b: Decompose +page.svelte route (DONE, 2026-04-03)
+- +page.svelte reduced from 1559 to 767 lines (51% reduction, 792 lines extracted)
+- Extracted 5 route-local files into `apps/web/src/routes/emis/`:
+  - `emisPageHelpers.ts` (82 lines) — pure utility/formatting functions, type aliases (SearchResultKind, RouteMode, RouteUrlSelection), URL helpers, parsers
+  - `emisPageSelection.ts` (80 lines) — selection builder functions (route point, route segment, vessel), navigation href helpers, ShipRouteVesselOption type
+  - `emisPageGeoJson.ts` (55 lines) — ship route GeoJSON FeatureCollection builders (point + segment)
+  - `SearchResultsPanel.svelte` (382 lines) — right-column panel: vessel catalog, object/news search results, selected feature detail
+  - `ShipRoutePanel.svelte` (398 lines) — ship route slice card + latest track points card
+- Also removed: `selectRouteSegment()` (unused after extraction), `isSelectedObject()`, `isSelectedNews()` (moved into SearchResultsPanel)
+- Removed unused imports: `EmisShipRouteVessel`, `Skeleton`, `EMIS_SHIP_ROUTE_FILTER_IDS` from +page.svelte
+- Updated AGENTS.md with new file listing
+- Verification: pnpm check 0 errors, pnpm build success, lint:boundaries 3 pre-existing only
+#### H-5: Close remaining boundary hardening gaps (DONE, 2026-04-03)
+- Residual 1 (mapConfig boundary exception): switched BI route `vessel-positions/+page.server.ts` from shim `$lib/server/emis/infra/mapConfig` to canonical `@dashboard-builder/emis-server/infra/mapConfig`; also normalized 2 EMIS routes (`emis/+page.server.ts`, `emis/pmtiles-spike/+page.server.ts`); deleted the now-unused shim `apps/web/src/lib/server/emis/infra/mapConfig.ts`; updated `routes/api/emis/AGENTS.md` to document deletion
+- Residual 2 (clampPageSize duplication): extracted `clampPageSize()` and `clampMapLimit()` to `packages/emis-server/src/infra/http.ts` using existing constants; replaced local copies in `modules/objects/queries.ts`, `modules/news/queries.ts`, `modules/map/queries.ts`; `ship-routes/queries.ts` has a different-signature `clampLimit(value, max)` -- left as-is (not duplicated)
+- Residual 3 (mapVesselsQuery fragile params): replaced hardcoded `$1`..`$4` with dynamic `$${values.length}` push-and-reference pattern, matching the style used by `appendBboxConditions` and all other query builders in the module; SQL semantics unchanged
+- fetchDataset: explicitly deferred (platform-level FSD gap, not this wave's scope)
+- Verification: pnpm check 0 errors, pnpm build success, lint:boundaries 3 pre-existing only (fetchDataset FSD)
 
 ## Проблемы и workarounds
 
 - `pnpm lint` not green (pre-existing Prettier drift) — not blocking
-- ESLint `no-restricted-imports` flat config — each scope needs ONE combined block, `replace_all` on first glob misses subsequent globs in array
+- ESLint `no-restricted-imports` flat config — each scope needs ONE combined block
 - `lint-boundaries.mjs` must use temp file (`-o`) for stdout buffer reliability
 - `git add -A` caught `.claude/agent-memory/` and `target` — now in `.gitignore`
+- `export { X } from 'Y'` does NOT bring X into local scope — reviewers may flag this as duplicate import when combined with `import { X } from 'Y'`, but both are needed
 
 ## Заметки для следующей сессии
 
-- **ST-1 through ST-10 all completed** — full plan executed
-- Package naming: `@dashboard-builder/{name}`, workspace:* protocol
-- Current packages (8): platform-core, db, platform-ui, platform-datasets, platform-filters, emis-contracts, emis-server, emis-ui
-- No BI packages created (bi-dashboards, bi-alerts both deferred with justification)
-- MIGRATION shims still in place — ~53 re-export files (code cleanup, not docs scope)
+- H-1, H-2, H-3, H-4a, H-4b, H-5 all done — wave H is complete
 - Pre-existing carry-forward (all deferred, none blocking):
-  - SvelteKit coupling in emis-server (http.ts/audit.ts) — deferred from ST-7
-  - EmisMap.svelte 1224 lines — decomposition candidate
-  - stock-alerts→routes FSD violation
+  - stock-alerts->routes FSD violation
   - fetchDataset FSD gap (shared imports entities)
-  - clampPageSize() duplication in news/objects queries
   - cacheKeyQuery redundancy in fetchDataset
+  - ~53 MIGRATION re-export shims — code removal, not this wave's scope

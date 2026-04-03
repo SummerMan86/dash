@@ -21,8 +21,10 @@ export type ContractVersion = typeof CONTRACT_VERSION;
  */
 export type DatasetId = string;
 
-export type JsonPrimitive = string | number | boolean | null;
-export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
+// Canonical home: @dashboard-builder/platform-core
+// Imported for local use and re-exported for backward compatibility with existing consumers.
+import type { JsonPrimitive, JsonValue } from '@dashboard-builder/platform-core';
+export type { JsonPrimitive, JsonValue };
 
 /**
  * DatasetQuery is the ONLY input format the UI sends to the BFF.

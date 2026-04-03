@@ -32,7 +32,6 @@
 		"@types/pg": "^8.16.0"
 	},
 	"peerDependencies": {
-		"@sveltejs/kit": "^2.0.0",
 		"pg": "^8.0.0"
 	}
 }

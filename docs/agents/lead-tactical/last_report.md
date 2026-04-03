@@ -1,120 +1,95 @@
-# Report: ST-10 — Legacy Docs Cleanup And Archive Normalization
+# H-5: Close Remaining Small Boundary Hardening Gaps — Completion Report
 
-## Статус
-Выполнено
+**Wave:** EMIS Post-Split Hardening And Boundary Cleanup
+**Branch:** `feature/emis-post-split-hardening`
+**Date:** 2026-04-03
 
-## Что сделано
+## Status: DONE
 
-### 1. Canonical doc classification in docs/AGENTS.md
+All three bounded hardening residuals closed. No new boundary violations introduced.
 
-Added explicit classification system with four labels:
-- **canonical** — source of truth for active work, read first
-- **active** — supporting doc, useful but not source of truth
-- **reference** — external pointer, not maintained in this repo
-- **archive** — historical only, not source of truth
+## Residual 1: mapConfig boundary exception in BI route
 
-Restructured sections 2 (Dashboard-builder/Strategy) and 3 (EMIS) into subsections by classification (Canonical / Active / Reference / Archive). Added new section 3a (Agent Workflow) to separate agent docs from EMIS docs.
+**Problem:** `apps/web/src/routes/dashboard/emis/vessel-positions/+page.server.ts` imported `getEmisMapConfig` via the app-local shim `$lib/server/emis/infra/mapConfig` with an eslint-disable comment, instead of the canonical package path.
 
-Added missing `archive/emis/emis_todo_vessel_markers.md` to catalog.
+**Fix:**
+- Switched the BI route to `@dashboard-builder/emis-server/infra/mapConfig`
+- Also normalized 2 EMIS routes that still used the shim: `emis/+page.server.ts`, `emis/pmtiles-spike/+page.server.ts`
+- Deleted the now-unused shim: `apps/web/src/lib/server/emis/infra/mapConfig.ts`
+- Updated `apps/web/src/routes/api/emis/AGENTS.md` to document the shim deletion
 
-### 2. Carry-forward cleanup
+**Canonical access path:** `@dashboard-builder/emis-server/infra/mapConfig`
 
-**emis_working_contract.md** (section 10):
-- Changed stale forward-tense "должен быть resolved до или в ST-4" to past-tense "resolved в ST-4; `pnpm check` green с этого момента"
+## Residual 2: Duplicated clampPageSize()
 
-**README.md** ("Что уже есть"):
-- Added clarification note: "пути указаны концептуально; физически код живёт в `apps/web/src/lib/` и `packages/`"
-- Explicitly marks these as conceptual overview, not filesystem navigation
+**Problem:** `clampPageSize()` was duplicated identically in `modules/objects/queries.ts` and `modules/news/queries.ts`. `clampMapLimit()` was a separate but similar function in `modules/map/queries.ts`.
 
-### 3. Root AGENTS.md reading order fix
+**Fix:**
+- Extracted `clampPageSize()` and `clampMapLimit()` to `packages/emis-server/src/infra/http.ts`, using the existing constants (`EMIS_DEFAULT_LIST_LIMIT`, `EMIS_MAX_LIST_LIMIT`, `EMIS_DEFAULT_MAP_LIMIT`, `EMIS_MAX_MAP_LIMIT`)
+- Replaced local definitions in all 3 query modules with imports from `../../infra/http`
+- `ship-routes/queries.ts` has a different-signature `clampLimit(value, max)` with no default — left as-is (not a duplicate)
 
-- Added `docs/emis_monorepo_target_layout.md` to EMIS starting path (was missing between baseline and working_contract)
-- Now consistent with docs/AGENTS.md and emis_session_bootstrap.md reading orders
+**Behavior change:** None. The extracted functions use the same constants that the inline implementations hardcoded (50/200 for list, 200/500 for map).
 
-### 4. Empty directory cleanup
+## Residual 3: Fragile mapVesselsQuery parameter assembly
 
-- Removed empty `docs/emis/` directory (was a cleanup candidate from pre-migration inventory)
+**Problem:** `mapVesselsQuery` in `modules/map/queries.ts` used hardcoded `$1`, `$2`, `$3`, `$4` for bbox parameters instead of the dynamic push-and-reference pattern (`$${values.length}`) used by all other query functions.
 
-### 5. Navigation coherence verification
+**Fix:** Replaced hardcoded indices with the standard push-and-reference pattern:
+```typescript
+values.push(west);
+const westParam = `$${values.length}`;
+// ... etc.
+```
 
-All cross-references verified:
-- 34 referenced files checked — all exist
-- Root AGENTS.md, docs/AGENTS.md, emis_session_bootstrap.md, emis_working_contract.md reading orders are now consistent
-- No broken references in touched docs
-- Archive docs clearly marked as historical / not source of truth
+**Behavior change:** None. Same SQL, same parameter order, same semantics. Only the index derivation is now position-independent.
 
-## Docs that remain canonical
+## Explicitly Deferred
 
-- `docs/emis_session_bootstrap.md` — EMIS entry point, current state
-- `docs/emis_architecture_baseline.md` — EMIS boundary map
-- `docs/emis_monorepo_target_layout.md` — target layout and migration rules
-- `docs/emis_working_contract.md` — operational rules, placement, DoD
-- `docs/emis_mve_tz_v_2.md` — scope, invariants, acceptance
-- `docs/emis_implementation_spec_v1.md` — implementation decisions
-- `docs/emis_freeze_note.md` — frozen decisions
-- `apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md` — runtime/API conventions
-- `docs/current-project-analysis.md` — platform analysis
-- `docs/strategy/bi_strategy.md` — BI strategy contract
-- `docs/ops/beget_deployment_plan.md` — deployment runbook
-- `docs/agents/workflow.md`, `roles.md`, `templates.md` — agent workflow
-- `docs/emis_monorepo_target_layout.md` — monorepo target layout
-- Local `AGENTS.md` files in route/package directories
+- **fetchDataset boundary gap** (`apps/web/src/lib/shared/api/fetchDataset.ts`): platform-level FSD violation (shared imports entities). Not this wave's scope. Remains as carry-forward.
 
-## Docs archived/reclassified
+## Remaining Boundary Exceptions
 
-- `docs/archive/emis/*` — 4 files, all archive-only (were already in archive, now explicitly classified)
-- `docs/archive/strategy-v1/*` — historical strategy pack (were already in archive, now explicitly classified)
-- `docs/archive/agents/*` — historical agent model (were already in archive, now explicitly classified)
-- Empty `docs/emis/` directory — removed
+- 3 pre-existing violations in `fetchDataset.ts` (carry-forward from before H-1)
+- No new boundary violations
 
-## Docs intentionally left in place
+## Verification
 
-- `docs/emis_architecture_review.md` — classified as **active** (not canonical, but useful for review tasks)
-- `docs/emis_offline_maps_ops.md` — classified as **active** (ops runbook, used when working on offline maps)
-- `docs/emis_next_tasks_2026_03_22.md` — classified as **active** (backlog, used for task planning)
+| Check | Result |
+|---|---|
+| `pnpm check` | 0 errors, 0 warnings |
+| `pnpm build` | Success (SSR + client) |
+| `pnpm lint:boundaries` | 3 pre-existing only (fetchDataset FSD) |
 
-## Explicit exclusions
+## Files Changed
 
-ST-10 did NOT absorb:
-- `P3: Post-Split Architecture Hardening` — remains deferred backlog
-- `fetchDataset.ts` boundary-gap remediation — remains pre-existing FSD gap
-- `widgets/stock-alerts` BI-only debt — remains pre-existing FSD violation
-- `emis-server` decoupling / `EmisMap` decomposition / similar runtime cleanup — remains deferred
-- `// MIGRATION` shim removal — shims remain in place (~53 files), classified as docs inventory only
+- `apps/web/src/routes/dashboard/emis/vessel-positions/+page.server.ts` — switched to canonical package import, removed eslint-disable
+- `apps/web/src/routes/emis/+page.server.ts` — switched to canonical package import
+- `apps/web/src/routes/emis/pmtiles-spike/+page.server.ts` — switched to canonical package import
+- `apps/web/src/lib/server/emis/infra/mapConfig.ts` — DELETED (shim no longer needed)
+- `packages/emis-server/src/infra/http.ts` — added `clampPageSize()` and `clampMapLimit()`
+- `packages/emis-server/src/modules/objects/queries.ts` — replaced local clampPageSize with import
+- `packages/emis-server/src/modules/news/queries.ts` — replaced local clampPageSize with import
+- `packages/emis-server/src/modules/map/queries.ts` — replaced local clampMapLimit with import; refactored mapVesselsQuery bbox params
+- `apps/web/src/routes/api/emis/AGENTS.md` — documented mapConfig shim deletion
+- `docs/agents/lead-tactical/memory.md` — H-5 notes
+- `docs/agents/lead-tactical/last_report.md` — this report
 
-## Проверки
+## Review Gate (run by orchestrator)
 
-No runtime commands needed — this slice touched only docs/navigation/archive surface. No new runtime commands, no package topology changes, no code edits.
+| Reviewer | Verdict | Findings |
+|---|---|---|
+| architecture | OK | INFO: bbox push order inconsistency (non-blocking) |
+| code | OK | INFO: bbox order + missing comment (non-blocking) |
+| security | OK | All params verified correct, no injection risk |
+| docs | request changes | WARNING: plan status stale — **fixed**; INFO: AGENTS.md + RUNTIME_CONTRACT missing new helpers — **fixed** |
 
-## Review Gate
+### Fixes applied
+1. `current_plan.md` — H-5 marked completed, execution order updated, wave marked complete
+2. `packages/emis-server/AGENTS.md` — http.ts description updated with clampPageSize/clampMapLimit
+3. `RUNTIME_CONTRACT.md` — added clampPageSize/clampMapLimit to package-level helpers table
+4. `lead-strategic/memory.md` — H-5 marked completed, wave marked complete
 
-### Вердикты ревьюеров
-- architecture-reviewer: OK — no issues, topology not reopened, classification labels correct
-- docs-reviewer: request changes → fixed
+## Wave Status
 
-### Findings по severity
-
-**CRITICAL:** нет
-
-**WARNING (fixed):**
-- `emis_working_contract.md` §12 Reading Order was missing `emis_mve_tz_v_2.md` — inserted as position 5
-
-**INFO (fixed):**
-- `docs/AGENTS.md` line 72 — status bar path was imprecise, now lists both `emis-map/` and `emis-status-bar/`
-- `emis_working_contract.md` §4 Ownership — was listing old app paths as canonical, now updated to reflect packages as canonical and app paths as compatibility shims
-
-## Ветки
-
-- integration branch: `feature/emis-foundation-stabilization`
-- executed directly as lead-tactical (no worker branch)
-
-## Вопросы к lead-strategic
-
-Нет. ST-10 is a clean docs cleanup pass. All acceptance checklist items are addressed.
-
-### Cleanup candidates that remain deferred after ST-10
-
-- ~53 `// MIGRATION` re-export shims in `apps/web/` — removal is code work, not docs scope
-- `docs/emis_next_tasks_2026_03_22.md` title says "1 April 2026" — will become stale if backlog is updated; no fix needed now
-- Further ops/strategy doc separation if more runbooks or design docs appear
-- Any future completed handoff/wave notes that accidentally land in top-level `docs/`
+H-1 through H-5 all DONE. Wave "EMIS Post-Split Hardening And Boundary Cleanup" is **complete**.

@@ -1,8 +1,8 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 
-import { createEmisNewsSchema, listEmisNewsQuerySchema } from '$entities/emis-news';
-import { resolveEmisWriteContext } from '$lib/server/emis/infra/audit';
-import { EmisError } from '$lib/server/emis/infra/errors';
+import { createEmisNewsSchema, listEmisNewsQuerySchema } from '@dashboard-builder/emis-contracts/emis-news';
+import { resolveEmisWriteContext } from '@dashboard-builder/emis-server/infra/audit';
+import { EmisError } from '@dashboard-builder/emis-server/infra/errors';
 import {
 	EMIS_DEFAULT_LIST_LIMIT,
 	EMIS_MAX_LIST_LIMIT,
@@ -12,8 +12,8 @@ import {
 	parseListParams,
 	parseJsonBody
 } from '$lib/server/emis/infra/http';
-import { listNewsQuery } from '$lib/server/emis/modules/news/queries';
-import { createNewsService } from '$lib/server/emis/modules/news/service';
+import { listNewsQuery } from '@dashboard-builder/emis-server/modules/news/queries';
+import { createNewsService } from '@dashboard-builder/emis-server/modules/news/service';
 
 const NEWS_LIST_SORT = [
 	{ field: 'publishedAt', dir: 'desc' as const },

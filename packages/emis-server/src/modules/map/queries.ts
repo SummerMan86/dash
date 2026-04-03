@@ -12,10 +12,7 @@ import type {
 } from '@dashboard-builder/emis-contracts/emis-map';
 
 import { getDb } from '../../infra/db';
-
-function clampMapLimit(value: number | undefined): number {
-	return Math.max(1, Math.min(500, Math.trunc(value ?? 200)));
-}
+import { clampMapLimit } from '../../infra/http';
 
 function appendBboxConditions(
 	columnName: string,
@@ -270,9 +267,16 @@ export async function mapVesselsQuery(
 	const values: unknown[] = [];
 
 	const [west, south, east, north] = filters.bbox;
-	values.push(west, east, south, north);
-	conditions.push(`last_longitude >= $1 AND last_longitude <= $2`);
-	conditions.push(`last_latitude >= $3 AND last_latitude <= $4`);
+	values.push(west);
+	const westParam = `$${values.length}`;
+	values.push(east);
+	const eastParam = `$${values.length}`;
+	values.push(south);
+	const southParam = `$${values.length}`;
+	values.push(north);
+	const northParam = `$${values.length}`;
+	conditions.push(`last_longitude >= ${westParam} AND last_longitude <= ${eastParam}`);
+	conditions.push(`last_latitude >= ${southParam} AND last_latitude <= ${northParam}`);
 
 	if (filters.q) {
 		values.push(`%${filters.q}%`);

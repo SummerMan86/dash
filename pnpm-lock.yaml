@@ -172,9 +172,6 @@ importers:
       '@dashboard-builder/emis-contracts':
         specifier: workspace:*
         version: link:../emis-contracts
-      '@sveltejs/kit':
-        specifier: ^2.0.0
-        version: 2.49.0(@sveltejs/vite-plugin-svelte@6.2.1(svelte@5.43.14)(vite@7.2.4(@types/node@22.19.1)(jiti@2.6.1)(lightningcss@1.30.2)))(svelte@5.43.14)(vite@7.2.4(@types/node@22.19.1)(jiti@2.6.1)(lightningcss@1.30.2))
       pg:
         specifier: ^8.0.0
         version: 8.16.3
@@ -194,9 +191,6 @@ importers:
       '@dashboard-builder/platform-core':
         specifier: workspace:*
         version: link:../platform-core
-      '@dashboard-builder/platform-datasets':
-        specifier: workspace:*
-        version: link:../platform-datasets
       '@dashboard-builder/platform-ui':
         specifier: workspace:*
         version: link:../platform-ui
@@ -224,6 +218,9 @@ importers:
       '@dashboard-builder/db':
         specifier: workspace:*
         version: link:../db
+      '@dashboard-builder/platform-core':
+        specifier: workspace:*
+        version: link:../platform-core
       pg:
         specifier: ^8.16.3
         version: 8.16.3

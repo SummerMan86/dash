@@ -1,8 +1,8 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 
-import { createEmisObjectSchema, listEmisObjectsQuerySchema } from '$entities/emis-object';
-import { resolveEmisWriteContext } from '$lib/server/emis/infra/audit';
-import { EmisError } from '$lib/server/emis/infra/errors';
+import { createEmisObjectSchema, listEmisObjectsQuerySchema } from '@dashboard-builder/emis-contracts/emis-object';
+import { resolveEmisWriteContext } from '@dashboard-builder/emis-server/infra/audit';
+import { EmisError } from '@dashboard-builder/emis-server/infra/errors';
 import {
 	EMIS_DEFAULT_LIST_LIMIT,
 	EMIS_MAX_LIST_LIMIT,
@@ -12,8 +12,8 @@ import {
 	parseListParams,
 	parseJsonBody
 } from '$lib/server/emis/infra/http';
-import { listObjectsQuery } from '$lib/server/emis/modules/objects/queries';
-import { createObjectService } from '$lib/server/emis/modules/objects/service';
+import { listObjectsQuery } from '@dashboard-builder/emis-server/modules/objects/queries';
+import { createObjectService } from '@dashboard-builder/emis-server/modules/objects/service';
 
 const OBJECTS_LIST_SORT = [
 	{ field: 'name', dir: 'asc' as const },

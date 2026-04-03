@@ -1,14 +1,14 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 
-import { mapNewsQuerySchema } from '$entities/emis-map';
-import { EmisError } from '$lib/server/emis/infra/errors';
+import { mapNewsQuerySchema } from '@dashboard-builder/emis-contracts/emis-map';
+import { EmisError } from '@dashboard-builder/emis-server/infra/errors';
 import {
 	EMIS_DEFAULT_MAP_LIMIT,
 	EMIS_MAX_MAP_LIMIT,
 	handleEmisRoute,
 	parseStrictIntParam
 } from '$lib/server/emis/infra/http';
-import { mapNewsQuery } from '$lib/server/emis/modules/map/queries';
+import { mapNewsQuery } from '@dashboard-builder/emis-server/modules/map/queries';
 
 function parseMapNewsQuery(url: URL) {
 	const parsed = mapNewsQuerySchema.safeParse({
