@@ -96,8 +96,8 @@ Routing layer для dataset definitions:
 ### Postgres
 
 1. Do the same steps 1-2
-2. Add SQL mapping to `DATASETS` in `providers/postgresProvider.ts`
-3. Register in `datasets/compile.ts`
+2. Add SQL mapping to `DATASETS` in `packages/platform-datasets/src/server/providers/postgresProvider.ts` (canonical; `providers/postgresProvider.ts` here is a MIGRATION shim)
+3. Register in `packages/platform-datasets/src/server/compile.ts` (canonical; `datasets/compile.ts` here is a MIGRATION shim)
 4. Route to `postgresProvider` in `routes/api/datasets/[id]/+server.ts`
 
 ## Provider routing

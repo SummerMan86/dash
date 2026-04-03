@@ -35,7 +35,7 @@ Reasons:
 | `apps/web/src/lib/server/datasets/definitions/` | Canonical | App-specific dataset IR definitions |
 | `apps/web/src/lib/server/datasets/compile.ts` | MIGRATION shim | Re-export from `platform-datasets/server` — ST-10 cleanup candidate |
 | `apps/web/src/lib/server/alerts/` | Canonical | App-level server subsystem |
-| `apps/web/src/lib/server/providers/` | Canonical | App-level provider routing (mock/postgres) |
+| `apps/web/src/lib/server/providers/` | Mixed | mockProvider canonical; postgresProvider is MIGRATION shim (canonical in platform-datasets) |
 | `apps/web/src/lib/entities/dataset/index.ts` | MIGRATION shim | Re-export from `platform-datasets` |
 | `apps/web/src/lib/entities/filter/index.ts` | MIGRATION shim | Re-export from `platform-filters` |
 | `apps/web/src/lib/entities/charts/` | MIGRATION shim | Re-export from `platform-ui` |

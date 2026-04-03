@@ -54,22 +54,9 @@
 
 ### `emis-*`
 
-Это новый доменный contract layer для EMIS.
-
-Здесь должны жить:
-
-- input/output types
-- DTO
-- geometry contracts
-- link contracts
-- Zod validation schemas
-
-Здесь не должно быть:
-
-- SQL
-- сервисов
-- Svelte components
-- route-specific logic
+MIGRATION re-exports from `@dashboard-builder/emis-contracts`.
+Canonical code lives in `packages/emis-contracts/`.
+No new code should be added here — use the package directly.
 
 ## Порядок чтения
 

@@ -91,19 +91,16 @@ EMIS-активный контур сейчас находится здесь:
 - `CLAUDE.md` в таких местах оставлять как compatibility-layer для Claude-based агентов.
 - Если в папке пока есть только `CLAUDE.md`, читать его как legacy-local note до миграции в `AGENTS.md`.
 
-## 5. Что выглядит как legacy / placeholders
+## 5. Deleted placeholders (ST-8)
 
-Пока не считать активным рабочим контуром:
+The following empty placeholder directories were deleted in ST-8:
 
-- `apps/web/src/lib/entities/dashboard/`
-- `apps/web/src/lib/entities/widget/`
-- `apps/web/src/lib/features/dashboard-builder/`
-- `apps/web/src/lib/widgets/chart/`
-- `apps/web/src/lib/widgets/dashboard-container/`
-- `apps/web/src/lib/widgets/kpi/`
-- `apps/web/src/lib/widgets/table/`
+- `entities/dashboard/`, `entities/widget/`
+- `features/dashboard-builder/`
+- `widgets/chart/`, `widgets/dashboard-container/`, `widgets/kpi/`, `widgets/table/`
+- `shared/config/`
 
-Их стоит воспринимать как пустые или неактуальные пространства, пока там не появится живой код.
+These paths no longer exist. Do not recreate them without explicit architectural decision.
 
 ## 6. Важный контекст по развитию
 

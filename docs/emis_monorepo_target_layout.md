@@ -63,15 +63,16 @@ dashboard-builder/
 |---|---|---|
 | `apps/web/src/lib/entities/emis-*` | `packages/emis-contracts/` | emis-object, emis-news, emis-link, emis-dictionary, emis-geo, emis-map, emis-ship-route |
 | `apps/web/src/lib/server/emis/*` | `packages/emis-server/` | modules/*, infra/*, queries/*, repositories/*, services/*, sql/* |
-| `apps/web/src/lib/features/emis-*` | `packages/emis-ui/` | emis-manual-entry и будущие bounded EMIS interactions |
-| `apps/web/src/lib/widgets/emis-*` | `packages/emis-ui/` | emis-map, emis-drawer, emis-status-bar |
+| `apps/web/src/lib/widgets/emis-map/`, `emis-status-bar/` | `packages/emis-ui/` | EmisMap, EmisStatusBar (extracted in ST-7) |
+| `apps/web/src/lib/features/emis-manual-entry/` | stays in `apps/web` | depends on `$app/forms` (ST-8 verdict) |
+| `apps/web/src/lib/widgets/emis-drawer/` | stays in `apps/web` | depends on `$widgets/filters` (ST-8 verdict) |
 
 ### Stays in apps/web/
 
 | Current path | Почему остаётся в app |
 |---|---|
 | `apps/web/src/routes/*` (все route trees) | Routes — app-level composition, не package code |
-| `apps/web/src/lib/shared/config/*` | App-specific configuration |
+| ~~`apps/web/src/lib/shared/config/*`~~ | Deleted in ST-8 (was empty) |
 | `apps/web/src/lib/shared/fixtures/*` | Dev/mock data для app runtime |
 | `apps/web/src/lib/features/dashboard-edit/*` | BI editor glue; выносить в package только при доказанном reuse |
 | `apps/web/src/lib/server/alerts/*` | Выносить в `packages/bi-alerts/` только при доказанном reuse |
@@ -79,19 +80,14 @@ dashboard-builder/
 | `apps/web/src/lib/entities/charts/*` | Chart entity, app-level |
 | `apps/web/src/lib/widgets/stock-alerts/*` | Alert UI, stays with alerts |
 
-### Legacy / placeholders (не переезжают)
+### Deleted placeholders (ST-8)
 
-| Current path | Статус |
-|---|---|
-| `apps/web/src/lib/entities/dashboard/` | Placeholder, не активный код |
-| `apps/web/src/lib/entities/widget/` | Placeholder, не активный код |
-| `apps/web/src/lib/features/dashboard-builder/` | Legacy placeholder |
-| `apps/web/src/lib/widgets/chart/` | Placeholder |
-| `apps/web/src/lib/widgets/dashboard-container/` | Placeholder |
-| `apps/web/src/lib/widgets/kpi/` | Placeholder |
-| `apps/web/src/lib/widgets/table/` | Placeholder |
+The following empty placeholder directories were deleted in ST-8 and no longer exist:
 
-Эти зоны не учитываются в migration plan. Если в них появится живой код, placement решается отдельно.
+- `entities/dashboard/`, `entities/widget/`
+- `features/dashboard-builder/`
+- `widgets/chart/`, `widgets/dashboard-container/`, `widgets/kpi/`, `widgets/table/`
+- `shared/config/`
 
 ## 3. Import Direction Rules
 

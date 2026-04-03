@@ -50,7 +50,7 @@ What remains in `lib/` is **app-level composition and glue**:
 - `features/emis-manual-entry/` — EMIS CMS forms (app feature, depends on $app/forms)
 - `server/datasets/definitions/` — app-specific dataset IR definitions
 - `server/alerts/` — alert scheduler + Telegram (app lifecycle, hooks.server.ts)
-- `server/providers/` — mockProvider (fixture dep), postgresProvider routing
+- `server/providers/` — mockProvider (canonical, fixture dep); postgresProvider (MIGRATION shim, canonical in packages/platform-datasets)
 - `server/emis/` — MIGRATION re-exports from emis-server package
 - `shared/api/fetchDataset.ts` — BI data access facade (filter composition)
 - `shared/` — MIGRATION re-exports from platform packages

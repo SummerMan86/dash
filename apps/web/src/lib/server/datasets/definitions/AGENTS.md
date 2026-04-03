@@ -12,6 +12,7 @@
 - `wildberriesProductPeriod.ts`
 - `emisMart.ts`
 - `strategyMart.ts`
+- `paymentAnalytics.ts`
 
 Для strategy важно:
 
