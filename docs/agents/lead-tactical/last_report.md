@@ -31,12 +31,8 @@
 
 ### Verification commands
 - `pnpm check` — svelte-check type/parse verification (now green)
-- `npx eslint src/lib/shared/` — shared boundary enforcement
-- `npx eslint src/lib/entities/` — entities boundary enforcement
-- `npx eslint src/lib/features/` — features boundary enforcement
-- `npx eslint src/lib/widgets/` — widgets boundary enforcement
-- `npx eslint src/routes/api/emis/` — EMIS transport boundary
-- `npx eslint src/routes/dashboard/emis/` — Dashboard EMIS boundary
+- `pnpm lint:boundaries` — **canonical boundary-only verification**: runs ESLint, filters only `no-restricted-imports` violations, no legacy lint noise. Currently shows 3 expected gaps in `fetchDataset.ts` (resolves at ST-6).
+- `pnpm lint` — full lint (not boundary verification, contains legacy Prettier drift)
 
 ### Known non-enforced gaps (explicitly listed)
 1. `src/lib/shared/api/fetchDataset.ts` imports from `$entities/dataset` and `$entities/filter` — **expected**: fetchDataset belongs in `platform-datasets` package (which CAN import entities/dataset). Resolves at ST-6.

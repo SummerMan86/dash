@@ -206,16 +206,33 @@ $widgets  → src/lib/widgets
 4. **Docs travel with code.** Если boundary перемещается, docs/runtime contract обновляются в том же slice.
 5. **Compatibility re-exports temporary only.** Каждый shim помечен и имеет срок удаления.
 
-### Baseline blocker
+### Baseline blocker — resolved
 
-**`src/lib/shared/ui/select/Select.svelte`** — parse error, ломает `pnpm check` и `pnpm emis:smoke`.
+**`src/lib/shared/ui/select/Select.svelte`** — parse error resolved в ST-4.
+`pnpm check` проходит: 0 errors, 0 warnings.
 
-Этот blocker:
-- **должен быть resolved в ST-4** (workspace foundation) или раньше
-- **не маскируется** structural migration
-- **не является EMIS-проблемой** — это shared baseline issue
+### Script locations before and after migration
 
-Пока blocker не resolved, structural migration может начинаться только если slice не зависит от green `pnpm check`.
+| Script group | Before ST-5 (current) | After ST-5 | After ST-6 |
+|---|---|---|---|
+| App scripts (dev, build, check, lint, format) | root `package.json` | `apps/web/package.json` | `apps/web/package.json` |
+| EMIS smoke/ops (emis:smoke, map:*) | root `package.json` + `scripts/` | `apps/web/package.json` + `apps/web/scripts/` | `apps/web/` |
+| DB scripts (db:up/down/reset/seed/snapshot) | root `package.json` + `scripts/db.mjs` | root (unchanged) | `packages/db/` or root |
+| Strategy/intake scripts | root `package.json` + `scripts/` | root (unchanged) | root or archive |
+| Boundary lint (`lint:boundaries`) | root `package.json` + `scripts/lint-boundaries.mjs` | root (workspace-level check) | root (workspace-level check) |
+
+`pnpm lint:boundaries` — canonical boundary-only verification command. Запускает ESLint и фильтрует только `no-restricted-imports` violations, без legacy lint noise.
+
+### Boundary verification
+
+Canonical commands для проверки architecture boundaries:
+
+```bash
+pnpm lint:boundaries    # boundary-only: only no-restricted-imports violations
+pnpm check              # type/parse verification (svelte-check)
+```
+
+`pnpm lint` (full lint) не является boundary verification — содержит legacy formatting drift и не используется как gate.
 
 ### Slice execution order
 
