@@ -1,1 +1,2 @@
-export { default as Select } from './Select.svelte';
+// MIGRATION: remove after platform-ui import migration
+export { Select } from '@dashboard-builder/platform-ui';

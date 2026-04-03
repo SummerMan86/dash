@@ -1,1 +1,2 @@
-export { default as Sparkline } from './Sparkline.svelte';
+// MIGRATION: remove after platform-ui import migration
+export { Sparkline } from '@dashboard-builder/platform-ui';

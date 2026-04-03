@@ -1,1 +1,2 @@
-export { default as Badge } from './Badge.svelte';
+// MIGRATION: remove after platform-ui import migration
+export { Badge } from '@dashboard-builder/platform-ui';

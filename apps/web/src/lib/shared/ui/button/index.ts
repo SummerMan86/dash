@@ -1,1 +1,2 @@
-export { default as Button } from './Button.svelte';
+// MIGRATION: remove after platform-ui import migration
+export { Button } from '@dashboard-builder/platform-ui';

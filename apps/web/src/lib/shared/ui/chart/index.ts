@@ -1,1 +1,2 @@
-export { default as Chart } from './Chart.svelte';
+// MIGRATION: remove after platform-ui import migration
+export { Chart } from '@dashboard-builder/platform-ui';

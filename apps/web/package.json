@@ -1,5 +1,5 @@
 {
-	"name": "web",
+	"name": "@dashboard-builder/web",
 	"private": true,
 	"version": "0.0.1",
 	"type": "module",
@@ -15,6 +15,11 @@
 		"@fontsource/fira-mono": "^5.2.7",
 		"@fontsource/ibm-plex-sans": "^5.2.8",
 		"@protomaps/basemaps": "^5.7.2",
+		"@dashboard-builder/db": "workspace:*",
+		"@dashboard-builder/platform-core": "workspace:*",
+		"@dashboard-builder/platform-datasets": "workspace:*",
+		"@dashboard-builder/platform-filters": "workspace:*",
+		"@dashboard-builder/platform-ui": "workspace:*",
 		"clsx": "^2.1.1",
 		"date-fns": "^4.1.0",
 		"echarts": "^6.0.0",

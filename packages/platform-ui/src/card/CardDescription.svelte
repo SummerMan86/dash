@@ -1,0 +1,22 @@
+<!--
+  CardDescription - Subtitle/description within CardHeader
+-->
+
+<script lang="ts">
+	import { cn } from '../styles/utils';
+	import type { HTMLAttributes } from 'svelte/elements';
+	import type { Snippet } from 'svelte';
+
+	interface Props extends HTMLAttributes<HTMLParagraphElement> {
+		class?: string;
+		children?: Snippet;
+	}
+
+	let { class: className, children, ...rest }: Props = $props();
+</script>
+
+<p class={cn('type-body-sm text-muted-foreground', className)} {...rest}>
+	{#if children}
+		{@render children()}
+	{/if}
+</p>

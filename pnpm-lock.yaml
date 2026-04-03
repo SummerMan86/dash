@@ -41,6 +41,21 @@ importers:
 
   apps/web:
     dependencies:
+      '@dashboard-builder/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@dashboard-builder/platform-core':
+        specifier: workspace:*
+        version: link:../../packages/platform-core
+      '@dashboard-builder/platform-datasets':
+        specifier: workspace:*
+        version: link:../../packages/platform-datasets
+      '@dashboard-builder/platform-filters':
+        specifier: workspace:*
+        version: link:../../packages/platform-filters
+      '@dashboard-builder/platform-ui':
+        specifier: workspace:*
+        version: link:../../packages/platform-ui
       '@fontsource/fira-mono':
         specifier: ^5.2.7
         version: 5.2.7
@@ -123,6 +138,62 @@ importers:
       vite:
         specifier: ^7.1.10
         version: 7.2.4(@types/node@22.19.1)(jiti@2.6.1)(lightningcss@1.30.2)
+
+  packages/db:
+    dependencies:
+      pg:
+        specifier: ^8.16.3
+        version: 8.16.3
+    devDependencies:
+      '@types/pg':
+        specifier: ^8.16.0
+        version: 8.16.0
+
+  packages/platform-core:
+    dependencies:
+      svelte:
+        specifier: ^5.0.0
+        version: 5.43.14
+
+  packages/platform-datasets:
+    dependencies:
+      '@dashboard-builder/db':
+        specifier: workspace:*
+        version: link:../db
+      pg:
+        specifier: ^8.16.3
+        version: 8.16.3
+    devDependencies:
+      '@types/pg':
+        specifier: ^8.16.0
+        version: 8.16.0
+
+  packages/platform-filters:
+    dependencies:
+      '@dashboard-builder/platform-datasets':
+        specifier: workspace:*
+        version: link:../platform-datasets
+      '@dashboard-builder/platform-ui':
+        specifier: workspace:*
+        version: link:../platform-ui
+      svelte:
+        specifier: ^5.0.0
+        version: 5.43.14
+
+  packages/platform-ui:
+    dependencies:
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      echarts:
+        specifier: ^6.0.0
+        version: 6.0.0
+      svelte:
+        specifier: ^5.0.0
+        version: 5.43.14
+      tailwind-merge:
+        specifier: ^2.5.4
+        version: 2.6.0
 
 packages:
 

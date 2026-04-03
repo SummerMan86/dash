@@ -1,5 +1,5 @@
-import type { JsonValue } from '$entities/dataset';
-import { browser } from '$app/environment';
+import type { JsonValue } from '@dashboard-builder/platform-datasets';
+const browser = typeof window !== 'undefined';
 import { onDestroy } from 'svelte';
 import { derived, type Readable } from 'svelte/store';
 
