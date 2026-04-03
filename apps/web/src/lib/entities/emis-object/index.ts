@@ -1,3 +1,4 @@
+// MIGRATION: re-export from @dashboard-builder/emis-contracts
 export type {
 	EmisObjectStatus,
 	EmisObjectSummary,
@@ -6,7 +7,7 @@ export type {
 	ListEmisObjectsInput,
 	CreateEmisObjectInput,
 	UpdateEmisObjectInput
-} from './model/types';
+} from '@dashboard-builder/emis-contracts/emis-object';
 export {
 	listEmisObjectsQuerySchema,
 	createEmisObjectSchema,
@@ -14,4 +15,4 @@ export {
 	type ListEmisObjectsQueryInput,
 	type CreateEmisObjectSchemaInput,
 	type UpdateEmisObjectSchemaInput
-} from './model/schema';
+} from '@dashboard-builder/emis-contracts/emis-object';

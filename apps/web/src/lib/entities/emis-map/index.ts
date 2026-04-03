@@ -1,3 +1,4 @@
+// MIGRATION: re-export from @dashboard-builder/emis-contracts
 export type {
 	EmisMapMode,
 	EmisMapSource,
@@ -26,7 +27,7 @@ export type {
 	EmisMapVesselsQueryInput,
 	EmisPmtilesFileInfo,
 	EmisPmtilesSpikeStatus
-} from './model/types';
+} from '@dashboard-builder/emis-contracts/emis-map';
 export {
 	mapBboxSchema,
 	mapObjectsQuerySchema,
@@ -35,4 +36,4 @@ export {
 	type MapObjectsQuerySchemaInput,
 	type MapNewsQuerySchemaInput,
 	type MapVesselsQuerySchemaInput
-} from './model/schema';
+} from '@dashboard-builder/emis-contracts/emis-map';

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { pointGeometrySchema } from '$entities/emis-geo';
+import { pointGeometrySchema } from '../../emis-geo';
 
 const nullableShortText = z.string().trim().max(255).nullable().optional();
 const nullableLongText = z.string().trim().max(5000).nullable().optional();

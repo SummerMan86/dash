@@ -34,16 +34,19 @@
 
 Здесь живут CRUD, search, map, ship-routes, dictionaries, audit и runtime conventions:
 
-- `apps/web/src/lib/entities/emis-*`
-- `apps/web/src/lib/features/emis-*`
-- `apps/web/src/lib/widgets/emis-*`
-- `apps/web/src/lib/server/emis/*`
-- `apps/web/src/routes/api/emis/*`
-- `apps/web/src/routes/emis/*`
+- `packages/emis-contracts/` — entity types, Zod schemas (canonical)
+- `packages/emis-server/` — server infra + modules (canonical)
+- `packages/emis-ui/` — map widgets, status bar (canonical)
+- `apps/web/src/lib/features/emis-*` — app-local features (depends on `$app/forms`)
+- `apps/web/src/lib/widgets/emis-drawer/` — app-local (depends on `$widgets/filters`)
+- `apps/web/src/routes/api/emis/*` — thin HTTP transport (stays in app)
+- `apps/web/src/routes/emis/*` — UI/workspace (stays in app)
+
+Compatibility shims at old paths (`entities/emis-*`, `server/emis/*`, `widgets/emis-map/`) re-export from packages, marked `// MIGRATION`.
 
 Canonical path:
 
-`routes/api/emis/* -> server/emis/modules/* -> queries/service/repository -> PostgreSQL/PostGIS`
+`routes/api/emis/* -> packages/emis-server/modules/* -> queries/service/repository -> PostgreSQL/PostGIS`
 
 ### EMIS BI / read-side
 
@@ -78,11 +81,12 @@ Canonical path:
 
 ### Куда класть новый код
 
-- новые DTO, Zod schemas, reusable entity contracts: `apps/web/src/lib/entities/emis-*`
-- новые EMIS forms и bounded UI interactions: `apps/web/src/lib/features/emis-*`
-- reusable EMIS widgets: `apps/web/src/lib/widgets/emis-*`
-- server-only infra/helpers: `apps/web/src/lib/server/emis/infra/*`
-- domain backend logic: `apps/web/src/lib/server/emis/modules/*`
+- новые DTO, Zod schemas, reusable entity contracts: `packages/emis-contracts/`
+- server-only infra/helpers: `packages/emis-server/src/infra/*`
+- domain backend logic: `packages/emis-server/src/modules/*`
+- reusable EMIS map/status widgets: `packages/emis-ui/`
+- EMIS forms (depend on `$app/forms`): `apps/web/src/lib/features/emis-*`
+- app-local EMIS widgets (depend on other app widgets): `apps/web/src/lib/widgets/emis-*`
 - HTTP transport: `apps/web/src/routes/api/emis/*`
 - workspace/orchestration UI: `apps/web/src/routes/emis/*`
 - BI pages: `apps/web/src/routes/dashboard/emis/*`
@@ -90,7 +94,7 @@ Canonical path:
 ### Чего не делать
 
 - не писать SQL в `apps/web/src/routes/api/emis/*`
-- не писать HTTP-логику в `apps/web/src/lib/server/emis/modules/*/service.ts`
+- не писать HTTP-логику в `packages/emis-server/src/modules/*/service.ts`
 - не добавлять EMIS CRUD/query logic в dataset compiler без published read-model причины
 - не смешивать `/emis` workspace и `/dashboard/emis` BI ownership
 - не складывать reusable EMIS contracts в route files

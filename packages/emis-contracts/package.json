@@ -1,0 +1,18 @@
+{
+	"name": "@dashboard-builder/emis-contracts",
+	"private": true,
+	"version": "0.0.1",
+	"type": "module",
+	"exports": {
+		"./emis-geo": "./src/emis-geo/index.ts",
+		"./emis-dictionary": "./src/emis-dictionary/index.ts",
+		"./emis-news": "./src/emis-news/index.ts",
+		"./emis-object": "./src/emis-object/index.ts",
+		"./emis-link": "./src/emis-link/index.ts",
+		"./emis-ship-route": "./src/emis-ship-route/index.ts",
+		"./emis-map": "./src/emis-map/index.ts"
+	},
+	"dependencies": {
+		"zod": "^3.23.8"
+	}
+}

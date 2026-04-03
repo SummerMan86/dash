@@ -1,4 +1,4 @@
-import type { EmisPointGeometry } from '$entities/emis-geo';
+import type { EmisPointGeometry } from '../../emis-geo';
 
 export type EmisObjectStatus = 'active' | 'inactive' | 'planned' | 'archived';
 

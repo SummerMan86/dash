@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { formatCompact, formatDate, formatNumber } from '$shared/utils';
+	import { formatCompact, formatDate, formatNumber } from '@dashboard-builder/platform-core';
 
 	interface Props {
 		vesselCount: number;

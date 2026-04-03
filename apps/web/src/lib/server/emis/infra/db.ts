@@ -1,26 +1,3 @@
-import type { Pool, PoolClient } from 'pg';
-
-import { getPgPool } from '$lib/server/db/pg';
-
-export type Queryable = Pool | PoolClient;
-
-export function getDb(client?: PoolClient): Queryable {
-	return client ?? getPgPool();
-}
-
-export async function withTransaction<T>(run: (client: PoolClient) => Promise<T>): Promise<T> {
-	const pool = getPgPool();
-	const client = await pool.connect();
-
-	try {
-		await client.query('BEGIN');
-		const result = await run(client);
-		await client.query('COMMIT');
-		return result;
-	} catch (error) {
-		await client.query('ROLLBACK');
-		throw error;
-	} finally {
-		client.release();
-	}
-}
+// MIGRATION: re-export from @dashboard-builder/emis-server
+export type { Queryable } from '@dashboard-builder/emis-server/infra/db';
+export { getDb, withTransaction } from '@dashboard-builder/emis-server/infra/db';

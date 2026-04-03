@@ -1,23 +1,22 @@
 # EMIS Server Rules
 
-`src/lib/server/emis/` - server-only namespace для EMIS.
+> **Migration note (ST-7):** This directory now contains only `// MIGRATION` re-export shims.
+> Canonical server code lives in `packages/emis-server/`. New code goes there directly.
+> Entity contracts live in `packages/emis-contracts/`.
 
-Это место для:
+`src/lib/server/emis/` - compatibility shim layer for EMIS server imports.
 
-- `infra/`
-- `modules/`
-- transport helpers и server rules
-- `infra/RUNTIME_CONTRACT.md` как source of truth по runtime conventions
+Runtime contract: `infra/RUNTIME_CONTRACT.md` (still here, source of truth for runtime conventions).
 
 ## Правило по архитектуре
 
 EMIS встраивается в текущий проект как адаптированный FSD:
 
-- `entities/emis-*` - контракты, DTO, Zod schemas
-- `server/emis/infra/*` - server infrastructure helpers
-- `server/emis/modules/*` - semantic backend modules
-- `routes/api/emis/*` - тонкий HTTP transport
-- `routes/emis/*` - UI/workspace слой
+- `packages/emis-contracts/` - контракты, DTO, Zod schemas
+- `packages/emis-server/src/infra/*` - server infrastructure helpers
+- `packages/emis-server/src/modules/*` - semantic backend modules
+- `routes/api/emis/*` - тонкий HTTP transport (stays in app)
+- `routes/emis/*` - UI/workspace слой (stays in app)
 
 То есть server-side код не нужно пытаться искусственно запихнуть в `features/` или `widgets/`.
 

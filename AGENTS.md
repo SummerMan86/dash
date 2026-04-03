@@ -62,10 +62,16 @@
 
 EMIS-активный контур сейчас находится здесь:
 
-- `apps/web/src/lib/entities/emis-*`
-- `apps/web/src/lib/server/emis/*`
-- `apps/web/src/routes/api/emis/*`
-- `apps/web/src/routes/emis/*`
+- `packages/emis-contracts/` — entity types, Zod schemas (canonical)
+- `packages/emis-server/` — server infra + modules (canonical)
+- `packages/emis-ui/` — map widgets, status bar (canonical)
+- `apps/web/src/lib/entities/emis-*` — compatibility shims → `packages/emis-contracts`
+- `apps/web/src/lib/server/emis/*` — compatibility shims → `packages/emis-server`
+- `apps/web/src/lib/widgets/emis-map/*` — compatibility shim → `packages/emis-ui`
+- `apps/web/src/lib/widgets/emis-drawer/` — app-local (depends on `$widgets/filters`)
+- `apps/web/src/lib/features/emis-manual-entry/` — app-local (depends on `$app/forms`)
+- `apps/web/src/routes/api/emis/*` — thin HTTP transport (stays in app)
+- `apps/web/src/routes/emis/*` — UI/workspace (stays in app)
 - `apps/web/src/routes/dashboard/emis*`
 - `db/schema_catalog.md`
 - `db/current_schema.sql`
@@ -141,11 +147,14 @@ Canonical target layout для monorepo-style separation:
 
 Для EMIS принимаем адаптированный FSD-подход, совместимый с текущим проектом:
 
-- `apps/web/src/lib/entities/emis-*` - контракты, DTO, базовые доменные типы, Zod schemas
-- `apps/web/src/lib/server/emis/infra/*` - server infrastructure
-- `apps/web/src/lib/server/emis/modules/*` - семантические backend-модули
-- `apps/web/src/routes/api/emis/*` - тонкий HTTP transport
-- `apps/web/src/routes/emis/*` - UI/workspace слой
+- `packages/emis-contracts/` - контракты, DTO, базовые доменные типы, Zod schemas
+- `packages/emis-server/src/infra/*` - server infrastructure
+- `packages/emis-server/src/modules/*` - семантические backend-модули
+- `packages/emis-ui/` - map widgets, status bar
+- `apps/web/src/routes/api/emis/*` - тонкий HTTP transport (stays in app)
+- `apps/web/src/routes/emis/*` - UI/workspace слой (stays in app)
+
+Compatibility shims at old app paths (`apps/web/src/lib/entities/emis-*`, `apps/web/src/lib/server/emis/*`, `apps/web/src/lib/widgets/emis-*`) re-export from packages and are marked `// MIGRATION`. New code goes directly into packages.
 
 Что это означает на практике:
 

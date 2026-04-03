@@ -1,0 +1,38 @@
+{
+	"name": "@dashboard-builder/emis-server",
+	"private": true,
+	"version": "0.0.1",
+	"type": "module",
+	"exports": {
+		"./infra/db": "./src/infra/db.ts",
+		"./infra/errors": "./src/infra/errors.ts",
+		"./infra/http": "./src/infra/http.ts",
+		"./infra/audit": "./src/infra/audit.ts",
+		"./infra/mapConfig": "./src/infra/mapConfig.ts",
+		"./infra/pmtilesBundle": "./src/infra/pmtilesBundle.ts",
+		"./infra/pmtilesSpike": "./src/infra/pmtilesSpike.ts",
+		"./modules/news/queries": "./src/modules/news/queries.ts",
+		"./modules/news/repository": "./src/modules/news/repository.ts",
+		"./modules/news/service": "./src/modules/news/service.ts",
+		"./modules/objects/queries": "./src/modules/objects/queries.ts",
+		"./modules/objects/repository": "./src/modules/objects/repository.ts",
+		"./modules/objects/service": "./src/modules/objects/service.ts",
+		"./modules/links/repository": "./src/modules/links/repository.ts",
+		"./modules/links/service": "./src/modules/links/service.ts",
+		"./modules/dictionaries/repository": "./src/modules/dictionaries/repository.ts",
+		"./modules/map/queries": "./src/modules/map/queries.ts",
+		"./modules/ship-routes/queries": "./src/modules/ship-routes/queries.ts"
+	},
+	"dependencies": {
+		"@dashboard-builder/db": "workspace:*",
+		"@dashboard-builder/emis-contracts": "workspace:*",
+		"zod": "^3.23.8"
+	},
+	"devDependencies": {
+		"@types/pg": "^8.16.0"
+	},
+	"peerDependencies": {
+		"@sveltejs/kit": "^2.0.0",
+		"pg": "^8.0.0"
+	}
+}

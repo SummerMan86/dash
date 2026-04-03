@@ -141,8 +141,8 @@
   Активный backlog, разбитый на MVE closeout и post-MVE tracks.
 - `../apps/web/src/routes/emis/AGENTS.md`
   Workspace route contract для `/emis` UI/orchestration layer.
-- `../apps/web/src/lib/widgets/emis-map/AGENTS.md`
-  Map runtime boundaries, extraction rules и widget ownership.
+- `packages/emis-ui/` (extracted from `widgets/emis-map/`)
+  Map widgets and status bar. Canonical code now in package.
 - `../apps/web/src/routes/dashboard/emis/AGENTS.md`
   BI/read-side route contract для dashboard slices.
 - `archive/emis/*`
@@ -194,7 +194,7 @@
 
 1. Этот bootstrap
 2. `../apps/web/src/routes/emis/AGENTS.md`
-3. `../apps/web/src/lib/widgets/emis-map/AGENTS.md` - если change касается map layer
+3. `packages/emis-ui/` - если change касается map layer
 4. `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
 
 ### Задача по EMIS BI routes

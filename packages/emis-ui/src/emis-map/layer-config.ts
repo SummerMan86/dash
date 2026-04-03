@@ -1,7 +1,7 @@
 import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
 
-import type { EmisMapFeatureRef, EmisMapRouteFeatureRef } from '$entities/emis-map';
-import { resolveCssColorVar } from '$shared/styles/tokens';
+import type { EmisMapFeatureRef, EmisMapRouteFeatureRef } from '@dashboard-builder/emis-contracts/emis-map';
+import { resolveCssColorVar } from '@dashboard-builder/platform-ui';
 
 export const EMIS_MAP_SOURCE_IDS = {
 	objects: 'emis-map-objects-source',

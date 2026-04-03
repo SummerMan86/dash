@@ -3,7 +3,7 @@ import type {
 	EmisMapVesselFeatureProperties,
 	EmisMapSelectedFeature,
 	EmisMapSelectedRouteFeature
-} from '$entities/emis-map';
+} from '@dashboard-builder/emis-contracts/emis-map';
 
 const popupDateFormatter = new Intl.DateTimeFormat('ru-RU', {
 	dateStyle: 'medium',

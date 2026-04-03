@@ -83,4 +83,4 @@
 3. `../../../docs/agents/templates.md`
 4. `../../../docs/emis_architecture_review.md`
 5. `../../../src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
-6. `../../../src/lib/widgets/emis-map/AGENTS.md` - если change касается map runtime
+6. `packages/emis-ui/` - если change касается map runtime (extracted from widgets/emis-map)

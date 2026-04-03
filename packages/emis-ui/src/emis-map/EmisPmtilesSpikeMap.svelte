@@ -3,7 +3,7 @@
 	import maplibregl from 'maplibre-gl';
 	import 'maplibre-gl/dist/maplibre-gl.css';
 
-	import { cn } from '$shared/styles/utils';
+	import { cn } from '@dashboard-builder/platform-ui';
 	import {
 		EMPTY_FEATURE_COLLECTION,
 		ensureEmisOverlayLayers,

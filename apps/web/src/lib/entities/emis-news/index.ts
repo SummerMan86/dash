@@ -1,3 +1,4 @@
+// MIGRATION: re-export from @dashboard-builder/emis-contracts
 export type {
 	EmisNewsSummary,
 	EmisNewsRelatedObject,
@@ -5,7 +6,7 @@ export type {
 	ListEmisNewsInput,
 	CreateEmisNewsInput,
 	UpdateEmisNewsInput
-} from './model/types';
+} from '@dashboard-builder/emis-contracts/emis-news';
 export {
 	listEmisNewsQuerySchema,
 	createEmisNewsSchema,
@@ -13,4 +14,4 @@ export {
 	type ListEmisNewsQueryInput,
 	type CreateEmisNewsSchemaInput,
 	type UpdateEmisNewsSchemaInput
-} from './model/schema';
+} from '@dashboard-builder/emis-contracts/emis-news';

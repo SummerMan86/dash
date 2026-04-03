@@ -1,2 +1,2 @@
-export { default as EmisMap } from './EmisMap.svelte';
-export { default as EmisPmtilesSpikeMap } from './EmisPmtilesSpikeMap.svelte';
+// MIGRATION: re-export from @dashboard-builder/emis-ui
+export { EmisMap, EmisPmtilesSpikeMap } from '@dashboard-builder/emis-ui/emis-map';

@@ -15,9 +15,9 @@
 		EmisMapRouteFeatureRef,
 		EmisMapSelectedFeature,
 		EmisMapSelectedRouteFeature
-	} from '$entities/emis-map';
-	import type { JsonValue } from '$entities/dataset';
-	import { cn } from '$shared/styles/utils';
+	} from '@dashboard-builder/emis-contracts/emis-map';
+	import type { JsonValue } from '@dashboard-builder/platform-datasets';
+	import { cn } from '@dashboard-builder/platform-ui';
 	import {
 		EMPTY_FEATURE_COLLECTION,
 		EMPTY_LINE_FEATURE_COLLECTION,

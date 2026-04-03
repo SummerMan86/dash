@@ -55,7 +55,7 @@
 | `agents/worker/instructions.md`                    | Claude worker instructions                    | как выполнять задачи, self-check, handoff                             |
 | `agents/reviewer-*/instructions.md`                | reviewer role instructions                    | checks, output format, scope для каждого ревьюера                     |
 | `../apps/web/src/routes/emis/AGENTS.md`                     | EMIS workspace route contract                 | что остается в `/emis` route layer и что выносится из workspace       |
-| `../apps/web/src/lib/widgets/emis-map/AGENTS.md`            | EMIS map runtime contract                     | map runtime boundaries, extraction rules и PMTiles/widget ownership   |
+| *(extracted to `packages/emis-ui/`)*                        | EMIS map runtime (was AGENTS.md)              | map widgets now live in `packages/emis-ui/src/emis-map/`              |
 | `../apps/web/src/routes/dashboard/emis/AGENTS.md`           | EMIS BI routes contract                       | границы BI route layer, dataset path и extraction rules               |
 | `archive/emis/emis_vessel_current_positions_handoff_plan.md` | archived task handoff              | completed slice `layer=vessels` / current positions in `/emis`        |
 | `archive/emis/emis_handoff_2026_03_17.md`          | archived EMIS snapshot                        | историческое состояние репозитория на 17 марта 2026                   |
@@ -99,7 +99,7 @@
 - `agents/roles.md` - если нужны роли агентов
 - `agents/templates.md` - если нужны шаблоны коммуникации между агентами
 - `../apps/web/src/routes/emis/AGENTS.md` - если работа про `/emis` workspace layer
-- `../apps/web/src/lib/widgets/emis-map/AGENTS.md` - если работа про map runtime
+- `packages/emis-ui/` - если работа про map runtime (extracted from widgets/emis-map)
 - `../apps/web/src/routes/dashboard/emis/AGENTS.md` - если работа про BI/dashboard routes
 - `archive/emis/emis_vessel_current_positions_handoff_plan.md` - если нужен historical handoff по vessel current positions slice
 - `archive/emis/*`, `archive/agents/*` и `archive/strategy-v1/*` - только если нужен historical context
