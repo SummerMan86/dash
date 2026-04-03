@@ -5,28 +5,31 @@
 
 ## Решения и контекст
 
-### ST-2 + ST-3 (2026-04-03)
-- Выполнены как один docs-only slice (без workers, lead-tactical напрямую)
-- Создан `docs/emis_monorepo_target_layout.md` — canonical target layout
-- Обновлены: `emis_architecture_baseline.md`, `emis_working_contract.md`, `AGENTS.md`, `docs/AGENTS.md`
-- Integration branch: `feature/emis-foundation-stabilization` (не `feature/emis-monorepo-readiness` как в плане — branch name менялся)
-- Review Gate: docs-reviewer + architecture-reviewer (по плану для ST-1..ST-4)
+### ST-1 + ST-2 + ST-3 (2026-04-03)
+- Выполнены как docs-only slices, lead-tactical напрямую
+- Коммит: `29ad37c` (ST-1+ST-2+ST-3), `e74993f` (platform-core split follow-up)
+- 10 target packages: platform-core, platform-ui, platform-datasets, platform-filters, db, emis-contracts, emis-server, emis-ui, bi-alerts (conditional), bi-dashboards (conditional)
 
-### Ключевые решения по layout
-- 9 target packages: platform-ui, platform-datasets, platform-filters, db, emis-contracts, emis-server, emis-ui, bi-alerts (conditional), bi-dashboards (conditional)
-- `bi-alerts` и `bi-dashboards` — создаются только при доказанном reuse pressure
-- Routes всегда остаются в `apps/web/`
-- Legacy placeholders не участвуют в migration plan
-- Select.svelte baseline blocker явно зафиксирован как prerequisite для ST-4
+### ST-4 (2026-04-03)
+- Workspace foundation + baseline cleanup, lead-tactical напрямую
+- Select.svelte baseline blocker — resolved (garbled template + unescaped SVG quotes)
+- pnpm-workspace.yaml — workspace globs added
+- package.json — scripts annotated with migration destinations
+- eslint.config.js — 6 architecture boundary rule blocks
+- Known gaps documented: fetchDataset.ts (resolves at ST-6), mapConfig (resolves at extraction)
+- pnpm check: 0 errors, 0 warnings
+
+### Integration branch
+- `feature/emis-foundation-stabilization` (не `feature/emis-monorepo-readiness` как в исходном плане)
 
 ## Проблемы и workarounds
 
-- `emis_architecture_baseline.md` и `emis_working_contract.md` — untracked files (созданы в ST-1, ещё не закоммичены)
-- Все изменения ветки ещё unstaged/uncommitted — нужен коммит после Review Gate
+- `pnpm lint` not green (pre-existing Prettier drift) — not introduced by our work, not blocking
+- ESLint `no-restricted-imports` override semantics in flat config — each file scope needs ONE combined block
 
 ## Заметки для следующей сессии
 
-- Следующий шаг: ST-4 (Workspace Foundation + Baseline Cleanup Plan)
-- ST-4 потребует: pnpm-workspace.yaml, package.json, docs — и начнёт implementation planning
-- Select.svelte blocker должен быть resolved в ST-4 или раньше
-- Workers в tmux — начиная с ST-5 (app extraction)
+- Следующий шаг: ST-5 (Extract Current App Into apps/*)
+- ST-5 — первый physical move, нужен worker в tmux
+- Workers в tmux начинаются с ST-5
+- Все prerequisite для ST-5 закрыты: pnpm check green, workspace globs ready, boundary lint active

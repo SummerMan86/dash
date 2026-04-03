@@ -86,7 +86,7 @@
     - when a move requires docs/runtime contract update
 
 ### ST-4: Prepare Workspace Foundation And Baseline Cleanup Plan
-- scope: `pnpm-workspace.yaml`, root `package.json`, root docs for commands/bootstrap, optional new migration doc
+- scope: `pnpm-workspace.yaml`, root `package.json`, `eslint.config.js`, root docs for commands/bootstrap, optional new migration doc
 - depends on: ST-1, ST-2, ST-3
 - размер: M
 - заметки:
@@ -95,10 +95,52 @@
     - workspace package globs
     - root scripts vs app-local scripts
     - where DB scripts and smoke scripts live
+    - how architecture boundary enforcement is checked automatically during migration
   - mandatory part of this slice:
     - explicitly include current shared baseline blocker in plan
     - current parse/type issues must not be buried under structural migration
+    - add initial architecture lint baseline for current repo structure, preferably via pragmatic ESLint import restrictions
+    - guardrails must cover at least:
+      - FSD layer direction (`shared -> entities/features/widgets/routes`, `entities -> features/widgets/routes`, `features -> widgets/routes`)
+      - client-side prohibition on `$lib/server/*` imports
+      - EMIS transport/server boundary (`routes/api/emis/*` stays transport-only)
+      - no direct `/dashboard/emis/*` dependency on EMIS operational server code
+    - do not overbuild the first guardrail layer:
+      - start with pragmatic ESLint restrictions
+      - stronger package-level enforcement follows after `apps/*` and `packages/*` extraction
   - if runtime edits start here, keep them minimal and boring
+
+#### ST-4 Acceptance Checklist
+- workspace foundation:
+  - `pnpm-workspace.yaml` describes target workspace globs for future `apps/*` and `packages/*`
+  - root `package.json` explicitly separates root orchestration scripts from app-local scripts that should later live under `apps/web`
+  - docs explicitly state where DB scripts and smoke scripts live before and after ST-5
+- baseline blocker:
+  - `Select.svelte` parse/type baseline blocker is not hand-waved away
+  - report must state either:
+    - blocker resolved in ST-4
+    - or blocker is an explicit gate that must be resolved before the next physical move slice
+- architecture lint baseline:
+  - `eslint.config.js` contains initial import-boundary guardrails for the current repo structure
+  - minimum guardrails cover:
+    - `shared` must not import from `entities`, `features`, `widgets`, `routes`
+    - `entities` must not import from `features`, `widgets`, `routes`
+    - `features` must not import from `widgets`, `routes`
+    - client-side code must not import from `$lib/server/*`
+    - `routes/api/emis/*` must not import UI/client code
+    - `routes/dashboard/emis/*` must not import EMIS operational server modules directly
+  - implementation should stay pragmatic:
+    - prefer `no-restricted-imports` / similar ESLint restrictions first
+    - do not introduce heavy dependency tooling unless the simple baseline proves insufficient
+- verification:
+  - report explicitly states which lint/check commands now verify boundary enforcement
+  - any temporary non-enforced gaps are listed explicitly, not hidden behind “follow-up later”
+- handoff readiness:
+  - `last_report.md` must separately state:
+    - what closed workspace foundation
+    - what closed architecture lint baseline
+    - what risks remain before ST-5
+    - why ST-5 is now safe to start
 
 ### ST-5: Extract Current App Into `apps/*` Without Behavior Change
 - scope: app root config and source placement; likely `src/*`, `static/*`, `svelte.config.js`, `vite.config.ts`, `tsconfig.json`, app package manifest(s), bootstrap scripts/docs
@@ -261,17 +303,18 @@
    - `feature/emis-monorepo-readiness`
 4. Execute ST-1, ST-2, ST-3, ST-4 before spawning implementation workers.
 5. Do not start physical moves while topology/ownership rules remain ambiguous.
-6. Before each worker task, explicitly state:
+6. Do not start ST-5 until ST-4 explicitly defines the initial automated architecture guardrails.
+7. Before each worker task, explicitly state:
    - owned files/directories
    - forbidden directories
    - which checkpoints/commits are already merged into integration branch
-7. After each worker handoff:
+8. After each worker handoff:
    - review placement and dependency direction first
    - merge into integration branch
    - only then hand off the next dependent structural slice
-8. Review Gate runs on integrated diff, not on prose summary.
-9. If migration starts to look like a big-bang rewrite, stop and re-slice.
-10. Execute docs cleanup only after the new canonical docs and paths are already confirmed.
+9. Review Gate runs on integrated diff, not on prose summary.
+10. If migration starts to look like a big-bang rewrite, stop and re-slice.
+11. Execute docs cleanup only after the new canonical docs and paths are already confirmed.
 
 ## Worker Task Drafts
 
@@ -446,6 +489,9 @@
 - EMIS operational/server path remains:
   `routes/api/emis/* -> server/emis/modules/* -> queries/service/repository -> PostgreSQL/PostGIS`
 - Shared packages must stay boring and minimal; no “god package”.
+- Boundary rules should be enforced twice over time:
+  - first by pragmatic ESLint restrictions on current structure
+  - later by package boundaries / exports after extraction
 - Docs cleanup is a separate discipline slice after topology stabilization, not a side effect of random feature work.
 
 ## Ограничения
@@ -454,6 +500,7 @@
 - Не смешивать monorepo migration с feature expansion EMIS.
 - Не смешивать legacy docs cleanup с runtime refactor в одном slice.
 - Не маскировать baseline runtime problems структурными move-коммитами.
+- Не откладывать automated boundary enforcement до конца migration; первый guardrail layer должен появиться до ST-5.
 - `routes/api/emis/*` остаются transport-only.
 - EMIS operational logic не уходит в dataset compiler.
 - Runtime/docs contracts должны сохранять discoverability после move.
@@ -463,7 +510,6 @@
 - ST-1 to ST-4:
   - `docs-reviewer`
   - `architecture-reviewer`
-- ST-5 to ST-9:
 - ST-5 to ST-9:
   - `architecture-reviewer`
   - `docs-reviewer`
@@ -491,6 +537,7 @@
 - Repo stops being cognitively “one large SvelteKit app with everything mixed by proximity”.
 - EMIS gets clearer ownership and shorter reading path in new dialogs.
 - Shared foundation becomes explicit package-level architecture instead of implicit `src/lib/*` overlap.
+- Migration gets an early automated boundary-check layer instead of relying only on review discipline.
 - BI/dashboard and EMIS can evolve independently without immediate deploy split.
 - Future `apps/emis` or `apps/bi` split becomes feasible with bounded follow-up work, not a repo rewrite.
 - Active docs tree becomes shorter and less misleading for new sessions; historical materials stay discoverable but stop polluting the primary context.

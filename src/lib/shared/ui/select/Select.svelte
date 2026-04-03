@@ -30,14 +30,10 @@
 		'focus-glow',
 		'disabled:cursor-not-allowed disabled:opacity-50',
 		'transition-[border-color,box-shadow] duration-[var(--transition-fast)] ease-[var(--ease-standard)]',
-		'bg-[url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='currentColor' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")] appearance-none bg-size-[16px_16px] bg-position-[right_0.5rem_center] bg-no-repeat pr-10',
+		"bg-[url(\"data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2716%27 height=%2716%27 fill=%27none%27 stroke=%27currentColor%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%272%27 viewBox=%270 0 24 24%27%3E%3Cpath d=%27m6 9 6 6 6-6%27/%3E%3C/svg%3E\")] appearance-none bg-size-[16px_16px] bg-position-[right_0.5rem_center] bg-no-repeat pr-10",
 		className
 	)}
 	{...rest}
 >
-	{#if}
-	{...en}
-}
->
-	{#if childre}{@render /select>}{/if}
+	{#if children}{@render children()}{/if}
 </select>

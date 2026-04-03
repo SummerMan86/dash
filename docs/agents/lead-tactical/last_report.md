@@ -1,60 +1,105 @@
-# Report: ST-2 + ST-3 — Canonical Layout And Migration Rules
+# Report: ST-4 — Workspace Foundation And Baseline Cleanup
 
 ## Статус
 Выполнено
 
 ## Что сделано
-- ST-2 (Define Canonical Repository Layout And Package Ownership): выполнено
-- ST-3 (Define Migration Rules, Import Boundaries And Alias Policy): выполнено
-- Объединены в один docs-only slice, выполнены lead-tactical напрямую (без workers)
 
-### Deliverables
-- Новый `docs/emis_monorepo_target_layout.md` — canonical reference:
-  - target layout: `apps/web` + 10 packages (platform-core, platform-ui, platform-datasets, platform-filters, db, emis-contracts, emis-server, emis-ui, bi-alerts, bi-dashboards)
-  - маппинг всех текущих active zones → target home
-  - dependency graph и import direction rules (6 non-negotiable boundaries)
-  - alias policy с removal timeline
-  - migration policy: no big-bang, bounded slices, baseline blocker (Select.svelte)
-- Обновлены cross-references в 5 существующих docs:
-  - `emis_architecture_baseline.md` — section 8 (Target Layout reference), reading order
-  - `emis_working_contract.md` — section 10 (Migration Discipline), reading order
-  - `emis_session_bootstrap.md` — section 1, 4, 5 (canonical start, doc map, reading order)
-  - `AGENTS.md` — section 6 (Target layout subsection)
-  - `docs/AGENTS.md` — catalog table, reading order
+### Workspace foundation
+- `pnpm-workspace.yaml`: added `packages/*` and `apps/*` workspace globs (alongside existing `onlyBuiltDependencies`)
+- `package.json`: scripts reorganized into annotated groups with migration notes:
+  - **App-local** (dev, build, check, lint, format) → move to `apps/web/package.json` in ST-5
+  - **EMIS smoke/ops** (emis:smoke, map:*) → move to `apps/web` in ST-5
+  - **DB scripts** (db:up/down/reset/seed/snapshot) → stay at root or move to `packages/db` in ST-6
+  - **Strategy/intake** → stay at root or archive
+
+### Baseline blocker — resolved
+- `src/lib/shared/ui/select/Select.svelte`: fixed two issues:
+  1. Garbled template (lines 38-43): restored proper `{#if children}{@render children()}{/if}`
+  2. Unescaped single quotes in SVG data URL: URL-encoded as `%27`
+- **`pnpm check` now passes: 0 errors, 0 warnings**
+
+### Architecture lint baseline
+- `eslint.config.js`: added 6 `no-restricted-imports` blocks covering:
+  1. **shared** → no entities, features, widgets, server (FSD + client isolation)
+  2. **entities** → no features, widgets, server (FSD + client isolation)
+  3. **features** → no widgets, server (FSD + client isolation)
+  4. **widgets** → no server (client isolation)
+  5. **routes/api/emis** → no UI/client code (transport-only)
+  6. **routes/dashboard/emis** → no EMIS operational server modules (dataset path only)
+- Each file scope has ONE combined `no-restricted-imports` block (ESLint flat config override semantics)
+
+### Verification commands
+- `pnpm check` — svelte-check type/parse verification (now green)
+- `npx eslint src/lib/shared/` — shared boundary enforcement
+- `npx eslint src/lib/entities/` — entities boundary enforcement
+- `npx eslint src/lib/features/` — features boundary enforcement
+- `npx eslint src/lib/widgets/` — widgets boundary enforcement
+- `npx eslint src/routes/api/emis/` — EMIS transport boundary
+- `npx eslint src/routes/dashboard/emis/` — Dashboard EMIS boundary
+
+### Known non-enforced gaps (explicitly listed)
+1. `src/lib/shared/api/fetchDataset.ts` imports from `$entities/dataset` and `$entities/filter` — **expected**: fetchDataset belongs in `platform-datasets` package (which CAN import entities/dataset). Resolves at ST-6.
+2. `src/routes/dashboard/emis/vessel-positions/+page.server.ts` imports `$lib/server/emis/infra/mapConfig` — **expected**: mapConfig is shared map infrastructure. Resolves when map config extracts to platform or emis-contracts.
 
 ## Review Gate
 
 ### Findings по severity
 
-**CRITICAL** (блокирует merge):
-- нет
+**CRITICAL** (исправлено):
+- code-reviewer: `.svelte.ts`/`.svelte.js` не покрыты boundary rules — добавлены во все 6 blocks
+- architecture-reviewer: `dashboard/emis` rule ловит `+page.server.ts` без suppress — добавлен inline eslint-disable для known gap (mapConfig)
 
-**WARNING** (исправлено):
-- docs-reviewer: `emis_session_bootstrap.md` не содержал ссылку на новый doc — добавлено в section 1, 4, 5
-- architecture-reviewer: dependency diagram показывал `emis-ui` + `emis-server` в одном боксе — разделены как peer nodes
+**WARNING** (исправлено / отклонено):
+- code-reviewer: EMIS API route rule только для EMIS UI, не для всех — расширено на все `$features/*`/`$widgets/*`
+- code-reviewer: `_comment:*` script keys non-standard — принято как convention (readability > clean completions)
+- code-reviewer: alias resolution note — добавлен inline comment
+- architecture-reviewer: добавить `$lib/server/*` restriction для `routes/api/emis` — **отклонено**: canonical EMIS path `routes/api/emis/* → server/emis/modules/*`, API routes ДОЛЖНЫ импортировать из server
 
 **INFO** (отмечено):
-- docs-reviewer: `current-project-analysis.md` был outlier в reading order нового doc — убрано
-- architecture-reviewer: `utils` в `platform-ui` — mild naming mismatch, acceptable as-is
-- architecture-reviewer: `platform-filters` ↔ `platform-datasets` conditional dependency — уточнено в таблице
+- architecture-reviewer: relative imports (`../../entities/`) могут обойти boundary rules — known ESLint limitation, deferrable
+- architecture-reviewer: workspace globs reference non-existent dirs — expected, activates at ST-5
+- docs-reviewer: DB/smoke script locations not explicit enough — добавлено в report
 
 ### Вердикты ревьюеров
-- architecture-reviewer: OK
-- docs-reviewer: request changes → исправлено → OK
-- security-reviewer: не запускался (docs-only)
-- code-reviewer: не запускался (docs-only)
-- ui-reviewer: не запускался (docs-only)
+- architecture-reviewer: request changes → исправлено → OK
+- docs-reviewer: OK
+- code-reviewer: request changes → исправлено → OK
+- security-reviewer: не запускался (minimal runtime change)
+- ui-reviewer: не запускался (no behavior change)
 
 ## Ветки
 - integration branch: `feature/emis-foundation-stabilization`
 - worker branches merged: нет (lead-tactical напрямую)
 - review diff: `git diff main..feature/emis-foundation-stabilization`
 
-## Готовность
-Готово к merge после коммита. ST-4 unblocked.
+## Handoff readiness
 
-## Post-commit follow-up
-- Split `platform-ui` → `platform-core` + `platform-ui`: generic utils/helpers отделены от UI primitives. Обновлены target layout, zone mapping, dependency graph и rules table.
+### What closed workspace foundation
+- `pnpm-workspace.yaml` has target globs
+- `package.json` scripts annotated with migration destinations
+- Script locations before and after ST-5:
+  - **App scripts** (dev, build, check, lint): currently at root, move to `apps/web/package.json` in ST-5
+  - **EMIS smoke/ops scripts**: currently at root, move to `apps/web` in ST-5
+  - **DB scripts** (db:up/down/reset/seed/snapshot): stay at root through ST-5, move to `packages/db` no earlier than ST-6
+  - **Strategy/intake scripts**: stay at root or archive
+
+### What closed architecture lint baseline
+- ESLint flat config with 6 boundary rule blocks
+- Covers all required guardrails from ST-4 acceptance checklist
+- 2 known gaps explicitly documented, both resolve during package extraction
+
+### What risks remain before ST-5
+- Pre-existing `pnpm lint` drift (Prettier formatting) — not introduced by ST-4, not blocking
+- Known boundary gaps (2) are expected and resolve at extraction time
+- No runtime behavior was changed beyond Select.svelte template fix
+
+### Why ST-5 is now safe to start
+1. `pnpm check` is green (baseline blocker resolved)
+2. Workspace globs ready for `apps/*` and `packages/*`
+3. Script migration destinations annotated
+4. Architecture boundary lint catches violations during moves
+5. All known gaps are documented, not hidden
 
 ## Вопросы к lead-strategic
 - нет
