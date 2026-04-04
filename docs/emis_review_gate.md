@@ -1,4 +1,4 @@
-# EMIS Architecture Review
+# EMIS Review Gate
 
 Короткий approve checklist для `lead-tactical`, `architecture-reviewer` и `architecture-steward` по EMIS.
 

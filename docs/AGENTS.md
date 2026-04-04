@@ -82,7 +82,7 @@ Repo-wide architecture contract живёт в [architecture.md](./architecture.m
 |----------|---------|---------------------|
 | `emis_monorepo_target_layout.md` | target layout и migration policy | future package layout, import direction rules, alias policy; не current-state ownership map |
 | `emis_freeze_note.md` | frozen decisions и conventions | что не нужно переоткрывать без причины; не current ownership map |
-| `emis_architecture_review.md` | EMIS architecture approve checklist | lifecycle review, mandatory approve cases, approve checklist |
+| `emis_review_gate.md` | EMIS review gate | lifecycle review, mandatory approve cases, approve checklist |
 | `emis_offline_maps_ops.md` | offline maps ops-runbook | эксплуатация MapTiler/PMTiles и production caveats |
 | `emis_next_tasks_2026_03_22.md` | backlog | remaining tasks и polish stack |
 
@@ -153,7 +153,7 @@ Repo-wide architecture contract живёт в [architecture.md](./architecture.m
 - `emis_read_models_contract.md` - если задача про BI/read-models/datasets/contracts
 - `emis_monorepo_target_layout.md` - если задача про structural migration, import rules или alias policy
 - `emis_freeze_note.md` - если нужно понять, какие решения не нужно переоткрывать
-- `emis_architecture_review.md` - если нужен approve checklist или review verdict
+- `emis_review_gate.md` - если нужен approve checklist или review verdict
 - `emis_offline_maps_ops.md` - если работа про offline maps или PMTiles
 - `emis_next_tasks_2026_03_22.md` - если нужен backlog
 - `archive/emis/emis_implementation_reference_v1.md` - если нужен historical rollout context или retained implementation rationale

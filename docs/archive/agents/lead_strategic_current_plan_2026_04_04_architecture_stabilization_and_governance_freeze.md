@@ -159,7 +159,7 @@
   - `docs/agents/architecture-steward/*`
   - `docs/agents/baseline-governor/instructions.md`
   - adjacent active role instructions if minimal package-era alignment is required
-  - `docs/emis_architecture_review.md`
+  - `docs/emis_review_gate.md`
   - `docs/emis_known_exceptions.md`
   - `docs/AGENTS.md`
   - new role docs if the chosen model requires them
