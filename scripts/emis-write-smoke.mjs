@@ -866,6 +866,92 @@ async function smokeObjectFlow(baseUrl, refs) {
 }
 
 // ---------------------------------------------------------------------------
+// Write-policy negative checks
+//
+// These verify that assertWriteContext() enforces the EMIS_WRITE_POLICY mode.
+//
+// In strict mode (EMIS_WRITE_POLICY=strict, set on the server):
+//   - POST without actor header → 403 WRITE_NOT_ALLOWED
+//
+// In permissive mode (default):
+//   - POST without actor header → 201 (auto-default actor, backward-compatible)
+//
+// The check adapts its assertions based on the detected server policy mode.
+// To run a strict-mode negative test, start the server with
+// EMIS_WRITE_POLICY=strict or pass the env var before the smoke script:
+//
+//   EMIS_WRITE_POLICY=strict pnpm emis:write-smoke
+// ---------------------------------------------------------------------------
+
+/**
+ * Probes the server's write-policy mode by sending a POST without actor headers.
+ * Returns the server's response status and body so the caller can assert expectations.
+ */
+async function probeWritePolicyMode(baseUrl, refs) {
+	const noActorHeaders = {
+		'content-type': 'application/json',
+		accept: 'application/json'
+		// deliberately no x-emis-actor-id or x-actor-id
+	};
+
+	const { response, data } = await fetchJson(baseUrl, '/api/emis/objects', {
+		method: 'POST',
+		headers: noActorHeaders,
+		body: JSON.stringify(buildObjectPayload(RUN_ID + '-policy-probe', refs.objectTypeId))
+	});
+
+	return { response, data };
+}
+
+/**
+ * Negative smoke: verifies write-policy enforcement for the current server mode.
+ *
+ * When EMIS_WRITE_POLICY=strict (set on the server):
+ *   - Expects 403 with code WRITE_NOT_ALLOWED
+ *   - No entity is created, no cleanup needed
+ *
+ * When EMIS_WRITE_POLICY is unset or permissive (default):
+ *   - Expects 201 (auto-default actor, backward-compatible)
+ *   - Cleans up the created entity
+ */
+async function smokeWritePolicyCheck(baseUrl, refs) {
+	const label = 'write-policy';
+	const policyMode = process.env.EMIS_WRITE_POLICY ?? 'permissive';
+	const isStrict = policyMode === 'strict';
+
+	const { response, data } = await probeWritePolicyMode(baseUrl, refs);
+
+	if (isStrict) {
+		// Strict mode: server must reject with 403 WRITE_NOT_ALLOWED
+		assertStatus(response, 403, `${label}: strict mode must reject write without actor`);
+		assert(
+			data?.code === 'WRITE_NOT_ALLOWED',
+			`${label}: strict response code must be 'WRITE_NOT_ALLOWED', got '${data?.code}'`
+		);
+		assert(
+			typeof data?.error === 'string' && data.error.length > 0,
+			`${label}: strict response must include error message`
+		);
+		return { mode: 'strict', status: 403, code: data.code };
+	}
+
+	// Permissive mode: server must accept with 201 (auto-default actor)
+	assertStatus(response, 201, `${label}: permissive mode must accept write without actor`);
+	const objectId = data?.id;
+	assert(typeof objectId === 'string', `${label}: permissive create must return id`);
+
+	// Clean up probe entity
+	addCleanup(`write-policy probe object ${objectId}`, async () => {
+		await fetchJson(baseUrl, `/api/emis/objects/${objectId}`, {
+			method: 'DELETE',
+			headers: makeWriteHeaders()
+		});
+	});
+
+	return { mode: 'permissive', status: 201, objectId };
+}
+
+// ---------------------------------------------------------------------------
 // Runner
 // ---------------------------------------------------------------------------
 
@@ -915,6 +1001,10 @@ function buildChecks(baseUrl, refs) {
 		{
 			name: 'link-flow',
 			run: async () => smokeLinkFlow(baseUrl, refs)
+		},
+		{
+			name: 'write-policy',
+			run: async () => smokeWritePolicyCheck(baseUrl, refs)
 		}
 	];
 }

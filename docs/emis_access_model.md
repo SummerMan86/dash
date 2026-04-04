@@ -56,13 +56,11 @@ Roles describe **authorization intent**, not runtime enforcement. MVE does not h
 | DB-level invariants | Partial unique indexes, FK constraints, append-only audit trigger | Prevents data corruption regardless of application-level checks |
 | Deployment contour | Trusted internal network | No public internet exposure of the application |
 
-### Target (NW-2 implementation)
+### Implemented (NW-2, 2026-04-04)
 
 | Mechanism | Where | What it does |
 | --- | --- | --- |
-| Write-policy helper | `assertWriteContext()` — target home TBD (see section 4, "Ownership") | Validates that write context is present and actor is identified; rejects with 403 in strict mode |
-
-Note: `assertWriteContext()` does not exist yet. The contract below is the accepted design for NW-2.
+| Write-policy helper | `assertWriteContext()` in `apps/web/src/lib/server/emis/infra/writePolicy.ts` | Validates that write context is present and actor is identified; rejects with 403 in strict mode |
 
 ### Explicitly deferred beyond MVE
 
@@ -80,7 +78,7 @@ This section defines the contract for the centralized write-policy helper that a
 
 ### Status
 
-**Design frozen in NW-1.** Implementation is NW-2 scope. The helper does not exist yet.
+**Implemented in NW-2 (2026-04-04).** Design frozen in NW-1.
 
 ### Purpose
 
@@ -169,7 +167,7 @@ When auth is introduced post-MVE:
 
 ## 6. One-Paragraph Summary
 
-EMIS MVE runs in a trusted internal network where all users can read freely. Write operations require actor identification via the `x-emis-actor-id` or `x-actor-id` header. Currently, actor identity is resolved for audit purposes only (`resolveEmisWriteContext()`), with no rejection on missing actor. The accepted NW-2 target is a single `assertWriteContext()` helper that all write entry points will call: in production-shaped (strict) mode, missing actor identity will result in a 403 rejection; in dev/local (permissive) mode, a source-based default actor is used for convenience. Full authentication, sessions, and RBAC are explicitly deferred beyond MVE.
+EMIS MVE runs in a trusted internal network where all users can read freely. Write operations require actor identification via the `x-emis-actor-id` or `x-actor-id` header. All write entry points (API routes and form actions) call `assertWriteContext()` from `apps/web/src/lib/server/emis/infra/writePolicy.ts`, which wraps `resolveEmisWriteContext()` with policy enforcement: in production-shaped (strict) mode (`EMIS_WRITE_POLICY=strict`), missing actor identity results in a 403 `WRITE_NOT_ALLOWED` rejection; in dev/local (permissive) mode (default), a source-based default actor is used for convenience. Full authentication, sessions, and RBAC are explicitly deferred beyond MVE.
 
 ## 7. Related Documents
 

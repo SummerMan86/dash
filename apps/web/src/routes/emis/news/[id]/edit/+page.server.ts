@@ -3,7 +3,7 @@ import type { PageServerLoad } from './$types';
 
 import { attachNewsObjectsSchema } from '$entities/emis-link';
 import { createEmisNewsSchema } from '$entities/emis-news';
-import { resolveEmisWriteContext } from '$lib/server/emis/infra/audit';
+import { assertWriteContext } from '$lib/server/emis/infra/writePolicy';
 import {
 	attachNewsObjectsService,
 	deleteNewsObjectLinkService
@@ -56,7 +56,7 @@ export const actions: Actions = {
 		try {
 			ensureNewsFormRequired(values);
 			const payload = createEmisNewsSchema.parse(parseNewsForm(values));
-			updated = await updateNewsService(id, payload, resolveEmisWriteContext(request, 'manual-ui'));
+			updated = await updateNewsService(id, payload, assertWriteContext(request, 'manual-ui'));
 		} catch (errorValue) {
 			return actionFailure(errorValue, values);
 		}
@@ -86,7 +86,7 @@ export const actions: Actions = {
 					}
 				]
 			});
-			await attachNewsObjectsService(id, payload, resolveEmisWriteContext(request, 'manual-ui'));
+			await attachNewsObjectsService(id, payload, assertWriteContext(request, 'manual-ui'));
 		} catch (errorValue) {
 			return actionFailure(
 				errorValue,
@@ -112,7 +112,7 @@ export const actions: Actions = {
 			await deleteNewsObjectLinkService(
 				id,
 				objectId,
-				resolveEmisWriteContext(request, 'manual-ui')
+				assertWriteContext(request, 'manual-ui')
 			);
 		} catch (errorValue) {
 			return actionFailure(errorValue, { objectId }, 'deleteLink');

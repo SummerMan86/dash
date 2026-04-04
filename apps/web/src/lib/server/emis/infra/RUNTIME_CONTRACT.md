@@ -160,14 +160,13 @@ Single-entity GETs return the entity directly (no wrapper).
 - PATCH → `200` with updated entity
 - DELETE → `200` with `{ ok: true }`
 - All validate body via Zod schemas (`parseJsonBody`)
-- All currently resolve write context via `resolveEmisWriteContext()` (audit-only, never rejects)
-- **Target (NW-2):** replace with `assertWriteContext()` (see "Write-policy contract" below)
+- All resolve write context via `assertWriteContext()` from `$lib/server/emis/infra/writePolicy` (write-policy enforcement + audit)
 
-## Write-policy contract (NW-2 target)
+## Write-policy contract
 
-**Status:** design frozen in NW-1. Implementation is NW-2 scope. The helper does not exist yet.
+**Status:** implemented in NW-2 (2026-04-04). Design frozen in NW-1.
 
-After NW-2, all EMIS write entry points (API routes and form actions) must call `assertWriteContext()` before performing any mutation. This will be the single enforcement point for write authorization in MVE.
+All EMIS write entry points (API routes and form actions) call `assertWriteContext()` before performing any mutation. This is the single enforcement point for write authorization in MVE.
 
 ### Helper
 
@@ -284,10 +283,10 @@ Return `{ rows: [...] }` without meta (no pagination, no sort; full snapshot pay
 | `jsonEmisError()`          | Standard `{error, code}` response     |
 | `handleEmisRoute()`        | Error boundary wrapper                |
 
-### App-layer write policy (NW-2 target) — `apps/web/src/lib/server/emis/infra/writePolicy.ts`
+### App-layer write policy — `apps/web/src/lib/server/emis/infra/writePolicy.ts`
 
 | Helper                     | Purpose                               |
 | -------------------------- | ------------------------------------- |
-| `assertWriteContext()`     | Write-policy checkpoint (see "Write-policy contract" section) — **not yet implemented** |
+| `assertWriteContext()`     | Write-policy checkpoint (see "Write-policy contract" section) |
 
-Routes import transport helpers from `$lib/server/emis/infra/http`. After NW-2, routes will also import write-policy helper from `$lib/server/emis/infra/writePolicy`.
+Routes import transport helpers from `$lib/server/emis/infra/http` and write-policy helper from `$lib/server/emis/infra/writePolicy`.

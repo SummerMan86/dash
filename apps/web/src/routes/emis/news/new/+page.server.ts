@@ -2,7 +2,7 @@ import { redirect, type Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
 import { createEmisNewsSchema } from '$entities/emis-news';
-import { resolveEmisWriteContext } from '$lib/server/emis/infra/audit';
+import { assertWriteContext } from '$lib/server/emis/infra/writePolicy';
 import { createNewsService } from '$lib/server/emis/modules/news/service';
 
 import {
@@ -32,7 +32,7 @@ export const actions: Actions = {
 		try {
 			ensureNewsFormRequired(values);
 			const payload = createEmisNewsSchema.parse(parseNewsForm(values));
-			created = await createNewsService(payload, resolveEmisWriteContext(request, 'manual-ui'));
+			created = await createNewsService(payload, assertWriteContext(request, 'manual-ui'));
 		} catch (error) {
 			return actionFailure(error, values);
 		}

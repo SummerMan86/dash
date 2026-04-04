@@ -139,14 +139,34 @@ Docs/design only, no code changes. Backlog mapping: M1.1, M1.2.
 - Updated `emis_session_bootstrap.md` with access model status
 - Previous version of `emis_access_model.md` implied future `requireEmisRole()` RBAC — removed, replaced with frozen MVE contract
 
+### NW-2: Centralized Write Guardrails Rollout (DONE, 2026-04-04)
+
+Code implementation of frozen NW-1 design. Backlog mapping: M1.3, M1.4, M1.5.
+
+- Created `apps/web/src/lib/server/emis/infra/writePolicy.ts` (82 lines):
+  - `assertWriteContext(request, source)` wraps `resolveEmisWriteContext()` with policy enforcement
+  - Strict mode (`EMIS_WRITE_POLICY=strict`): requires explicit actor header, throws `EmisError(403, 'WRITE_NOT_ALLOWED')` if missing
+  - Permissive mode (default): delegates to `resolveEmisWriteContext()` unchanged (backward-compatible)
+  - No SQL, no `@sveltejs/kit` imports, no business logic beyond policy
+- Replaced `resolveEmisWriteContext()` with `assertWriteContext()` in all 10 write entry points:
+  - 6 API route files (source `'api'`)
+  - 4 form action files (source `'manual-ui'`)
+  - Zero remaining direct `resolveEmisWriteContext()` calls in routes
+- Added `write-policy` check to `scripts/emis-write-smoke.mjs`:
+  - Permissive mode: POST without actor -> 201 (auto-default actor, cleanup probe entity)
+  - Strict mode: POST without actor -> 403 WRITE_NOT_ALLOWED
+- Updated docs: `RUNTIME_CONTRACT.md` and `emis_access_model.md` — removed "NW-2 target"/"not yet implemented" markers
+- Verification: `pnpm check` 0 errors, `pnpm build` success, `pnpm lint:boundaries` no violations
+
 ## Заметки для следующей сессии
 
 - H-1..H-5 all done — wave H is complete
 - P3.1..P3.6 all done — phase 2 is complete, baseline is Green/closed
 - DS-1..DS-4 done — active docs layer synced with canonical architecture
 - NW-1 done — access model frozen, write-policy helper contract designed
-- Next: NW-2 (centralized write guardrails rollout) — implement `assertWriteContext()` and wire all write entry points
+- NW-2 done — `assertWriteContext()` implemented, all write entry points wired, negative smoke added
+- Next: NW-3 (dictionary/admin scope freeze) — scope decision package (M2.1 + branch)
 - Pre-existing carry-forward (all deferred, none blocking):
-  - stock-alerts→routes layer-boundary violation
+  - stock-alerts->routes layer-boundary violation
   - remaining MIGRATION re-export shims in `entities/`, `shared/`, `widgets/` — code removal, not docs scope
   - `pnpm lint` Prettier drift (not blocking)

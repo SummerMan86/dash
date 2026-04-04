@@ -511,7 +511,7 @@ Status:
 - `RUNTIME_CONTRACT.md` includes the write-policy helper contract
 
 ### NW-2: Centralized write guardrails rollout
-- status: **in progress** — started `2026-04-04`
+- status: **completed** on `2026-04-04`
 - backlog mapping:
   - `M1.3`
   - `M1.4`
@@ -547,23 +547,29 @@ Status:
 - status: ready for handoff
 - backlog mapping:
   - `M2.1`
-  - then either `M2.2` or `M2.3-M2.6`
+  - then either `M2.2` or `M2.3`
 - depends on:
-  - `NW-1` preferred
+  - `NW-2`
 - scope:
-  - MVE scope decision for `countries`, `object_types`, `sources`
-  - follow-up docs alignment if seed-managed
-  - or narrow CRUD plan if CRUD is explicitly required
+  - decision + docs package only:
+    - decide MVE scope for `countries`, `object_types`, `sources`
+    - if decision is `seed-managed`, align active docs and acceptance language
+    - if decision is `admin CRUD in MVE`, define only the narrowest follow-up admin surface and explicit non-goals
+  - no CRUD implementation in `NW-3`
 - default recommendation:
   - keep dictionaries seed-managed for MVE unless there is a real operator workflow demanding in-app editing now
 - why third:
   - this is the last major product-scope ambiguity inside MVE
   - it prevents accidental spread into admin UI work without an explicit decision
+- review gate:
+  - `docs-reviewer` required
+  - `architecture-steward` only if the decision reopens admin surface or changes active access/ownership docs
 
 #### NW-3 Acceptance Checklist
 - the team has one explicit answer: `seed-managed` or `admin CRUD in MVE`
 - MVE docs stop implying both models at once
-- if CRUD is chosen, the mutable surface is narrowly defined before implementation starts
+- if `seed-managed` is chosen, active docs stop implying unfinished admin CRUD pages
+- if CRUD is chosen, the mutable surface and non-goals are narrowly defined before implementation starts
 
 ### NW-4: Health/readiness and API error logging hardening
 - status: ready for handoff
@@ -625,10 +631,8 @@ Why this order:
 
 ## Recommended Next Handoff To Lead-Tactical
 
-Open the next wave as:
+Continue the current wave in this order:
 
-1. `NW-1` — docs/design package (`M1.1 + M1.2`)
-2. `NW-2` — implementation package (`M1.3 + M1.4 + M1.5`)
-3. `NW-3` — scope decision package (`M2.1` + branch)
-4. `NW-4` — observability package (`M3.1-M3.4`)
-5. `NW-5` — acceptance/sign-off package (`M4.1-M4.3`)
+1. `NW-3` — scope decision package (`M2.1` + branch)
+2. `NW-4` — observability package (`M3.1-M3.4`)
+3. `NW-5` — acceptance/sign-off package (`M4.1-M4.3`)

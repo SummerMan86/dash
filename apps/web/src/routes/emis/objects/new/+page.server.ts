@@ -2,7 +2,7 @@ import { redirect, type Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
 import { createEmisObjectSchema } from '$entities/emis-object';
-import { resolveEmisWriteContext } from '$lib/server/emis/infra/audit';
+import { assertWriteContext } from '$lib/server/emis/infra/writePolicy';
 import { createObjectService } from '$lib/server/emis/modules/objects/service';
 
 import {
@@ -32,7 +32,7 @@ export const actions: Actions = {
 		try {
 			ensureObjectFormRequired(values);
 			const payload = createEmisObjectSchema.parse(parseObjectForm(values));
-			created = await createObjectService(payload, resolveEmisWriteContext(request, 'manual-ui'));
+			created = await createObjectService(payload, assertWriteContext(request, 'manual-ui'));
 		} catch (error) {
 			return actionFailure(error, values);
 		}

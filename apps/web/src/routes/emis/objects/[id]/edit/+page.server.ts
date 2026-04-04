@@ -2,7 +2,7 @@ import { error, redirect, type Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
 import { createEmisObjectSchema } from '$entities/emis-object';
-import { resolveEmisWriteContext } from '$lib/server/emis/infra/audit';
+import { assertWriteContext } from '$lib/server/emis/infra/writePolicy';
 import { getObjectDetailQuery } from '$lib/server/emis/modules/objects/queries';
 import { updateObjectService } from '$lib/server/emis/modules/objects/service';
 
@@ -49,7 +49,7 @@ export const actions: Actions = {
 			updated = await updateObjectService(
 				id,
 				payload,
-				resolveEmisWriteContext(request, 'manual-ui')
+				assertWriteContext(request, 'manual-ui')
 			);
 		} catch (errorValue) {
 			return actionFailure(errorValue, values);
