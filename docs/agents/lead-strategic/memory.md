@@ -12,7 +12,8 @@
   - no immediate second deployable app for EMIS
 - Shared foundation остается общей, но product identity и ownership у EMIS и BI/dashboard считаются разными.
 - Для новых EMIS задач canonical docs теперь:
-  - `docs/emis_architecture_baseline.md`
+  - `docs/architecture.md`
+  - `docs/emis_session_bootstrap.md`
   - `docs/emis_working_contract.md`
 - Strategic plan for the current active wave lives in:
   - `docs/agents/lead-strategic/current_plan.md`

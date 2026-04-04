@@ -62,14 +62,13 @@ Repo-wide architecture contract живёт в [architecture.md](./architecture.m
 
 | Документ | Владеет | Source of truth для |
 |----------|---------|---------------------|
-| `architecture.md` | repo-wide architecture contract | topology, ownership, execution paths, import rules и repo-wide boundaries |
-| `emis_session_bootstrap.md` | текущее состояние, entry point, short doc map | что уже сделано, что сейчас в фокусе, с чего начинать новую сессию |
-| `emis_architecture_baseline.md` | canonical EMIS boundary map | platform vs EMIS operational vs EMIS BI, placement rules |
+| `architecture.md` | repo-wide architecture contract | topology, ownership, execution paths, import rules, repo-wide boundaries и current EMIS package/app placement |
+| `emis_session_bootstrap.md` | текущее состояние и start-here entry point | где EMIS находится сейчас, что в фокусе и что читать дальше по типу задачи |
 | `emis_working_contract.md` | short EMIS working rules | decision path, non-negotiables, review triggers, DoD |
 | `emis_access_model.md` | EMIS access model | viewer/editor/admin, write guardrails и где enforce |
 | `emis_observability_contract.md` | EMIS observability contract | readiness/health endpoints, error logging, request correlation |
 | `emis_read_models_contract.md` | EMIS BI/read-side contract | published read-models (views/marts), datasets и BI routes coupling |
-| `emis_mve_tz_v_2.md` | scope, invariants, acceptance | продуктовые рамки и ограничения |
+| `emis_mve_product_contract.md` | MVE product contract | product scope, invariants и acceptance |
 | `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md` | runtime/API conventions | API design conventions, error shape, list meta, audit contract, query limits/sorts |
 | `../packages/emis-contracts/AGENTS.md` | EMIS contracts package navigation | где лежат canonical entity contracts, DTO и Zod schemas |
 | `../packages/emis-server/AGENTS.md` | EMIS server package navigation | где лежат canonical infra helpers и backend modules |
@@ -82,7 +81,6 @@ Repo-wide architecture contract живёт в [architecture.md](./architecture.m
 | Документ | Владеет | Source of truth для |
 |----------|---------|---------------------|
 | `emis_monorepo_target_layout.md` | target layout и migration policy | future package layout, import direction rules, alias policy; не current-state ownership map |
-| `emis_implementation_spec_v1.md` | retained implementation decisions | API/data decisions и historical rollout order; не current ownership map |
 | `emis_freeze_note.md` | frozen decisions и conventions | что не нужно переоткрывать без причины; не current ownership map |
 | `emis_architecture_review.md` | EMIS architecture approve checklist | lifecycle review, mandatory approve cases, approve checklist |
 | `emis_offline_maps_ops.md` | offline maps ops-runbook | эксплуатация MapTiler/PMTiles и production caveats |
@@ -92,6 +90,7 @@ Repo-wide architecture contract живёт в [architecture.md](./architecture.m
 
 | Документ | Владеет | Source of truth для |
 |----------|---------|---------------------|
+| `archive/emis/emis_implementation_reference_v1.md` | archived implementation rationale | retained implementation decisions, API/data assumptions и historical rollout order |
 | `archive/emis/emis_vessel_current_positions_handoff_plan.md` | completed task handoff | completed slice `layer=vessels` / current positions в `/emis` |
 | `archive/emis/emis_todo_vessel_markers.md` | completed task notes | historical vessel marker TODO notes |
 | `archive/emis/emis_handoff_2026_03_17.md` | archived EMIS snapshot | историческое состояние репозитория на 17 марта 2026 |
@@ -143,10 +142,9 @@ Repo-wide architecture contract живёт в [architecture.md](./architecture.m
 
 1. `architecture.md`
 2. `emis_session_bootstrap.md`
-3. `emis_architecture_baseline.md`
-4. `emis_working_contract.md`
-5. `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
-6. `emis_mve_tz_v_2.md` — если нужен product scope
+3. `emis_working_contract.md`
+4. `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
+5. `emis_mve_product_contract.md` — если нужен product scope
 
 Опционально по задаче:
 
@@ -154,11 +152,11 @@ Repo-wide architecture contract живёт в [architecture.md](./architecture.m
 - `emis_observability_contract.md` - если задача про health/readiness/error logging
 - `emis_read_models_contract.md` - если задача про BI/read-models/datasets/contracts
 - `emis_monorepo_target_layout.md` - если задача про structural migration, import rules или alias policy
-- `emis_implementation_spec_v1.md` - если нужен historical rollout context или retained implementation rationale
 - `emis_freeze_note.md` - если нужно понять, какие решения не нужно переоткрывать
 - `emis_architecture_review.md` - если нужен approve checklist или review verdict
 - `emis_offline_maps_ops.md` - если работа про offline maps или PMTiles
 - `emis_next_tasks_2026_03_22.md` - если нужен backlog
+- `archive/emis/emis_implementation_reference_v1.md` - если нужен historical rollout context или retained implementation rationale
 - `agents/workflow.md` - если нужен agent workflow, процесс, инварианты
 - `agents/roles.md` - если нужны роли агентов
 - `agents/templates.md` - если нужны шаблоны коммуникации между агентами

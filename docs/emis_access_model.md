@@ -173,6 +173,6 @@ EMIS MVE runs in a trusted internal network where all users can read freely. Wri
 
 - Runtime/API conventions: `apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
 - Working rules: `docs/emis_working_contract.md`
-- Boundary map: `docs/emis_architecture_baseline.md`
-- MVE scope and invariants: `docs/emis_mve_tz_v_2.md`
+- Architecture and placement baseline: `docs/architecture.md`
+- MVE scope and invariants: `docs/emis_mve_product_contract.md`
 - Observability contract: `docs/emis_observability_contract.md`

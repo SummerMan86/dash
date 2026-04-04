@@ -63,8 +63,8 @@ export const GET: RequestHandler = async () => {
 			accessModel: '/docs/emis_access_model.md',
 			observability: '/docs/emis_observability_contract.md',
 			readModels: '/docs/emis_read_models_contract.md',
-			tz: '/docs/emis_mve_tz_v_2.md',
-			implementationSpec: '/docs/emis_implementation_spec_v1.md',
+			productContract: '/docs/emis_mve_product_contract.md',
+			implementationReference: '/docs/archive/emis/emis_implementation_reference_v1.md',
 			runtimeContract: '/src/lib/server/emis/infra/RUNTIME_CONTRACT.md'
 		}
 	});

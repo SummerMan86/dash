@@ -223,6 +223,33 @@ pnpm check              # type/parse verification (svelte-check)
 - Оба домена используют platform-* пакеты, но не cross-импортируют друг друга
 - EMIS-данные попадают в BI только через published DB views (`mart.emis_*`, `mart_emis.*`)
 
+### Current EMIS package/app placement
+
+Текущий EMIS placement baseline живёт в этом документе.
+
+**Reusable EMIS ownership**:
+
+- `packages/emis-contracts/` — entity contracts, DTO, Zod schemas
+- `packages/emis-server/src/infra/*` — server-only infra
+- `packages/emis-server/src/modules/*` — domain backend modules
+- `packages/emis-ui/` — reusable map/status UI
+
+**App-owned EMIS composition**:
+
+- `apps/web/src/routes/api/emis/*` — thin HTTP transport
+- `apps/web/src/routes/emis/*` — workspace/orchestration UI
+- `apps/web/src/routes/dashboard/emis/*` — BI route layer
+- `apps/web/src/lib/server/emis/infra/http.ts` — app-owned HTTP glue
+- `apps/web/src/lib/features/emis-manual-entry/` — app-local forms with `$app/forms` coupling
+- `apps/web/src/lib/widgets/emis-drawer/` — app-local widget with `$widgets/filters` coupling
+
+Compatibility shims at old app paths re-export from packages and are not ownership truth:
+
+- `apps/web/src/lib/entities/emis-*`
+- `apps/web/src/lib/server/emis/*`
+- `apps/web/src/lib/widgets/emis-map/*`
+- `apps/web/src/lib/widgets/emis-status-bar/*`
+
 ## 5. Alias policy
 
 | Alias | Resolves to | Статус |
@@ -242,8 +269,8 @@ pnpm check              # type/parse verification (svelte-check)
 
 | Документ | Что описывает |
 |---|---|
-| **этот документ** | Repo-wide architecture contract: topology, ownership, paths, layers, import rules |
-| `emis_architecture_baseline.md` | EMIS-specific placement rules и confirmed code state |
+| **этот документ** | Repo-wide architecture contract: topology, ownership, paths, layers, import rules и current EMIS package/app placement |
+| `emis_session_bootstrap.md` | Start-here summary, current focus и task-driven reading order |
 | `emis_working_contract.md` | Короткие рабочие правила для EMIS development |
 | `emis_known_exceptions.md` | Live architecture exceptions / waivers, если baseline ещё не закрыт |
 
@@ -261,8 +288,8 @@ pnpm check              # type/parse verification (svelte-check)
 
 ## 7. Reading order
 
-1. **Этот документ** — общая картина
-2. `emis_architecture_baseline.md` — если работа касается EMIS
+1. **Этот документ** — общая картина и current EMIS placement
+2. `emis_session_bootstrap.md` — start-here summary и routing по active docs
 3. `emis_working_contract.md` — если начинаешь EMIS development
 4. `emis_known_exceptions.md` — если нужен truthful baseline verdict
 5. `emis_monorepo_target_layout.md` — если задача про structural migration

@@ -98,7 +98,7 @@ Model policy:
 
 - `docs/emis_session_bootstrap.md` — текущее состояние проекта
 - `docs/emis_freeze_note.md` — замороженные решения
-- `docs/emis_implementation_spec_v1.md` — implementation decisions
+- `docs/archive/emis/emis_implementation_reference_v1.md` — historical implementation decisions
 - `docs/agents/workflow.md` — общий процесс
 - `docs/agents/roles.md` — все роли
 - `docs/agents/strategic-reviewer/instructions.md` — optional sidecar-review role

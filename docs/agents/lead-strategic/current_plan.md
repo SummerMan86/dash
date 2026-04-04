@@ -461,7 +461,7 @@ Status:
 - scope:
   - `docs/emis_access_model.md` (create new)
   - `docs/emis_session_bootstrap.md` (update)
-  - `docs/emis_mve_tz_v_2.md` (read-only input)
+  - `docs/emis_mve_product_contract.md` (read-only input)
   - `apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md` (update)
 - deliver:
   - explicit trusted/internal operating model
@@ -479,7 +479,7 @@ Status:
 #### NW-1 Tactical Breakdown
 
 1. **NW-1a: Analyze current write-side state** (read-only)
-   - read `docs/emis_mve_tz_v_2.md` — what the MVE contract expects
+   - read `docs/emis_mve_product_contract.md` — what the MVE contract expects
    - read `apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md` — current runtime contract
    - read `docs/emis_session_bootstrap.md` — current state summary
    - grep existing write routes/actions for current actor attribution pattern
@@ -544,7 +544,7 @@ Status:
 - `pnpm emis:write-smoke` stays green in permissive mode
 
 ### NW-3: Dictionary/admin scope freeze
-- status: ready for handoff
+- status: **completed** on `2026-04-04`
 - backlog mapping:
   - `M2.1`
   - then either `M2.2` or `M2.3`
@@ -556,20 +556,23 @@ Status:
     - if decision is `seed-managed`, align active docs and acceptance language
     - if decision is `admin CRUD in MVE`, define only the narrowest follow-up admin surface and explicit non-goals
   - no CRUD implementation in `NW-3`
-- default recommendation:
-  - keep dictionaries seed-managed for MVE unless there is a real operator workflow demanding in-app editing now
-- why third:
-  - this is the last major product-scope ambiguity inside MVE
-  - it prevents accidental spread into admin UI work without an explicit decision
+- decision:
+  - **seed-managed for MVE**
+  - no admin CRUD UI in MVE scope
+  - dictionary data managed through `db/seeds/` (001_countries, 002_object_types, 003_sources)
+  - admin role explicitly deferred beyond MVE
+- docs aligned:
+  - `emis_mve_product_contract.md`: screen #6 and admin role marked as deferred beyond MVE
+  - `emis_session_bootstrap.md`: dictionary scope decision marked as done
+  - `emis_access_model.md`: already correct (admin deferred, seed-managed)
 - review gate:
   - `docs-reviewer` required
   - `architecture-steward` only if the decision reopens admin surface or changes active access/ownership docs
 
 #### NW-3 Acceptance Checklist
-- the team has one explicit answer: `seed-managed` or `admin CRUD in MVE`
-- MVE docs stop implying both models at once
-- if `seed-managed` is chosen, active docs stop implying unfinished admin CRUD pages
-- if CRUD is chosen, the mutable surface and non-goals are narrowly defined before implementation starts
+- the team has one explicit answer: **seed-managed** ~~or `admin CRUD in MVE`~~
+- MVE docs stop implying both models at once — deferral notes added to MVE spec
+- active docs stop implying unfinished admin CRUD pages — screen #6 and admin role explicitly deferred
 
 ### NW-4: Health/readiness and API error logging hardening
 - status: ready for handoff
@@ -606,7 +609,7 @@ Status:
   - `NW-3`
   - `NW-4`
 - scope:
-  - acceptance audit against `docs/emis_mve_tz_v_2.md`
+  - acceptance audit against `docs/emis_mve_product_contract.md`
   - backlog/bootstrap alignment
   - final verification pass
 - why fifth:

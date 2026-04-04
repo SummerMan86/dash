@@ -8,8 +8,8 @@
 Важно:
 
 - это не новый source of truth;
-- требования брать из [EMIS MVE TZ v2](../../emis_mve_tz_v_2.md);
-- техрешения и порядок работ брать из [EMIS Implementation Spec v1](../../emis_implementation_spec_v1.md);
+- требования брать из [EMIS MVE Product Contract](../../emis_mve_product_contract.md);
+- техрешения и порядок работ брать из [EMIS Implementation Reference v1](./emis_implementation_reference_v1.md);
 - краткую стабилизированную картину смотреть в [EMIS Freeze Note](../../emis_freeze_note.md).
 
 ## 1. Что уже реально сделано
@@ -173,5 +173,5 @@
 
 - [EMIS Session Bootstrap](../../emis_session_bootstrap.md)
 - [EMIS Freeze Note](../../emis_freeze_note.md)
-- [EMIS Implementation Spec v1](../../emis_implementation_spec_v1.md)
+- [EMIS Implementation Reference v1](./emis_implementation_reference_v1.md)
 - [EMIS Runtime Contract](../../../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md)

@@ -83,7 +83,7 @@
 ### A1: Simplify Canonical Architecture Contract
 - status: completed on `2026-04-04`
 - scope:
-  - `docs/emis_architecture_baseline.md`
+  - `docs/architecture.md`
   - `docs/emis_working_contract.md`
   - `docs/emis_session_bootstrap.md`
 - depends on: A0
@@ -108,7 +108,7 @@
 - status: completed on `2026-04-04`
 - scope:
   - `docs/emis_freeze_note.md`
-  - `docs/emis_implementation_spec_v1.md`
+  - `docs/archive/emis/emis_implementation_reference_v1.md`
   - `docs/emis_monorepo_target_layout.md`
   - `docs/AGENTS.md` if doc classification needs alignment
 - depends on: A1

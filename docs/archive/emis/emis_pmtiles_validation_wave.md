@@ -42,4 +42,4 @@ PMTiles validation wave пройдена:
 
 - [EMIS Offline Maps Ops Guide](../../emis_offline_maps_ops.md)
 - [EMIS Session Bootstrap](../../emis_session_bootstrap.md)
-- [EMIS Implementation Spec v1](../../emis_implementation_spec_v1.md)
+- [EMIS Implementation Reference v1](./emis_implementation_reference_v1.md)

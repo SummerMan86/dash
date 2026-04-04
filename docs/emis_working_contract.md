@@ -1,130 +1,108 @@
 # EMIS Working Contract
 
-Короткий рабочий contract для всех новых задач по EMIS.
-Если возникает спор по placement, ownership или path, по умолчанию следуем этому документу.
+Короткий governance-layer для активной EMIS-разработки.
+Этот документ не владеет current-state ownership map и не повторяет target layout.
 
-## 1. Current Framing
+Если нужен start-here / current focus, читать:
 
-- EMIS - отдельный доменный контур внутри текущего `SvelteKit` приложения
-- topology остается такой:
-  - один deployable app
-  - `modular monolith`
-  - три контура: `platform/shared`, `EMIS operational`, `EMIS BI/read-side`
-- reusable EMIS contracts/server/ui живут в packages
-- app держит routes и app-local composition
+- `emis_session_bootstrap.md`
 
-## 2. Current Ownership
+Если нужен current placement truth, читать:
 
-Package-owned reusable code:
+- `architecture.md`
 
-- `packages/emis-contracts/` — EMIS entity contracts, DTO, Zod schemas
-- `packages/emis-server/` — server infra и domain backend modules
-- `packages/emis-ui/` — reusable map/status UI
+Если нужен structural migration policy, читать:
 
-App-level code (stays in `apps/web/`):
+- `emis_monorepo_target_layout.md`
 
-- `apps/web/src/lib/server/emis/infra/http.ts` — app-owned SvelteKit transport glue
-- `apps/web/src/lib/features/emis-manual-entry/` — bounded EMIS forms (depends on `$app/forms`)
-- `apps/web/src/lib/widgets/emis-drawer/` — drawer widget (depends on `$widgets/filters`)
-- `apps/web/src/routes/api/emis/*` — thin HTTP transport
-- `apps/web/src/routes/emis/*` — workspace/UI orchestration
-- `apps/web/src/routes/dashboard/emis/*` — BI/read-side routes
+## 1. What This Document Decides
 
-Compatibility shims (marked `// MIGRATION`) remain temporary and are not ownership truth:
+Этот документ отвечает только за:
 
-- `apps/web/src/lib/entities/emis-*` → re-exports from `packages/emis-contracts`
-- `apps/web/src/lib/server/emis/*` → re-exports from `packages/emis-server`
-- `apps/web/src/lib/widgets/emis-map/*` and `apps/web/src/lib/widgets/emis-status-bar/*` → re-exports from `packages/emis-ui`
+- decision path между operational, BI и structural задачами;
+- рабочие non-negotiables;
+- review triggers;
+- delivery discipline и Definition of Done для крупных EMIS slices.
 
-## 3. Два канонических path
+## 2. Default Decision Path
 
-### Operational path
+### Operational change
 
 Использовать для CRUD, search, map, detail, ship-routes, dictionaries, audit:
 
 `routes/api/emis/* -> packages/emis-server/src/modules/* -> queries/service/repository -> PostgreSQL/PostGIS`
 
-### BI path
+### BI / read-model change
 
-Использовать для dashboard, KPI, charts, tabular read-models, стабильных marts/views:
+Использовать для dashboard, KPI, charts, tables и published marts/views:
 
 `fetchDataset(...) -> /api/datasets/:id -> compileDataset(...) -> DatasetIr -> Provider -> DatasetResponse`
 
-## 4. Главный decision rule
+### Structural migration change
 
-- если задача про operational behavior EMIS, не идем в dataset layer
-- если задача про BI/read-model, не идем напрямую в operational SQL из route
-- если есть сомнение, default choice: сначала operational slice, потом отдельный published read-model
+Использовать только когда задача реально про extraction, import boundaries или alias removal:
 
-## 5. Non-Negotiables
+`current zone -> target package -> compatibility shim -> shim removal`
 
-- не писать SQL в `apps/web/src/routes/api/emis/*`
-- не писать HTTP-логику в `packages/emis-server/src/modules/*/service.ts`
-- не писать client/UI code в `packages/emis-server/*`
-- не тянуть EMIS operational logic в dataset compiler без явной BI причины
-- не использовать `/dashboard/emis/*` как backdoor для operational fetch logic
-- не складывать reusable EMIS contracts в route files
+Главное правило выбора:
 
-## 6. DB Truth
+- если задача про operational behavior EMIS, не идти в dataset layer;
+- если задача про BI/read-model, не идти напрямую в operational SQL из route;
+- если есть сомнение, default choice: сначала operational slice, потом отдельный published read-model;
+- если change одновременно двигает файлы и меняет domain behavior, сначала разрезать на отдельные slices.
 
-- active DB truth читается по `db/current_schema.sql`
-- краткая карта - `db/schema_catalog.md`
-- structural delta лог - `db/applied_changes.md`
-- промежуточный patch для live DB - `db/pending_changes.sql`
+## 3. Working Non-Negotiables
 
-## 7. Required Invariants
+- не писать SQL в `apps/web/src/routes/api/emis/*`;
+- не писать HTTP-логику в `packages/emis-server/src/modules/*/service.ts`;
+- не писать client/UI code в `packages/emis-server/*`;
+- не тянуть EMIS operational logic в dataset compiler без явной BI причины;
+- не использовать `/dashboard/emis/*` как backdoor для operational fetch logic;
+- не складывать reusable EMIS contracts в route files;
+- compatibility shims не считать ownership truth;
+- structural move не смешивать с domain/API rewrite в том же slice.
 
-- canonical identity должна быть выражена в DB constraints / partial unique indexes
-- soft delete semantics должны быть едиными для API, views и restore flows
-- audit trail и actor attribution входят в обязательный контракт
-- FK behavior и vocabulary boundaries должны быть задокументированы явно
+## 4. Required Invariants
 
-## 8. Review Triggers
+- canonical identity должна быть выражена в DB constraints / partial unique indexes;
+- soft delete semantics должны быть едиными для API, views и restore flows;
+- audit trail, actor attribution и provenance входят в обязательный контракт;
+- FK behavior и vocabulary boundaries должны быть задокументированы явно.
+
+## 5. Review Triggers
 
 Нужен явный architectural review, если change затрагивает хотя бы одно:
 
-- новый API endpoint
-- новый EMIS module slice
-- DB schema / published view
-- новый shared contract
-- рост `/emis` workspace или `EmisMap`
-- любой cross-layer change
+- новый API endpoint;
+- новый EMIS module slice;
+- DB schema или published view;
+- новый shared contract;
+- рост `/emis` workspace или `EmisMap`;
+- любой cross-layer change;
+- любой structural move с compatibility shim или alias impact.
 
-## 9. Default Implementation Stance
+## 6. Default Delivery Stance
 
-- prefer bounded placement over clever abstraction
-- prefer extraction over growth в уже больших route/widget файлах
-- prefer Postgres-first implementation over premature genericity
-- prefer documented read-model over ad-hoc reuse of operational query
+- prefer bounded placement over clever abstraction;
+- prefer extraction over growth в уже больших route/widget файлах;
+- prefer Postgres-first implementation over premature genericity;
+- prefer documented read-model over ad-hoc reuse of operational query;
+- prefer one meaningful slice per commit checkpoint.
 
-## 10. Structural Migration Is Separate
+## 7. Definition Of Done For Big EMIS Tasks
 
-Для future structural migration действуют отдельные правила:
+- change лежит в правильном execution path;
+- runtime/docs contracts обновлены, если поведение изменилось;
+- DB docs обновлены, если менялась схема;
+- verification path указан явно;
+- после завершенного смыслового этапа делается локальный git checkpoint.
 
-→ [`emis_monorepo_target_layout.md`](./emis_monorepo_target_layout.md)
+## 8. Related Docs
 
-Ключевое:
-
-- target layout не заменяет current ownership
-- structural move не должен менять domain/API logic в том же slice
-- если boundary перемещается, docs и runtime contracts обновляются в том же slice
-- compatibility re-exports допускаются временно и явно маркируются
-
-## 11. Definition Of Done For Big EMIS Tasks
-
-- change лежит в правильном слое
-- runtime/docs contracts обновлены, если поведение изменилось
-- DB docs обновлены, если менялась схема
-- smoke/targeted verification указаны явно
-- после завершенного смыслового этапа делается локальный git checkpoint
-
-## 12. Reading Order
-
-1. `emis_session_bootstrap.md`
-2. `emis_architecture_baseline.md`
-3. этот документ
-4. `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
-5. `emis_mve_tz_v_2.md` — если нужен product scope
-6. `emis_monorepo_target_layout.md` — если задача про structural migration
-7. `emis_implementation_spec_v1.md` — если нужен rollout/history context
-8. `emis_freeze_note.md` — если нужно проверить frozen decisions
+- `architecture.md` — repo-wide boundaries и current EMIS placement;
+- `emis_session_bootstrap.md` — start-here, current focus и reading order;
+- `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md` — runtime/API conventions;
+- `emis_mve_product_contract.md` — product scope и acceptance;
+- `emis_monorepo_target_layout.md` — future structural migration policy;
+- `archive/emis/emis_implementation_reference_v1.md` — historical rollout context и retained rationale;
+- `emis_freeze_note.md` — frozen decisions, которые не нужно переоткрывать без причины.

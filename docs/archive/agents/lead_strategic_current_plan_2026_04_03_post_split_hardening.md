@@ -258,6 +258,6 @@ after wave completion.
 1. Read this plan end-to-end before delegating anything.
 2. Re-read:
    - `docs/emis_session_bootstrap.md`
-   - `docs/emis_architecture_baseline.md`
+   - `docs/architecture.md`
    - `docs/emis_working_contract.md`
    - `docs/emis_monorepo_target_layout.md`

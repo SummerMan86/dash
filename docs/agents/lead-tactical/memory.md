@@ -165,7 +165,8 @@ Code implementation of frozen NW-1 design. Backlog mapping: M1.3, M1.4, M1.5.
 - DS-1..DS-4 done — active docs layer synced with canonical architecture
 - NW-1 done — access model frozen, write-policy helper contract designed
 - NW-2 done — `assertWriteContext()` implemented, all write entry points wired, negative smoke added
-- Next: NW-3 (dictionary/admin scope freeze) — scope decision package (M2.1 + branch)
+- NW-3 done — dictionaries frozen as seed-managed for MVE, admin CRUD deferred beyond MVE
+- Next: NW-4 (health/readiness and API error logging hardening) — observability package (M3.1-M3.4)
 - Pre-existing carry-forward (all deferred, none blocking):
   - stock-alerts->routes layer-boundary violation
   - remaining MIGRATION re-export shims in `entities/`, `shared/`, `widgets/` — code removal, not docs scope

@@ -46,10 +46,9 @@
 
 1. `docs/architecture.md`
 2. `docs/emis_session_bootstrap.md`
-3. `docs/emis_architecture_baseline.md`
-4. `docs/emis_working_contract.md`
-5. `docs/AGENTS.md` - полный каталог EMIS docs, ownership и reading order
-6. локальный `AGENTS.md` в `apps/web/src/lib/server/emis/`, `apps/web/src/routes/api/emis/`, `apps/web/src/routes/emis/` и соседних active зонах
+3. `docs/emis_working_contract.md`
+4. `docs/AGENTS.md` - полный каталог EMIS docs, ownership и reading order
+5. локальный `AGENTS.md` в `apps/web/src/lib/server/emis/`, `apps/web/src/routes/api/emis/`, `apps/web/src/routes/emis/` и соседних active зонах
 
 ### Agent workflow (работа в команде агентов)
 
@@ -153,7 +152,7 @@ Canonical target layout для monorepo-style separation:
 
 ### EMIS architecture rules
 
-Для EMIS действуют repo-wide package/app boundaries и два канонических execution path из `docs/architecture.md`, плюс EMIS-specific placement rules:
+Для EMIS действуют repo-wide package/app boundaries, два канонических execution path и current EMIS package/app placement из `docs/architecture.md`:
 
 - `packages/emis-contracts/` - контракты, DTO, базовые доменные типы, Zod schemas
 - `packages/emis-server/src/infra/*` - server infrastructure

@@ -75,6 +75,6 @@ Published views в `mart*` считаются контрактом.
 
 ## 6. Связанные документы
 
-- Boundary map (operational vs BI): `docs/emis_architecture_baseline.md`
+- Boundary map (operational vs BI): `docs/architecture.md`
 - Runtime conventions (error/meta): `apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
 - BI route layer rules: `apps/web/src/routes/dashboard/emis/AGENTS.md`

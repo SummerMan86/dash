@@ -1,14 +1,14 @@
-# Monorepo Target Layout
+# EMIS Monorepo Target Layout
 
-Canonical reference для целевой структуры репозитория, маппинга текущих зон в target packages, правил зависимостей и миграционной политики.
+Canonical reference для target-state структуры репозитория, маппинга текущих зон в target packages, import rules и migration policy.
 
 Topology decision frozen: single-deployable monorepo, no immediate multi-app split.
-Статус на 4 апреля 2026:
 
-- high-level extraction в `apps/web` + `packages/*` уже произошел
-- этот документ больше не является current-state ownership map
-- его задача теперь: фиксировать future target layout, import rules и правила для оставшихся structural moves
-- current ownership и placement rules читать в `emis_session_bootstrap.md`, `emis_architecture_baseline.md` и `emis_working_contract.md`
+Этот документ:
+
+- не является current-state ownership map;
+- не заменяет `architecture.md` и `emis_working_contract.md`;
+- нужен только когда задача реально про structural migration.
 
 ## 1. Target Layout
 
@@ -207,68 +207,40 @@ $widgets  → apps/web/src/lib/widgets
 4. **Docs travel with code.** Если boundary перемещается, docs/runtime contract обновляются в том же slice.
 5. **Compatibility re-exports temporary only.** Каждый shim помечен и имеет срок удаления.
 
-### Baseline blocker — resolved
-
-**`apps/web/src/lib/shared/ui/select/Select.svelte`** — parse error resolved в ST-4.
-`pnpm check` проходит: 0 errors, 0 warnings.
-
-### Script locations before and after migration
-
-| Script group | Before ST-5 (current) | After ST-5 | After ST-6 |
-|---|---|---|---|
-| App scripts (dev, build, check, lint, format) | root `package.json` | `apps/web/package.json` | `apps/web/package.json` |
-| EMIS smoke/ops (emis:smoke, map:*) | root `package.json` + `scripts/` | `apps/web/package.json` + `apps/web/scripts/` | `apps/web/` |
-| DB scripts (db:up/down/reset/seed/snapshot) | root `package.json` + `scripts/db.mjs` | root (unchanged) | `packages/db/` or root |
-| Strategy/intake scripts | root `package.json` + `scripts/` | root (unchanged) | root or archive |
-| Boundary lint (`lint:boundaries`) | root `package.json` + `scripts/lint-boundaries.mjs` | root (workspace-level check) | root (workspace-level check) |
-
-`pnpm lint:boundaries` — canonical boundary-only verification command. Запускает ESLint и фильтрует только `no-restricted-imports` violations, без legacy lint noise.
-
 ### Boundary verification
 
-Canonical commands для проверки architecture boundaries:
+Canonical commands для structural slices:
 
 ```bash
 pnpm lint:boundaries    # boundary-only: only no-restricted-imports violations
 pnpm check              # type/parse verification (svelte-check)
+pnpm build              # run when slice changes package wiring, exports or app/runtime composition
 ```
 
 `pnpm lint` (full lint) не является boundary verification — содержит legacy formatting drift и не используется как gate.
 
-### Slice execution order
+Historical rollout order и завершённые migration waves вынесены в:
 
-```
-ST-5: apps/web extraction (current app → apps/web/)
-  ↓
-ST-6: platform packages (shared, datasets, filters, db)
-  ↓
-ST-7: EMIS packages (contracts, server, ui)
-  ↓
-ST-8: BI packages (alerts, dashboards — only if reuse pressure)
-```
-
-Каждый slice:
-- создаётся в отдельной worker branch
-- мержится в integration branch
-- проходит Review Gate на интегрированном diff
+- `archive/emis/emis_implementation_reference_v1.md`
 
 ### What NOT to do during migration
 
 - Не рефакторить domain logic под видом structural move
 - Не менять API contracts одновременно с перемещением файлов
 - Не создавать "god package" (`packages/shared-everything`)
-- Не удалять legacy placeholders как часть migration — это отдельный cleanup slice (ST-10)
-- Не начинать зависимый slice до merge предыдущего в integration branch
+- Не удалять legacy placeholders без отдельного cleanup decision
+- Не смешивать structural extraction и backlog hardening в одном PR
 
-## 6. Reading Order
+## 6. Read This With
 
 1. `emis_session_bootstrap.md` — entry point и текущее состояние
-2. `emis_architecture_baseline.md` — текущая архитектура и placement rules
-3. этот документ — target layout и migration rules
-4. `emis_working_contract.md` — operational working rules
+2. `architecture.md` — current ownership, boundaries и placement rules
+3. `emis_working_contract.md` — active decision discipline
+4. этот документ — target layout и migration rules
 
 ## 7. Relationship to Other Docs
 
-- **`emis_architecture_baseline.md`** описывает *текущую* архитектуру. Этот документ описывает *целевую*.
+- **`architecture.md`** описывает *текущую* architecture and placement baseline. Этот документ описывает *целевую*.
 - **`emis_working_contract.md`** описывает *как работать сейчас*. Migration policy здесь описывает *как переезжать*.
+- **`archive/emis/emis_implementation_reference_v1.md`** нужен только как historical rationale, не как target-state contract.
 - **`current-project-analysis.md`** описывает *что переиспользуемо*. Zone mapping здесь конкретизирует *куда это едет*.
