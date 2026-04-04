@@ -54,8 +54,9 @@
   - no broad code refactor while canonical architecture docs are still inconsistent
 - `known exceptions` must be explicit and live in one registry
 - recommended governance model:
-  - `architecture-steward` owns canonical architecture docs, known exceptions and pre-approval for cross-layer changes
+  - `architecture-steward` owns canonical architecture docs, placement decisions, architecture waivers/exceptions and pre-approval for cross-layer changes
   - `architecture-reviewer` remains a bounded review role on diffs
+  - `baseline-governor` validates baseline status and registry truthfulness, but does not own placement decisions
 - previous baseline/enforcement plan is deferred to phase 2 after architecture freeze acceptance
 
 ## Подзадачи
@@ -149,12 +150,18 @@
 - workflow и bootstrap ссылаются на registry как на обязательный источник truth
 
 ### A4: Define Architecture Governance Role Model
-- status: active next slice
+- status: completed on `2026-04-04`
 - scope:
   - `docs/agents/roles.md`
   - `docs/agents/workflow.md`
   - `docs/agents/templates.md`
   - `docs/agents/architecture-reviewer/instructions.md`
+  - `docs/agents/architecture-steward/*`
+  - `docs/agents/baseline-governor/instructions.md`
+  - adjacent active role instructions if minimal package-era alignment is required
+  - `docs/emis_architecture_review.md`
+  - `docs/emis_known_exceptions.md`
+  - `docs/AGENTS.md`
   - new role docs if the chosen model requires them
 - depends on: A3
 - размер: M
@@ -163,16 +170,15 @@
   - already done in this wave:
     - `baseline-governor` added to workflow/roles/templates as stabilization governance role
     - known exceptions / baseline verdict model now exists
-  - still unresolved:
-    - `docs/agents/architecture-reviewer/instructions.md` still reflects mostly legacy FSD review rules
-    - role split between `architecture-steward` vs stronger `architecture-reviewer` is not finalized explicitly enough
-  - recommended default:
-    - add `architecture-steward` as a governance/design role
-    - keep `architecture-reviewer` as diff reviewer
-  - fallback if team wants fewer roles:
-    - do not add a new role
-    - instead strengthen `architecture-reviewer` and document explicit strategic ownership elsewhere
-  - reviewer checks must reflect package-level reality, not only legacy FSD alias rules
+  - final decision:
+    - add explicit `architecture-steward` as a governance/design role
+    - keep `architecture-reviewer` as a bounded diff reviewer
+    - keep `baseline-governor` focused on baseline status and registry validation, not placement decisions
+  - package-era governance is now documented explicitly:
+    - packages are canonical reusable homes
+    - `apps/web` is the app leaf / transport-orchestration layer
+    - `EMIS operational` and `EMIS BI/read-side` stay separate
+    - known exceptions and complexity waivers use one explicit approval path
 
 #### A4 Acceptance Checklist
 - role model is explicit and non-overlapping
@@ -181,6 +187,7 @@
 - oversized-file policy and exception handling are coherent with active EMIS docs
 
 ### A5: Prepare Phase-2 Enforcement And Refactor Backlog
+- status: active next slice
 - scope:
   - `docs/agents/lead-strategic/current_plan.md`
   - `docs/emis_next_tasks_2026_03_22.md`
@@ -188,17 +195,37 @@
 - depends on: A4
 - размер: S
 - заметки:
-  - after architecture freeze, phase 2 should address code/system enforcement in bounded slices
-  - candidate next items:
-    - boundary gate repair
-    - package-aware lint guardrails
-    - `fetchDataset.ts` boundary fix
-    - complexity follow-ups for oversized EMIS files
-    - later shim cleanup
-  - the point here is sequencing, not full implementation
+  - this slice does **not** start phase-2 implementation
+  - this slice only sequences the first bounded post-freeze work so the next code wave starts from an explicit order
+  - primary inputs:
+    - `EXC-ARCH-002`
+    - `EXC-ARCH-004`
+    - deferred phase-2 items already tracked in `memory.md`
+    - existing `P3.*` backlog in `docs/emis_next_tasks_2026_03_22.md`
+  - target output:
+    - one explicit order for the first post-freeze slices
+    - a clear split between:
+      - baseline/check hardening
+      - boundary-gate repair
+      - package-aware enforcement
+      - bounded EMIS refactor follow-ups
+      - later cleanup that must not jump the queue
+  - recommended sequencing to validate and write down:
+    - `Phase-2A` — baseline command and truthful checks hardening
+    - `Phase-2B` — restore green boundary gate via the remaining `fetchDataset.ts` gap
+    - `Phase-2C` — tighten package-aware lint / boundary guardrails
+    - `Phase-2D` — address the remaining `EmisMap.svelte` waiver as a bounded refactor follow-up
+    - `Later` — mass shim cleanup and other non-critical residuals
+  - default stance:
+    - do not start with shim cleanup
+    - do not mix baseline repair and broad refactor in one slice
+    - keep platform-level fixes explicit when they are prerequisites for EMIS baseline truthfulness
 
 #### A5 Acceptance Checklist
 - next wave order is explicit
+- the first implementation slice after docs freeze is explicit
+- `EXC-ARCH-002` and `EXC-ARCH-004` are mapped to bounded follow-up work
+- shim cleanup is explicitly later than baseline repair and boundary enforcement
 - docs-first wave ends without silently expanding into code refactor
 - future code stabilization can start from an accepted architecture baseline
 
@@ -217,24 +244,29 @@
   - `A1`
   - `A2`
   - `A3`
-- active next slice:
   - `A4`
-- deferred until after `A4`:
+- active next slice:
   - `A5`
 
 ## Default Next Dialogue
 
-If the next chat continues this wave by default, start from `A4`:
+If the next chat continues this wave by default, start from `A5`:
 
-- decide the final governance model:
-  - explicit `architecture-steward`
-  - or stronger documented `architecture-reviewer` without adding a second strategic lead
-- update `docs/agents/architecture-reviewer/instructions.md` to match package-era EMIS boundaries
-- ensure reviewer guidance explicitly covers:
-  - packages as canonical reusable homes
-  - `apps/web` as app leaf / transport-orchestration layer
-  - BI vs operational separation
-  - known exceptions and complexity waivers
+- treat `A5` as a docs-only sequencing slice
+- read and reconcile:
+  - `docs/agents/lead-strategic/memory.md`
+  - `docs/agents/lead-strategic/current_plan.md`
+  - `docs/emis_known_exceptions.md`
+  - `docs/emis_next_tasks_2026_03_22.md`
+- use the remaining live exceptions as the main prioritization input:
+  - `EXC-ARCH-002` → boundary gate / `fetchDataset.ts`
+  - `EXC-ARCH-004` → `EmisMap.svelte` waiver follow-up
+- write one explicit post-freeze order:
+  - baseline command / checks hardening first
+  - boundary gate repair second
+  - package-aware enforcement third
+  - bounded complexity follow-up after that
+  - shim cleanup later
 
 ## Scope Boundaries
 
@@ -273,4 +305,4 @@ At that point the next tactical dialogue may open **phase 2**:
 Until then, the correct stance remains:
 
 - architecture is viable
-- architecture docs are not yet fully stabilized
+- architecture and governance docs are stabilized enough for phase-2 planning, but the wave is not closed until `A5` sequences the enforcement backlog

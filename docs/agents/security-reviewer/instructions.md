@@ -15,7 +15,7 @@
 5. **SSRF:** User-controlled URLs в server-side `fetch()` без allowlist.
 6. **Path traversal:** User input в file paths без санитизации.
 7. **Write-side guardrails:** Destructive operations требуют confirmation или audit trail.
-8. **Raw SQL в routes:** SQL только в `server/emis/modules/*`, не в `routes/api/emis/*`.
+8. **Raw SQL в routes:** SQL только в `packages/emis-server/*`, не в `routes/api/emis/*`.
 
 ## Output
 

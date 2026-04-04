@@ -1,6 +1,6 @@
 # EMIS Architecture Review
 
-Короткий review checklist для `lead-integrator` и архитектурного approve по EMIS.
+Короткий approve checklist для `lead-tactical`, `architecture-reviewer` и `architecture-steward` по EMIS.
 
 Использовать вместе с:
 
@@ -23,21 +23,25 @@
    - почему change живет именно здесь
    - какие риски остаются
 6. Reviewers дают findings по diff.
-7. `lead-integrator` выносит verdict:
+7. Если нужен новый placement/waiver verdict, подключается `architecture-steward`.
+8. `lead-tactical` агрегирует findings и выносит tactical recommendation:
    - `approve`
    - `request changes`
    - `needs design decision`
+9. `lead-strategic` принимает slice, если он был частью planned wave.
 
 ## 2. When lead approval is mandatory
 
 Тяжелый review обязателен, если change затрагивает хотя бы один пункт:
 
 - новый route или новый API endpoint
-- изменение `apps/web/src/lib/server/emis/modules/*`
+- изменение public ownership или reusable logic в `packages/emis-contracts/*`, `packages/emis-server/src/*`, `packages/emis-ui/*`
+- изменение `apps/web/src/routes/api/emis/*`, `apps/web/src/routes/emis/*`, `apps/web/src/routes/dashboard/emis/*`, которое меняет contour boundaries
 - изменение DB schema или published views
 - новый shared contract, Zod schema или dataset contract
-- рост или переразбиение `/emis` workspace
+- рост или переразбиение `/emis` workspace или `packages/emis-ui/src/emis-map/EmisMap.svelte`
 - любые cross-layer changes
+- любой новый exception или complexity waiver
 
 ## 3. Fast path
 
@@ -58,6 +62,8 @@
 ### Boundaries
 
 - код живет в правильном слое
+- packages остаются canonical reusable homes
+- `apps/web` остается app leaf / transport-orchestration layer
 - `routes/api/emis/*` остаются transport-only
 - SQL не попадает в route files
 - client code не тянет `$lib/server/*`
@@ -68,12 +74,14 @@
 - change расположен там, где уже живет аналогичная ответственность
 - `why this placement` объяснен в handoff / MR summary
 - нет нового shared abstraction без доказанного reuse pressure
+- compatibility shims не используются как новый canonical home
 
 ### Complexity
 
 - change не раздувает и без того большие orchestration files без причины
-- для `apps/web/src/routes/emis/+page.svelte` и `apps/web/src/lib/widgets/emis-map/EmisMap.svelte` default expectation — extraction, а не дальнейший inline growth
+- для `apps/web/src/routes/emis/+page.svelte` и `packages/emis-ui/src/emis-map/EmisMap.svelte` default expectation — extraction, а не дальнейший inline growth
 - если файл уже пересек warning threshold, review явно фиксирует, почему это допустимо сейчас
+- long-lived waiver должен ссылаться на `docs/emis_known_exceptions.md`
 
 ### Contracts and docs
 
@@ -81,6 +89,7 @@
 - schema changes reflected in `db/current_schema.sql` и `db/applied_changes.md`
 - новый активный slice добавлен в navigation docs
 - `docs/AGENTS.md` и `docs/emis_session_bootstrap.md` не потеряли discoverability
+- если введён exception / waiver, он записан в `docs/emis_known_exceptions.md`
 
 ### Checks
 
@@ -108,3 +117,4 @@ Required follow-ups:
 - Prefer bounded, boring placement over clever cross-layer abstractions.
 - Prefer extraction over additional growth in already oversized route/map files.
 - Prefer documented contracts over implicit tribal knowledge.
+- Prefer explicit steward-approved waiver over silent architectural drift.

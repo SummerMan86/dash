@@ -127,6 +127,10 @@
 - code-reviewer: OK | N issues
 - ui-reviewer: OK | N issues | не запускался
 
+### Architecture / exceptions
+- architecture-steward: not needed | approve placement | approve with exception | needs strategic escalation
+- known exceptions / waivers touched: `none` | `EXC-...`
+
 ## Ветки
 - integration branch: feature/<topic>
 - worker branches merged: agent/worker/<slug> (если были)
@@ -149,6 +153,11 @@ Changed files:
 
 Diff (git diff main..feature/<topic>):
 <содержимое diff>
+
+Architecture context:
+- contour: <platform/shared | EMIS operational | EMIS BI/read-side>
+- expected home: <packages/... | apps/web/...>
+- exceptions / waivers touched: <none | EXC-...>
 
 Focus: <на что обратить внимание>
 ```
@@ -240,4 +249,33 @@ Allowed Next Work:
 Required Follow-ups:
 - <item>
 - или `none`
+```
+
+## 10. Architecture Steward Decision (architecture-steward → lead-strategic / lead-tactical)
+
+Файл или сообщение по итогам bounded architecture-governance pass.
+
+```md
+# Architecture Steward Decision
+
+Decision: approve placement | approve with exception | request reshape | needs strategic escalation
+
+Context:
+- contour: <platform/shared | EMIS operational | EMIS BI/read-side>
+- reusable home: <packages/... | not applicable>
+- app-leaf touch points: <apps/web/... | none>
+
+Why:
+- <reason 1>
+- <reason 2>
+
+Exception / waiver:
+- <EXC-id — owner, expiry, short note>
+- или `none`
+
+Required doc updates:
+- <doc or `none`>
+
+Allowed implementation scope:
+- <what may proceed next>
 ```

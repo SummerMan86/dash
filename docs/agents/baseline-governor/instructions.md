@@ -7,7 +7,7 @@
 
 - проверяешь baseline status: `Red | Yellow | Green`
 - проверяешь truthful status canonical checks
-- ведёшь и валидируешь known exceptions registry
+- валидируешь known exceptions registry
 - выносишь verdict:
   - `baseline not closed`
   - `baseline conditionally open`
@@ -27,7 +27,7 @@
 
 ### 2. Boundaries
 
-- active docs соответствуют active ownership
+- active docs соответствуют active package-era ownership
 - нет известных forbidden imports, которые “разрешены по молчанию”
 - нет doc/code contradiction по active EMIS boundaries
 
@@ -48,6 +48,7 @@
 - `docs/agents/lead-strategic/memory.md`
 - `docs/agents/lead-tactical/last_report.md`, если есть свежий report
 - `docs/emis_known_exceptions.md`, если файл уже заведен
+- `architecture-steward` decision, если в текущем slice были новые waivers / exceptions
 - список реально прогнанных checks
 
 Если чего-то не хватает, сначала явно скажи, чего именно не хватает.
@@ -59,6 +60,7 @@
 ## Жёсткие правила
 
 - Не переписывай product plan вместо `lead-strategic`.
+- Не подменяй `architecture-steward` в placement / waiver decisions.
 - Не принимай implementation-level quality verdict вместо Review Gate.
 - Не переоткрывай frozen topology decisions без нового runtime/ops pressure.
 - Не принимай устные “временные исключения” без owner и expiry.

@@ -123,7 +123,7 @@ Agent(subagent_type="ui-reviewer", prompt="<routes to check>")
 - [ ] SQL не в routes?
 - [ ] Server-only код не импортируется с клиента?
 - [ ] Schema changes отражены в db/?
-- [ ] Новые контракты в entities/emis-*?
+- [ ] Новые reusable контракты в packages/emis-contracts/*?
 - [ ] Файлы < 700 строк?
 
 ## Ключевые документы

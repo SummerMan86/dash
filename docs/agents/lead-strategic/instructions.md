@@ -61,12 +61,12 @@ Model policy:
 
 ## Инварианты (нарушение = reject)
 
-- SQL не в routes, а в `server/emis/modules/*`
+- SQL не в routes, а в `packages/emis-server/*`
 - `routes/api/emis/*` — только HTTP transport
 - FSD boundaries соблюдены
 - Svelte 5 runes для нового EMIS UI
 - Schema changes отражены в `db/current_schema.sql` + `db/applied_changes.md`
-- Новые контракты/типы — в `entities/emis-*`
+- Новые reusable контракты/типы — в `packages/emis-contracts/*`
 
 ## Формат плана
 

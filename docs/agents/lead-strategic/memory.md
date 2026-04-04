@@ -24,9 +24,10 @@
 - Current strategic verdict from the architecture review on `2026-04-04`:
   - the core EMIS architecture is viable
   - the main problem is not topology, but doc truthfulness, mixed current-vs-target descriptions and weak governance/enforcement coupling
-- Recommended governance shape for the next wave:
-  - `architecture-steward` owns canonical architecture docs, known exceptions and pre-approval for cross-layer changes
+- Final governance shape for the current wave:
+  - `architecture-steward` owns canonical architecture docs, placement decisions, architecture waivers/exceptions and pre-approval for cross-layer changes
   - `architecture-reviewer` remains a bounded diff reviewer, not a second strategic lead
+  - `baseline-governor` validates baseline status and registry truthfulness, but does not own placement decisions
 
 ## Контекст текущей работы
 
@@ -125,22 +126,35 @@
     - `docs/emis_access_model.md`
     - `docs/emis_observability_contract.md`
     - `docs/emis_read_models_contract.md`
-- `A4` is the default next slice:
-  - workflow/roles/templates already mention `baseline-governor`
-  - but `docs/agents/architecture-reviewer/instructions.md` still lags behind package-era EMIS boundaries
-  - next dialogue should decide whether to:
-    - add explicit `architecture-steward`
-    - or strengthen `architecture-reviewer` without introducing a second strategic lead
+- `A4` completed on `2026-04-04`:
+  - explicit `architecture-steward` added as governance/design role
+  - `architecture-reviewer` now reviews package/app leaf boundaries, BI vs operational separation and waiver handling
+  - `baseline-governor` is now explicitly separated from placement/waiver ownership
+  - known exceptions registry now reflects only remaining live blockers / waivers
+- `A5` is now prepared as the default next slice:
+  - scope: docs-only sequencing of the first post-freeze phase-2 work
+  - primary inputs:
+    - `EXC-ARCH-002` — boundary gate / `fetchDataset.ts`
+    - `EXC-ARCH-004` — `EmisMap.svelte` complexity waiver
+  - intended order to validate and write into backlog docs:
+    - first: baseline command + truthful checks hardening
+    - second: restore green boundary gate
+    - third: tighten package-aware enforcement
+    - fourth: bounded `EmisMap.svelte` follow-up
+    - later: mass shim cleanup and other residual cleanup
 - Resume point for the next chat:
   - branch / HEAD during the last accepted save:
     - `main`
     - `98edc4c` — `docs: add EMIS baseline governance contracts`
+  - current working tree contains:
+    - accepted `A4` governance docs
+    - refined `A5` plan/handoff
+  - next chat should execute `A5` as a docs-only slice and update `docs/emis_next_tasks_2026_03_22.md`
 - Deferred phase 2 after docs freeze:
   - repair broken baseline checks
   - restore green boundary gate
   - tighten machine-enforced architecture boundaries
-  - introduce `baseline-governor`
-  - add `Red/Yellow/Green` state model and canonical baseline command
+  - operationalize canonical baseline command / state model around the already documented `baseline-governor`
   - only then resume broader EMIS foundation closeout / refactor slices
 - Wave status: **open**.
 - New wave constraints:
