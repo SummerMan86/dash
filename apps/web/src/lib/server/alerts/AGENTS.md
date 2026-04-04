@@ -81,7 +81,7 @@ triggerAlertCheck();
 
 - No second consumer exists
 - Tied to SvelteKit app lifecycle (`hooks.server.ts` starts/stops scheduler)
-- Uses `$lib/server/db/pg` for DB access (app-level infrastructure)
+- Uses `@dashboard-builder/db` directly for DB access
 - Cross-domain orchestration with env-specific config (Telegram tokens, cron)
 - Extracting would require abstracting app lifecycle management
 

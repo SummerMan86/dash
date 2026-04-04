@@ -119,7 +119,7 @@ Agent(subagent_type="ui-reviewer", prompt="<routes to check>")
 Полный список: `docs/agents/workflow.md`, секция 6.
 
 Быстрая проверка перед каждым коммитом:
-- [ ] Код в правильном FSD-слое?
+- [ ] Код в правильном слое / package home?
 - [ ] SQL не в routes?
 - [ ] Server-only код не импортируется с клиента?
 - [ ] Schema changes отражены в db/?

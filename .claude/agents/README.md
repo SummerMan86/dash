@@ -12,7 +12,7 @@ Canonical docs:
 | Файл | Модель | Проверяет |
 |---|---|---|
 | `security-reviewer.md` | Sonnet | SQL injection, XSS, secrets, SSRF |
-| `architecture-reviewer.md` | Sonnet | FSD boundaries, server isolation, complexity |
+| `architecture-reviewer.md` | Sonnet | layer/import boundaries, server isolation, complexity |
 | `docs-reviewer.md` | Sonnet | Docs, DB truth, runtime contracts sync |
 | `code-reviewer.md` | Sonnet | Naming, conventions, maintainability |
 | `ui-reviewer.md` | Sonnet + Chrome | UI smoke-test (при frontend changes) |

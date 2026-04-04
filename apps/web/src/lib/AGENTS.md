@@ -50,13 +50,18 @@ What remains in `lib/` is **app-level composition and glue**:
 - `features/emis-manual-entry/` — EMIS CMS forms (app feature, depends on $app/forms)
 - `server/datasets/definitions/` — app-specific dataset IR definitions
 - `server/alerts/` — alert scheduler + Telegram (app lifecycle, hooks.server.ts)
-- `server/providers/` — mockProvider (canonical, fixture dep); postgresProvider (MIGRATION shim, canonical in packages/platform-datasets)
+- `server/providers/` — mockProvider only (fixture/demo provider)
 - `server/emis/` — MIGRATION re-exports from emis-server package
 - `shared/api/fetchDataset.ts` — BI data access facade (filter composition)
 - `shared/` — MIGRATION re-exports from platform packages
 - `widgets/filters/` — MIGRATION re-export from platform-filters/widgets
 - `widgets/emis-*/` — MIGRATION re-exports / app-specific EMIS UI glue
 - `widgets/stock-alerts/` — Wildberries-specific alert widgets
+
+Server-only consumers should now import these canonical packages directly:
+
+- `@dashboard-builder/platform-datasets/server` — `compileDataset`, `postgresProvider`
+- `@dashboard-builder/db` — pg pool
 
 ## EMIS vs BI boundary
 

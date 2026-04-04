@@ -12,6 +12,8 @@ src/
     EmisPmtilesSpikeMap.svelte — diagnostics map
     feature-normalizers.ts   — pure GeoJSON → typed EMIS feature converters
     layer-config.ts          — MapLibre layer management utilities
+    map-bounds.ts            — fitBounds and route-focus helpers
+    map-interactions.ts      — popup, tooltip and layer interaction wiring
     overlay-fetch.ts         — overlay URL construction, typed fetch, layer visibility helpers
     pmtiles-protocol.ts      — PMTiles protocol registration
     pmtiles-style.ts         — offline PMTiles style builder
@@ -49,4 +51,4 @@ src/
 
 ## Известные follow-ups
 
-- `EmisMap.svelte` (903 lines after H-4a) — further decomposition possible via H-4b (route page) or event-bus pattern for MapLibre lifecycle, but not urgent.
+- `EmisMap.svelte` was reduced to `695` lines in `P3.4` via package-local extraction of bounds and interaction helpers; no live complexity waiver remains.

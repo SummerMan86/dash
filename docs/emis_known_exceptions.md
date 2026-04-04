@@ -24,21 +24,42 @@ If one of these fields is missing, the exception is not considered approved.
 
 ## Current Baseline Status
 
-As of `2026-04-04`, baseline verdict should still be treated as:
+As of `2026-04-04` after the full post-`P3.5` baseline rerun, baseline verdict should be treated as:
 
-- `baseline not closed`
+- status: `Green`
+- `baseline closed`
 
 Reason:
 
-- `pnpm lint:boundaries` is still red because of a pre-existing platform/FSD gap
-- a bounded complexity waiver still remains live for one oversized EMIS UI file
+- no live architecture exceptions remain after `P3.4`
+- root smoke harness drift was repaired:
+  - root `package.json` now declares `dotenv` and `pg` for root scripts
+  - `emis-offline-smoke` and `emis-write-smoke` now start Vite from `apps/web`
+  - `emis-offline-smoke` now reads offline assets from `apps/web/static/emis-map/offline`
+- the rerun results are now explicit:
+  - `pnpm check` — green
+  - `pnpm build` — green
+  - `pnpm lint:boundaries` — green
+  - `pnpm emis:offline-smoke` — green
+  - `pnpm emis:write-smoke` — green
+  - `pnpm emis:smoke` — green
+
+Canonical post-freeze baseline routine is:
+
+- `pnpm check`
+- `pnpm build`
+- `pnpm lint:boundaries`
+- `pnpm emis:smoke`
+- `pnpm emis:offline-smoke`
+- `pnpm emis:write-smoke` when write-side relevant
 
 ## Live Exceptions
 
-| ID | Layer | Summary | Owner | Why allowed now | Target wave / expiry | Removal condition |
-|---|---|---|---|---|---|---|
-| `EXC-ARCH-002` | platform boundary gate | `pnpm lint:boundaries` fails because `apps/web/src/lib/shared/api/fetchDataset.ts` imports from `$entities/dataset` and `$entities/filter`. | `platform/shared owner` | This is a pre-existing platform-level gap outside the EMIS package split itself, but it blocks a truthful green baseline. | Phase 2 boundary enforcement wave after `A5` | `pnpm lint:boundaries` is green, either by code fix or by an explicitly redefined and documented rule. |
-| `EXC-ARCH-004` | complexity waiver | `packages/emis-ui/src/emis-map/EmisMap.svelte` remains at `903` lines after the accepted hardening wave. | `EMIS UI owner` | The file was already reduced substantially and is not the first blocker for architecture stabilization; immediate further split is deferred. | Phase 2 bounded refactor / EMIS UI hardening wave | Widget is decomposed further or the waiver is explicitly renewed by `architecture-steward` with updated owner + expiry. |
+No live architecture exceptions are currently registered.
+
+## Current Baseline Blocker
+
+None.
 
 ## Notes
 

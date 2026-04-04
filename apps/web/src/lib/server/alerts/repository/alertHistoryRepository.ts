@@ -2,7 +2,7 @@
  * Repository for alert history (sent notifications log)
  */
 
-import { getPgPool } from '$lib/server/db/pg';
+import { getPgPool } from '@dashboard-builder/db';
 import type {
 	AlertHistoryEntry,
 	CreateHistoryInput,

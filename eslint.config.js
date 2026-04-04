@@ -9,6 +9,30 @@ import ts from 'typescript-eslint';
 import svelteConfig from './apps/web/svelte.config.js';
 
 const gitignorePath = fileURLToPath(new URL('./.gitignore', import.meta.url));
+const packageSourceFiles = (pkg) => [
+	`packages/${pkg}/src/**/*.ts`,
+	`packages/${pkg}/src/**/*.svelte.ts`,
+	`packages/${pkg}/src/**/*.svelte.js`,
+	`packages/${pkg}/src/**/*.svelte`
+];
+const appImportPatterns = [
+	'$lib',
+	'$lib/*',
+	'$lib/**',
+	'$shared',
+	'$shared/*',
+	'$shared/**',
+	'$entities',
+	'$entities/*',
+	'$entities/**',
+	'$features',
+	'$features/*',
+	'$features/**',
+	'$widgets',
+	'$widgets/*',
+	'$widgets/**',
+	'**/apps/web/**'
+];
 
 export default defineConfig(
 	includeIgnoreFile(gitignorePath),
@@ -36,6 +60,136 @@ export default defineConfig(
 				parser: ts.parser,
 				svelteConfig
 			}
+		}
+	},
+
+	// Package-era boundaries: package source must not reach into apps/web.
+	// Each package only imports the workspace edges it currently owns.
+	{
+		files: packageSourceFiles('platform-core'),
+		rules: {
+			'no-restricted-imports': ['error', {
+				patterns: [
+					{ group: ['@dashboard-builder/*', ...appImportPatterns], message: 'platform-core must not import workspace packages or apps/web' }
+				]
+			}]
+		}
+	},
+	{
+		files: packageSourceFiles('db'),
+		rules: {
+			'no-restricted-imports': ['error', {
+				patterns: [
+					{ group: ['@dashboard-builder/*', ...appImportPatterns], message: 'db must not import workspace packages or apps/web' }
+				]
+			}]
+		}
+	},
+	{
+		files: packageSourceFiles('platform-ui'),
+		rules: {
+			'no-restricted-imports': ['error', {
+				patterns: [
+					{
+						group: [
+							'@dashboard-builder/db',
+							'@dashboard-builder/platform-datasets',
+							'@dashboard-builder/platform-filters',
+							'@dashboard-builder/emis-*',
+							...appImportPatterns
+						],
+						message: 'platform-ui may only import platform-core from the workspace'
+					}
+				]
+			}]
+		}
+	},
+	{
+		files: packageSourceFiles('platform-datasets'),
+		rules: {
+			'no-restricted-imports': ['error', {
+				patterns: [
+					{
+						group: [
+							'@dashboard-builder/platform-ui',
+							'@dashboard-builder/platform-filters',
+							'@dashboard-builder/emis-*',
+							...appImportPatterns
+						],
+						message: 'platform-datasets may only import platform-core and db from the workspace'
+					}
+				]
+			}]
+		}
+	},
+	{
+		files: packageSourceFiles('platform-filters'),
+		rules: {
+			'no-restricted-imports': ['error', {
+				patterns: [
+					{
+						group: ['@dashboard-builder/db', '@dashboard-builder/emis-*', ...appImportPatterns],
+						message: 'platform-filters may only import platform-core, platform-ui, and platform-datasets from the workspace'
+					}
+				]
+			}]
+		}
+	},
+	{
+		files: packageSourceFiles('emis-contracts'),
+		rules: {
+			'no-restricted-imports': ['error', {
+				patterns: [
+					{
+						group: [
+							'@dashboard-builder/db',
+							'@dashboard-builder/platform-ui',
+							'@dashboard-builder/platform-datasets',
+							'@dashboard-builder/platform-filters',
+							'@dashboard-builder/emis-server',
+							'@dashboard-builder/emis-ui',
+							...appImportPatterns
+						],
+						message: 'emis-contracts may only import platform-core from the workspace'
+					}
+				]
+			}]
+		}
+	},
+	{
+		files: packageSourceFiles('emis-server'),
+		rules: {
+			'no-restricted-imports': ['error', {
+				patterns: [
+					{
+						group: [
+							'@dashboard-builder/platform-ui',
+							'@dashboard-builder/platform-filters',
+							'@dashboard-builder/emis-ui',
+							...appImportPatterns
+						],
+						message: 'emis-server must not import UI packages or apps/web'
+					}
+				]
+			}]
+		}
+	},
+	{
+		files: packageSourceFiles('emis-ui'),
+		rules: {
+			'no-restricted-imports': ['error', {
+				patterns: [
+					{
+						group: [
+							'@dashboard-builder/db',
+							'@dashboard-builder/platform-datasets',
+							'@dashboard-builder/emis-server',
+							...appImportPatterns
+						],
+						message: 'emis-ui must not import db, platform-datasets, emis-server, or apps/web'
+					}
+				]
+			}]
 		}
 	},
 
@@ -114,7 +268,14 @@ export default defineConfig(
 		rules: {
 			'no-restricted-imports': ['error', {
 				patterns: [
-					{ group: ['$lib/server/emis/*', '$lib/server/emis/**'], message: 'Dashboard EMIS routes must not import EMIS server modules (use dataset path)' }
+					{
+						group: ['$lib/server/emis/*', '$lib/server/emis/**'],
+						message: 'Dashboard EMIS routes must not import app-local EMIS server shims'
+					},
+					{
+						group: ['@dashboard-builder/emis-server/modules/*', '@dashboard-builder/emis-server/modules/**'],
+						message: 'Dashboard EMIS routes must not import EMIS operational modules (use dataset path)'
+					}
 				]
 			}]
 		}

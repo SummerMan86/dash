@@ -44,6 +44,7 @@ const ACTOR_ID = `write-smoke-${RUN_ID}`;
 const DEFAULT_HOST = '127.0.0.1';
 const STARTUP_TIMEOUT_MS = 30_000;
 const REQUEST_TIMEOUT_MS = 15_000;
+const APP_DIR = new URL('../apps/web', import.meta.url).pathname;
 
 // ---------------------------------------------------------------------------
 // Cleanup registry
@@ -314,7 +315,7 @@ async function startLocalServer() {
 	const child = spawn(
 		'pnpm',
 		['exec', 'vite', 'dev', '--host', DEFAULT_HOST, '--port', String(port), '--strictPort'],
-		{ stdio: ['ignore', 'pipe', 'pipe'], env: process.env, cwd: process.cwd() }
+		{ stdio: ['ignore', 'pipe', 'pipe'], env: process.env, cwd: APP_DIR }
 	);
 	child.stdout.on('data', (chunk) => pushLog(stdout, chunk));
 	child.stderr.on('data', (chunk) => pushLog(stderr, chunk));

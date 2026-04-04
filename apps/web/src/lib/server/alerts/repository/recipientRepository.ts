@@ -2,7 +2,7 @@
  * Repository for alert recipients CRUD operations
  */
 
-import { getPgPool } from '$lib/server/db/pg';
+import { getPgPool } from '@dashboard-builder/db';
 import type { AlertRecipient, CreateRecipientInput, NotificationChannelType } from '../model/types';
 
 type RecipientRow = {

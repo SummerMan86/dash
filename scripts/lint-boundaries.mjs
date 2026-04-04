@@ -15,6 +15,7 @@ import { join } from 'node:path';
 
 // Only scan directories where boundary rules are defined in eslint.config.js
 const targets = [
+	'packages/*/src/',
 	'apps/web/src/lib/shared/',
 	'apps/web/src/lib/entities/',
 	'apps/web/src/lib/features/',

@@ -8,7 +8,7 @@
 
 import cron, { type ScheduledTask } from 'node-cron';
 import type { DatabaseError } from 'pg';
-import { getPgPool } from '$lib/server/db/pg';
+import { getPgPool } from '@dashboard-builder/db';
 import { processAlerts } from './alertProcessor';
 
 // ============================================================================

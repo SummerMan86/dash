@@ -84,8 +84,8 @@
 - Residual 1 (mapConfig boundary exception): switched BI route `vessel-positions/+page.server.ts` from shim `$lib/server/emis/infra/mapConfig` to canonical `@dashboard-builder/emis-server/infra/mapConfig`; also normalized 2 EMIS routes (`emis/+page.server.ts`, `emis/pmtiles-spike/+page.server.ts`); deleted the now-unused shim `apps/web/src/lib/server/emis/infra/mapConfig.ts`; updated `routes/api/emis/AGENTS.md` to document deletion
 - Residual 2 (clampPageSize duplication): extracted `clampPageSize()` and `clampMapLimit()` to `packages/emis-server/src/infra/http.ts` using existing constants; replaced local copies in `modules/objects/queries.ts`, `modules/news/queries.ts`, `modules/map/queries.ts`; `ship-routes/queries.ts` has a different-signature `clampLimit(value, max)` -- left as-is (not duplicated)
 - Residual 3 (mapVesselsQuery fragile params): replaced hardcoded `$1`..`$4` with dynamic `$${values.length}` push-and-reference pattern, matching the style used by `appendBboxConditions` and all other query builders in the module; SQL semantics unchanged
-- fetchDataset: explicitly deferred (platform-level FSD gap, not this wave's scope)
-- Verification: pnpm check 0 errors, pnpm build success, lint:boundaries 3 pre-existing only (fetchDataset FSD)
+- fetchDataset: was explicitly deferred in `H-5`; closed later in `P3.2` as a platform-level boundary fix
+- Verification: pnpm check 0 errors, pnpm build success, lint:boundaries 3 pre-existing only at that time (`fetchDataset` was closed later in `P3.2`)
 
 ## Проблемы и workarounds
 
@@ -95,11 +95,58 @@
 - `git add -A` caught `.claude/agent-memory/` and `target` — now in `.gitignore`
 - `export { X } from 'Y'` does NOT bring X into local scope — reviewers may flag this as duplicate import when combined with `import { X } from 'Y'`, but both are needed
 
+### Wave P3 (EMIS Phase 2 Baseline Truthfulness And Boundary Enforcement)
+
+All P3 slices completed on `2026-04-04`:
+
+- `P3.1` — docs-only baseline routine and verdict alignment
+- `P3.2` — `fetchDataset.ts` boundary gap closed, `EXC-ARCH-002` removed
+- `P3.3` — package-aware enforcement in `eslint.config.js` and `lint-boundaries.mjs`
+- `P3.4` — `EmisMap.svelte` decomposed to 695 lines, `EXC-ARCH-004` closed
+- `P3.5` — root smoke harness drift repaired, dev-SSR resolution fixed
+- `P3.6` — dead app-side server shims removed (`datasets/compile.ts`, `providers/postgresProvider.ts`, `db/pg.ts`)
+
+Baseline verdict after P3.5 rerun: **Green / baseline closed**.
+
+### DS-1..DS-4 (Repo-Wide Doc Sync Follow-up)
+
+Completed on `2026-04-04` as a docs-only bounded package:
+
+- Active docs synced with `docs/architecture.md` canonical contract
+- Stale "FSD as architecture" wording removed from active memory/reviewer docs
+- Stale "fetchDataset live blocker" wording removed from active docs
+- Deleted shim paths removed from active navigation docs
+- EMIS operational path in root `AGENTS.md` corrected to package path
+- `server/AGENTS.md` structure diagram updated to reflect P3.6 deletions
+- Historical slice logs in reviewer memory explicitly framed as historical
+
+### NW-1: Access Model Freeze and Write-Policy Design (DONE, 2026-04-04)
+
+Docs/design only, no code changes. Backlog mapping: M1.1, M1.2.
+
+- Rewrote `docs/emis_access_model.md` as canonical access model reference:
+  - Operating model: trusted internal network (explicit, accepted limitation)
+  - Role semantics: `viewer` (read-only, implicit), `editor` (writes with actor), `admin` (deferred)
+  - Full auth/RBAC/sessions explicitly deferred beyond MVE
+  - One-paragraph summary for quick reference
+- Designed `assertWriteContext()` write-policy helper contract:
+  - Signature: `assertWriteContext(request, source): EmisWriteContext`
+  - Strict mode (`EMIS_WRITE_POLICY=strict` or production): 403 `WRITE_NOT_ALLOWED` if no actor header
+  - Permissive mode (dev/local default): backward-compatible auto-default actor
+  - Ownership: `apps/web/src/lib/server/emis/infra/writePolicy.ts` (app-level)
+  - Drop-in replacement for `resolveEmisWriteContext()` in routes
+- Added write-policy contract section and helper table to `RUNTIME_CONTRACT.md`
+- Updated `emis_session_bootstrap.md` with access model status
+- Previous version of `emis_access_model.md` implied future `requireEmisRole()` RBAC — removed, replaced with frozen MVE contract
+
 ## Заметки для следующей сессии
 
-- H-1, H-2, H-3, H-4a, H-4b, H-5 all done — wave H is complete
+- H-1..H-5 all done — wave H is complete
+- P3.1..P3.6 all done — phase 2 is complete, baseline is Green/closed
+- DS-1..DS-4 done — active docs layer synced with canonical architecture
+- NW-1 done — access model frozen, write-policy helper contract designed
+- Next: NW-2 (centralized write guardrails rollout) — implement `assertWriteContext()` and wire all write entry points
 - Pre-existing carry-forward (all deferred, none blocking):
-  - stock-alerts->routes FSD violation
-  - fetchDataset FSD gap (shared imports entities)
-  - cacheKeyQuery redundancy in fetchDataset
-  - ~53 MIGRATION re-export shims — code removal, not this wave's scope
+  - stock-alerts→routes layer-boundary violation
+  - remaining MIGRATION re-export shims in `entities/`, `shared/`, `widgets/` — code removal, not docs scope
+  - `pnpm lint` Prettier drift (not blocking)

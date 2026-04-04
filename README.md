@@ -132,6 +132,7 @@ pnpm lint:boundaries
 
 ## Документация
 
+- `docs/architecture.md` - canonical repo-wide architecture contract: topology, ownership, execution paths, import rules
 - `AGENTS.md` - корневая точка входа по репозиторию, контурам и архитектурным правилам
 - `docs/AGENTS.md` - единственный полный каталог документации и reading order
 - `db/schema_catalog.md` + `db/current_schema.sql` - snapshot-first source of truth по активной структуре БД
@@ -146,7 +147,7 @@ Monorepo-style layout: единое SvelteKit-приложение в `apps/web/
 - `db` — DB helpers и schema
 - `emis-contracts`, `emis-server`, `emis-ui` — EMIS domain packages
 
-Single-deployable: один runtime, но code ownership и import boundaries разделены по package границам. Подробнее — `AGENTS.md` и `docs/emis_monorepo_target_layout.md`.
+Single-deployable: один runtime, но code ownership и import boundaries разделены по package границам. Подробнее — `docs/architecture.md` и `docs/emis_monorepo_target_layout.md`.
 
 ## Локальные git-checkpoints
 

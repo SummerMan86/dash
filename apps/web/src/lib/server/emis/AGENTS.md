@@ -10,7 +10,7 @@ Runtime contract: `infra/RUNTIME_CONTRACT.md` (still here, source of truth for r
 
 ## Правило по архитектуре
 
-EMIS встраивается в текущий проект как адаптированный FSD:
+EMIS встраивается в текущий проект как package-owned operational contour внутри modular monolith:
 
 - `packages/emis-contracts/` - контракты, DTO, Zod schemas
 - `packages/emis-server/src/infra/*` - server infrastructure helpers

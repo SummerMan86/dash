@@ -145,7 +145,7 @@ Published DB contracts:
 
 - большие EMIS route/widget файлы должны расти только через extraction
 - compatibility shims остаются временным слоем, а не ownership truth
-- известный `fetchDataset.ts` boundary gap — platform-level проблема и не повод переоткрывать EMIS topology
+- platform-level boundary debt should be handled through package-aware enforcement, not by reopening EMIS topology
 
 ## 8. Relationship To Other Docs
 

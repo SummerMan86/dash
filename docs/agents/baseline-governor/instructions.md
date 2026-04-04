@@ -25,6 +25,10 @@
 - `pnpm emis:offline-smoke`
 - `pnpm emis:write-smoke` when write-side relevant
 
+Для текущей EMIS post-freeze phase 2 это и есть canonical baseline routine.
+Не подменяй её вымышленной командой вроде `pnpm emis:baseline`, пока такой script реально не существует.
+Если в текущем slice какой-то check не прогоняли, в verdict нужно писать `not run`.
+
 ### 2. Boundaries
 
 - active docs соответствуют active package-era ownership
@@ -65,6 +69,8 @@
 - Не переоткрывай frozen topology decisions без нового runtime/ops pressure.
 - Не принимай устные “временные исключения” без owner и expiry.
 - Если baseline фактически red, говори `baseline not closed`, даже если в остальном прогресс хороший.
+- Пока существенные live exceptions остаются открытыми, green verdict по умолчанию недопустим.
+- Даже если live exceptions уже закрыты, `Green` всё равно недопустим без полного прогона canonical routine end-to-end.
 
 ## Когда статус можно считать Green
 

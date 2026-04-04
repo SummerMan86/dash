@@ -1,8 +1,10 @@
 # EMIS Semantic Modules
 
-`src/lib/server/emis/modules/` - семантический backend-слой EMIS.
+> **Migration note (ST-7 / H-3):** This directory now contains only `// MIGRATION` re-export shims.
+> Canonical module code lives in `packages/emis-server/src/modules/`. New code goes there directly.
+> Route handlers import from `@dashboard-builder/emis-server/modules/*`.
 
-Здесь код группируется по доменным модулям, а не по техническим папкам верхнего уровня.
+`src/lib/server/emis/modules/` - compatibility shim layer для EMIS semantic modules.
 
 ## Модули
 

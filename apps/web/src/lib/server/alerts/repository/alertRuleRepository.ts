@@ -2,7 +2,7 @@
  * Repository for alert rules CRUD operations
  */
 
-import { getPgPool } from '$lib/server/db/pg';
+import { getPgPool } from '@dashboard-builder/db';
 import type {
 	AlertRule,
 	CreateAlertRuleInput,

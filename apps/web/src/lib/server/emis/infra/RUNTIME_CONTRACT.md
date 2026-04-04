@@ -160,7 +160,49 @@ Single-entity GETs return the entity directly (no wrapper).
 - PATCH → `200` with updated entity
 - DELETE → `200` with `{ ok: true }`
 - All validate body via Zod schemas (`parseJsonBody`)
-- All resolve audit context from `x-emis-actor-id` / `x-actor-id` headers
+- All currently resolve write context via `resolveEmisWriteContext()` (audit-only, never rejects)
+- **Target (NW-2):** replace with `assertWriteContext()` (see "Write-policy contract" below)
+
+## Write-policy contract (NW-2 target)
+
+**Status:** design frozen in NW-1. Implementation is NW-2 scope. The helper does not exist yet.
+
+After NW-2, all EMIS write entry points (API routes and form actions) must call `assertWriteContext()` before performing any mutation. This will be the single enforcement point for write authorization in MVE.
+
+### Helper
+
+| Helper | Canonical location | Purpose |
+| --- | --- | --- |
+| `assertWriteContext(request, source)` | `apps/web/src/lib/server/emis/infra/writePolicy.ts` (approved by architecture-steward) | Validate write context, enforce actor requirement, return `EmisWriteContext` |
+
+### Behavior
+
+`assertWriteContext()` wraps `resolveEmisWriteContext()` (audit utility) with policy enforcement:
+
+- **strict mode** (`EMIS_WRITE_POLICY=strict` or production): requires explicit actor header (`x-emis-actor-id` or `x-actor-id`). Missing actor → `403 WRITE_NOT_ALLOWED`.
+- **permissive mode** (`EMIS_WRITE_POLICY=permissive` or dev/local default): falls back to source-based default actor (`api-client`, `local-manual-ui`, `server-process`). Backward-compatible with current dev workflow.
+
+### Error code
+
+| Code | Status | When |
+| --- | --- | --- |
+| `WRITE_NOT_ALLOWED` | 403 | Strict mode, no actor header provided |
+
+### Integration rule
+
+Every route handler or form action that performs a write must replace direct `resolveEmisWriteContext()` calls with `assertWriteContext()`:
+
+```typescript
+// Canonical pattern for all write entry points:
+const ctx = assertWriteContext(request, 'api');       // API routes
+const ctx = assertWriteContext(request, 'manual-ui'); // form actions
+```
+
+Return type is `EmisWriteContext` (same as before). Downstream service/repository signatures do not change.
+
+### Canonical reference
+
+Full write-policy contract, role semantics and operating model: `docs/emis_access_model.md`.
 
 ## Audit contract
 
@@ -242,4 +284,10 @@ Return `{ rows: [...] }` without meta (no pagination, no sort; full snapshot pay
 | `jsonEmisError()`          | Standard `{error, code}` response     |
 | `handleEmisRoute()`        | Error boundary wrapper                |
 
-Routes import all helpers from `$lib/server/emis/infra/http` (which re-exports package helpers and adds transport helpers).
+### App-layer write policy (NW-2 target) — `apps/web/src/lib/server/emis/infra/writePolicy.ts`
+
+| Helper                     | Purpose                               |
+| -------------------------- | ------------------------------------- |
+| `assertWriteContext()`     | Write-policy checkpoint (see "Write-policy contract" section) — **not yet implemented** |
+
+Routes import transport helpers from `$lib/server/emis/infra/http`. After NW-2, routes will also import write-policy helper from `$lib/server/emis/infra/writePolicy`.

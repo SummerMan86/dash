@@ -8,23 +8,22 @@
 - отдельный EMIS server namespace
 
 Важно: generic `server/` предназначен в первую очередь для BI/read-side contracts.
-Новый EMIS operational backend по умолчанию должен жить в `src/lib/server/emis/`, а не наращивать dataset/IR слой.
+Новый EMIS operational backend по умолчанию должен жить в `packages/emis-server/`, а не наращивать dataset/IR слой. App-level `src/lib/server/emis/` now contains only MIGRATION re-export shims and transport glue (`infra/http.ts`).
 
 ## Structure
 
 ```text
 server/
 ├── datasets/
-│   ├── compile.ts
 │   └── definitions/
 ├── providers/
-│   ├── mockProvider.ts
-│   └── postgresProvider.ts
-├── db/
-│   └── pg.ts
+│   └── mockProvider.ts
 ├── alerts/
 └── emis/
 ```
+
+> **P3.6 cleanup (2026-04-04):** `datasets/compile.ts`, `providers/postgresProvider.ts` and `db/pg.ts` were removed.
+> Canonical homes: `@dashboard-builder/platform-datasets/server` (compile, postgresProvider) and `@dashboard-builder/db` (pg pool).
 
 ## Локальные документы
 
@@ -38,25 +37,23 @@ server/
 
 ### `datasets/`
 
-Routing layer для dataset definitions:
+App-level dataset definitions for the BI/read-side pipeline.
 
-- по `datasetId` выбирает compile function
-- собирает `DatasetIr` из `DatasetQuery`
+- `definitions/` — app-specific dataset IR definitions (strategy, analytics, etc.)
 
-Это точка входа в BFF/read/query pipeline.
+Canonical compiler routing and provider runtime now live in `@dashboard-builder/platform-datasets/server`.
 
 ### `providers/`
 
-Исполнители IR:
+App-level provider:
 
-- `mockProvider.ts`
-- `postgresProvider.ts`
+- `mockProvider.ts` — demo/mock execution for non-Postgres datasets
 
-Это bridge между abstract dataset contract и конкретным data source.
+Canonical PostgreSQL provider lives in `@dashboard-builder/platform-datasets/server`.
 
-### `db/`
+### `db/` (removed in P3.6)
 
-Низкоуровневый PostgreSQL access.
+Low-level PostgreSQL access now lives in `@dashboard-builder/db`.
 
 Если задача связана со схемой `strategy`, дополнительно смотреть:
 
@@ -76,13 +73,15 @@ Routing layer для dataset definitions:
 
 ### `emis/`
 
-Новый server-only namespace для EMIS:
+Compatibility shim layer for EMIS server imports. Canonical code lives in `packages/emis-server/`.
 
-- `infra/`
-- `modules/`
-- transport helpers и runtime rules
+What remains here:
 
-Это правильное место для EMIS backend-логики в текущей архитектуре.
+- `infra/http.ts` — app-owned SvelteKit transport glue (intentionally stays in app)
+- `infra/RUNTIME_CONTRACT.md` — runtime conventions doc
+- `modules/` — MIGRATION re-export shims → `packages/emis-server/src/modules/`
+
+New EMIS backend logic goes into `packages/emis-server/`, not here.
 
 ## Adding a new dataset
 
@@ -91,14 +90,14 @@ Routing layer для dataset definitions:
 1. Add dataset ID constant in `definitions/your-dataset.ts`
 2. Implement `compileYourDataset(id, query): DatasetIr`
 3. Add fixture in `shared/fixtures/`
-4. Register in `datasets/compile.ts`
+4. Register in `packages/platform-datasets/src/server/compile.ts`
 
 ### Postgres
 
 1. Do the same steps 1-2
-2. Add SQL mapping to `DATASETS` in `packages/platform-datasets/src/server/providers/postgresProvider.ts` (canonical; `providers/postgresProvider.ts` here is a MIGRATION shim)
-3. Register in `packages/platform-datasets/src/server/compile.ts` (canonical; `datasets/compile.ts` here is a MIGRATION shim)
-4. Route to `postgresProvider` in `routes/api/datasets/[id]/+server.ts`
+2. Add SQL mapping to `DATASETS` in `packages/platform-datasets/src/server/providers/postgresProvider.ts`
+3. Register in `packages/platform-datasets/src/server/compile.ts`
+4. Route to `postgresProvider` in `routes/api/datasets/[id]/+server.ts` via direct import from `@dashboard-builder/platform-datasets/server`
 
 ## Provider routing
 
@@ -122,9 +121,9 @@ Currently hardcoded:
 
 1. этот `AGENTS.md`
 2. `datasets/AGENTS.md`
-3. `datasets/compile.ts`
-4. `datasets/definitions/*`
-5. `providers/*`
+3. `packages/platform-datasets/src/server/compile.ts` (canonical compiler)
+4. `datasets/definitions/*` (app-level definitions)
+5. `providers/mockProvider.ts` (app-level mock provider)
 6. `../../routes/api/datasets/[id]/+server.ts`
 
 Если интересует alerting:
@@ -138,5 +137,5 @@ Currently hardcoded:
 ## На что обратить внимание
 
 - `server/` по-прежнему в основном ориентирован на read/query flows
-- EMIS write/query side должны развиваться в `server/emis`
+- EMIS write/query side должны развиваться в `packages/emis-server`; app-level `server/emis/` is a compatibility shim layer
 - в `hooks.server.ts` есть boot-side effect для alert scheduler

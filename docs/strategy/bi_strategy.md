@@ -487,15 +487,15 @@ Dataset:
 
 1. Добавить новый dataset compiler, например:
 
-- `apps/web/src/lib/server/datasets/definitions/strategyMart.ts`
+- `packages/platform-datasets/src/server/definitions/strategyMart.ts`
 
 2. Зарегистрировать его в:
 
-- `apps/web/src/lib/server/datasets/compile.ts`
+- `packages/platform-datasets/src/server/compile.ts`
 
 3. Добавить SQL mapping для relations в:
 
-- `apps/web/src/lib/server/providers/postgresProvider.ts`
+- `packages/platform-datasets/src/server/providers/postgresProvider.ts`
 
 4. Разрешить `strategy.*` datasets в transport:
 
@@ -503,8 +503,7 @@ Dataset:
 
 ### Важная repo-specific оговорка
 
-Сейчас transport route выбирает postgres provider только для `wildberries.*` и `emis.*`.
-Для strategy pages это нужно расширить до `strategy.*`.
+Transport route already routes `strategy.*` datasets to the PostgreSQL provider together with `wildberries.*` and `emis.*`.
 
 ### Что не делать в этом репо
 

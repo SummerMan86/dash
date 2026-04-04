@@ -6,7 +6,7 @@
 ## Scope
 
 - Изменённые файлы + их импорты (1 уровень вглубь)
-- Platform/FSD boundaries, если diff их касается
+- Platform/layer boundaries, если diff их касается
 - Package vs `apps/web` ownership
 - Server-only isolation
 - Separation `EMIS operational` vs `EMIS BI/read-side`
@@ -15,7 +15,7 @@
 
 ## Checks
 
-1. **Platform/FSD boundaries:**
+1. **Platform/layer boundaries:**
    - `entities` НЕ импортируют из `features`, `widgets`, `routes`
    - `features` НЕ импортируют из `widgets`, `routes`
    - `shared` НЕ импортирует из `entities`, `features`, `widgets`, `routes`
@@ -77,7 +77,7 @@ Required follow-ups:
 
 Severity:
 - `CRITICAL`: server isolation breach, SQL / business logic в routes, client import `$lib/server`, silent operational-vs-BI breach, 900+ growth без approved waiver
-- `WARNING`: wrong package/app home, FSD boundary drift, complexity threshold, untracked exception/waiver
+- `WARNING`: wrong package/app home, layer boundary drift, complexity threshold, untracked exception/waiver
 - `INFO`: minor observation, не блокирует
 
 ## Не делай

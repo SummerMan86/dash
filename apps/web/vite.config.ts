@@ -8,5 +8,8 @@ dotenv.config({ path: '../../.env.map' });
 dotenv.config({ path: '../../.env' });
 
 export default defineConfig({
-	plugins: [tailwindcss(), sveltekit()]
+	plugins: [tailwindcss(), sveltekit()],
+	ssr: {
+		noExternal: ['@dashboard-builder/platform-datasets', '@dashboard-builder/db']
+	}
 });

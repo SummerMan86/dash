@@ -1,5 +1,10 @@
-import type { DatasetId, DatasetQuery, DatasetResponse, JsonValue } from '$entities/dataset';
-import { CONTRACT_VERSION } from '$entities/dataset';
+import type {
+	DatasetId,
+	DatasetQuery,
+	DatasetResponse,
+	JsonValue
+} from '@dashboard-builder/platform-datasets';
+import { CONTRACT_VERSION } from '@dashboard-builder/platform-datasets';
 import {
 	getFilterSnapshot,
 	getEffectiveFilters,
@@ -9,7 +14,7 @@ import {
 	getActiveFilterRuntime,
 	type FilterRuntimeContext,
 	type FilterValues
-} from '$entities/filter';
+} from '@dashboard-builder/platform-filters';
 
 type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
@@ -32,7 +37,7 @@ export type FetchDatasetArgs = {
 	id: DatasetId;
 	/**
 	 * Dataset-specific params (widget config etc).
-	 * Global filters are merged in automatically from `entities/filter`.
+	 * Global filters are merged in automatically from the shared filter runtime.
 	 */
 	params?: Record<string, JsonValue>;
 	/**
@@ -131,15 +136,8 @@ export async function fetchDataset(args: FetchDatasetArgs): Promise<DatasetRespo
 		...(args.params ? { params: args.params } : {})
 	};
 
-	// Cache key uses SERVER-SIDE params only (client filters don't affect it)
-	// This allows client-only filter changes to not bust the cache
-	const cacheKeyQuery: DatasetQuery = {
-		contractVersion: CONTRACT_VERSION,
-		...(args.requestId ? { requestId: args.requestId } : {}),
-		...(Object.keys(mergedFilters).length ? { filters: mergedFilters } : {}),
-		...(args.params ? { params: args.params } : {})
-	};
-	const key = makeKey(args.id, cacheKeyQuery);
+	// Cache key uses the request payload. Client-side post-filtering stays outside it.
+	const key = makeKey(args.id, query);
 	const now = Date.now();
 	const ttlMs = args.cache?.ttlMs ?? 0;
 

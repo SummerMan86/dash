@@ -28,7 +28,7 @@ Canonical protocol: `docs/agents/workflow.md`, секция 7; orchestration-sid
 ## Self-check перед сдачей
 
 - [ ] TypeScript: нет ошибок в затронутых файлах
-- [ ] Код в правильном FSD-слое
+- [ ] Код в правильном слое / package home
 - [ ] SQL не в routes
 - [ ] Server-only код не импортируется с клиента
 - [ ] Svelte 5 runes для нового UI

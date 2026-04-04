@@ -6,7 +6,7 @@
  * as postgresProvider.
  */
 
-import { getPgPool } from '$lib/server/db/pg';
+import { getPgPool } from '@dashboard-builder/db';
 import type { AlertRule, AlertCondition, EvaluationResult } from '../model/types';
 
 // ============================================================================

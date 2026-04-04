@@ -14,6 +14,9 @@ importers:
       '@eslint/js':
         specifier: ^9.16.0
         version: 9.39.1
+      dotenv:
+        specifier: ^17.2.3
+        version: 17.2.3
       eslint:
         specifier: ^9.16.0
         version: 9.39.1(jiti@2.6.1)
@@ -26,6 +29,9 @@ importers:
       globals:
         specifier: ^16.4.0
         version: 16.5.0
+      pg:
+        specifier: ^8.16.3
+        version: 8.16.3
       prettier:
         specifier: ^3.6.2
         version: 3.6.2

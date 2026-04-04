@@ -101,11 +101,64 @@
   map entity contracts, GeoJSON endpoint, vessel layer на карте, vessel mode в `/emis`, catalog search.
   Historical track остаётся как следующая волна.
 
+### Post-freeze baseline truth
+
+- Architecture/docs freeze wave `A0-A5` закрыта и архивирована.
+- Текущая active strategic wave starts from phase 2:
+  - `P3.1` closed as docs-only slice
+  - `P3.2` closed the `fetchDataset.ts` boundary gate
+  - `P3.3` closed package-aware enforcement
+  - `P3.4` closed the `EmisMap.svelte` waiver
+- Canonical post-freeze baseline routine at repo root:
+  - `pnpm check`
+  - `pnpm build`
+  - `pnpm lint:boundaries`
+  - `pnpm emis:smoke`
+  - `pnpm emis:offline-smoke`
+  - `pnpm emis:write-smoke` when write-side relevant
+- Truthful baseline verdict on `2026-04-04` remains:
+  - status: `Green`
+  - verdict: `baseline closed`
+- Why it is green:
+  - no live architecture exceptions remain after `P3.4`
+  - the full canonical routine reran successfully, including `pnpm emis:smoke`
+- Latest verification reference around the baseline transition:
+  - root smoke harness drift was repaired:
+    - root `package.json` now declares `dotenv` and `pg` for root scripts
+    - `emis-offline-smoke` and `emis-write-smoke` now start Vite from `apps/web`
+    - `emis-offline-smoke` now reads assets from `apps/web/static/emis-map/offline`
+  - `P3.4` SSR fallout was repaired:
+    - `map-interactions.ts` and `map-bounds.ts` now use default runtime imports from `maplibre-gl`
+  - `P3.5` dataset/runtime repair was completed:
+    - `apps/web/vite.config.ts` now keeps `@dashboard-builder/platform-datasets` and `@dashboard-builder/db` inside the Vite SSR transform path
+  - `P3.6` later cleanup was completed:
+    - dead app-side server shims for dataset runtime and db access were removed
+    - dataset route and alert server code now import canonical packages directly
+  - `pnpm check` — green
+  - `pnpm build` — green
+  - `pnpm lint:boundaries` — green
+  - `pnpm emis:offline-smoke` — green
+  - `pnpm emis:write-smoke` — green
+  - `pnpm emis:smoke` — green
+
+### Access model and write-policy status
+
+- Operating model frozen in `docs/emis_access_model.md`:
+  - EMIS MVE runs in trusted internal network contour (explicit, accepted limitation)
+  - Role semantics defined: `viewer` (read-only), `editor` (writes with actor), `admin` (deferred)
+  - Full auth, RBAC, sessions explicitly deferred beyond MVE
+- Write-policy helper contract designed:
+  - `assertWriteContext(request, source)` — single enforcement point for all write entry points
+  - Strict mode (production): requires explicit actor header, 403 on missing
+  - Permissive mode (dev/local): backward-compatible auto-default actor
+  - Contract documented in `RUNTIME_CONTRACT.md` and `emis_access_model.md`
+- Next step: NW-2 implements the write-policy helper and wires all write entry points
+
 ### Что остается в практическом фокусе
 
 - MVE closeout / contract hardening:
-  - минимальная operating model фиксация для `viewer` / `editor` / `admin` → `emis_access_model.md`
-  - centralized write guardrails для production-shaped EMIS writes → `emis_access_model.md`
+  - ~~минимальная operating model фиксация для `viewer` / `editor` / `admin`~~ → done, see `emis_access_model.md`
+  - centralized write guardrails implementation → NW-2
   - dictionary/admin scope decision: seed-managed vs narrow CRUD
   - health/readiness contract и centralized API error logging → `emis_observability_contract.md`
 - Post-MVE next wave:

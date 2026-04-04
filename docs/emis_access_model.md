@@ -1,95 +1,180 @@
-# EMIS Access Model (Viewer / Editor / Admin)
+# EMIS Access Model
 
-Этот документ фиксирует минимальную модель доступа для EMIS и правила write-guardrails перед новой большой волной разработки.
-Цель: чтобы обсуждение "кто что может" и "где это enforce" не происходило заново в каждой задаче.
+Canonical reference for EMIS operating model, role semantics and write-policy contract.
 
-## 1. Текущее состояние (на 4 апреля 2026)
+This document is the single source of truth for who can write what in EMIS. It is intentionally minimal for MVE and does not introduce a full auth/RBAC system.
 
-- В репозитории нет аутентификации/сессий/ролей на уровне SvelteKit (`hooks.server.ts` не делает auth middleware).
-- EMIS write endpoints технически доступны так же, как read endpoints.
-- `x-emis-actor-id` / `x-actor-id` используются **только для audit attribution**, а не для authorization.
+## 1. Operating Model
 
-Следствие: текущий runtime предполагает trusted environment. Перед любым публичным доступом нужны guardrails.
+EMIS MVE operates in a **trusted internal network** contour.
 
-## 2. Роли и полномочия
+What this means concretely:
 
-Роли здесь описывают **authorization**, не UI/UX.
+- The application is deployed on an internal server (currently a VPS accessible only to the team).
+- There is no public internet exposure of write endpoints.
+- There is no authentication middleware, session management, or login flow.
+- Every user who can reach the application is implicitly trusted to read all data.
+- Write access is governed by the write-policy helper (see section 4), not by user sessions.
+
+This is an **explicit, accepted limitation of MVE**, not a gap waiting to be silently filled.
+
+## 2. Role Semantics
+
+Roles describe **authorization intent**, not runtime enforcement. MVE does not have a role resolver or session-to-role mapping. The roles below define what the system considers valid behavior for each class of user.
 
 ### `viewer`
 
-- Может: read-only доступ ко всем EMIS reads (catalog/detail/search/map).
-- Не может: любые writes (create/update/delete/attach/detach).
+- Read-only access to all EMIS data: catalogs, detail views, search, map, BI dashboards.
+- Cannot perform any write operations.
+- In MVE: every user is implicitly a viewer.
 
 ### `editor`
 
-- Может: все `viewer` плюс writes по доменным сущностям EMIS:
-  - `objects` (create/update/soft-delete)
-  - `news` (create/update/soft-delete)
-  - `links` (attach/update/detach)
-- Не может: управлять dictionaries (если они остаются seed-managed) и выполнять admin-only ops.
+- All `viewer` capabilities, plus writes on domain entities:
+  - `objects` (create, update, soft-delete)
+  - `news` (create, update, soft-delete)
+  - `links` (attach, update, detach)
+- Cannot manage dictionaries or perform admin-only operations.
+- In MVE: any user who provides a valid actor identity via the write-policy helper is implicitly an editor.
 
 ### `admin`
 
-- Может: все `editor` плюс admin-only операции:
-  - dictionary management (если принято решение делать CRUD, а не seed-managed only)
-  - restore/undelete flows (если вводим)
-  - ops/maintenance endpoints (если появятся)
+- All `editor` capabilities, plus:
+  - dictionary management (if dictionaries leave seed-managed mode)
+  - restore/undelete flows (if introduced)
+  - ops/maintenance endpoints (if introduced)
+- In MVE: **deferred**. No admin-only operations exist yet. Dictionary management is seed-managed.
 
-## 3. Non-negotiables (контракт)
+## 3. What Is Enforced Now vs Deferred
 
-- **Server не доверяет UI**: write access должен блокироваться server-side, а не через "спрятали кнопку".
-- **Audit attribution не является auth**: `actorId` в `audit_log` полезен для трассировки, но не должен быть единственным механизмом контроля доступа.
-- **Единая точка проверки**: все writes должны проходить через одно место (policy function), а не через условные if'ы в каждом route.
-- Любая новая write surface (API route или form action) должна явно указать требуемую роль (`editor`/`admin`).
+### Enforced in MVE (current state)
 
-## 4. Где enforce (placement)
+| Mechanism | Where | What it does |
+| --- | --- | --- |
+| Actor attribution | `resolveEmisWriteContext()` in `packages/emis-server/src/infra/audit.ts` | Resolves `actorId` from `x-emis-actor-id` / `x-actor-id` headers; auto-defaults per source |
+| Audit trail | `insertAuditLog()` in every write service | Append-only `emis.audit_log` row within the same transaction |
+| DB-level invariants | Partial unique indexes, FK constraints, append-only audit trigger | Prevents data corruption regardless of application-level checks |
+| Deployment contour | Trusted internal network | No public internet exposure of the application |
 
-### 4.1. API writes (`/api/emis/*`)
+### Target (NW-2 implementation)
 
-- Route layer: `apps/web/src/routes/api/emis/*` (transport-only) вызывает:
-  - `@dashboard-builder/emis-server` services/repositories (domain logic)
-  - app-owned transport glue: `$lib/server/emis/infra/http.ts`
+| Mechanism | Where | What it does |
+| --- | --- | --- |
+| Write-policy helper | `assertWriteContext()` — target home TBD (see section 4, "Ownership") | Validates that write context is present and actor is identified; rejects with 403 in strict mode |
 
-Policy enforcement по ролям должен жить на app boundary рядом с transport glue (потому что интеграция с сессией/куками/SSO будет app-specific).
+Note: `assertWriteContext()` does not exist yet. The contract below is the accepted design for NW-2.
 
-### 4.2. Manual UI writes (`/emis/*` form actions)
+### Explicitly deferred beyond MVE
 
-Form actions в `apps/web/src/routes/emis/*/+page.server.ts` и соседних server files тоже должны использовать тот же policy helper (не дублировать правила).
+| Mechanism | Why deferred |
+| --- | --- |
+| Authentication (SSO, API keys, basic auth) | No requirement for user identity beyond actor headers in trusted contour |
+| Session management | No login/logout flow needed in trusted contour |
+| Role-based access control (RBAC) | Roles are semantic intent, not runtime enforcement; all trusted users are editors |
+| Per-entity permission model | All editors can write all entities; no row-level or entity-scoped restrictions |
+| Admin role enforcement | No admin-only operations exist yet |
 
-### 4.3. DB-level invariants
+## 4. Write-Policy Helper Contract
 
-Некоторые "нельзя" должны быть выражены в БД, а не только в коде:
+This section defines the contract for the centralized write-policy helper that all write entry points must use.
 
-- identity и уникальности (partial unique индексы для soft delete)
-- append-only audit log (уже закреплено триггерами)
-- FK behavior (explicit)
+### Status
 
-Это не заменяет role-based access, но убирает часть классов ошибок.
+**Design frozen in NW-1.** Implementation is NW-2 scope. The helper does not exist yet.
 
-## 5. Actor vs Role
+### Purpose
 
-Термины:
+Replace the current pattern where `resolveEmisWriteContext()` is called directly in routes (audit-only, never rejects) with a single policy checkpoint that:
 
-- `actorId`: строковый идентификатор для audit trail (может быть не UUID). Сейчас приходит из заголовков.
-- `role`: `viewer|editor|admin` (authorization).
+1. Resolves write context (actor + source).
+2. Validates that the write is allowed under current policy.
+3. Rejects disallowed writes with a structured 403 response.
 
-Рекомендация для стабилизации:
+### Target signature
 
-- пока нет auth: `actorId` можно оставлять как diagnostics, но не использовать для authorization;
-- при появлении auth: `actorId` должен вычисляться из session identity, а не из произвольного header.
+```typescript
+/**
+ * Validate write context for an EMIS write operation.
+ *
+ * In strict mode (production-shaped): requires an explicit actor identity
+ * via x-emis-actor-id or x-actor-id header. Rejects with 403 if missing.
+ *
+ * In permissive mode (dev/local): falls back to source-based default actor
+ * (same behavior as current resolveEmisWriteContext).
+ *
+ * @throws EmisError(403, 'WRITE_NOT_ALLOWED', message) in strict mode when actor is missing
+ */
+export function assertWriteContext(
+  request: Request,
+  source: EmisWriteSource
+): EmisWriteContext;
+```
 
-## 6. Минимальный план стабилизации (без выбора SSO)
+### Behavior modes
 
-Этот документ задает target contract. Технический rollout можно сделать в 2 шага:
+| Mode | When active | Actor header missing | Actor header present |
+| --- | --- | --- | --- |
+| **strict** | `EMIS_WRITE_POLICY=strict` or production | 403 `WRITE_NOT_ALLOWED` | Resolve actor from header, return `EmisWriteContext` |
+| **permissive** | `EMIS_WRITE_POLICY=permissive` or dev/local (default) | Auto-default actor per source (`api-client`, `local-manual-ui`, `server-process`) | Resolve actor from header, return `EmisWriteContext` |
 
-1. Coarse guardrail: kill-switch для writes (например `EMIS_WRITES=disabled|enabled`) с дефолтом "disabled" в production.
-2. Role-based: `requireEmisRole(event, 'editor'|'admin')` для writes + единая роль для manual-ui actions.
+Mode is determined by `EMIS_WRITE_POLICY` env var. If not set, defaults to `permissive` (backward-compatible with current dev workflow).
 
-Конкретный механизм auth (SSO, basic auth, API key) остаётся отдельным design decision.
+### Failure shape
 
-## 7. Связанные документы
+```json
+{
+  "error": "Write operations require actor identification. Set x-emis-actor-id or x-actor-id header.",
+  "code": "WRITE_NOT_ALLOWED"
+}
+```
+
+HTTP status: `403`.
+
+This follows the existing `{ error, code }` convention from the EMIS runtime contract.
+
+### Integration pattern
+
+Every write entry point (API route handler or form action) replaces its current `resolveEmisWriteContext()` call with `assertWriteContext()`:
+
+```typescript
+// Before (audit-only, never rejects):
+const ctx = resolveEmisWriteContext(request, 'api');       // API routes
+const ctx = resolveEmisWriteContext(request, 'manual-ui'); // form actions
+
+// After (policy + audit):
+const ctx = assertWriteContext(request, 'api');       // API routes
+const ctx = assertWriteContext(request, 'manual-ui'); // form actions
+```
+
+The return type is identical (`EmisWriteContext`), so downstream service/repository signatures do not change.
+
+### Ownership
+
+- Canonical home: `apps/web/src/lib/server/emis/infra/writePolicy.ts`
+- Rationale: write-policy enforcement is app-level transport glue (403 response construction). The underlying `resolveEmisWriteContext` stays in `packages/emis-server` as a framework-agnostic audit utility.
+- **Architecture-steward decision (2026-04-04): approve placement.** 403 response construction = HTTP transport glue → app layer. Peer of `infra/http.ts`. No exception needed.
+- Invariants: no SQL in `writePolicy.ts`; policy config (env var) is app-level deployment concern, not package business logic.
+
+## 5. Actor vs Role Clarification
+
+| Term | What it is | MVE status |
+| --- | --- | --- |
+| `actorId` | Opaque string for audit trail (from headers or auto-default) | Enforced via audit contract |
+| `role` | `viewer` / `editor` / `admin` (authorization intent) | Semantic only, no runtime resolver |
+
+When auth is introduced post-MVE:
+- `actorId` should be derived from session identity, not from arbitrary headers.
+- `role` should be resolved from a session/token, not assumed.
+- The write-policy helper should be extended, not replaced.
+
+## 6. One-Paragraph Summary
+
+EMIS MVE runs in a trusted internal network where all users can read freely. Write operations require actor identification via the `x-emis-actor-id` or `x-actor-id` header. Currently, actor identity is resolved for audit purposes only (`resolveEmisWriteContext()`), with no rejection on missing actor. The accepted NW-2 target is a single `assertWriteContext()` helper that all write entry points will call: in production-shaped (strict) mode, missing actor identity will result in a 403 rejection; in dev/local (permissive) mode, a source-based default actor is used for convenience. Full authentication, sessions, and RBAC are explicitly deferred beyond MVE.
+
+## 7. Related Documents
 
 - Runtime/API conventions: `apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
-- Working rules (placement, review triggers): `docs/emis_working_contract.md`
+- Working rules: `docs/emis_working_contract.md`
 - Boundary map: `docs/emis_architecture_baseline.md`
-- Observability/readiness контракт: `docs/emis_observability_contract.md`
+- MVE scope and invariants: `docs/emis_mve_tz_v_2.md`
+- Observability contract: `docs/emis_observability_contract.md`

@@ -2,11 +2,10 @@
 
 `src/lib/server/datasets/` - routing layer для dataset definitions.
 
-Здесь решается, какой compiler обрабатывает конкретный `datasetId`.
+Здесь остались только legacy dataset definition copies for compatibility/reference during migration.
 
 ## Основные файлы
 
-- `compile.ts` — `// MIGRATION` shim, re-export from `@dashboard-builder/platform-datasets/server`.
 - Canonical dataset compiler routing lives in `packages/platform-datasets/src/server/compile.ts`.
 - `definitions/` — legacy copies of dataset definitions kept for compatibility during migration. New/active definitions live in `packages/platform-datasets/src/server/definitions/*`.
 
@@ -29,6 +28,7 @@ Legacy strategy v1 по-прежнему архивный, но current runtime 
 
 ## Практические правила
 
+- `routes/api/datasets/[id]/+server.ts` now imports the canonical compiler directly from `@dashboard-builder/platform-datasets/server`;
 - dataset compiler должен оставаться flat/filterable и опираться на `mart`, а не собирать тяжелую аналитику в runtime.
 - новый strategy dashboard сначала ищет подходящий существующий grain;
 - если grain новый, сначала публикуется новый `slobi_*` view, потом добавляется dataset compiler;

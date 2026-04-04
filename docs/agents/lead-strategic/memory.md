@@ -14,9 +14,11 @@
 - Для новых EMIS задач canonical docs теперь:
   - `docs/emis_architecture_baseline.md`
   - `docs/emis_working_contract.md`
-- Strategic plan for the next wave lives in:
+- Strategic plan for the current active wave lives in:
   - `docs/agents/lead-strategic/current_plan.md`
-  - topic: `EMIS Architecture Stabilization And Governance Freeze`
+  - topic: `EMIS Phase 2 Baseline Truthfulness And Boundary Enforcement`
+- Closed freeze-wave plan is archived in:
+  - `docs/archive/agents/lead_strategic_current_plan_2026_04_04_architecture_stabilization_and_governance_freeze.md`
 - Legacy docs cleanup should be treated as a separate explicit slice after topology/read-order stabilization, not as ad hoc deletion during feature work.
 - User decision from `2026-04-04`:
   - first stabilize EMIS architecture/concept/docs
@@ -52,9 +54,9 @@
     - decompose `EmisMap.svelte`
     - deduplicate `clampPageSize()`
     - stabilize `mapVesselsQuery` param assembly
-    - resolve `fetchDataset.ts` boundary gap
-    - remove redundant `cacheKeyQuery` in `fetchDataset.ts`
-  - Pre-existing FSD violations: stock-alerts→routes, fetchDataset shared→entities
+    - resolve `fetchDataset.ts` boundary gap — closed in `P3.2`
+    - remove redundant `cacheKeyQuery` in `fetchDataset.ts` — closed in `P3.2`
+  - Pre-existing layer-boundary issues at that time: stock-alerts→routes, fetchDataset shared→entities
   - `pnpm lint` Prettier drift (not blocking)
 
 ## Заметки для следующей сессии
@@ -65,12 +67,29 @@
 - Separate hardening wave should run on its own branch:
   - recommended integration branch: `feature/emis-post-split-hardening`
   - create it from the latest accepted base after merging `feature/emis-foundation-stabilization`
-- Deferred items (P3 hardening, MIGRATION shim removal, FSD violations) tracked в `docs/emis_next_tasks_2026_03_22.md`.
+- Deferred items (P3 hardening, MIGRATION shim removal, layer-boundary cleanup) tracked в `docs/emis_next_tasks_2026_03_22.md`.
 - Completed hardening plan is archived:
   - `docs/archive/agents/lead_strategic_current_plan_2026_04_03_post_split_hardening.md`
-- Новый active wave открыт как architecture-first stabilization plan:
-  - `EMIS Architecture Stabilization And Governance Freeze`
-  - focus: simplify/freeze architecture, align canonical docs with package reality, create known exceptions registry, define architect role model
+- Closed freeze-wave plan is archived:
+  - `docs/archive/agents/lead_strategic_current_plan_2026_04_04_architecture_stabilization_and_governance_freeze.md`
+- Current active wave is phase 2:
+  - `EMIS Phase 2 Baseline Truthfulness And Boundary Enforcement`
+  - `P3.1` completed as docs-only slice on `2026-04-04`
+  - `P3.2` completed on `2026-04-04`
+  - `P3.3` completed on `2026-04-04`
+  - `P3.4` completed on `2026-04-04`
+  - `P3.5` completed on `2026-04-04`
+  - `P3.6` completed on `2026-04-04`
+  - full canonical baseline routine is now green
+  - phase 2 exit criteria are met
+  - ordinary bounded feature work is open again; architecture-line follow-up is repo-wide doc sync only if still needed
+  - repo-wide doc sync follow-up (`DS-1` through `DS-4`) is completed on `2026-04-04` as a docs-only bounded package
+  - next strategic-tactical opening order is now explicit in `current_plan.md`:
+    - `NW-1` / `NW-2` — access model + write guardrails
+    - `NW-3` — dictionary/admin scope freeze
+    - `NW-4` — readiness and API error logging
+    - `NW-5` — MVE acceptance audit and sign-off
+    - only after that: `P1`, then `P2`
 - Previous baseline/enforcement-first sequencing (`S0..S8`) is not cancelled, but deferred to phase 2 after architecture docs freeze.
 - New canonical exception registry:
   - `docs/emis_known_exceptions.md`
@@ -84,84 +103,96 @@
   - after each accepted slice, do a short reframe of the next slice before execution
   - use `strategic-reviewer` for disputed transitions, not for every routine next-slice clarification
 
-## Новый active wave
+## Текущий active wave
 
-- Эта wave не продолжает `ST-1..ST-10` и не переоткрывает уже закрытую hardening wave `H-1..H-5`.
+- Эта wave не переоткрывает `ST-1..ST-10`, `H-1..H-5` или freeze-wave `A0-A5`.
 - Wave name:
-  - `EMIS Architecture Stabilization And Governance Freeze`
+  - `EMIS Phase 2 Baseline Truthfulness And Boundary Enforcement`
 - Why now:
-  - user explicitly chose architecture/docs-first work before code refactor
-  - current EMIS docs mix current package-state, legacy phase-0 notes and future migration target
-  - this makes the architecture harder to follow and harder to enforce than it should be
-- Current planned slices:
-  - `A0` — architecture-first freeze and scope boundaries
-  - `A1` — simplify canonical architecture contract
-  - `A2` — separate current state vs target layout vs historical docs
-  - `A3` — create and wire known exceptions registry
-  - `A4` — define architecture governance role model
-  - `A5` — prepare phase-2 enforcement/refactor backlog
-- `A1` and `A2` completed on `2026-04-04`:
-  - current-state docs now tell one aligned story about:
-    - topology
-    - three contours
-    - package ownership vs app-level ownership
-    - operational path vs BI path
-  - default current-state reading order now starts with:
-    - `docs/emis_session_bootstrap.md`
-    - `docs/emis_architecture_baseline.md`
-    - `docs/emis_working_contract.md`
-    - `apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
-  - `docs/AGENTS.md` now classifies:
-    - current-state docs as canonical
-    - `emis_monorepo_target_layout.md`, `emis_implementation_spec_v1.md`, `emis_freeze_note.md` as active/supporting, not current ownership truth
-  - package-local navigation docs are now part of the canonical EMIS doc map:
-    - `packages/emis-contracts/AGENTS.md`
-    - `packages/emis-server/AGENTS.md`
-    - `packages/emis-ui/AGENTS.md`
-- `A3` completed on `2026-04-04`:
-  - canonical registry exists:
-    - `docs/emis_known_exceptions.md`
-  - bootstrap/workflow now point to known exceptions and baseline governance
-  - supporting contracts added:
-    - `docs/emis_access_model.md`
-    - `docs/emis_observability_contract.md`
-    - `docs/emis_read_models_contract.md`
-- `A4` completed on `2026-04-04`:
-  - explicit `architecture-steward` added as governance/design role
-  - `architecture-reviewer` now reviews package/app leaf boundaries, BI vs operational separation and waiver handling
-  - `baseline-governor` is now explicitly separated from placement/waiver ownership
-  - known exceptions registry now reflects only remaining live blockers / waivers
-- `A5` is now prepared as the default next slice:
-  - scope: docs-only sequencing of the first post-freeze phase-2 work
-  - primary inputs:
-    - `EXC-ARCH-002` — boundary gate / `fetchDataset.ts`
-    - `EXC-ARCH-004` — `EmisMap.svelte` complexity waiver
-  - intended order to validate and write into backlog docs:
-    - first: baseline command + truthful checks hardening
-    - second: restore green boundary gate
-    - third: tighten package-aware enforcement
-    - fourth: bounded `EmisMap.svelte` follow-up
-    - later: mass shim cleanup and other residual cleanup
+  - freeze-wave closed and archived
+  - baseline routine/verdict must be truthful before more code hardening
+  - no live architecture exceptions remain after `P3.4`
+- `P3.1` completed on `2026-04-04`:
+  - archived the closed `A0-A5` plan
+  - replaced `current_plan.md` with the phase-2 plan
+  - documented one canonical post-freeze baseline routine:
+    - `pnpm check`
+    - `pnpm build`
+    - `pnpm lint:boundaries`
+    - `pnpm emis:smoke`
+    - `pnpm emis:offline-smoke`
+    - `pnpm emis:write-smoke` when write-side relevant
+  - aligned docs on one truthful verdict:
+    - status: `Red`
+    - verdict: `baseline not closed`
+  - made `P3.2` the next default slice
+- `P3.2` completed on `2026-04-04`:
+  - `apps/web/src/lib/shared/api/fetchDataset.ts` now imports contracts directly from workspace packages
+  - redundant `cacheKeyQuery` was removed
+  - `pnpm lint:boundaries` and `pnpm check` were rerun successfully
+  - `EXC-ARCH-002` was removed from live exceptions
+- `P3.3` completed on `2026-04-04`:
+  - `eslint.config.js` now covers package-era non-negotiables for all workspace packages
+  - `scripts/lint-boundaries.mjs` now scans `packages/*/src/` in addition to the app-local rails
+  - `pnpm lint:boundaries` stays green with package-aware coverage
+  - the slice stayed bounded and did not pull `stock-alerts -> routes` into the same pass
+- `P3.4` completed on `2026-04-04`:
+  - `packages/emis-ui/src/emis-map/EmisMap.svelte` was decomposed into `map-interactions.ts` and `map-bounds.ts`
+  - `EmisMap.svelte` dropped from `903` to `695` lines without route/app spillover
+  - `EXC-ARCH-004` is closed; no live architecture exceptions remain
+  - `pnpm check`, `pnpm lint:boundaries`, and `pnpm build` were rerun successfully
+- `P3.5` completed on `2026-04-04`:
+  - root smoke harness drift was repaired:
+    - root `package.json` now declares `dotenv` and `pg` for root scripts
+    - `scripts/emis-offline-smoke.mjs` and `scripts/emis-write-smoke.mjs` now start Vite from `apps/web`
+    - `scripts/emis-offline-smoke.mjs` now resolves assets from `apps/web/static/emis-map/offline`
+  - `P3.4` SSR fallout was repaired:
+    - `map-interactions.ts` and `map-bounds.ts` now use default runtime imports from `maplibre-gl`
+  - `apps/web/vite.config.ts` now keeps `@dashboard-builder/platform-datasets` and `@dashboard-builder/db` inside the Vite SSR transform path
+  - verified results:
+    - `pnpm check` — green
+    - `pnpm build` — green
+    - `pnpm lint:boundaries` — green
+    - `pnpm emis:offline-smoke` — green
+    - `pnpm emis:write-smoke` — green
+    - `pnpm emis:smoke` — green
+  - dataset/runtime blocker is closed:
+    - dataset error contracts now return expected `400/404`
+    - dataset payload checks now return `200`
+    - `/dashboard/emis*` pages now return `200`
+  - phase 2 exit criteria are met; baseline is now `Green / baseline closed`
 - Resume point for the next chat:
   - branch / HEAD during the last accepted save:
     - `main`
-    - `98edc4c` — `docs: add EMIS baseline governance contracts`
+    - `f695b33` — `docs: finalize EMIS governance model and A5 handoff`
   - current working tree contains:
-    - accepted `A4` governance docs
-    - refined `A5` plan/handoff
-  - next chat should execute `A5` as a docs-only slice and update `docs/emis_next_tasks_2026_03_22.md`
-- Deferred phase 2 after docs freeze:
-  - repair broken baseline checks
-  - restore green boundary gate
-  - tighten machine-enforced architecture boundaries
-  - operationalize canonical baseline command / state model around the already documented `baseline-governor`
-  - only then resume broader EMIS foundation closeout / refactor slices
-- Wave status: **open**.
-- New wave constraints:
+    - archived freeze-wave plan
+    - new active phase-2 plan
+    - completed `P3.1` docs updates
+    - completed `P3.2` boundary fix and baseline-truth updates
+    - completed `P3.3` package-aware enforcement updates
+    - completed `P3.4` EMIS UI waiver closure
+    - completed full baseline rerun and closed the remaining dataset/runtime blocker
+    - completed `P3.6` bounded cleanup removing dead app-side dataset/db shims
+  - next chat may open `NW-1` or another explicitly re-prioritized bounded slice; it should not rerun `P3.1`-`P3.6`, `DS-1`-`DS-4`, `A5`, or the already-green baseline fixes
+- Current planned slices:
+  - `P3.1` — completed
+  - `P3.2` — completed
+  - `P3.3` — completed
+  - `P3.4` — completed
+  - `P3.5` — completed
+  - `P3.6` — completed
+  - `NW-1` — access model freeze and write-policy design
+  - `NW-2` — centralized write guardrails rollout
+  - `NW-3` — dictionary/admin scope freeze
+  - `NW-4` — health/readiness and API error logging hardening
+  - `NW-5` — MVE acceptance audit and sign-off
+- Wave constraints:
   - topology remains frozen unless new runtime/ops pressure appears
-  - no broad code refactor before architecture docs are aligned and accepted
+  - do not call baseline green while live blockers remain
+  - no broad code refactor before bounded blocker slices are handled
   - no new exception without owner and target wave / expiry
-  - do not mix architecture freeze with feature expansion
+  - do not mix phase-2 baseline work with unrelated feature expansion
 
 ## Hardening wave status
 
@@ -204,11 +235,10 @@
   - `fetchDataset` explicitly deferred (platform-level, not this wave)
 - **Wave "EMIS Post-Split Hardening And Boundary Cleanup" is complete.** All H-1..H-5 accepted on `2026-04-03`.
 - Remaining carry-forward for future waves:
-  - `fetchDataset.ts` FSD gap (shared imports entities)
   - ~53 MIGRATION re-export shims outside EMIS API routes
-  - stock-alerts→routes FSD violation
+  - stock-alerts→routes layer-boundary violation
   - baseline verification/governance gap:
     - root EMIS smoke commands must be runnable
-    - `lint:boundaries` must be green
+    - `lint:boundaries` must stay green while gaining package-aware coverage
     - active ownership docs must match code
     - baseline-governor workflow must be documented

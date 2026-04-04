@@ -6,10 +6,9 @@
 
 ## Что здесь важно
 
-- `mockProvider.ts` - demo/mock execution
-- `postgresProvider.ts` - `// MIGRATION` shim, re-export из `@dashboard-builder/platform-datasets/server`
+- `mockProvider.ts` - demo/mock execution for non-Postgres datasets
 
-Canonical provider implementation and dataset-to-relation mapping now live in:
+Canonical PostgreSQL provider implementation and dataset-to-relation mapping live in:
 
 - `packages/platform-datasets/src/server/providers/postgresProvider.ts`
 
@@ -27,6 +26,7 @@ Current runtime provider path включает новый strategy/BSC slice:
 ## Практические правила
 
 - provider layer не должен знать BI-семантику страниц;
-- здесь держим только relation mapping, column typing и generic SQL execution;
+- здесь в app-side держим только `mockProvider`;
+- relation mapping, column typing и generic SQL execution живут в `packages/platform-datasets`;
 - если published view меняет колонки, mapping меняется в том же change set (канонически в `packages/platform-datasets/src/server/providers/postgresProvider.ts`);
-- если view участвует в `/api/datasets/:id`, его app-side mapping должен обновляться одновременно с DWH contract.
+- если view участвует в `/api/datasets/:id`, route should continue importing `postgresProvider` directly from `@dashboard-builder/platform-datasets/server`.

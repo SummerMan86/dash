@@ -11,6 +11,7 @@
 - dataset-driven charts, tables and KPI blocks
 - filter runtime wiring for dashboard routes
 - page-local view-model shaping поверх `DatasetResponse`
+- narrow server-assisted map runtime config load via `@dashboard-builder/emis-server/infra/mapConfig` where already documented
 
 Ключевые routes:
 

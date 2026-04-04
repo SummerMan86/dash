@@ -6,28 +6,20 @@
 	import type {
 		EmisMapConfig,
 		EmisMapFeatureRef,
-		EmisMapNewsFeatureCollection,
-		EmisMapObjectFeatureCollection,
 		EmisMapRouteFeatureRef,
 		EmisMapSelectedFeature,
 		EmisMapSelectedRouteFeature,
+		EmisMapNewsFeatureCollection,
+		EmisMapObjectFeatureCollection,
 		EmisMapVesselFeatureCollection
 	} from '@dashboard-builder/emis-contracts/emis-map';
 	import type { JsonValue } from '@dashboard-builder/platform-core';
 	import { cn } from '@dashboard-builder/platform-ui';
 	import DiagnosticsHud from './DiagnosticsHud.svelte';
 	import {
-		normalizeObjectFeature,
-		normalizeNewsFeature,
-		normalizeVesselFeature,
-		normalizeRoutePointFeature,
-		normalizeRouteSegmentFeature
-	} from './feature-normalizers';
-	import {
 		EMPTY_FEATURE_COLLECTION,
 		EMPTY_LINE_FEATURE_COLLECTION,
 		ensureEmisOverlayLayers,
-		EMIS_MAP_LAYER_IDS,
 		setEmisOverlayData,
 		setEmisRouteData,
 		setEmisOverlaySelection,
@@ -43,12 +35,9 @@
 		resolveVisibleLayers
 	} from './overlay-fetch';
 	import { acquirePmtilesProtocol, releasePmtilesProtocol } from './pmtiles-protocol';
-	import {
-		renderFeaturePopupContent,
-		renderRoutePopupContent,
-		renderVesselTooltipContent
-	} from './popup-renderers';
 	import { buildPmtilesStyle } from './pmtiles-style';
+	import { createEmisMapInteractions } from './map-interactions';
+	import { fitVisibleEmisBounds, maybeFitRouteBounds as updateRouteFocusBounds } from './map-bounds';
 
 	import type { BasemapSource } from './overlay-fetch';
 
@@ -115,6 +104,10 @@
 	let fallbackActivated = $state(false);
 
 	let map: maplibregl.Map | null = null;
+	const interactions = createEmisMapInteractions({
+		getOnFeatureSelect: () => onFeatureSelect,
+		getOnRouteFeatureSelect: () => onRouteFeatureSelect
+	});
 	let latestObjectsFC: GeoJSON.FeatureCollection | null = null;
 	let latestNewsFC: GeoJSON.FeatureCollection | null = null;
 	let latestVesselsFC: GeoJSON.FeatureCollection | null = null;
@@ -122,8 +115,6 @@
 	let activeOverlayAbortController: AbortController | null = null;
 	let startupTimer: ReturnType<typeof setTimeout> | null = null;
 	let protocolAttached = false;
-	let popup: maplibregl.Popup | null = null;
-	let vesselTooltip: maplibregl.Popup | null = null;
 	let resolvedRouteFocusKey: string | number | null = null;
 
 	function canStartOnline() {
@@ -185,10 +176,7 @@
 		clearStartupTimer();
 		activeOverlayAbortController?.abort();
 		activeOverlayAbortController = null;
-		vesselTooltip?.remove();
-		vesselTooltip = null;
-		popup?.remove();
-		popup = null;
+		interactions.destroy();
 		map?.remove();
 		map = null;
 		if (protocolAttached) {
@@ -244,144 +232,6 @@
 		return expr.map((item: unknown) => replaceNameInExpression(item, nameKey));
 	}
 
-	function openFeaturePopup(feature: EmisMapSelectedFeature, lngLat: maplibregl.LngLatLike) {
-		if (!map) return;
-
-		vesselTooltip?.remove();
-		vesselTooltip = null;
-		popup?.remove();
-		popup = null;
-		const featurePopup = new maplibregl.Popup({
-			closeButton: true,
-			closeOnClick: true,
-			maxWidth: '320px',
-			offset: 16
-		})
-			.setLngLat(lngLat)
-			.setDOMContent(renderFeaturePopupContent(feature))
-			.addTo(map);
-		featurePopup.on('close', () => {
-			popup = null;
-		});
-		popup = featurePopup;
-	}
-
-	function openRoutePopup(feature: EmisMapSelectedRouteFeature, lngLat: maplibregl.LngLatLike) {
-		if (!map) return;
-
-		popup?.remove();
-		popup = null;
-		const routePopup = new maplibregl.Popup({
-			closeButton: true,
-			closeOnClick: true,
-			maxWidth: '320px',
-			offset: 16
-		})
-			.setLngLat(lngLat)
-			.setDOMContent(renderRoutePopupContent(feature))
-			.addTo(map);
-		routePopup.on('close', () => {
-			popup = null;
-		});
-		popup = routePopup;
-	}
-
-	function bindOverlayInteractions(targetMap: maplibregl.Map) {
-		const handleFeatureSelection = (
-			feature: EmisMapSelectedFeature | null,
-			lngLat: maplibregl.LngLatLike
-		) => {
-			if (!feature) return;
-			onFeatureSelect?.(feature);
-			openFeaturePopup(feature, lngLat);
-		};
-		const handleRouteFeatureSelection = (
-			feature: EmisMapSelectedRouteFeature | null,
-			lngLat: maplibregl.LngLatLike
-		) => {
-			if (!feature) return;
-			onRouteFeatureSelect?.(feature);
-			openRoutePopup(feature, lngLat);
-		};
-
-		targetMap.on('click', EMIS_MAP_LAYER_IDS.objects, (event) => {
-			handleFeatureSelection(normalizeObjectFeature(event.features?.[0]?.properties), event.lngLat);
-		});
-
-		targetMap.on('click', EMIS_MAP_LAYER_IDS.news, (event) => {
-			handleFeatureSelection(normalizeNewsFeature(event.features?.[0]?.properties), event.lngLat);
-		});
-		targetMap.on('click', EMIS_MAP_LAYER_IDS.vessels, (event) => {
-			handleFeatureSelection(normalizeVesselFeature(event.features?.[0]?.properties), event.lngLat);
-		});
-
-		targetMap.on('click', EMIS_MAP_LAYER_IDS.routePoints, (event) => {
-			const feature = event.features?.[0];
-			handleRouteFeatureSelection(
-				normalizeRoutePointFeature(feature?.properties, feature?.geometry),
-				event.lngLat
-			);
-		});
-		targetMap.on('click', EMIS_MAP_LAYER_IDS.routeSegments, (event) => {
-			const feature = event.features?.[0];
-			handleRouteFeatureSelection(
-				normalizeRouteSegmentFeature(feature?.properties, feature?.geometry),
-				event.lngLat
-			);
-		});
-
-		targetMap.on('mouseenter', EMIS_MAP_LAYER_IDS.objects, () => {
-			targetMap.getCanvas().style.cursor = 'pointer';
-		});
-		targetMap.on('mouseenter', EMIS_MAP_LAYER_IDS.news, () => {
-			targetMap.getCanvas().style.cursor = 'pointer';
-		});
-		targetMap.on('mouseenter', EMIS_MAP_LAYER_IDS.vessels, (event) => {
-			targetMap.getCanvas().style.cursor = 'pointer';
-
-			// Don't show tooltip if a click-popup is already open
-			if (popup) return;
-
-			const props = normalizeVesselFeature(event.features?.[0]?.properties);
-			if (!props) return;
-
-			vesselTooltip?.remove();
-			vesselTooltip = new maplibregl.Popup({
-				closeButton: false,
-				closeOnClick: false,
-				anchor: 'bottom',
-				offset: 12,
-				className: 'emis-vessel-tooltip'
-			})
-				.setLngLat(event.lngLat)
-				.setDOMContent(renderVesselTooltipContent(props))
-				.addTo(targetMap);
-		});
-		targetMap.on('mouseenter', EMIS_MAP_LAYER_IDS.routePoints, () => {
-			targetMap.getCanvas().style.cursor = 'pointer';
-		});
-		targetMap.on('mouseenter', EMIS_MAP_LAYER_IDS.routeSegments, () => {
-			targetMap.getCanvas().style.cursor = 'pointer';
-		});
-		targetMap.on('mouseleave', EMIS_MAP_LAYER_IDS.objects, () => {
-			targetMap.getCanvas().style.cursor = '';
-		});
-		targetMap.on('mouseleave', EMIS_MAP_LAYER_IDS.news, () => {
-			targetMap.getCanvas().style.cursor = '';
-		});
-		targetMap.on('mouseleave', EMIS_MAP_LAYER_IDS.vessels, () => {
-			targetMap.getCanvas().style.cursor = '';
-			vesselTooltip?.remove();
-			vesselTooltip = null;
-		});
-		targetMap.on('mouseleave', EMIS_MAP_LAYER_IDS.routePoints, () => {
-			targetMap.getCanvas().style.cursor = '';
-		});
-		targetMap.on('mouseleave', EMIS_MAP_LAYER_IDS.routeSegments, () => {
-			targetMap.getCanvas().style.cursor = '';
-		});
-	}
-
 	function syncRouteOverlays() {
 		if (!map || !mapLoaded) return;
 
@@ -390,83 +240,14 @@
 		routeSegmentsCount = routeSegmentsData.features.length;
 	}
 
-	function buildRouteBounds() {
-		const bounds = new maplibregl.LngLatBounds();
-		let hasCoordinates = false;
-
-		for (const feature of routePointsData.features) {
-			if (feature.geometry?.type !== 'Point') continue;
-			const [lng, lat] = feature.geometry.coordinates;
-			if (!Number.isFinite(lng) || !Number.isFinite(lat)) continue;
-			bounds.extend([lng, lat]);
-			hasCoordinates = true;
-		}
-
-		for (const feature of routeSegmentsData.features) {
-			if (feature.geometry?.type !== 'LineString') continue;
-			for (const [lng, lat] of feature.geometry.coordinates) {
-				if (!Number.isFinite(lng) || !Number.isFinite(lat)) continue;
-				bounds.extend([lng, lat]);
-				hasCoordinates = true;
-			}
-		}
-
-		return hasCoordinates ? bounds : null;
-	}
-
-	function handleFitBounds() {
-		if (!map) return;
-
-		const bounds = new maplibregl.LngLatBounds();
-		let hasFeatures = false;
-
-		function extendFromFC(fc: GeoJSON.FeatureCollection | null) {
-			if (!fc?.features?.length) return;
-			for (const f of fc.features) {
-				if (!f.geometry) continue;
-				if (f.geometry.type === 'Point') {
-					const [lng, lat] = f.geometry.coordinates;
-					if (!Number.isFinite(lng) || !Number.isFinite(lat)) continue;
-					bounds.extend([lng, lat]);
-					hasFeatures = true;
-				} else if (f.geometry.type === 'LineString') {
-					for (const [lng, lat] of f.geometry.coordinates) {
-						if (!Number.isFinite(lng) || !Number.isFinite(lat)) continue;
-						bounds.extend([lng, lat]);
-						hasFeatures = true;
-					}
-				}
-			}
-		}
-
-		const { showObjects, showNews, showVessels } = resolveVisibleLayers(layer);
-
-		if (showObjects) extendFromFC(latestObjectsFC);
-		if (showNews) extendFromFC(latestNewsFC);
-		if (showVessels) extendFromFC(latestVesselsFC);
-
-		// Also include route data if present
-		extendFromFC(routePointsData);
-		extendFromFC(routeSegmentsData);
-
-		if (hasFeatures) {
-			map.fitBounds(bounds, { padding: 50, maxZoom: 12 });
-		}
-	}
-
 	function maybeFitRouteBounds() {
-		if (!map || !mapLoaded || routeFocusKey === null || routeFocusKey === resolvedRouteFocusKey) {
-			return;
-		}
-
-		const bounds = buildRouteBounds();
-		if (!bounds) return;
-
-		resolvedRouteFocusKey = routeFocusKey;
-		map.fitBounds(bounds, {
-			padding: { top: 84, right: 72, bottom: 84, left: 72 },
-			maxZoom: 8,
-			duration: 900
+		if (!map || !mapLoaded) return;
+		resolvedRouteFocusKey = updateRouteFocusBounds({
+			map,
+			routePointsData,
+			routeSegmentsData,
+			routeFocusKey,
+			resolvedRouteFocusKey
 		});
 	}
 
@@ -650,7 +431,7 @@
 			setEmisOverlaySelection(map, selectedFeature);
 			setEmisRouteSelection(map, selectedRouteFeature);
 			syncRouteOverlays();
-			bindOverlayInteractions(map);
+			interactions.bindOverlayInteractions(map);
 			mapLoaded = true;
 			void refreshOverlays('load');
 			maybeFitRouteBounds();
@@ -773,7 +554,18 @@
 		<button
 			type="button"
 			class="absolute bottom-3 left-3 z-10 flex h-8 w-8 items-center justify-center rounded-md border border-border/60 bg-background/90 shadow-sm backdrop-blur-sm transition-colors hover:bg-muted"
-			onclick={handleFitBounds}
+			onclick={() => {
+				if (!map) return;
+				fitVisibleEmisBounds({
+					map,
+					layer,
+					latestObjectsFC,
+					latestNewsFC,
+					latestVesselsFC,
+					routePointsData,
+					routeSegmentsData
+				});
+			}}
 			title="Показать все объекты"
 		>
 			<svg

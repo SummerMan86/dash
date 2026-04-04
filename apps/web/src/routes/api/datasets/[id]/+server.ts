@@ -1,11 +1,9 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 
-import type { DatasetQuery } from '$entities/dataset';
-import { CONTRACT_VERSION } from '$entities/dataset';
-
-import { compileDataset } from '$lib/server/datasets/compile';
+import type { DatasetQuery } from '@dashboard-builder/platform-datasets';
+import { CONTRACT_VERSION } from '@dashboard-builder/platform-datasets';
+import { compileDataset, postgresProvider } from '@dashboard-builder/platform-datasets/server';
 import { mockProvider } from '$lib/server/providers/mockProvider';
-import { postgresProvider } from '$lib/server/providers/postgresProvider';
 
 /**
  * Transport adapter (HTTP).
@@ -13,7 +11,7 @@ import { postgresProvider } from '$lib/server/providers/postgresProvider';
  * This file is allowed to know about:
  * - HTTP (Request/Response)
  * - SvelteKit routing (`params.id`)
- * - server layer (`compileDataset`, providers)
+ * - canonical server packages (`compileDataset`, providers)
  *
  * This file should NOT contain:
  * - SQL or Cube logic

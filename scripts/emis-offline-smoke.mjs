@@ -30,11 +30,12 @@ import { spawn } from 'node:child_process';
 // Config
 // ---------------------------------------------------------------------------
 
-const OFFLINE_ASSET_DIR = path.resolve(process.cwd(), 'static', 'emis-map', 'offline');
 const DEFAULT_HOST = '127.0.0.1';
 const STARTUP_TIMEOUT_MS = 30_000;
 const REQUEST_TIMEOUT_MS = 15_000;
 const LOG_BUFFER_LIMIT = 120;
+const APP_DIR = new URL('../apps/web', import.meta.url).pathname;
+const OFFLINE_ASSET_DIR = path.resolve(APP_DIR, 'static', 'emis-map', 'offline');
 
 // ---------------------------------------------------------------------------
 // FS helpers — replicate pmtilesBundle.ts logic without TypeScript imports
@@ -137,7 +138,7 @@ async function startLocalServer() {
 	const child = spawn(
 		'pnpm',
 		['exec', 'vite', 'dev', '--host', DEFAULT_HOST, '--port', String(port), '--strictPort'],
-		{ stdio: ['ignore', 'pipe', 'pipe'], env: process.env, cwd: process.cwd() }
+		{ stdio: ['ignore', 'pipe', 'pipe'], env: process.env, cwd: APP_DIR }
 	);
 
 	child.stdout.on('data', (chunk) => pushLog(stdout, chunk));

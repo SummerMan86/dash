@@ -22,9 +22,10 @@
 Стартовая дорожка:
 
 1. `README.md`
-2. `docs/current-project-analysis.md`
+2. `docs/architecture.md`
 3. локальный `AGENTS.md` в нужной папке
-4. локальный `CLAUDE.md`, если рядом нет `AGENTS.md`
+4. `docs/current-project-analysis.md`, если нужен historical context до package-era
+5. локальный `CLAUDE.md`, если рядом нет `AGENTS.md`
 
 Основные активные зоны:
 
@@ -43,9 +44,9 @@
 
 Стартовая дорожка:
 
-1. `docs/emis_session_bootstrap.md`
-2. `docs/emis_architecture_baseline.md`
-3. `docs/emis_monorepo_target_layout.md`
+1. `docs/architecture.md`
+2. `docs/emis_session_bootstrap.md`
+3. `docs/emis_architecture_baseline.md`
 4. `docs/emis_working_contract.md`
 5. `docs/AGENTS.md` - полный каталог EMIS docs, ownership и reading order
 6. локальный `AGENTS.md` в `apps/web/src/lib/server/emis/`, `apps/web/src/routes/api/emis/`, `apps/web/src/routes/emis/` и соседних active зонах
@@ -81,7 +82,8 @@ EMIS-активный контур сейчас находится здесь:
 ## 3. Кто за что отвечает в навигации
 
 - `README.md` - что это за приложение, стек, быстрый старт, env и маршруты
-- `AGENTS.md` в корне - выбрать контур, увидеть архитектурные правила и конвенцию навигационных файлов
+- `docs/architecture.md` - canonical repo-wide architecture contract
+- `AGENTS.md` в корне - выбрать контур, увидеть reading path и конвенцию навигационных файлов
 - `docs/AGENTS.md` - единственный полный каталог документации и reading order
 - локальные `AGENTS.md` / `CLAUDE.md` - правила и карта конкретной подсистемы
 
@@ -117,6 +119,10 @@ These paths no longer exist. Do not recreate them without explicit architectural
 - текущий BI/analytics контур;
 - EMIS operational и BI-contour поверх него.
 
+Repo-wide architecture contract для этого состояния зафиксирован в:
+
+→ [docs/architecture.md](./docs/architecture.md)
+
 ### Target layout и migration rules
 
 Canonical target layout для monorepo-style separation:
@@ -126,6 +132,10 @@ Canonical target layout для monorepo-style separation:
 Описывает: target directory structure (`apps/web` + `packages/*`), маппинг текущих зон, import direction rules, alias policy и migration policy. Physical moves начинаются только после ST-4.
 
 ## 7. Архитектурные правила
+
+Подробный repo-wide contract:
+
+→ [docs/architecture.md](./docs/architecture.md)
 
 ### Non-EMIS BI read-side
 
@@ -137,13 +147,13 @@ Canonical target layout для monorepo-style separation:
 ### EMIS operational side
 
 - default path:
-  `routes/api/emis/* -> server/emis/modules/* -> queries/service/repository -> PostgreSQL/PostGIS`
+  `routes/api/emis/* -> packages/emis-server/src/modules/* -> queries/service/repository -> PostgreSQL/PostGIS`
 - simple Postgres-first implementation считается нормой
 - если нужен BI/read-model поверх EMIS, сначала публикуем documented views/read models и только потом подключаем dataset layer
 
 ### EMIS architecture rules
 
-Для EMIS принимаем адаптированный FSD-подход, совместимый с текущим проектом:
+Для EMIS действуют repo-wide package/app boundaries и два канонических execution path из `docs/architecture.md`, плюс EMIS-specific placement rules:
 
 - `packages/emis-contracts/` - контракты, DTO, базовые доменные типы, Zod schemas
 - `packages/emis-server/src/infra/*` - server infrastructure
@@ -156,9 +166,9 @@ Compatibility shims at old app paths (`apps/web/src/lib/entities/emis-*`, `apps/
 
 Что это означает на практике:
 
-- FSD сохраняется для client/shared части проекта.
+- app-local naming `shared/entities/features/widgets` остается как внутренняя организация app-кода, но не как название всей архитектуры.
 - Server write/query logic не нужно насильно раскладывать по `features/` и `widgets/`.
-- `server/emis` считается нормальным server-only отклонением от "чистого" FSD.
+- `server/emis` считается нормальным server-only слоем в текущем modular monolith.
 
 Правила разработки:
 
@@ -209,7 +219,7 @@ GPT-5.4 (lead-strategic) → план → Claude Opus (lead-tactical) → worker
 | Ревьюер | Модель | Проверяет |
 |---|---|---|
 | `security-reviewer` | Sonnet | SQL injection, XSS, secrets, SSRF |
-| `architecture-reviewer` | Sonnet | FSD boundaries, server isolation, complexity |
+| `architecture-reviewer` | Sonnet | layer/import boundaries, server isolation, complexity |
 | `docs-reviewer` | Sonnet | Docs, DB truth, runtime contracts sync |
 | `code-reviewer` | Sonnet | Naming, conventions, maintainability |
 | `ui-reviewer` | Sonnet | Smoke test (только при frontend changes) |

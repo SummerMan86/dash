@@ -1,7 +1,7 @@
 # Docs Navigation
 
 Этот файл - единственный полный каталог документации в репозитории.
-Архитектурные правила и модульная навигация живут в корневом [AGENTS.md](../AGENTS.md), а `README.md` отвечает только за quick start и описание приложения.
+Repo-wide architecture contract живёт в [architecture.md](./architecture.md), модульная навигация и contour entry points - в корневом [AGENTS.md](../AGENTS.md), а `README.md` отвечает только за quick start и описание приложения.
 
 ## 1. Что здесь каталогизируется
 
@@ -28,7 +28,7 @@
 
 | Документ | Владеет | Source of truth для |
 |----------|---------|---------------------|
-| `current-project-analysis.md` | platform analysis и reusable foundation | текущее состояние платформы, риски и сильные стороны |
+| `architecture.md` | repo-wide architecture contract | topology, ownership, execution paths, package/app boundaries и import rules |
 | `../apps/web/src/routes/dashboard/wildberries/dwh_for_wildberries_requirements.md` | Wildberries DWH contract | полный контракт с DWH: витрины, колонки, фильтры, алерты, требования к качеству |
 | `strategy/bi_strategy.md` | local dashboard-builder BI strategy contract | как переложить Power BI strategy/BSC постановку в MVE-архитектуру |
 | `../apps/web/src/routes/dashboard/strategy/AGENTS.md` | strategy route development contract | current pages, grain rules, filter contract и rollout path |
@@ -50,6 +50,7 @@
 
 | Документ | Владеет | Source of truth для |
 |----------|---------|---------------------|
+| `current-project-analysis.md` | historical platform analysis | мартовский анализ проекта до package-era; полезен для исторического контекста, но не source of truth по текущей архитектуре |
 | `archive/strategy-v1/strategy_session_bootstrap.md` | historical strategy bootstrap | старый entry point по `strategy-drive` / `Strategy DWH v1` |
 | `archive/strategy-v1/strategy_dwh_v1.md` | historical strategy architecture | старые `strategy.*` data contracts, marts и dataset ids |
 | `archive/strategy-v1/strategy_newcomer_guide.md` | historical strategy onboarding | старый newcomer context по strategy-срезу |
@@ -61,6 +62,7 @@
 
 | Документ | Владеет | Source of truth для |
 |----------|---------|---------------------|
+| `architecture.md` | repo-wide architecture contract | topology, ownership, execution paths, import rules и repo-wide boundaries |
 | `emis_session_bootstrap.md` | текущее состояние, entry point, short doc map | что уже сделано, что сейчас в фокусе, с чего начинать новую сессию |
 | `emis_architecture_baseline.md` | canonical EMIS boundary map | platform vs EMIS operational vs EMIS BI, placement rules |
 | `emis_working_contract.md` | short EMIS working rules | decision path, non-negotiables, review triggers, DoD |
@@ -123,14 +125,15 @@
 ### Для platform / dashboard-builder
 
 1. `README.md`
-2. `current-project-analysis.md`
+2. `architecture.md`
 3. `../db/schema_catalog.md`
 4. если задача про Wildberries DWH - `../apps/web/src/routes/dashboard/wildberries/dwh_for_wildberries_requirements.md`
 5. если задача про strategy dashboards - `strategy/bi_strategy.md`
 6. если задача про strategy dashboards - `../apps/web/src/routes/dashboard/strategy/AGENTS.md`
 7. если задача про strategy datasets/runtime - `../apps/web/src/lib/server/datasets/AGENTS.md`
-8. при необходимости - `/home/orl/Shl/КА/MS BI/bsc_model/agent_pack/docs/imported/dashboard-builder/4. strategy_entity_bsc_mart_pilot_verification_2026_03_21.md`
-9. при необходимости - `archive/strategy-v1/strategy_session_bootstrap.md`
+8. если нужен historical context до package-era - `current-project-analysis.md`
+9. при необходимости - `/home/orl/Shl/КА/MS BI/bsc_model/agent_pack/docs/imported/dashboard-builder/4. strategy_entity_bsc_mart_pilot_verification_2026_03_21.md`
+10. при необходимости - `archive/strategy-v1/strategy_session_bootstrap.md`
 
 ### Для ops / deploy
 
@@ -138,11 +141,12 @@
 
 ### Для EMIS
 
-1. `emis_session_bootstrap.md`
-2. `emis_architecture_baseline.md`
-3. `emis_working_contract.md`
-4. `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
-5. `emis_mve_tz_v_2.md` — если нужен product scope
+1. `architecture.md`
+2. `emis_session_bootstrap.md`
+3. `emis_architecture_baseline.md`
+4. `emis_working_contract.md`
+5. `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
+6. `emis_mve_tz_v_2.md` — если нужен product scope
 
 Опционально по задаче:
 
@@ -169,5 +173,6 @@
 ## 5. Правило ownership
 
 - Этот файл владеет полным каталогом документации.
-- Корневой `AGENTS.md` владеет архитектурными правилами и развилкой по контурам.
+- `architecture.md` владеет repo-wide architecture contract.
+- Корневой `AGENTS.md` владеет развилкой по контурам и navigation entry points.
 - `README.md` не должен дублировать doc map; он только отправляет сюда.

@@ -5,8 +5,9 @@
 ## Контекст проекта
 
 SvelteKit 2 + TypeScript + TailwindCSS 4 + PostgreSQL/PostGIS.
-Архитектура: FSD (entities → features → widgets → routes).
-EMIS — отдельный доменный контур внутри SvelteKit-приложения (modular monolith).
+Архитектура: single-deployable modular monolith with layered app structure and package boundaries.
+`shared/entities/features/widgets` — это app-local layer organization, а не название всей архитектуры.
+EMIS — отдельный доменный контур внутри того же modular monolith.
 
 Подробнее: `docs/emis_session_bootstrap.md`, `docs/emis_freeze_note.md`.
 
@@ -63,7 +64,7 @@ Model policy:
 
 - SQL не в routes, а в `packages/emis-server/*`
 - `routes/api/emis/*` — только HTTP transport
-- FSD boundaries соблюдены
+- repo-wide layer/import boundaries соблюдены
 - Svelte 5 runes для нового EMIS UI
 - Schema changes отражены в `db/current_schema.sql` + `db/applied_changes.md`
 - Новые reusable контракты/типы — в `packages/emis-contracts/*`
