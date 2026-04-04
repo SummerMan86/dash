@@ -1,26 +1,32 @@
 # EMIS Architecture Baseline
 
-Этот документ фиксирует текущую архитектурную рамку EMIS внутри `dashboard-builder`.
-Цель: чтобы новые большие задачи по EMIS шли от одного canonical текста, а не от разрозненных заметок.
+Этот документ фиксирует текущую EMIS architecture story на 4 апреля 2026.
+Он отвечает только за current state и placement rules.
+Future migration описывается отдельно, а frozen decisions и historical rollout context вынесены в другие документы.
 
-## 1. Verdict
+## 1. Topology
 
-На 3 апреля 2026 EMIS **уже отделился архитектурно от "dashboard builder demo"**, но **не отделился физически в отдельное приложение**.
-
-Текущий правильный framing:
-
-- один deployable `SvelteKit` app;
-- architectural style: `modular monolith`;
-- EMIS = отдельный доменный контур внутри этого приложения;
-- BI/platform код остается общим foundation, но не владельцем EMIS operational flows.
-
-Иными словами: **мы не раскалываем repo**, но **перестаем мыслить EMIS как "еще одну страницу dashboard-builder"**.
+- один deployable `SvelteKit` app: `apps/web`
+- архитектурный стиль: `modular monolith`
+- три контура:
+  - `platform/shared`
+  - `EMIS operational`
+  - `EMIS BI/read-side`
+- reusable EMIS contracts/server/ui живут в packages; app держит routes и app-local composition
 
 ## 2. Три контура
 
 ### Platform / shared
 
-Здесь живут общие технические и UI-контракты:
+Canonical reusable homes:
+
+- `packages/platform-core/`
+- `packages/platform-ui/`
+- `packages/platform-datasets/`
+- `packages/platform-filters/`
+- `packages/db/`
+
+App-local platform glue по-прежнему живет в:
 
 - `apps/web/src/lib/shared/*`
 - `apps/web/src/lib/entities/dataset/*`
@@ -28,65 +34,86 @@
 - `apps/web/src/lib/server/datasets/*`
 - `apps/web/src/lib/server/providers/*`
 
-Этот слой можно использовать из EMIS, но он не должен забирать к себе EMIS-specific business logic.
+Этот контур можно использовать из EMIS, но он не владеет EMIS business logic.
 
 ### EMIS operational
 
-Здесь живут CRUD, search, map, ship-routes, dictionaries, audit и runtime conventions:
+Canonical reusable homes:
 
-- `packages/emis-contracts/` — entity types, Zod schemas (canonical)
-- `packages/emis-server/` — server infra + modules (canonical)
-- `packages/emis-ui/` — map widgets, status bar (canonical)
-- `apps/web/src/lib/features/emis-*` — app-local features (depends on `$app/forms`)
-- `apps/web/src/lib/widgets/emis-drawer/` — app-local (depends on `$widgets/filters`)
-- `apps/web/src/routes/api/emis/*` — thin HTTP transport (stays in app)
-- `apps/web/src/routes/emis/*` — UI/workspace (stays in app)
+- `packages/emis-contracts/` — entity contracts, DTO, Zod schemas
+- `packages/emis-server/` — server infra и backend modules
+- `packages/emis-ui/` — reusable map/status UI
 
-Compatibility shims at old paths (`entities/emis-*`, `server/emis/*`, `widgets/emis-map/`) re-export from packages, marked `// MIGRATION`.
+App-owned EMIS composition остается в:
 
-Canonical path:
+- `apps/web/src/lib/server/emis/infra/http.ts`
+- `apps/web/src/lib/features/emis-manual-entry/`
+- `apps/web/src/lib/widgets/emis-drawer/`
+- `apps/web/src/routes/api/emis/*`
+- `apps/web/src/routes/emis/*`
 
-`routes/api/emis/* -> packages/emis-server/modules/* -> queries/service/repository -> PostgreSQL/PostGIS`
+Compatibility shims остаются на старых app-paths и не считаются canonical ownership:
+
+- `apps/web/src/lib/entities/emis-*`
+- `apps/web/src/lib/server/emis/*`
+- `apps/web/src/lib/widgets/emis-map/*`
+- `apps/web/src/lib/widgets/emis-status-bar/*`
 
 ### EMIS BI / read-side
 
-Здесь живут стабильные аналитические read-models поверх published views/datasets:
+App-owned BI route layer:
 
 - `apps/web/src/routes/dashboard/emis/*`
+
+Platform dataset/runtime path:
+
+- `packages/platform-datasets/`
 - `apps/web/src/lib/server/datasets/definitions/emisMart.ts`
 - `/api/datasets/:id` для `emis.*`
-- `mart.emis_*` и `mart_emis.*` contracts в БД
 
-Canonical path:
+Published DB contracts:
+
+- `mart.emis_*`
+- `mart_emis.*`
+
+## 3. Два канонических execution path
+
+### Operational path
+
+Использовать для CRUD, search, map, ship-routes, dictionaries, audit:
+
+`routes/api/emis/* -> packages/emis-server/src/modules/* -> queries/service/repository -> PostgreSQL/PostGIS`
+
+### BI path
+
+Использовать для dashboard, KPI, charts, tables и стабильных read-models:
 
 `fetchDataset(...) -> /api/datasets/:id -> compileDataset(...) -> DatasetIr -> Provider -> DatasetResponse`
 
-## 3. Главная граница
+## 4. Главная граница
 
-Ключевое архитектурное решение для новых работ:
-
-- operational EMIS не тащим в dataset/IR слой "на вырост";
-- dataset layer используем только там, где реально нужен BI/read-model contract;
-- `/dashboard/emis/*` не должен становиться backdoor в operational SQL;
-- `/emis` не должен становиться местом для server business logic.
+- operational EMIS не тащим в dataset/IR слой "на вырост"
+- dataset layer используем только там, где реально нужен BI/read-model contract
+- `/dashboard/emis/*` не становится backdoor в operational SQL
+- `/emis` не становится местом для server business logic
 
 Практическое правило:
 
-- нужна карта, поиск, карточка, create/edit, link management, ship-route runtime:
-  это `server/emis/*` + `routes/api/emis/*` + `routes/emis/*`
-- нужен устойчивый dashboard / KPI / chart / tabular mart slice:
-  это `mart*` + dataset definition + `routes/dashboard/emis/*`
+- карта, поиск, карточка, create/edit, link management, ship-route runtime:
+  `packages/emis-server/` + `routes/api/emis/*` + `routes/emis/*`
+- устойчивый BI/dashboard slice:
+  published view/read-model + dataset definition + `routes/dashboard/emis/*`
 
-## 4. Placement Rules
+## 5. Placement Rules
 
 ### Куда класть новый код
 
-- новые DTO, Zod schemas, reusable entity contracts: `packages/emis-contracts/`
+- новые DTO, reusable entity contracts, Zod schemas: `packages/emis-contracts/`
 - server-only infra/helpers: `packages/emis-server/src/infra/*`
 - domain backend logic: `packages/emis-server/src/modules/*`
 - reusable EMIS map/status widgets: `packages/emis-ui/`
-- EMIS forms (depend on `$app/forms`): `apps/web/src/lib/features/emis-*`
-- app-local EMIS widgets (depend on other app widgets): `apps/web/src/lib/widgets/emis-*`
+- EMIS forms с зависимостью на `$app/forms`: `apps/web/src/lib/features/emis-manual-entry/`
+- app-local widgets с зависимостью на app widgets: `apps/web/src/lib/widgets/emis-drawer/`
 - HTTP transport: `apps/web/src/routes/api/emis/*`
 - workspace/orchestration UI: `apps/web/src/routes/emis/*`
 - BI pages: `apps/web/src/routes/dashboard/emis/*`
@@ -95,66 +122,46 @@ Canonical path:
 
 - не писать SQL в `apps/web/src/routes/api/emis/*`
 - не писать HTTP-логику в `packages/emis-server/src/modules/*/service.ts`
+- не писать client/UI code в `packages/emis-server/*`
 - не добавлять EMIS CRUD/query logic в dataset compiler без published read-model причины
 - не смешивать `/emis` workspace и `/dashboard/emis` BI ownership
 - не складывать reusable EMIS contracts в route files
 
-## 5. Что уже подтверждено кодом
+## 6. Что уже подтверждено кодом
 
-Текущая кодовая база уже соответствует этой схеме:
-
-- `apps/web/src/routes/api/emis/*` действительно тонко вызывают `server/emis/modules/*`
-- operational SQL сидит в `apps/web/src/lib/server/emis/modules/*`
-- `/emis` использует shared filter runtime и EMIS widgets как workspace layer
-- `/dashboard/emis/*` использует dataset path для `emis.*`
+- `apps/web/src/routes/api/emis/*` — тонкий transport поверх package-owned contracts/modules и app-owned HTTP glue
+- operational SQL и domain logic живут в `packages/emis-server/`
+- reusable map/status runtime живет в `packages/emis-ui/`
+- `/emis` — рабочий workspace layer, а не foundation page
+- `/dashboard/emis/*` идет через dataset/read-model path
 - DB source of truth для EMIS ведется snapshot-first через `db/current_schema.sql`
 
 Поэтому базовый ответ на вопрос "разошлись ли мы с dashboard-builder?" такой:
 
-- **да, на уровне домена и ownership EMIS уже отдельный контур;**
-- **нет, на уровне deploy/runtime это все еще единое приложение.**
+- да, на уровне домена и ownership EMIS уже отдельный контур
+- нет, на уровне deploy/runtime это все еще единое приложение
 
-## 6. Current Pressure Points
+## 7. Current Pressure Points
 
-Архитектура в целом согласована, но есть несколько важных operational ограничений:
+- большие EMIS route/widget файлы должны расти только через extraction
+- compatibility shims остаются временным слоем, а не ownership truth
+- известный `fetchDataset.ts` boundary gap — platform-level проблема и не повод переоткрывать EMIS topology
 
-- `apps/web/src/routes/emis/+page.svelte` уже oversized и должен расти только через extraction;
-- map-heavy логика по-прежнему требует строгого контроля границы route vs widget;
-- общий repo baseline green: `pnpm check` — 0 errors, `pnpm build` — success (Select.svelte parse error resolved в ST-4);
-- единственный известный FSD-gap: `fetchDataset.ts` в shared импортирует entities — 3 violations в `pnpm lint:boundaries`, pre-existing, задокументирован.
+## 8. Relationship To Other Docs
 
-## 7. Working Rule For Next EMIS Tasks
-
-Для следующих больших задач считать canonical следующее:
-
-1. EMIS развивается как отдельный домен внутри одного SvelteKit app.
-2. Все новые operational slices идут через `server/emis/*` и `routes/api/emis/*`.
-3. Все новые BI slices идут через published views/read-models и dataset layer.
-4. Shared abstractions добавляются только при доказанном reuse pressure.
-5. DB truth читается по `db/current_schema.sql`, а не по историческим migration chain.
-
-## 8. Target Layout
-
-Canonical target layout для monorepo-style separation зафиксирован в отдельном документе:
-
-→ [`emis_monorepo_target_layout.md`](./emis_monorepo_target_layout.md)
-
-Там описаны:
-- target directory structure (`apps/web` + `packages/*`)
-- маппинг текущих active zones → target packages
-- import direction rules и dependency graph
-- alias policy (какие aliases остаются, когда удаляются)
-- migration policy (bounded slices, no big-bang, baseline blocker)
-
-Текущий документ описывает *существующую* архитектуру и placement rules.
-Target layout описывает *куда* код переедет и *как*.
+- `emis_session_bootstrap.md` — текущее состояние, doc map и reading order
+- `emis_working_contract.md` — короткие рабочие правила и review triggers
+- `emis_monorepo_target_layout.md` — future target layout и migration policy, не current ownership map
+- `emis_implementation_spec_v1.md` — retained implementation decisions и historical rollout context
+- `emis_freeze_note.md` — frozen decisions, которые не нужно переоткрывать
 
 ## 9. Reading Order
 
 1. `emis_session_bootstrap.md`
 2. этот документ
-3. `emis_monorepo_target_layout.md`
-4. `emis_working_contract.md`
-5. `emis_implementation_spec_v1.md`
-6. `emis_freeze_note.md`
-7. `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
+3. `emis_working_contract.md`
+4. `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
+5. `emis_mve_tz_v_2.md` — если нужен product scope
+6. `emis_monorepo_target_layout.md` — если задача про structural migration
+7. `emis_implementation_spec_v1.md` — если нужен rollout/history context
+8. `emis_freeze_note.md` — если нужно проверить frozen decisions

@@ -16,8 +16,17 @@
   - `docs/emis_working_contract.md`
 - Strategic plan for the next wave lives in:
   - `docs/agents/lead-strategic/current_plan.md`
-  - topic: `EMIS Post-Split Hardening And Boundary Cleanup`
+  - topic: `EMIS Architecture Stabilization And Governance Freeze`
 - Legacy docs cleanup should be treated as a separate explicit slice after topology/read-order stabilization, not as ad hoc deletion during feature work.
+- User decision from `2026-04-04`:
+  - first stabilize EMIS architecture/concept/docs
+  - only after that open code refactor / enforcement work
+- Current strategic verdict from the architecture review on `2026-04-04`:
+  - the core EMIS architecture is viable
+  - the main problem is not topology, but doc truthfulness, mixed current-vs-target descriptions and weak governance/enforcement coupling
+- Recommended governance shape for the next wave:
+  - `architecture-steward` owns canonical architecture docs, known exceptions and pre-approval for cross-layer changes
+  - `architecture-reviewer` remains a bounded diff reviewer, not a second strategic lead
 
 ## Контекст текущей работы
 
@@ -56,9 +65,14 @@
   - recommended integration branch: `feature/emis-post-split-hardening`
   - create it from the latest accepted base after merging `feature/emis-foundation-stabilization`
 - Deferred items (P3 hardening, MIGRATION shim removal, FSD violations) tracked в `docs/emis_next_tasks_2026_03_22.md`.
-- Новый active wave уже открыт как separate hardening plan:
-  - `EMIS Post-Split Hardening And Boundary Cleanup`
-  - do not append these tasks back into closed `ST-1..ST-10`
+- Completed hardening plan is archived:
+  - `docs/archive/agents/lead_strategic_current_plan_2026_04_03_post_split_hardening.md`
+- Новый active wave открыт как architecture-first stabilization plan:
+  - `EMIS Architecture Stabilization And Governance Freeze`
+  - focus: simplify/freeze architecture, align canonical docs with package reality, create known exceptions registry, define architect role model
+- Previous baseline/enforcement-first sequencing (`S0..S8`) is not cancelled, but deferred to phase 2 after architecture docs freeze.
+- New canonical exception registry:
+  - `docs/emis_known_exceptions.md`
 - Если задача не structural — можно работать на feature-уровне без нового plan.
 - Strategic workflow updated and tested in this session:
   - optional `strategic-reviewer` sidecar is now a documented canonical role
@@ -71,18 +85,51 @@
 
 ## Новый active wave
 
-- Эта wave не продолжает `ST-1..ST-10`, а идет после нее как post-split hardening.
+- Эта wave не продолжает `ST-1..ST-10` и не переоткрывает уже закрытую hardening wave `H-1..H-5`.
+- Wave name:
+  - `EMIS Architecture Stabilization And Governance Freeze`
+- Why now:
+  - user explicitly chose architecture/docs-first work before code refactor
+  - current EMIS docs mix current package-state, legacy phase-0 notes and future migration target
+  - this makes the architecture harder to follow and harder to enforce than it should be
 - Current planned slices:
-  - `H-1` — remove SvelteKit coupling from `emis-server` — completed `2026-04-03`
-  - `H-2` — remove invalid `emis-ui -> platform-datasets` edge — completed `2026-04-03`
-  - `H-3` — normalize EMIS API routes away from legacy shim guidance/imports — completed `2026-04-03`
-  - `H-4` — decompose `EmisMap.svelte` (H-4a) and `/routes/emis/+page.svelte` (H-4b) — completed `2026-04-03`
-  - `H-5` — close small remaining hardening gaps — completed `2026-04-03`
-- **Wave complete.** All H-1..H-5 accepted on `2026-04-03`.
+  - `A0` — architecture-first freeze and scope boundaries
+  - `A1` — simplify canonical architecture contract
+  - `A2` — separate current state vs target layout vs historical docs
+  - `A3` — create and wire known exceptions registry
+  - `A4` — define architecture governance role model
+  - `A5` — prepare phase-2 enforcement/refactor backlog
+- `A1` and `A2` completed on `2026-04-04`:
+  - current-state docs now tell one aligned story about:
+    - topology
+    - three contours
+    - package ownership vs app-level ownership
+    - operational path vs BI path
+  - default current-state reading order now starts with:
+    - `docs/emis_session_bootstrap.md`
+    - `docs/emis_architecture_baseline.md`
+    - `docs/emis_working_contract.md`
+    - `apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
+  - `docs/AGENTS.md` now classifies:
+    - current-state docs as canonical
+    - `emis_monorepo_target_layout.md`, `emis_implementation_spec_v1.md`, `emis_freeze_note.md` as active/supporting, not current ownership truth
+  - package-local navigation docs are now part of the canonical EMIS doc map:
+    - `packages/emis-contracts/AGENTS.md`
+    - `packages/emis-server/AGENTS.md`
+    - `packages/emis-ui/AGENTS.md`
+- Deferred phase 2 after docs freeze:
+  - repair broken baseline checks
+  - restore green boundary gate
+  - tighten machine-enforced architecture boundaries
+  - introduce `baseline-governor`
+  - add `Red/Yellow/Green` state model and canonical baseline command
+  - only then resume broader EMIS foundation closeout / refactor slices
+- Wave status: **open**.
 - New wave constraints:
-  - topology remains frozen
-  - no separate EMIS app discussion unless new runtime/ops pressure appears
-  - do not mix this wave with broad BI-only cleanup or global shim removal
+  - topology remains frozen unless new runtime/ops pressure appears
+  - no broad code refactor before architecture docs are aligned and accepted
+  - no new exception without owner and target wave / expiry
+  - do not mix architecture freeze with feature expansion
 
 ## Hardening wave status
 
@@ -128,3 +175,8 @@
   - `fetchDataset.ts` FSD gap (shared imports entities)
   - ~53 MIGRATION re-export shims outside EMIS API routes
   - stock-alerts→routes FSD violation
+  - baseline verification/governance gap:
+    - root EMIS smoke commands must be runnable
+    - `lint:boundaries` must be green
+    - active ownership docs must match code
+    - baseline-governor workflow must be documented

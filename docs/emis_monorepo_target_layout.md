@@ -3,7 +3,12 @@
 Canonical reference для целевой структуры репозитория, маппинга текущих зон в target packages, правил зависимостей и миграционной политики.
 
 Topology decision frozen: single-deployable monorepo, no immediate multi-app split.
-Этот документ описывает **куда** всё едет и **как** переезжает, но **не начинает** физических перемещений.
+Статус на 4 апреля 2026:
+
+- high-level extraction в `apps/web` + `packages/*` уже произошел
+- этот документ больше не является current-state ownership map
+- его задача теперь: фиксировать future target layout, import rules и правила для оставшихся structural moves
+- current ownership и placement rules читать в `emis_session_bootstrap.md`, `emis_architecture_baseline.md` и `emis_working_contract.md`
 
 ## 1. Target Layout
 
@@ -27,8 +32,8 @@ dashboard-builder/
 │   ├── platform-filters/            # Filter contracts, store, planner, filter widgets
 │   ├── db/                          # DB connection, pooling, schema scripts, seeds
 │   ├── emis-contracts/              # EMIS entity DTOs, Zod schemas
-│   ├── emis-server/                 # EMIS domain backend (modules, infra, queries, repos)
-│   ├── emis-ui/                     # EMIS features + widgets (map, drawer, status-bar, manual-entry)
+│   ├── emis-server/                 # EMIS domain backend (infra + semantic modules)
+│   ├── emis-ui/                     # Reusable EMIS UI package (map, status bar; app-local drawer/manual-entry stay in apps/web)
 │   ├── bi-alerts/                   # Alert scheduler, channels, services (if reuse pressure justifies)
 │   └── bi-dashboards/              # Dashboard editor (if reuse pressure justifies)
 │
@@ -62,7 +67,7 @@ dashboard-builder/
 | Current path | Target package | Что содержит |
 |---|---|---|
 | `apps/web/src/lib/entities/emis-*` | `packages/emis-contracts/` | emis-object, emis-news, emis-link, emis-dictionary, emis-geo, emis-map, emis-ship-route |
-| `apps/web/src/lib/server/emis/*` | `packages/emis-server/` | modules/*, infra/*, queries/*, repositories/*, services/*, sql/* |
+| `apps/web/src/lib/server/emis/*` | `packages/emis-server/` | `src/infra/*` и `src/modules/*` с module-local `queries.ts` / `repository.ts` / `service.ts`; app-owned `infra/http.ts` остается в `apps/web` |
 | `apps/web/src/lib/widgets/emis-map/`, `emis-status-bar/` | `packages/emis-ui/` | EmisMap, EmisStatusBar (extracted in ST-7) |
 | `apps/web/src/lib/features/emis-manual-entry/` | stays in `apps/web` | depends on `$app/forms` (ST-8 verdict) |
 | `apps/web/src/lib/widgets/emis-drawer/` | stays in `apps/web` | depends on `$widgets/filters` (ST-8 verdict) |

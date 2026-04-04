@@ -35,7 +35,9 @@ src/
 - Не писать HTTP-логику в `service.ts`.
 - Не писать SQL в route handlers (те остаются в `apps/web/src/routes/api/emis/`).
 - Deps: `emis-contracts`, `db`, `zod`; peers: `pg`.
-- Compatibility shims в `apps/web/src/lib/server/emis/` re-exportят из этого пакета.
+- Most legacy shims в `apps/web/src/lib/server/emis/` re-exportят из этого пакета.
+- App-owned exception: `apps/web/src/lib/server/emis/infra/http.ts` — SvelteKit transport glue, не shim.
+- Direct-import exception: `mapConfig` shim удален; consumers импортируют `@dashboard-builder/emis-server/infra/mapConfig` напрямую.
 
 ## Transport ownership
 

@@ -5,29 +5,43 @@
 
 ## 1. Канонический старт
 
-- Архитектурная рамка и boundary map для новых задач:
-  [EMIS Architecture Baseline](./emis_architecture_baseline.md)
-- Canonical target layout, zone mapping, import/alias/migration rules:
-  [Monorepo Target Layout](./emis_monorepo_target_layout.md)
-- Короткий рабочий контракт для placement и decision path:
-  [EMIS Working Contract](./emis_working_contract.md)
-- Source of truth по scope, invariants и acceptance:
-  [EMIS MVE TZ v2](./emis_mve_tz_v_2.md)
-- Source of truth по implementation decisions и rollout order:
-  [EMIS Implementation Spec v1](./emis_implementation_spec_v1.md)
-- Frozen decisions и conventions, которые не нужно заново открывать:
-  [EMIS Freeze Note](./emis_freeze_note.md)
-- Runtime/API contract:
-  [EMIS Runtime Contract](../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md)
+- Чтобы понять current architecture и placement rules:
+  - [EMIS Architecture Baseline](./emis_architecture_baseline.md)
+  - [EMIS Working Contract](./emis_working_contract.md)
+  - [EMIS Runtime Contract](../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md)
+- Чтобы понять product scope, invariants и acceptance:
+  - [EMIS MVE TZ v2](./emis_mve_tz_v_2.md)
+- Чтобы понять future structural migration:
+  - [Monorepo Target Layout](./emis_monorepo_target_layout.md)
+- Чтобы понять retained implementation decisions и historical rollout context:
+  - [EMIS Implementation Spec v1](./emis_implementation_spec_v1.md)
+- Чтобы проверить frozen decisions, которые не нужно переоткрывать:
+  - [EMIS Freeze Note](./emis_freeze_note.md)
 
-## 2. Что считать текущим состоянием на 1 апреля 2026
+## 2. Что считать текущим состоянием на 4 апреля 2026
 
 ### Архитектурная рамка
 
 - EMIS развивается внутри текущего SvelteKit-приложения как `single deployable app`.
-- Базовый стиль: modular monolith с monorepo-ready границами.
+- Базовый стиль: `modular monolith`.
+- Архитектура читается через три контура:
+  - `platform/shared`
+  - `EMIS operational`
+  - `EMIS BI/read-side`
+- Canonical reusable EMIS ownership уже в packages:
+  - `packages/emis-contracts/`
+  - `packages/emis-server/`
+  - `packages/emis-ui/`
+- App-level ownership остается в:
+  - `apps/web/src/lib/server/emis/infra/http.ts`
+  - `apps/web/src/routes/api/emis/*`
+  - `apps/web/src/routes/emis/*`
+  - `apps/web/src/routes/dashboard/emis/*`
+  - `apps/web/src/lib/features/emis-manual-entry/`
+  - `apps/web/src/lib/widgets/emis-drawer/`
+- Compatibility shims на старых app-paths остаются временным слоем и не считаются ownership truth.
 - Для EMIS operational flows default path:
-  `routes/api/emis/* -> server/emis/modules/* -> queries/service/repository -> PostgreSQL/PostGIS`
+  `routes/api/emis/* -> packages/emis-server/src/modules/* -> queries/service/repository -> PostgreSQL/PostGIS`
 - Dataset/IR abstraction сохраняется для BI/read-side и стабильных read-model contracts.
 
 ### Что уже реально есть в коде
@@ -52,10 +66,11 @@
   - Фильтры: `layer='vessels'`, `q` привязан к `mapVessels` target
   - Historical track не загружается автоматически в vessel mode — планируется как следующая волна
 - Write-side audit hooks и actor attribution уже подключены для objects, news и news-object links.
-- BI/read-side уже выведен в три route-level slice:
+- BI/read-side уже выведен в route-level slices:
   - `/dashboard/emis`
   - `/dashboard/emis/ship-routes`
   - `/dashboard/emis/provenance`
+  - `/dashboard/emis/vessel-positions`
 
 ### Что уже считать фактом в БД
 
@@ -89,10 +104,10 @@
 ### Что остается в практическом фокусе
 
 - MVE closeout / contract hardening:
-  - минимальная operating model фиксация для `viewer` / `editor` / `admin`
-  - centralized write guardrails для production-shaped EMIS writes
+  - минимальная operating model фиксация для `viewer` / `editor` / `admin` → `emis_access_model.md`
+  - centralized write guardrails для production-shaped EMIS writes → `emis_access_model.md`
   - dictionary/admin scope decision: seed-managed vs narrow CRUD
-  - health/readiness contract и centralized API error logging
+  - health/readiness contract и centralized API error logging → `emis_observability_contract.md`
 - Post-MVE next wave:
   - vessel historical track integration:
     - опциональная загрузка track при выборе судна из vessel catalog
@@ -117,18 +132,30 @@
   Текущее состояние, reading order и doc ownership.
 - `emis_architecture_baseline.md`
   Canonical boundary map: platform vs EMIS operational vs EMIS BI.
-- `emis_monorepo_target_layout.md`
-  Canonical target layout, zone mapping, import direction rules, alias policy, migration policy.
 - `emis_working_contract.md`
   Short operational rules: placement, non-negotiables, review triggers, DoD.
+- `emis_access_model.md`
+  Viewer/editor/admin и write guardrails (где enforce, что считать non-negotiable).
+- `emis_observability_contract.md`
+  Readiness/health endpoints, error logging и request correlation.
+- `emis_read_models_contract.md`
+  Published read-models (views/marts), datasets и BI route contract (как добавлять новый BI slice).
 - `emis_mve_tz_v_2.md`
   Что и зачем делаем: scope, invariants, acceptance.
+- `emis_monorepo_target_layout.md`
+  Future target layout и migration policy. Не current-state ownership map.
 - `emis_implementation_spec_v1.md`
-  Как делаем: структура кода, API, rollout order, DoD.
+  Retained implementation decisions, API/data rules и historical rollout context. Не current ownership map.
 - `emis_freeze_note.md`
-  Какие решения уже заморожены и не требуют нового обсуждения.
+  Frozen decisions и conventions, которые не нужно переоткрывать. Не current ownership map.
 - `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
-  Runtime/API conventions, audit contract, error/meta shape.
+  Runtime/API conventions: API design rules, audit contract, error/meta shape.
+- `../packages/emis-contracts/AGENTS.md`
+  Package-local navigation для canonical entity contracts, DTO и Zod schemas.
+- `../packages/emis-server/AGENTS.md`
+  Package-local navigation для canonical infra helpers и backend modules.
+- `../packages/emis-ui/AGENTS.md`
+  Package-local navigation для canonical map/status UI exports.
 - `emis_architecture_review.md`
   Approve checklist, mandatory review cases и финальный verdict format.
 - `agents/templates.md`
@@ -141,8 +168,6 @@
   Активный backlog, разбитый на MVE closeout и post-MVE tracks.
 - `../apps/web/src/routes/emis/AGENTS.md`
   Workspace route contract для `/emis` UI/orchestration layer.
-- `packages/emis-ui/` (extracted from `widgets/emis-map/`)
-  Map widgets and status bar. Canonical code now in package.
 - `../apps/web/src/routes/dashboard/emis/AGENTS.md`
   BI/read-side route contract для dashboard slices.
 - `archive/emis/*`
@@ -156,18 +181,22 @@
 
 1. Этот bootstrap
 2. `emis_architecture_baseline.md`
-3. `emis_monorepo_target_layout.md`
-4. `emis_working_contract.md`
-5. `emis_mve_tz_v_2.md`
-6. `emis_implementation_spec_v1.md`
-7. `emis_freeze_note.md`
+3. `emis_working_contract.md`
+4. `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
+5. `emis_mve_tz_v_2.md` — если нужен product scope
+6. `emis_monorepo_target_layout.md` — если задача про structural migration
+7. `emis_implementation_spec_v1.md` — если нужен rollout/history context
+8. `emis_freeze_note.md` — если нужно проверить frozen decisions
 
 ### Задача по API / service / audit
 
 1. Этот bootstrap
-2. `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
-3. `../apps/web/src/lib/server/emis/AGENTS.md`
-4. `../apps/web/src/routes/api/emis/AGENTS.md`
+2. `emis_access_model.md` — если change про writes/guardrails/roles
+3. `emis_observability_contract.md` — если change про readiness/error logging
+4. `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md` — error shape/codes, meta shape, limits/sorts
+5. `../packages/emis-contracts/AGENTS.md`
+6. `../packages/emis-server/AGENTS.md`
+7. `../apps/web/src/routes/api/emis/AGENTS.md`
 
 ### Задача по offline maps
 
@@ -194,15 +223,16 @@
 
 1. Этот bootstrap
 2. `../apps/web/src/routes/emis/AGENTS.md`
-3. `packages/emis-ui/` - если change касается map layer
+3. `../packages/emis-ui/AGENTS.md` - если change касается map/status package
 4. `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
 
 ### Задача по EMIS BI routes
 
 1. Этот bootstrap
-2. `../apps/web/src/routes/dashboard/emis/AGENTS.md`
-3. `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
-4. `../apps/web/src/lib/server/datasets/AGENTS.md`
+2. `emis_read_models_contract.md`
+3. `../apps/web/src/routes/dashboard/emis/AGENTS.md`
+4. `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
+5. `../apps/web/src/lib/server/datasets/AGENTS.md`
 
 ### Нужен только исторический контекст
 

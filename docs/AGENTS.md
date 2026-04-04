@@ -33,6 +33,7 @@
 | `strategy/bi_strategy.md` | local dashboard-builder BI strategy contract | как переложить Power BI strategy/BSC постановку в MVE-архитектуру |
 | `../apps/web/src/routes/dashboard/strategy/AGENTS.md` | strategy route development contract | current pages, grain rules, filter contract и rollout path |
 | `../apps/web/src/lib/server/datasets/AGENTS.md` | dataset layer routing contract | как `strategy.*` datasets подключаются в app runtime |
+| `../packages/platform-datasets/AGENTS.md` | dataset runtime package contract | canonical `compileDataset`, dataset definitions и Postgres provider mapping |
 | `../apps/web/src/lib/server/providers/AGENTS.md` | provider mapping contract | как `strategy.*` datasets маппятся на `mart_strategy.slobi_*` |
 | `../db/schema_catalog.md` | active app DB catalog | какие app-схемы и SQL-объекты считаются рабочими |
 | `../db/current_schema.sql` | active app DB snapshot | текущая структура схем `emis`, `stg_emis`, `mart_emis`, `mart` |
@@ -62,20 +63,25 @@
 |----------|---------|---------------------|
 | `emis_session_bootstrap.md` | текущее состояние, entry point, short doc map | что уже сделано, что сейчас в фокусе, с чего начинать новую сессию |
 | `emis_architecture_baseline.md` | canonical EMIS boundary map | platform vs EMIS operational vs EMIS BI, placement rules |
-| `emis_monorepo_target_layout.md` | canonical monorepo target layout | target directory structure, zone mapping, import rules, alias policy, migration policy |
 | `emis_working_contract.md` | short EMIS working rules | decision path, non-negotiables, review triggers, DoD |
+| `emis_access_model.md` | EMIS access model | viewer/editor/admin, write guardrails и где enforce |
+| `emis_observability_contract.md` | EMIS observability contract | readiness/health endpoints, error logging, request correlation |
+| `emis_read_models_contract.md` | EMIS BI/read-side contract | published read-models (views/marts), datasets и BI routes coupling |
 | `emis_mve_tz_v_2.md` | scope, invariants, acceptance | продуктовые рамки и ограничения |
-| `emis_implementation_spec_v1.md` | implementation decisions и rollout order | структура реализации, API, snapshot-first DB contract и порядок работ |
-| `emis_freeze_note.md` | frozen decisions и conventions | что не нужно переоткрывать без причины |
-| `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md` | runtime/API conventions | error shape, list meta, audit contract, query limits/sorts |
+| `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md` | runtime/API conventions | API design conventions, error shape, list meta, audit contract, query limits/sorts |
+| `../packages/emis-contracts/AGENTS.md` | EMIS contracts package navigation | где лежат canonical entity contracts, DTO и Zod schemas |
+| `../packages/emis-server/AGENTS.md` | EMIS server package navigation | где лежат canonical infra helpers и backend modules |
+| `../packages/emis-ui/AGENTS.md` | EMIS UI package navigation | где лежат canonical map/status UI exports |
 | `../apps/web/src/routes/emis/AGENTS.md` | EMIS workspace route contract | что остается в `/emis` route layer и что выносится из workspace |
-| `packages/emis-ui/` *(extracted from widgets/emis-map)* | EMIS map runtime и status bar | map widgets в `packages/emis-ui/src/emis-map/`, status bar в `packages/emis-ui/src/emis-status-bar/` |
 | `../apps/web/src/routes/dashboard/emis/AGENTS.md` | EMIS BI routes contract | границы BI route layer, dataset path и extraction rules |
 
 ### Active
 
 | Документ | Владеет | Source of truth для |
 |----------|---------|---------------------|
+| `emis_monorepo_target_layout.md` | target layout и migration policy | future package layout, import direction rules, alias policy; не current-state ownership map |
+| `emis_implementation_spec_v1.md` | retained implementation decisions | API/data decisions и historical rollout order; не current ownership map |
+| `emis_freeze_note.md` | frozen decisions и conventions | что не нужно переоткрывать без причины; не current ownership map |
 | `emis_architecture_review.md` | EMIS architecture approve checklist | lifecycle review, mandatory approve cases, approve checklist |
 | `emis_offline_maps_ops.md` | offline maps ops-runbook | эксплуатация MapTiler/PMTiles и production caveats |
 | `emis_next_tasks_2026_03_22.md` | backlog | remaining tasks и polish stack |
@@ -132,23 +138,28 @@
 
 1. `emis_session_bootstrap.md`
 2. `emis_architecture_baseline.md`
-3. `emis_monorepo_target_layout.md`
-4. `emis_working_contract.md`
-5. `emis_mve_tz_v_2.md`
-6. `emis_implementation_spec_v1.md`
-7. `emis_freeze_note.md`
-8. `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
+3. `emis_working_contract.md`
+4. `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
+5. `emis_mve_tz_v_2.md` — если нужен product scope
 
 Опционально по задаче:
 
+- `emis_access_model.md` - если задача затрагивает writes, роли, guardrails
+- `emis_observability_contract.md` - если задача про health/readiness/error logging
+- `emis_read_models_contract.md` - если задача про BI/read-models/datasets/contracts
+- `emis_monorepo_target_layout.md` - если задача про structural migration, import rules или alias policy
+- `emis_implementation_spec_v1.md` - если нужен historical rollout context или retained implementation rationale
+- `emis_freeze_note.md` - если нужно понять, какие решения не нужно переоткрывать
 - `emis_architecture_review.md` - если нужен approve checklist или review verdict
 - `emis_offline_maps_ops.md` - если работа про offline maps или PMTiles
 - `emis_next_tasks_2026_03_22.md` - если нужен backlog
 - `agents/workflow.md` - если нужен agent workflow, процесс, инварианты
 - `agents/roles.md` - если нужны роли агентов
 - `agents/templates.md` - если нужны шаблоны коммуникации между агентами
+- `../packages/emis-contracts/AGENTS.md` - если change касается contracts, DTO, Zod schemas
+- `../packages/emis-server/AGENTS.md` - если change касается backend modules или infra helpers
+- `../packages/emis-ui/AGENTS.md` - если change касается map/status UI package
 - `../apps/web/src/routes/emis/AGENTS.md` - если работа про `/emis` workspace layer
-- `packages/emis-ui/` - если работа про map runtime (extracted from widgets/emis-map)
 - `../apps/web/src/routes/dashboard/emis/AGENTS.md` - если работа про BI/dashboard routes
 - `archive/emis/emis_vessel_current_positions_handoff_plan.md` - если нужен historical handoff по vessel current positions slice
 - `archive/emis/*`, `archive/agents/*` и `archive/strategy-v1/*` - только если нужен historical context
