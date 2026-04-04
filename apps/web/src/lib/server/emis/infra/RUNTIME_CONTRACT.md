@@ -2,6 +2,50 @@
 
 Canonical runtime conventions for all EMIS operational endpoints and for dataset-backed EMIS BI reads.
 
+## API design conventions (one page)
+
+This section is the FE/BE agreement on how EMIS APIs are designed.
+
+### Transport style
+
+- EMIS operational APIs are **REST over HTTP** (`/api/emis/*`).
+- We do not introduce GraphQL for EMIS unless there is a concrete multi-resource query pressure that REST + published read-models cannot solve.
+- For BI/read-side, the canonical integration is **dataset-backed reads** via `/api/datasets/:id`, not ad-hoc operational fetches from BI routes.
+
+### Versioning policy
+
+- Current EMIS API is implicitly **v1** (no `/v1` prefix).
+- Default policy is **additive-only** evolution: new fields/endpoints, same shapes.
+- If a breaking change is unavoidable, introduce a new endpoint namespace (e.g. `/api/emis/v2/*`) and keep the old contract until consumers migrate.
+- Dataset API already has explicit `contractVersion` (see dataset route codes below); do not fork dataset semantics without bumping `contractVersion`.
+
+### Naming & casing
+
+- **Operational JSON** uses `camelCase` (including query params like `dateFrom`, `objectType`, `shipHbkId`).
+- **Dataset JSON** intentionally mirrors published SQL contracts, so row fields are typically `snake_case` (same as view columns). `meta.sort.field` also echoes IR column names (often `snake_case`).
+- URL path segments are **kebab-case** (`ship-routes`, `map-config`).
+
+### Pagination & sorting
+
+- List endpoints use offset pagination: `limit` + `offset` with strict parsing and safe bounds.
+- Response meta echoes the applied paging/sort: `{ rows, meta: { count, limit, offset, sort[] } }`.
+- Sorting is **server-defined by endpoint** unless a specific allowlist is introduced. If/when client-sort is added, it must be allowlisted and documented (never raw SQL fragments).
+- Dataset v1 is snapshot-style and does not expose offset pagination (no `meta.offset`).
+
+### Filtering
+
+- Filters are expressed as query params (operational) or dataset query payload (BI).
+- Validation is schema-driven (Zod). Invalid values must return `400` with stable `{ error, code }`.
+
+### Dates and timezones
+
+- All API datetime params must be ISO 8601 **with timezone offset** (e.g. `2026-04-04T12:34:56+03:00`).
+
+### Errors & logging
+
+- All errors are `{ error, code }` (see “Error shape” below).
+- Error logging/correlation rules live in `docs/emis_observability_contract.md`.
+
 ## List endpoints
 
 All list/catalog endpoints return:

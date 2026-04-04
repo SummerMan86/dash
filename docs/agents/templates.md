@@ -207,3 +207,37 @@ Plan Fit:
 Recommended next step:
 - <accept | request fixes | re-slice | escalate>
 ```
+
+## 9. Baseline Verdict (baseline-governor → lead-strategic / user)
+
+Файл или сообщение по итогам stabilization check.
+
+```md
+# Baseline Verdict
+
+Status: Red | Yellow | Green
+Verdict: baseline not closed | baseline conditionally open | baseline closed
+
+Why:
+- <reason 1>
+- <reason 2>
+
+Checks:
+- `pnpm check`: <green|red|not run>
+- `pnpm build`: <green|red|not run>
+- `pnpm lint:boundaries`: <green|red|not run>
+- `pnpm emis:smoke`: <green|red|not run>
+- `pnpm emis:offline-smoke`: <green|red|not run>
+- `pnpm emis:write-smoke`: <green|red|not required>
+
+Known Exceptions:
+- <id> — owner: <role/person>, expiry: <wave/date>, note: <short reason>
+- или `none`
+
+Allowed Next Work:
+- <what is allowed while this status stands>
+
+Required Follow-ups:
+- <item>
+- или `none`
+```

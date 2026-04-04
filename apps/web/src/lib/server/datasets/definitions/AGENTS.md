@@ -1,12 +1,16 @@
 # Dataset Definitions Navigation
 
-`src/lib/server/datasets/definitions/` - набор domain-specific dataset compilers.
+`src/lib/server/datasets/definitions/` - legacy copies of dataset definitions kept during migration.
 
-Каждый файл описывает, как конкретный namespace датасетов переводится в `DatasetIr`.
+Canonical dataset compilers now live in:
+
+- `packages/platform-datasets/src/server/definitions/*`
+
+New/active dataset definitions should be added in the package, because the runtime `compileDataset()` is imported from `@dashboard-builder/platform-datasets/server`.
 
 ## Что важно
 
-Актуальные compilers сейчас:
+Dataset compilers (зеркалятся в пакете с теми же именами файлов):
 
 - `wildberriesOfficeDay.ts`
 - `wildberriesProductPeriod.ts`
@@ -18,7 +22,7 @@
 
 - `strategyMart.ts` владеет только app-facing `strategy.*` datasets;
 - он не собирает бизнес-логику из raw facts, а лишь описывает select/filter/order для уже опубликованных views;
-- mapping на physical relation живет не здесь, а в `providers/postgresProvider.ts`.
+- relation mapping и column typing живут в `packages/platform-datasets/src/server/providers/postgresProvider.ts`.
 
 Current strategy contract:
 

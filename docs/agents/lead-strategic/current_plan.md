@@ -1,469 +1,239 @@
-# Plan: EMIS Post-Split Hardening And Boundary Cleanup
+# Plan: EMIS Architecture Stabilization And Governance Freeze
 
 ## Цель
-Закрыть наиболее важные архитектурные residuals после wave `ST-1..ST-10`, не переоткрывая topology decision и не смешивая их с новой package migration.
 
-Цели этой волны:
+До нового кодового hardening/refactor стабилизировать саму EMIS-архитектуру как концепцию и как набор canonical docs.
 
-- довести `emis-server` до реально transport-agnostic состояния;
-- убрать некорректные package edges и временные route-level compatibility habits, которые мешают строгой package isolation;
-- уменьшить pressure points в EMIS UI/workspace без UX redesign;
-- закрыть несколько узких post-split hardening gaps так, чтобы следующий runtime slice не упирался в structural debt.
+Нужно получить архитектуру, которая:
 
-Ключевое решение этой волны:
+- проста для объяснения новым участникам;
+- правдиво описывает текущее package-state, а не phase-0 прошлое;
+- явно отделяет `current state`, `target migration` и `historical context`;
+- имеет понятный governance-owner и реестр допустимых исключений;
+- может стать основой для следующей code stabilization wave, а не спорить с ней.
 
-- **не продолжаем старую ST-wave задним числом;**
-- **открываем отдельную hardening wave поверх уже принятой monorepo-style topology;**
-- **не переоткрываем вопрос “нужен ли отдельный EMIS app прямо сейчас”;**
-- **не смешиваем hardening с большим feature expansion.**
+Эта wave открыта по user decision от `2026-04-04`:
 
-Этот план предназначен для передачи `lead-tactical` и исполнения по agent workflow:
+- сначала архитектура и документация;
+- потом enforcement и кодовый refactor.
 
-- GPT-5.4 фиксирует scope и sequencing;
-- Claude Opus режет работу на bounded implementation slices;
-- Review Gate обязателен для runtime/code changes;
-- при новых topology/design вопросах `lead-tactical` не импровизирует, а эскалирует.
+## Почему открываем новую wave
 
-## Базовые факты перед стартом
+По результатам architecture review на `2026-04-04`:
 
-- Wave `ST-1..ST-10` закрыта и принята.
-- `H-1`..`H-5` completed and accepted on `2026-04-03`. Wave is complete.
-  - `packages/emis-server` is transport-agnostic (H-1)
-  - `packages/emis-ui` no longer depends on `platform-datasets` (H-2)
-  - EMIS API routes now use direct package imports for package-owned code (H-3)
-  - `EmisMap.svelte` and `/routes/emis/+page.svelte` were reduced and decomposed without UX redesign (H-4)
-  - `mapConfig` boundary exception removed, `clampPageSize` deduplicated, `mapVesselsQuery` params stabilized (H-5)
-- Current topology remains:
-  - single-deployable monorepo-style repository
-  - runtime in `apps/web`
-  - package boundaries in `packages/*`
-- Remaining carry-forward (not addressed in this wave):
-  - `fetchDataset.ts` — pre-existing platform/FSD gap (shared imports entities)
-  - ~53 MIGRATION re-export shims outside EMIS API routes — code removal, separate effort
-  - stock-alerts→routes FSD violation — pre-existing
-- Wave status: **complete**, no further slices planned
+- core EMIS architecture itself is viable;
+- current topology decision remains correct:
+  - one deployable `SvelteKit` app
+  - `modular monolith`
+  - three contours:
+    - platform/shared
+    - EMIS operational
+    - EMIS BI/read-side
+- packages `emis-contracts`, `emis-server`, `emis-ui` are already real canonical homes in code.
+
+Проблема сейчас не в том, что архитектура “сломана”.
+Проблема в том, что она:
+
+- описана несколькими текстами с разным временем и разным статусом;
+- местами всё ещё звучит как pre-package phase;
+- плохо разделяет `current` vs `target` vs `legacy`;
+- governance-wise держится сильнее на договорённости, чем на одном ясном architectural contract.
+
+Следовательно, первым шагом должен быть **architecture/docs freeze**, а не сразу code refactor.
+
+## Стратегические решения этой wave
+
+- topology remains frozen:
+  - no separate EMIS deployable/app discussion without new runtime/ops pressure
+- architectural core stays:
+  - single deployable app
+  - modular monolith
+  - three contours
+  - packages are the canonical home for reusable EMIS contracts/server/ui
+- this wave is docs-first:
+  - no broad code refactor while canonical architecture docs are still inconsistent
+- `known exceptions` must be explicit and live in one registry
+- recommended governance model:
+  - `architecture-steward` owns canonical architecture docs, known exceptions and pre-approval for cross-layer changes
+  - `architecture-reviewer` remains a bounded review role on diffs
+- previous baseline/enforcement plan is deferred to phase 2 after architecture freeze acceptance
 
 ## Подзадачи
 
-### H-1: Make `emis-server` Transport-Agnostic
-- status: completed on `2026-04-03`
+### A0: Architecture-First Freeze
 - scope:
-  - `packages/emis-server/src/infra/http.ts`
-  - `packages/emis-server/src/infra/audit.ts`
-  - touched `apps/web/src/routes/api/emis/*`
-  - touched docs for transport rules
+  - `docs/agents/lead-strategic/current_plan.md`
+  - `docs/agents/lead-strategic/memory.md`
+  - supporting process notes if needed
 - depends on: —
-- размер: M
-- заметки:
-  - move SvelteKit-specific `RequestHandler`, `json(...)`, and raw `Request` glue out of package-level server infra
-  - keep framework-agnostic parsing / error mapping / write-context primitives in package
-  - app route layer should stay thin, but explicitly own transport glue
-  - no API contract changes in this slice
-
-#### H-1 Acceptance Checklist
-- `packages/emis-server` no longer imports directly from `@sveltejs/kit`
-- framework-agnostic helpers remain in `packages/emis-server`
-- SvelteKit transport glue lives in `apps/web` or another app-local transport-only layer
-- `routes/api/emis/*` stay thin and behavior-compatible
-- docs clearly say that transport-specific glue is app-owned, not package-owned
-- report explicitly states whether any route files switched from shim imports to direct package imports during the slice
-
-### H-2: Remove Invalid `emis-ui -> platform-datasets` Edge
-- status: completed on `2026-04-03`
-- scope:
-  - `packages/emis-ui/*`
-  - any minimal type relocation needed in `platform-core`
-  - optional compatibility re-export touch in `platform-datasets`
-  - touched docs/package manifests
-- depends on: H-1 not required
 - размер: S
 - заметки:
-  - current issue is architectural, not feature-level
-  - `JsonValue` usage should be satisfied without teaching `emis-ui` about dataset foundation
-  - preferred canonical home for generic JSON scalar/object/array typing is `@dashboard-builder/platform-core`, not `emis-contracts`
-  - if the move would otherwise create broader churn, `platform-datasets` may re-export the type from `platform-core` for compatibility; do not expand this slice into mass consumer rewiring
-  - the narrow expected code path is:
-    - add/export generic JSON type in `platform-core`
-    - switch `packages/emis-ui` to consume that canonical source
-    - drop direct `emis-ui -> platform-datasets` dependency
-  - do not use this slice to redesign `EmisMap.svelte`; only the dependency edge should change
-  - no map UX changes in this slice
+  - явно зафиксировать новый порядок:
+    - architecture/docs first
+    - code stabilization second
+  - не смешивать эту wave с feature expansion
 
-#### H-2 Acceptance Checklist
-- `packages/emis-ui/package.json` no longer depends on `@dashboard-builder/platform-datasets`
-- `packages/emis-ui` imports only from allowed packages per target layout
-- `packages/emis-ui/src/emis-map/EmisMap.svelte` no longer imports `JsonValue` from `@dashboard-builder/platform-datasets`
-- no new forbidden edge is introduced as a replacement
-- touched docs/AGENTS explain the corrected dependency shape if needed
+#### A0 Acceptance Checklist
+- active plan явно говорит `architecture first`
+- следующий tactical диалог не стартует с refactor-by-default
+- out-of-scope список исключает broad product work
 
-### H-3: Normalize EMIS Route Imports Away From Legacy Shim Guidance
-- status: completed on `2026-04-03`
+### A1: Simplify Canonical Architecture Contract
 - scope:
-  - `apps/web/src/routes/api/emis/*`
-  - `apps/web/src/routes/api/emis/AGENTS.md`
-  - any touched compatibility-shim docs
-- depends on: H-1
+  - `docs/emis_architecture_baseline.md`
+  - `docs/emis_working_contract.md`
+  - `docs/emis_session_bootstrap.md`
+- depends on: A0
 - размер: M
 - заметки:
-  - do not attempt global shim removal in this slice
-  - focus only on route-level imports and route-level guidance for new work
-  - canonical rule after the slice:
-    - app routes import package code directly when the package is already canonical
-    - app-owned transport glue remains app-local and is imported from `$lib/server/emis/infra/http.ts`
-    - shims remain only for compatibility where migration is still incomplete
-  - after H-1, do not try to replace `handleEmisRoute` / `jsonEmisList` / `jsonEmisError` imports with package imports
-  - likely normalization targets in this slice:
-    - `@dashboard-builder/emis-contracts/*` instead of `$entities/emis-*`
-    - `@dashboard-builder/emis-server/*` for package-owned infra/modules where canonical
-    - keep `$lib/server/emis/infra/http.ts` for app-owned SvelteKit transport glue
-  - keep route code boring; do not mix this with module logic rewrites
+  - сократить архитектурный фрейм до нескольких простых правил
+  - сделать одинаковую формулировку для:
+    - topology
+    - three contours
+    - operational path
+    - BI path
+    - package ownership
+    - app-level ownership
+  - убрать лишний “целевой шум” из current-state docs
 
-#### H-3 Acceptance Checklist
-- `apps/web/src/routes/api/emis/AGENTS.md` no longer presents shim imports as the default path for new routes
-- touched EMIS API routes use direct package imports where the package is already canonical
-- touched EMIS API routes keep importing app-owned transport glue from `$lib/server/emis/infra/http.ts`
-- remaining shim-based imports, if any, are explicitly justified in report
-- report distinguishes:
-  - route-import normalization completed now
-  - broader shim removal deferred
+#### A1 Acceptance Checklist
+- у EMIS есть один ясный canonical architecture story
+- `baseline`, `working contract` и `bootstrap` говорят одно и то же о current ownership
+- новый участник может понять placement rules без чтения historical phase docs
 
-### H-4: Decompose EMIS Pressure Points Without UX Redesign
-- status: completed on `2026-04-03` (H-4a: EmisMap.svelte 1225→903; H-4b: +page.svelte 1559→767)
+### A2: Separate Current State vs Target Layout vs Historical Docs
 - scope:
-  - `packages/emis-ui/src/emis-map/EmisMap.svelte`
-  - `apps/web/src/routes/emis/+page.svelte`
-  - closely related internal helpers/components only
-- depends on: H-2 preferred first
-- размер: L
-- заметки:
-  - file-size reduction is the goal, not a visual redesign
-  - current pressure is high enough that H-4 should default to two sequential sub-slices, not one giant pass:
-    - H-4a: `EmisMap.svelte`
-    - H-4b: `apps/web/src/routes/emis/+page.svelte`
-  - prefer bounded extraction such as:
-    - overlay fetch orchestration
-    - diagnostics / status HUD
-    - route-layer composition helpers
-    - selection / sync orchestration
-  - preserve behavior and route contracts
-  - do not let this become a speculative component explosion
-  - if H-4a already consumes the safe review budget, stop after H-4a, report it explicitly, and re-enter for H-4b as the next tactical step under the same strategic umbrella
-
-#### H-4 Acceptance Checklist
-- main files are materially smaller and easier to review
-- extracted units have clear ownership and names
-- no user-visible UX redesign is introduced accidentally
-- route/runtime contracts remain unchanged or are explicitly documented
-- report calls out what pressure point was reduced in each file
-- if only one of the two files is decomposed in the first pass, report must say which half of H-4 remains and why it was intentionally deferred
-
-### H-5: Close Remaining Small Boundary Hardening Gaps
-- status: completed on `2026-04-03`
-- scope:
-  - `apps/web/src/routes/dashboard/emis/vessel-positions/+page.server.ts`
-  - `apps/web/src/lib/server/emis/infra/mapConfig.ts` only if still needed as compatibility shim after route normalization
-  - `packages/emis-server/src/infra/mapConfig.ts`
-  - page-size normalization helpers in `packages/emis-server/src/modules/{objects,news}/*`
-  - `packages/emis-server/src/modules/map/queries.ts` (`mapVesselsQuery`)
-  - `apps/web/src/lib/shared/api/fetchDataset.ts` only if explicitly pulled into the slice
-- depends on: H-1
+  - `docs/emis_freeze_note.md`
+  - `docs/emis_implementation_spec_v1.md`
+  - `docs/emis_monorepo_target_layout.md`
+  - `docs/AGENTS.md` if doc classification needs alignment
+- depends on: A1
 - размер: M
 - заметки:
-  - this is a bounded hardening slice, not a grab-bag cleanup
-  - include only residuals that directly affect package boundaries or EMIS evolution:
-    - `mapConfig` boundary exception in BI route
-    - duplicated `clampPageSize()`
-    - fragile `mapVesselsQuery` parameter assembly
-  - current repo state suggests the preferred `mapConfig` outcome is **not** forced extraction to a new platform package:
-    - first re-check whether the canonical access path can simply be the already-package-owned `@dashboard-builder/emis-server/infra/mapConfig`
-    - keep app-local `mapConfig` shim only if it still has justified compatibility consumers after the BI route exception is removed
-  - `mapVesselsQuery` is currently located in `packages/emis-server/src/modules/map/queries.ts`; do not plan work against stale pre-split paths
-  - `fetchDataset` boundary gap is platform-level and may remain a separate follow-up if the slice would otherwise grow too broad
+  - здесь нужно развести три слоя:
+    - what is true now
+    - what is frozen as long-term direction
+    - what belongs to historical phase-0 / rollout context
+  - `implementation_spec_v1` и `freeze_note` не должны contradict package-reality
+  - если документ уже не current-canonical, это должно быть видно сразу
 
-#### H-5 Acceptance Checklist
-- `mapConfig` exception in EMIS BI route is removed, and the canonical access path is documented explicitly
-- page-size normalization duplication is removed without behavior change
-- `mapVesselsQuery` parameter assembly no longer relies on fragile manual index bookkeeping
-- if `fetchDataset` was not included, report says so explicitly and keeps it deferred
+#### A2 Acceptance Checklist
+- no canonical doc contradicts the current package architecture
+- `target layout` remains future/migration doc, not accidental current-state source
+- `freeze note` and `implementation spec` no longer mislead a new agent about current ownership
+
+### A3: Create And Wire Known Exceptions Registry
+- scope:
+  - `docs/emis_known_exceptions.md`
+  - `docs/emis_session_bootstrap.md`
+  - `docs/agents/workflow.md`
+  - other links only if needed
+- depends on: A1 preferred, A2 preferred
+- размер: S
+- заметки:
+  - каждая live exception должна иметь:
+    - id
+    - owner
+    - why allowed
+    - target wave / expiry
+    - removal condition
+  - исключения не должны больше жить только в memory/report text
+
+#### A3 Acceptance Checklist
+- canonical registry существует
+- active architecture/baseline exceptions перечислены в одном месте
+- workflow и bootstrap ссылаются на registry как на обязательный источник truth
+
+### A4: Define Architecture Governance Role Model
+- scope:
+  - `docs/agents/roles.md`
+  - `docs/agents/workflow.md`
+  - `docs/agents/templates.md`
+  - `docs/agents/architecture-reviewer/instructions.md`
+  - new role docs if the chosen model requires them
+- depends on: A3
+- размер: M
+- заметки:
+  - user explicitly wants an “architect” role for EMIS discipline
+  - recommended default:
+    - add `architecture-steward` as a governance/design role
+    - keep `architecture-reviewer` as diff reviewer
+  - fallback if team wants fewer roles:
+    - do not add a new role
+    - instead strengthen `architecture-reviewer` and document explicit strategic ownership elsewhere
+  - reviewer checks must reflect package-level reality, not only legacy FSD alias rules
+
+#### A4 Acceptance Checklist
+- role model is explicit and non-overlapping
+- there is no accidental “second strategic lead”
+- package-boundary review rules are documented
+- oversized-file policy and exception handling are coherent with active EMIS docs
+
+### A5: Prepare Phase-2 Enforcement And Refactor Backlog
+- scope:
+  - `docs/agents/lead-strategic/current_plan.md`
+  - `docs/emis_next_tasks_2026_03_22.md`
+  - optional small workflow/contract references
+- depends on: A4
+- размер: S
+- заметки:
+  - after architecture freeze, phase 2 should address code/system enforcement in bounded slices
+  - candidate next items:
+    - boundary gate repair
+    - package-aware lint guardrails
+    - `fetchDataset.ts` boundary fix
+    - complexity follow-ups for oversized EMIS files
+    - later shim cleanup
+  - the point here is sequencing, not full implementation
+
+#### A5 Acceptance Checklist
+- next wave order is explicit
+- docs-first wave ends without silently expanding into code refactor
+- future code stabilization can start from an accepted architecture baseline
 
 ## Recommended Execution Order
-1. `H-1` completed: transport decoupling for `emis-server`.
-2. `H-2` completed: invalid `emis-ui` dependency edge removed.
-3. `H-3` completed: route import normalization and route-level doc cleanup.
-4. `H-4` completed: pressure-point decomposition (`EmisMap.svelte`, then `/routes/emis/+page.svelte`).
-5. `H-5` completed: small remaining boundary-hardening gaps closed.
-
-**Wave complete.** All H-1..H-5 slices accepted on `2026-04-03`.
+1. `A0` — freeze architecture-first scope.
+2. `A1` — simplify the canonical architecture story.
+3. `A2` — separate current / target / historical docs.
+4. `A3` — create and wire known exceptions.
+5. `A4` — define architect governance role model.
+6. `A5` — prepare phase-2 enforcement/refactor backlog.
 
 ## Scope Boundaries
 
 ### In scope
-- package-boundary hardening
-- transport-vs-server separation cleanup
-- route import normalization where packages are already canonical
-- bounded decomposition of oversized EMIS files
-- small EMIS-facing residual cleanup from post-split backlog
+- EMIS architecture concept clarification
+- canonical docs truthfulness
+- current vs target vs history separation
+- architect/governance role model
+- known exceptions management
+- sequencing for later enforcement/refactor work
 
 ### Out of scope
-- separate EMIS deployable/app split
-- broad BI-only cleanup unrelated to EMIS/platform boundaries
-- broad MIGRATION shim removal across the whole app
-- new product features
-- auth/RBAC expansion
-- big-bang redesign of `/emis` UX
+- new EMIS product features
+- broad code refactor
+- mass shim removal
+- separate EMIS deployable/app discussion
+- large BI/UI expansion
+- mechanical enforcement rollout, except where minimal doc truthfulness requires it
 
-## Review Gate Expectations
-- H-1:
-  - `architecture-reviewer`
-  - `code-reviewer`
-  - `security-reviewer`
-  - `docs-reviewer`
-- H-2:
-  - `architecture-reviewer`
-  - `code-reviewer`
-  - `docs-reviewer`
-- H-3:
-  - `architecture-reviewer`
-  - `docs-reviewer`
-  - `code-reviewer`
-- H-4:
-  - `architecture-reviewer`
-  - `code-reviewer`
-  - `ui-reviewer`
-  - `docs-reviewer`
-- H-5:
-  - `architecture-reviewer`
-  - `code-reviewer`
-  - `docs-reviewer`
-  - `security-reviewer` if touched server/query logic materially changes
+## Exit Criteria For This Wave
 
-## Worker Strategy
-- H-1 should be owned directly by `lead-tactical` or one focused worker; it is the main architectural blocker.
-- H-1 is already closed; do not spend worker capacity on it again.
-- H-2 may run in parallel with H-1 only if the write scopes are clearly disjoint.
-- H-2 is narrow enough that `lead-tactical` should prefer doing it directly unless the actual write scope unexpectedly expands beyond:
-  - `packages/emis-ui/*`
-  - `packages/platform-core/*`
-  - optional `packages/platform-datasets/*` compatibility re-export
-- H-3 should start only after H-1 clarifies the canonical app/package transport boundary.
-- H-4 should be split into bounded sub-slices by default:
-  - first `EmisMap.svelte`
-  - then `/routes/emis/+page.svelte`
-- H-5 should stay narrow; if it starts absorbing `fetchDataset` or wider BI concerns, re-slice it.
+Wave is considered closed only when all of the following are true:
 
-## Lead-Tactical Kickoff
-1. Read this plan end-to-end before delegating anything.
-2. Re-read:
-   - `docs/emis_session_bootstrap.md`
-   - `docs/emis_architecture_baseline.md`
-   - `docs/emis_working_contract.md`
-   - `docs/emis_monorepo_target_layout.md`
-   - `docs/emis_next_tasks_2026_03_22.md`
-   - `packages/emis-ui/AGENTS.md`
-   - `packages/emis-server/AGENTS.md`
-   - `apps/web/src/routes/api/emis/AGENTS.md`
-3. Confirm the current integration branch for this wave is:
-   - `feature/emis-post-split-hardening`
-   - if it does not exist yet, create it from the latest accepted base after merging `feature/emis-foundation-stabilization`
-4. Do not reopen topology or package-ownership decisions already accepted in `ST-1..ST-10`.
-5. Before each worker task, explicitly state:
-   - owned files/directories
-   - forbidden directories
-   - whether direct package imports are expected after the slice
-6. For `H-2`, default tactical assumption is:
-   - canonical generic JSON typing moves to `platform-core`
-   - `platform-datasets` may keep a compatibility re-export if that avoids unrelated churn
-   - do not touch unrelated consumers just to "make everything uniform" inside this slice
-7. For `H-3`, default tactical assumption is:
-   - direct package imports are expected for package-owned contracts and server modules already canonical in `packages/*`
-   - app-owned transport glue stays imported from `$lib/server/emis/infra/http.ts`
-   - do not convert route imports mechanically without checking ownership after H-1
-8. For `H-4`, default tactical assumption is:
-   - do not try to shrink `EmisMap.svelte` and `/routes/emis/+page.svelte` in one worker pass unless the first extraction ends up much smaller than expected
-   - prefer one clean extraction cluster per file
-   - no new visual language, no route-contract redesign, no speculative component fan-out
-9. If `H-2` reveals that `JsonValue` is semantically dataset-specific after all, stop and escalate instead of silently moving it into an EMIS-specific package.
-10. If `fetchDataset` boundary cleanup starts to expand the wave materially, stop and request re-slicing instead of absorbing it implicitly.
+- canonical EMIS docs tell one consistent story about current ownership
+- current package reality is not contradicted by `freeze note` or `implementation spec`
+- `known exceptions` registry exists and captures live exceptions explicitly
+- EMIS architecture governance role model is documented
+- phase-2 enforcement/refactor backlog is sequenced after the docs freeze
 
-## Worker Task Drafts
+At that point the next tactical dialogue may open **phase 2**:
 
-### Worker A Draft: H-1 Make `emis-server` Transport-Agnostic
+- machine-enforced boundary work
+- baseline command / checks hardening
+- bounded EMIS refactors
 
-```md
-# Task: H-1 Make emis-server Transport-Agnostic
+Until then, the correct stance remains:
 
-## Что сделать
-Убрать SvelteKit-specific HTTP/request glue из `packages/emis-server`, сохранив app routes тонким transport layer и не меняя API behavior.
-
-## Scope
-- `packages/emis-server/src/infra/http.ts`
-- `packages/emis-server/src/infra/audit.ts`
-- touched `apps/web/src/routes/api/emis/*`
-- touched docs/AGENTS if transport ownership changes need to be documented
-
-## НЕ трогать
-- domain SQL logic
-- feature expansion
-- broad shim removal outside touched routes
-
-## Проверки
-- `pnpm check`
-- `pnpm build`
-- `pnpm lint:boundaries`
-- targeted route smoke if touched handlers changed materially
-
-## Формат сдачи
-Используй `Worker Handoff`.
-Обязательно укажи:
-- what moved out of package into app transport glue
-- what stayed package-owned and why
-- whether any route imports switched to direct package imports
-- whether API behavior changed (expected: no)
-```
-
-### Worker B Draft: H-2 Remove Invalid `emis-ui -> platform-datasets` Edge
-
-```md
-# Task: H-2 Remove Invalid emis-ui Dependency Edge
-
-## Что сделать
-Убрать зависимость `packages/emis-ui` от `platform-datasets`, сохранив behavior и не вводя новый forbidden edge.
-
-## Scope
-- `packages/emis-ui/*`
-- `packages/platform-core/*` for canonical generic JSON type home
-- optional `packages/platform-datasets/*` compatibility re-export only if needed to keep this slice narrow
-- touched package manifests/docs
-
-## НЕ трогать
-- map UX redesign
-- unrelated EmisMap decomposition
-- broad platform-wide import cleanup
-
-## Проверки
-- `pnpm check`
-- `pnpm build`
-- `pnpm lint:boundaries`
-
-## Формат сдачи
-Используй `Worker Handoff`.
-Обязательно укажи:
-- where `JsonValue` or equivalent type now lives
-- whether `platform-datasets` now re-exports that type or not
-- updated dependency shape for `emis-ui`
-- confirmation that target graph is now respected
-```
-
-### Worker C Draft: H-3 Normalize EMIS Route Imports Away From Legacy Shim Guidance
-
-```md
-# Task: H-3 Normalize EMIS Route Imports
-
-## Что сделать
-Перевести EMIS API route guidance и по возможности touched route imports на direct package imports там, где package already canonical.
-
-## Scope
-- `apps/web/src/routes/api/emis/*`
-- `apps/web/src/routes/api/emis/AGENTS.md`
-- package-owned contracts/server imports used by those routes
-
-## НЕ трогать
-- global shim removal
-- route behavior changes
-- server module rewrites
-- app-owned SvelteKit transport glue in `$lib/server/emis/infra/http.ts`
-
-## Проверки
-- `pnpm check`
-- `pnpm build`
-- targeted docs audit for touched route guidance
-
-## Формат сдачи
-Используй `Worker Handoff`.
-Обязательно укажи:
-- which routes now import packages directly
-- which imports intentionally stayed app-local because they are app-owned transport glue
-- which shims remain and why
-- what route-level guidance changed for future work
-```
-
-### Worker D Draft: H-4 Decompose EMIS Pressure Points
-
-```md
-# Task: H-4 Decompose EMIS Pressure Points
-
-## Что сделать
-Снизить pressure в `EmisMap.svelte` и `/routes/emis/+page.svelte` bounded extractions without UX redesign.
-
-Default execution order:
-1. H-4a — `packages/emis-ui/src/emis-map/EmisMap.svelte`
-2. H-4b — `apps/web/src/routes/emis/+page.svelte`
-
-Do not force both halves into one pass if the first half already produces a substantial reviewable diff.
-
-## Scope
-- `packages/emis-ui/src/emis-map/EmisMap.svelte`
-- `apps/web/src/routes/emis/+page.svelte`
-- closely related extracted helpers/components
-
-## НЕ трогать
-- visual redesign
-- unrelated feature additions
-- package topology changes
-
-## Проверки
-- `pnpm check`
-- `pnpm build`
-- `pnpm lint:boundaries`
-- targeted UI smoke if composition changed materially
-
-## Формат сдачи
-Используй `Worker Handoff`.
-Обязательно укажи:
-- what was extracted from each large file
-- resulting ownership of the new pieces
-- whether any behavior changed (expected: no)
-- whether the pass completed both H-4a and H-4b or intentionally stopped after one half
-```
-
-### Worker E Draft: H-5 Close Remaining Small Boundary Hardening Gaps
-
-```md
-# Task: H-5 Close Remaining Small Boundary Hardening Gaps
-
-## Что сделать
-Закрыть несколько узких residuals после post-split extraction:
-- `mapConfig` boundary exception
-- duplicated page-size normalization
-- fragile `mapVesselsQuery` parameter assembly
-
-## Scope
-- touched EMIS BI route/server files
-- touched query/helper files
-- touched docs if canonical access path changes
-
-## НЕ трогать
-- broad BI cleanup
-- broad platform cleanup
-- `fetchDataset` unless explicitly approved as part of this slice
-
-## Проверки
-- `pnpm check`
-- `pnpm build`
-- `pnpm lint:boundaries`
-- targeted smoke/tests if query behavior changed materially
-
-## Формат сдачи
-Используй `Worker Handoff`.
-Обязательно укажи:
-- which residuals were closed
-- whether `fetchDataset` stayed deferred
-- whether any boundary exception remains after the slice
-```
-
-## Ожидаемый результат
-- `emis-server` becomes genuinely reusable as server/domain package rather than hidden app transport glue.
-- `emis-ui` respects the declared package graph.
-- New EMIS routes stop normalizing legacy shim imports as the default path.
-- The two largest EMIS pressure-point files become safer to evolve.
-- Remaining post-split hardening gaps become explicit, smaller, and easier to sequence.
+- architecture is viable
+- architecture docs are not yet fully stabilized

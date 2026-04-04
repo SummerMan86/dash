@@ -40,4 +40,8 @@ The package provides only framework-agnostic parsing, validation, constants, and
 ## Runtime contract
 
 See `src/lib/server/emis/infra/RUNTIME_CONTRACT.md` for canonical conventions:
-limits, error shape, meta format, sort defaults, parameter parsing rules.
+API design rules, limits, error shape, meta format, sort defaults, parameter parsing rules.
+
+For the FE/BE contract entrypoint on errors and logging:
+
+- `docs/emis_observability_contract.md`

@@ -6,8 +6,9 @@
 
 ## Основные файлы
 
-- `compile.ts` — MIGRATION re-export from `@dashboard-builder/platform-datasets/server`. Canonical code lives in `packages/platform-datasets/`.
-- `definitions/` — app-specific dataset IR definitions (canonical home, NOT a shim)
+- `compile.ts` — `// MIGRATION` shim, re-export from `@dashboard-builder/platform-datasets/server`.
+- Canonical dataset compiler routing lives in `packages/platform-datasets/src/server/compile.ts`.
+- `definitions/` — legacy copies of dataset definitions kept for compatibility during migration. New/active definitions live in `packages/platform-datasets/src/server/definitions/*`.
 
 ## Что важно
 
