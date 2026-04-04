@@ -61,6 +61,7 @@
 ## Подзадачи
 
 ### A0: Architecture-First Freeze
+- status: completed on `2026-04-04`
 - scope:
   - `docs/agents/lead-strategic/current_plan.md`
   - `docs/agents/lead-strategic/memory.md`
@@ -79,6 +80,7 @@
 - out-of-scope список исключает broad product work
 
 ### A1: Simplify Canonical Architecture Contract
+- status: completed on `2026-04-04`
 - scope:
   - `docs/emis_architecture_baseline.md`
   - `docs/emis_working_contract.md`
@@ -102,6 +104,7 @@
 - новый участник может понять placement rules без чтения historical phase docs
 
 ### A2: Separate Current State vs Target Layout vs Historical Docs
+- status: completed on `2026-04-04`
 - scope:
   - `docs/emis_freeze_note.md`
   - `docs/emis_implementation_spec_v1.md`
@@ -123,6 +126,7 @@
 - `freeze note` and `implementation spec` no longer mislead a new agent about current ownership
 
 ### A3: Create And Wire Known Exceptions Registry
+- status: completed on `2026-04-04`
 - scope:
   - `docs/emis_known_exceptions.md`
   - `docs/emis_session_bootstrap.md`
@@ -145,6 +149,7 @@
 - workflow и bootstrap ссылаются на registry как на обязательный источник truth
 
 ### A4: Define Architecture Governance Role Model
+- status: active next slice
 - scope:
   - `docs/agents/roles.md`
   - `docs/agents/workflow.md`
@@ -155,6 +160,12 @@
 - размер: M
 - заметки:
   - user explicitly wants an “architect” role for EMIS discipline
+  - already done in this wave:
+    - `baseline-governor` added to workflow/roles/templates as stabilization governance role
+    - known exceptions / baseline verdict model now exists
+  - still unresolved:
+    - `docs/agents/architecture-reviewer/instructions.md` still reflects mostly legacy FSD review rules
+    - role split between `architecture-steward` vs stronger `architecture-reviewer` is not finalized explicitly enough
   - recommended default:
     - add `architecture-steward` as a governance/design role
     - keep `architecture-reviewer` as diff reviewer
@@ -198,6 +209,32 @@
 4. `A3` — create and wire known exceptions.
 5. `A4` — define architect governance role model.
 6. `A5` — prepare phase-2 enforcement/refactor backlog.
+
+## Current Status On 2026-04-04
+
+- completed:
+  - `A0`
+  - `A1`
+  - `A2`
+  - `A3`
+- active next slice:
+  - `A4`
+- deferred until after `A4`:
+  - `A5`
+
+## Default Next Dialogue
+
+If the next chat continues this wave by default, start from `A4`:
+
+- decide the final governance model:
+  - explicit `architecture-steward`
+  - or stronger documented `architecture-reviewer` without adding a second strategic lead
+- update `docs/agents/architecture-reviewer/instructions.md` to match package-era EMIS boundaries
+- ensure reviewer guidance explicitly covers:
+  - packages as canonical reusable homes
+  - `apps/web` as app leaf / transport-orchestration layer
+  - BI vs operational separation
+  - known exceptions and complexity waivers
 
 ## Scope Boundaries
 

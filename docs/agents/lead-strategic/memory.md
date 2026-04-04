@@ -117,6 +117,24 @@
     - `packages/emis-contracts/AGENTS.md`
     - `packages/emis-server/AGENTS.md`
     - `packages/emis-ui/AGENTS.md`
+- `A3` completed on `2026-04-04`:
+  - canonical registry exists:
+    - `docs/emis_known_exceptions.md`
+  - bootstrap/workflow now point to known exceptions and baseline governance
+  - supporting contracts added:
+    - `docs/emis_access_model.md`
+    - `docs/emis_observability_contract.md`
+    - `docs/emis_read_models_contract.md`
+- `A4` is the default next slice:
+  - workflow/roles/templates already mention `baseline-governor`
+  - but `docs/agents/architecture-reviewer/instructions.md` still lags behind package-era EMIS boundaries
+  - next dialogue should decide whether to:
+    - add explicit `architecture-steward`
+    - or strengthen `architecture-reviewer` without introducing a second strategic lead
+- Resume point for the next chat:
+  - branch / HEAD during the last accepted save:
+    - `main`
+    - `98edc4c` — `docs: add EMIS baseline governance contracts`
 - Deferred phase 2 after docs freeze:
   - repair broken baseline checks
   - restore green boundary gate
