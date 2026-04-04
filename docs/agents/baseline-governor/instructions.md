@@ -25,8 +25,7 @@
 - `pnpm emis:offline-smoke`
 - `pnpm emis:write-smoke` when write-side relevant
 
-Для текущей EMIS post-freeze phase 2 это и есть canonical baseline routine.
-Не подменяй её вымышленной командой вроде `pnpm emis:baseline`, пока такой script реально не существует.
+Это canonical baseline routine для EMIS post-freeze phase 2.
 Если в текущем slice какой-то check не прогоняли, в verdict нужно писать `not run`.
 
 ### 2. Boundaries
