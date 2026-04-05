@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import type { EmisCountry, EmisObjectType } from '@dashboard-builder/emis-contracts/emis-dictionary';
+	import type {
+		EmisCountry,
+		EmisObjectType
+	} from '@dashboard-builder/emis-contracts/emis-dictionary';
 
 	import { Button } from '@dashboard-builder/platform-ui';
 	import { Input } from '@dashboard-builder/platform-ui';

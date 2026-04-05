@@ -238,6 +238,7 @@ All 5 TD slices completed on `feature/emis-phase3-tech-debt-cleanup`. Branch sta
 - TD-5 — Final baseline verdict: Green / baseline closed, zero carry-forward
 
 Key observations:
+
 - 16 server-side MIGRATION re-export shims remain in `apps/web/src/lib/server/emis/` — active re-exports with 9+ route consumers, explicitly out of TD-2 scope
 - `pnpm lint` (Prettier) not green due to re-drift from post-TD-4 commits — not in canonical 6 checks
 - All 6 canonical checks green: check, build, lint:boundaries, emis:smoke (33/33), emis:offline-smoke (9/9), emis:write-smoke (7/7)

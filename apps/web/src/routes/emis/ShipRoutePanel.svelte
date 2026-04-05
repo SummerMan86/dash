@@ -3,7 +3,13 @@
 	import type { EmisShipRoutePoint } from '@dashboard-builder/emis-contracts/emis-ship-route';
 	import type { FilterWorkspaceRuntime } from '@dashboard-builder/platform-filters';
 	import { Button } from '@dashboard-builder/platform-ui';
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@dashboard-builder/platform-ui';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardHeader,
+		CardTitle
+	} from '@dashboard-builder/platform-ui';
 	import { Skeleton } from '@dashboard-builder/platform-ui';
 	import { FilterPanel } from '@dashboard-builder/platform-filters/widgets';
 

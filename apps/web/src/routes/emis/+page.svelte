@@ -10,11 +10,20 @@
 	} from '@dashboard-builder/emis-contracts/emis-map';
 	import type { EmisNewsSummary } from '@dashboard-builder/emis-contracts/emis-news';
 	import type { EmisObjectSummary } from '@dashboard-builder/emis-contracts/emis-object';
-	import type { EmisShipRoutePoint, EmisShipRouteSegment } from '@dashboard-builder/emis-contracts/emis-ship-route';
+	import type {
+		EmisShipRoutePoint,
+		EmisShipRouteSegment
+	} from '@dashboard-builder/emis-contracts/emis-ship-route';
 	import { useFilterWorkspace } from '@dashboard-builder/platform-filters';
 	import { useDebouncedLoader } from '@dashboard-builder/platform-core';
 	import { Button } from '@dashboard-builder/platform-ui';
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@dashboard-builder/platform-ui';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardHeader,
+		CardTitle
+	} from '@dashboard-builder/platform-ui';
 	import { FilterPanel } from '@dashboard-builder/platform-filters/widgets';
 	import { EmisMap } from '@dashboard-builder/emis-ui/emis-map';
 

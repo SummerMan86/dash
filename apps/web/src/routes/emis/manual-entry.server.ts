@@ -1,7 +1,11 @@
 import { fail } from '@sveltejs/kit';
 import { ZodError } from 'zod';
 
-import type { EmisCountry, EmisObjectType, EmisSource } from '@dashboard-builder/emis-contracts/emis-dictionary';
+import type {
+	EmisCountry,
+	EmisObjectType,
+	EmisSource
+} from '@dashboard-builder/emis-contracts/emis-dictionary';
 import type { CreateEmisNewsInput } from '@dashboard-builder/emis-contracts/emis-news';
 import type { CreateEmisObjectInput } from '@dashboard-builder/emis-contracts/emis-object';
 import { isEmisError } from '$lib/server/emis/infra/errors';

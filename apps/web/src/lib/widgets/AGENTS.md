@@ -14,6 +14,7 @@ Widgets могут использовать `entities` и `shared`, но не д
 
 MIGRATION re-export shims (`filters/`, `emis-map/`, `emis-status-bar/`) were removed in TD-2.
 Consumers now import directly from packages:
+
 - `@dashboard-builder/platform-filters/widgets` (was `$widgets/filters`)
 - `@dashboard-builder/emis-ui/emis-map` (was `$widgets/emis-map`)
 - `@dashboard-builder/emis-ui/emis-status-bar` (was `$widgets/emis-status-bar`)

@@ -17,6 +17,7 @@ shared/
 
 Note: `lib/`, `ui/`, `utils/`, and `styles/utils/` MIGRATION re-export shims were removed in TD-2.
 Consumers now import directly from packages:
+
 - `@dashboard-builder/platform-ui` (UI components, `cn()`, tokens, chart presets)
 - `@dashboard-builder/platform-core` (`useDebouncedLoader`, formatters)
 
@@ -50,6 +51,7 @@ Operational EMIS routes могут ходить напрямую в `/api/emis/*
 - `tokens/tokens.css` — CSS custom properties (imported by `app.css`)
 
 UI components, `cn()`, tokens (TS), formatters, `useDebouncedLoader` now live in packages:
+
 - `@dashboard-builder/platform-ui`
 - `@dashboard-builder/platform-core`
 

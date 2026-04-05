@@ -2,7 +2,13 @@
 	import type { Snippet } from 'svelte';
 
 	import { cn } from '@dashboard-builder/platform-ui';
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@dashboard-builder/platform-ui';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardHeader,
+		CardTitle
+	} from '@dashboard-builder/platform-ui';
 
 	import type { DashboardWidget } from '../model';
 

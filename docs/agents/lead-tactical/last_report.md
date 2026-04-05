@@ -57,13 +57,13 @@ The following are informational findings that do not affect the baseline verdict
 
 ## TD Summary
 
-| Slice | Description | Status | Key Result |
-|-------|------------|--------|------------|
-| TD-1 | Decompose `+page.svelte` | completed | 799 -> 639 lines (-20%) |
-| TD-2 | Remove MIGRATION re-export shims | completed | 72 shims removed (-3280 lines) |
-| TD-3 | Fix stock-alerts boundary violation | completed | `lint:boundaries` zero violations |
-| TD-4 | Fix Prettier drift | completed | 90 files formatted (32 re-drifted from subsequent commits) |
-| TD-5 | Final baseline verdict | completed | Green / baseline closed |
+| Slice | Description                         | Status    | Key Result                                                 |
+| ----- | ----------------------------------- | --------- | ---------------------------------------------------------- |
+| TD-1  | Decompose `+page.svelte`            | completed | 799 -> 639 lines (-20%)                                    |
+| TD-2  | Remove MIGRATION re-export shims    | completed | 72 shims removed (-3280 lines)                             |
+| TD-3  | Fix stock-alerts boundary violation | completed | `lint:boundaries` zero violations                          |
+| TD-4  | Fix Prettier drift                  | completed | 90 files formatted (32 re-drifted from subsequent commits) |
+| TD-5  | Final baseline verdict              | completed | Green / baseline closed                                    |
 
 ## Branch Stats
 

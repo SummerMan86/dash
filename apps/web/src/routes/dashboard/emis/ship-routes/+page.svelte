@@ -5,7 +5,13 @@
 	import { fetchDataset } from '$shared/api/fetchDataset';
 	import { useDebouncedLoader } from '@dashboard-builder/platform-core';
 	import { Button } from '@dashboard-builder/platform-ui';
-	import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@dashboard-builder/platform-ui';
+	import {
+		Card,
+		CardContent,
+		CardHeader,
+		CardTitle,
+		CardDescription
+	} from '@dashboard-builder/platform-ui';
 	import { Chart } from '@dashboard-builder/platform-ui';
 	import { ChartCard } from '@dashboard-builder/platform-ui';
 	import { StatCard } from '@dashboard-builder/platform-ui';

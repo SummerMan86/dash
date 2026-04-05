@@ -41,11 +41,13 @@ const allTargets = [
 ];
 
 // Filter out directories with no lintable files to avoid ESLint errors
-const targets = allTargets.filter((t) => {
-	// Glob patterns (like packages/*/src/) are always kept
-	if (t.includes('*')) return true;
-	return hasLintableFiles(t);
-}).join(' ');
+const targets = allTargets
+	.filter((t) => {
+		// Glob patterns (like packages/*/src/) are always kept
+		if (t.includes('*')) return true;
+		return hasLintableFiles(t);
+	})
+	.join(' ');
 
 // Write ESLint JSON to a temp file to avoid stdout buffer issues with execSync
 const tmpFile = join(tmpdir(), `lint-boundaries-${process.pid}.json`);

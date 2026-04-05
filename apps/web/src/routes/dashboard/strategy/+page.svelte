@@ -3,7 +3,13 @@
 	import { goto } from '$app/navigation';
 
 	import { Button } from '@dashboard-builder/platform-ui';
-	import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@dashboard-builder/platform-ui';
+	import {
+		Card,
+		CardContent,
+		CardHeader,
+		CardTitle,
+		CardDescription
+	} from '@dashboard-builder/platform-ui';
 
 	import { STRATEGY_NAV_ITEMS } from './constants';
 

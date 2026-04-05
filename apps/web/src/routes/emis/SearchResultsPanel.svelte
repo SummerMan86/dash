@@ -3,7 +3,13 @@
 	import type { EmisNewsSummary } from '@dashboard-builder/emis-contracts/emis-news';
 	import type { EmisObjectSummary } from '@dashboard-builder/emis-contracts/emis-object';
 	import { Button } from '@dashboard-builder/platform-ui';
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@dashboard-builder/platform-ui';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardHeader,
+		CardTitle
+	} from '@dashboard-builder/platform-ui';
 	import { Skeleton } from '@dashboard-builder/platform-ui';
 
 	import type { ShipRouteVesselOption } from './emisPageSelection';

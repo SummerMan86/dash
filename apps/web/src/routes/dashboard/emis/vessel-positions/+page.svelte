@@ -1,7 +1,10 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 
-	import type { EmisMapSelectedFeature, EmisMapNewsFeatureProperties } from '@dashboard-builder/emis-contracts/emis-map';
+	import type {
+		EmisMapSelectedFeature,
+		EmisMapNewsFeatureProperties
+	} from '@dashboard-builder/emis-contracts/emis-map';
 	import type { EmisShipRouteVessel } from '@dashboard-builder/emis-contracts/emis-ship-route';
 	import { useFilterWorkspace } from '@dashboard-builder/platform-filters';
 	import { formatCompact, formatDate, formatNumber } from '@dashboard-builder/platform-core';

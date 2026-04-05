@@ -1,5 +1,11 @@
 <script lang="ts">
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@dashboard-builder/platform-ui';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardHeader,
+		CardTitle
+	} from '@dashboard-builder/platform-ui';
 	import { toneClass } from './emisPageHelpers';
 
 	type AssetCheckItem = { key: string; label: string; ready: boolean };

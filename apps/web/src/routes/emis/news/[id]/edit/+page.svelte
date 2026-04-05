@@ -4,7 +4,13 @@
 
 	import NewsEditorForm from '$lib/features/emis-manual-entry/NewsEditorForm.svelte';
 	import { Button } from '@dashboard-builder/platform-ui';
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@dashboard-builder/platform-ui';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardHeader,
+		CardTitle
+	} from '@dashboard-builder/platform-ui';
 	import { Input } from '@dashboard-builder/platform-ui';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();

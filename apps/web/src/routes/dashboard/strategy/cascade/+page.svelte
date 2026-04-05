@@ -9,9 +9,20 @@
 	import { useDebouncedLoader } from '@dashboard-builder/platform-core';
 	import { Badge } from '@dashboard-builder/platform-ui';
 	import { Button } from '@dashboard-builder/platform-ui';
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@dashboard-builder/platform-ui';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardHeader,
+		CardTitle
+	} from '@dashboard-builder/platform-ui';
 	import { DataTable } from '@dashboard-builder/platform-ui';
-	import { formatDate, formatNumber, formatPercent, truncate } from '@dashboard-builder/platform-core';
+	import {
+		formatDate,
+		formatNumber,
+		formatPercent,
+		truncate
+	} from '@dashboard-builder/platform-core';
 	import { FilterPanel } from '@dashboard-builder/platform-filters/widgets';
 
 	import StrategyNav from '../StrategyNav.svelte';

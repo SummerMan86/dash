@@ -2,7 +2,13 @@
 	import type { PageData } from './$types';
 
 	import { Button } from '@dashboard-builder/platform-ui';
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@dashboard-builder/platform-ui';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardHeader,
+		CardTitle
+	} from '@dashboard-builder/platform-ui';
 	import { Input } from '@dashboard-builder/platform-ui';
 	import { Select } from '@dashboard-builder/platform-ui';
 

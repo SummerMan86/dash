@@ -17,7 +17,12 @@
 		SidebarTrigger
 	} from '@dashboard-builder/platform-ui';
 	import { fetchDataset } from '$shared/api/fetchDataset';
-	import { formatCurrency, formatCompact, formatPercent, formatDate } from '@dashboard-builder/platform-core';
+	import {
+		formatCurrency,
+		formatCompact,
+		formatPercent,
+		formatDate
+	} from '@dashboard-builder/platform-core';
 	import {
 		lineChartPreset,
 		barChartPreset,

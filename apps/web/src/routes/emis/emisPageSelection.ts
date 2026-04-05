@@ -1,4 +1,7 @@
-import type { EmisMapSelectedFeature, EmisMapSelectedRouteFeature } from '@dashboard-builder/emis-contracts/emis-map';
+import type {
+	EmisMapSelectedFeature,
+	EmisMapSelectedRouteFeature
+} from '@dashboard-builder/emis-contracts/emis-map';
 import type {
 	EmisShipRoutePoint,
 	EmisShipRouteSegment,
