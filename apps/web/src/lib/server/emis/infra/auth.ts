@@ -448,7 +448,7 @@ export async function deleteSession(sessionId: string): Promise<void> {
 
 /**
  * Delete all sessions for a given user.
- * Used for change-password flows and user deactivation.
+ * Used for user deactivation / admin password reset.
  */
 export async function deleteUserSessions(userId: string): Promise<void> {
 	// Clean from memory cache
@@ -463,6 +463,30 @@ export async function deleteUserSessions(userId: string): Promise<void> {
 			await sessionRepo.deleteUserSessions(userId);
 		} catch (err) {
 			console.warn('[emis:auth] DB deleteUserSessions failed:', err);
+		}
+	}
+}
+
+/**
+ * Delete all sessions for a given user EXCEPT the specified session.
+ * Used for change-password flow: invalidate other sessions, keep current.
+ */
+export async function deleteUserSessionsExcept(
+	userId: string,
+	keepSessionId: string
+): Promise<void> {
+	// Clean from memory cache (keep the specified session)
+	for (const [id, session] of memorySessions) {
+		if (session.userId === userId && id !== keepSessionId) {
+			memorySessions.delete(id);
+		}
+	}
+
+	if (await isDbAvailable()) {
+		try {
+			await sessionRepo.deleteUserSessionsExcept(userId, keepSessionId);
+		} catch (err) {
+			console.warn('[emis:auth] DB deleteUserSessionsExcept failed:', err);
 		}
 	}
 }
@@ -565,4 +589,9 @@ export function isAdminRoute(pathname: string): boolean {
 /** Dictionary API routes — writes require admin role (docs/emis_access_model.md:31). */
 export function isDictionaryApiRoute(pathname: string): boolean {
 	return pathname.startsWith('/api/emis/dictionaries/');
+}
+
+/** Admin API routes — all methods require admin role (docs/emis_access_model.md section 5). */
+export function isAdminApiRoute(pathname: string): boolean {
+	return pathname.startsWith('/api/emis/admin/');
 }

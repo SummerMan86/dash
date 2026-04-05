@@ -33,5 +33,17 @@ export const updateUserSchema = z
 		message: 'At least one field is required'
 	});
 
+/** Schema for changing own password (POST /api/emis/auth/change-password). */
+export const changePasswordSchema = z.object({
+	currentPassword: z
+		.string()
+		.min(1, 'currentPassword is required'),
+	newPassword: z
+		.string()
+		.min(8, 'newPassword must be at least 8 characters')
+		.max(255, 'newPassword must be at most 255 characters')
+});
+
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;

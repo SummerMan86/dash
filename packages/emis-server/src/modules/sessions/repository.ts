@@ -98,7 +98,7 @@ export async function deleteSession(
 
 /**
  * Delete all sessions for a given user.
- * Used for change-password flows and user deactivation.
+ * Used for user deactivation / admin password reset.
  */
 export async function deleteUserSessions(
 	userId: string,
@@ -106,6 +106,22 @@ export async function deleteUserSessions(
 ): Promise<void> {
 	const db = getDb(client);
 	await db.query('DELETE FROM emis.sessions WHERE user_id = $1', [userId]);
+}
+
+/**
+ * Delete all sessions for a given user EXCEPT the specified session.
+ * Used for change-password flow: invalidate other sessions, keep current.
+ */
+export async function deleteUserSessionsExcept(
+	userId: string,
+	keepSessionId: string,
+	client?: PoolClient
+): Promise<void> {
+	const db = getDb(client);
+	await db.query(
+		'DELETE FROM emis.sessions WHERE user_id = $1 AND id != $2',
+		[userId, keepSessionId]
+	);
 }
 
 /**
