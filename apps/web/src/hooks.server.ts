@@ -12,6 +12,7 @@ import { startAlertScheduler, stopAlertScheduler } from '$lib/server/alerts';
 import {
 	getSession,
 	hasMinRole,
+	isAdminApiRoute,
 	isAdminRoute,
 	isAuthRoute,
 	isDictionaryApiRoute,
@@ -152,6 +153,18 @@ export const handle: Handle = async ({ event, resolve }) => {
 						401,
 						'UNAUTHORIZED',
 						'Authentication required'
+					);
+				}
+
+				// Admin API routes require admin role for all methods
+				// (docs/emis_access_model.md section 5 — /api/emis/admin/* is admin-only)
+				if (isAdminApiRoute(pathname) && !hasMinRole(session.role, 'admin')) {
+					return emisAuthError(
+						event.request,
+						pathname,
+						403,
+						'FORBIDDEN',
+						'Admin access required'
 					);
 				}
 

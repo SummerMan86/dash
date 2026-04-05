@@ -709,6 +709,55 @@ const checks = [
 	// Dictionary admin page
 	pageCheck('/emis/admin/dictionaries', 'Dictionaries'),
 
+	// --- Admin user management (AUTH-5) ---
+	// Accept 200 (DB available) or 503 (emis.users table not created yet)
+	{
+		kind: 'json',
+		name: 'api:admin:users:list',
+		run: async (baseUrl) => {
+			const { response, data } = await fetchJson(baseUrl, '/api/emis/admin/users');
+			assert(
+				response.status === 200 || response.status === 503,
+				`admin users list returned unexpected status ${response.status}`
+			);
+			if (response.status === 200) {
+				assertArray(data?.rows, 'admin users rows');
+				if (data.rows.length > 0) {
+					const first = data.rows[0];
+					assert(typeof first.id === 'string', 'user must have id');
+					assert(typeof first.username === 'string', 'user must have username');
+					assert(
+						['viewer', 'editor', 'admin'].includes(first.role),
+						'user must have valid role'
+					);
+					assert(typeof first.createdAt === 'string', 'user must have createdAt');
+					assert(first.passwordHash === undefined, 'user must NOT expose passwordHash');
+					assert(first.password_hash === undefined, 'user must NOT expose password_hash');
+				}
+			}
+			return { httpStatus: response.status };
+		}
+	},
+	// Accept 200 (page loads) or 500 (emis.users table not created yet)
+	{
+		kind: 'page',
+		name: '/emis/admin/users',
+		run: async (baseUrl) => {
+			const { response, text } = await fetchText(baseUrl, '/emis/admin/users');
+			// When DB has emis.users table, page renders normally
+			if (response.ok) {
+				assert(text.includes('User Management'), '/emis/admin/users is missing marker "User Management"');
+				return { status: response.status, marker: 'User Management' };
+			}
+			// When emis.users table is missing, server returns 500 — acceptable in smoke env
+			assert(
+				response.status === 500,
+				`/emis/admin/users returned unexpected status ${response.status}`
+			);
+			return { status: response.status, note: 'emis.users table not available' };
+		}
+	},
+
 	// --- Auth pages (always accessible regardless of EMIS_AUTH_MODE) ---
 	pageCheck('/emis/login', 'EMIS')
 ];
