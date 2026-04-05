@@ -15,7 +15,7 @@ import {
  * Falls back to '/emis' for invalid values.
  */
 function sanitizeRedirect(raw: string | null): string {
-	if (raw && raw.startsWith('/') && !raw.startsWith('//')) {
+	if (raw && raw.startsWith('/') && !raw.startsWith('//') && !raw.startsWith('/\\')) {
 		return raw;
 	}
 	return '/emis';
