@@ -7,28 +7,25 @@
 		EmisMapRouteFeatureRef,
 		EmisMapSelectedFeature,
 		EmisMapSelectedRouteFeature
-	} from '$entities/emis-map';
-	import type { EmisNewsSummary } from '$entities/emis-news';
-	import type { EmisObjectSummary } from '$entities/emis-object';
-	import type { EmisShipRoutePoint, EmisShipRouteSegment } from '$entities/emis-ship-route';
-	import { useFilterWorkspace } from '$entities/filter';
-	import { useDebouncedLoader } from '$shared/lib/useDebouncedLoader.svelte';
-	import { Button } from '$shared/ui/button';
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$shared/ui/card';
-	import { FilterPanel } from '$widgets/filters';
-	import { EmisMap } from '$widgets/emis-map';
+	} from '@dashboard-builder/emis-contracts/emis-map';
+	import type { EmisNewsSummary } from '@dashboard-builder/emis-contracts/emis-news';
+	import type { EmisObjectSummary } from '@dashboard-builder/emis-contracts/emis-object';
+	import type { EmisShipRoutePoint, EmisShipRouteSegment } from '@dashboard-builder/emis-contracts/emis-ship-route';
+	import { useFilterWorkspace } from '@dashboard-builder/platform-filters';
+	import { useDebouncedLoader } from '@dashboard-builder/platform-core';
+	import { Button } from '@dashboard-builder/platform-ui';
+	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@dashboard-builder/platform-ui';
+	import { FilterPanel } from '@dashboard-builder/platform-filters/widgets';
+	import { EmisMap } from '@dashboard-builder/emis-ui/emis-map';
 
 	import { emisWorkspaceFilters, EMIS_FILTER_TARGETS, EMIS_PRIMARY_FILTER_IDS } from './filters';
 	import type { SearchResultKind, RouteUrlSelection } from './emisPageHelpers';
 	import {
-		appendQueryParams,
-		fetchJson,
 		parseSearchResultKind,
 		parseRouteMode,
 		parsePositiveIntParam,
 		buildObjectSubtitle,
-		buildNewsSubtitle,
-		toneClass
+		buildNewsSubtitle
 	} from './emisPageHelpers';
 	import type { ShipRouteVesselOption } from './emisPageSelection';
 	import {
@@ -40,9 +37,15 @@
 		buildShipRoutePointFeatureCollection,
 		buildShipRouteSegmentFeatureCollection
 	} from './emisPageGeoJson';
+	import {
+		loadSearchResults,
+		loadShipRouteCatalogData,
+		loadShipRouteData
+	} from './emisPageDataLoaders';
+	import { findSelectedVessel, getVesselFlyToTarget } from './emisPageVesselMode';
+	import EmisInfoCards from './EmisInfoCards.svelte';
 	import SearchResultsPanel from './SearchResultsPanel.svelte';
 	import ShipRoutePanel from './ShipRoutePanel.svelte';
-	import { SHIP_ROUTE_LIMIT } from './emisPageHelpers';
 
 	let { data }: { data: PageData } = $props();
 
@@ -68,7 +71,6 @@
 	let shipRouteCatalog = $state<ShipRouteVesselOption[]>([]);
 	let shipRoutePoints = $state<EmisShipRoutePoint[]>([]);
 	let shipRouteSegments = $state<EmisShipRouteSegment[]>([]);
-	let shipRouteCatalogLoading = $state(false);
 	let shipRouteCatalogError = $state<string | null>(null);
 	let shipRouteError = $state<string | null>(null);
 	let mapBbox = $state<string | null>(null);
@@ -123,14 +125,8 @@
 		if (typeof raw.to === 'string' && raw.to) next.dateTo = raw.to;
 		return next;
 	});
-	let selectedShipRouteVessel = $derived.by(
-		() => shipRouteCatalog.find((vessel) => String(vessel.shipHbkId) === selectedShipHbkId) ?? null
-	);
-	let vesselFlyToTarget = $derived.by(() => {
-		const vessel = selectedShipRouteVessel;
-		if (!vessel || vessel.lastLatitude === null || vessel.lastLongitude === null) return null;
-		return { lng: vessel.lastLongitude, lat: vessel.lastLatitude, zoom: 6 };
-	});
+	let selectedShipRouteVessel = $derived(findSelectedVessel(shipRouteCatalog, selectedShipHbkId));
+	let vesselFlyToTarget = $derived(getVesselFlyToTarget(selectedShipRouteVessel));
 	let shipRoutePointFeatureCollection = $derived.by(() =>
 		buildShipRoutePointFeatureCollection(shipRoutePoints, routeModeShowsPoints)
 	);
@@ -290,54 +286,12 @@
 		selectedRouteFeature = segment ? buildRouteSegmentSelection(segment) : null;
 	}
 
-	/* ── Data loading ───────────────────────────────────────────────── */
+	/* ── Data loading (catalog state bridge) ────────��───────────────── */
 
-	async function loadSearchResults(kind: SearchResultKind) {
-		const targetId =
-			kind === 'objects' ? EMIS_FILTER_TARGETS.searchObjects : EMIS_FILTER_TARGETS.searchNews;
-		const endpoint = kind === 'objects' ? '/api/emis/search/objects' : '/api/emis/search/news';
-		const params = filterRuntime.getServerParams(targetId);
-		const url = new URL(endpoint, window.location.origin);
-		appendQueryParams(url, params);
-		url.searchParams.set('limit', '50');
-
-		const response = await fetch(`${url.pathname}?${url.searchParams.toString()}`);
-		if (!response.ok) {
-			const payload = await response.json().catch(() => null);
-			throw new Error(
-				(payload &&
-					typeof payload === 'object' &&
-					'error' in payload &&
-					typeof payload.error === 'string' &&
-					payload.error) ||
-					`Search request failed with status ${response.status}`
-			);
-		}
-
-		if (kind === 'objects') {
-			const payload = (await response.json()) as {
-				rows: EmisObjectSummary[];
-				meta: { count: number };
-			};
-			return { kind, rows: payload.rows, meta: payload.meta };
-		}
-
-		const payload = (await response.json()) as { rows: EmisNewsSummary[]; meta: { count: number } };
-		return { kind, rows: payload.rows, meta: payload.meta };
-	}
-
-	async function loadShipRouteCatalog(bbox?: string | null) {
-		shipRouteCatalogLoading = true;
-		shipRouteCatalogError = null;
-
+	async function reloadCatalog(bbox?: string | null) {
 		try {
-			const url = new URL('/api/emis/ship-routes/vessels', window.location.origin);
-			url.searchParams.set('limit', '250');
-			if (bbox) {
-				url.searchParams.set('bbox', bbox);
-			}
-			const payload = await fetchJson<{ rows: ShipRouteVesselOption[] }>(url);
-			shipRouteCatalog = payload.rows;
+			const result = await loadShipRouteCatalogData(bbox);
+			shipRouteCatalog = result.rows;
 
 			const nextShipHbkId = shipRouteCatalog[0] ? String(shipRouteCatalog[0].shipHbkId) : null;
 			if (
@@ -346,55 +300,12 @@
 			) {
 				filterRuntime.setFilter('shipHbkId', nextShipHbkId);
 			}
+			shipRouteCatalogError = null;
 		} catch (error) {
 			shipRouteCatalog = [];
 			shipRouteCatalogError =
-				error instanceof Error ? error.message : 'Не удалось загрузить список судов';
-		} finally {
-			shipRouteCatalogLoading = false;
+				error instanceof Error ? error.message : 'Failed to load vessel catalog';
 		}
-	}
-
-	async function loadShipRouteData() {
-		if (!selectedShipHbkId) {
-			return { points: [] as EmisShipRoutePoint[], segments: [] as EmisShipRouteSegment[] };
-		}
-
-		const shipHbkId = Number(selectedShipHbkId);
-		const shouldLoadPoints = routeMode !== 'segments';
-		const shouldLoadSegments = routeMode !== 'points';
-
-		const pointsUrl = shouldLoadPoints
-			? new URL('/api/emis/ship-routes/points', window.location.origin)
-			: null;
-		const segmentsUrl = shouldLoadSegments
-			? new URL('/api/emis/ship-routes/segments', window.location.origin)
-			: null;
-
-		if (pointsUrl) {
-			appendQueryParams(pointsUrl, { shipHbkId, limit: SHIP_ROUTE_LIMIT, ...shipRouteDateFilters });
-		}
-		if (segmentsUrl) {
-			appendQueryParams(segmentsUrl, {
-				shipHbkId,
-				limit: SHIP_ROUTE_LIMIT,
-				...shipRouteDateFilters
-			});
-		}
-
-		const [pointsResponse, segmentsResponse] = await Promise.all([
-			pointsUrl
-				? fetchJson<{ rows: EmisShipRoutePoint[] }>(pointsUrl)
-				: Promise.resolve({ rows: [] as EmisShipRoutePoint[] }),
-			segmentsUrl
-				? fetchJson<{ rows: EmisShipRouteSegment[] }>(segmentsUrl)
-				: Promise.resolve({ rows: [] as EmisShipRouteSegment[] })
-		]);
-
-		return {
-			points: pointsResponse.rows,
-			segments: segmentsResponse.rows
-		};
 	}
 
 	/* ── Loaders ─────────────────────────────────────────────────────── */
@@ -402,7 +313,12 @@
 	const resultsLoader = useDebouncedLoader({
 		watch: () => ({ filters: $effectiveFilters, kind: effectiveResultKind }),
 		delayMs: 300,
-		load: () => loadSearchResults(effectiveResultKind),
+		load: () => {
+			const kind = effectiveResultKind;
+			const targetId =
+				kind === 'objects' ? EMIS_FILTER_TARGETS.searchObjects : EMIS_FILTER_TARGETS.searchNews;
+			return loadSearchResults(kind, filterRuntime.getServerParams(targetId));
+		},
 		onData: (payload) => {
 			if (payload.kind === 'objects') {
 				objectRows = payload.rows;
@@ -430,7 +346,12 @@
 			routeMode
 		}),
 		delayMs: 250,
-		load: loadShipRouteData,
+		load: () =>
+			loadShipRouteData({
+				shipHbkId: selectedShipHbkId,
+				routeMode,
+				dateFilters: shipRouteDateFilters
+			}),
 		onData: (payload) => {
 			shipRoutePoints = payload.points;
 			shipRouteSegments = payload.segments;
@@ -533,21 +454,12 @@
 		);
 	});
 
-	let catalogBboxDebounce: ReturnType<typeof setTimeout> | null = null;
-	$effect(() => {
-		const bbox = mapBbox;
-		const vesselMode = isVesselMode;
-
-		if (!browser) return;
-
-		if (catalogBboxDebounce) clearTimeout(catalogBboxDebounce);
-		catalogBboxDebounce = setTimeout(() => {
-			void loadShipRouteCatalog(vesselMode ? bbox : null);
-		}, 400);
-
-		return () => {
-			if (catalogBboxDebounce) clearTimeout(catalogBboxDebounce);
-		};
+	const catalogLoader = useDebouncedLoader({
+		watch: () => ({ bbox: mapBbox, vesselMode: isVesselMode }),
+		delayMs: 400,
+		load: () => reloadCatalog(isVesselMode ? mapBbox : null),
+		onData: () => {},
+		onError: () => {}
 	});
 
 	onMount(() => {
@@ -682,9 +594,9 @@
 				{isVesselMode}
 				{effectiveResultKind}
 				{shipRouteCatalog}
-				{shipRouteCatalogLoading}
+				shipRouteCatalogLoading={catalogLoader.loading}
 				{shipRouteCatalogError}
-				loadShipRouteCatalog={() => void loadShipRouteCatalog(isVesselMode ? mapBbox : null)}
+				loadShipRouteCatalog={catalogLoader.reload}
 				{selectedFeature}
 				{objectRows}
 				{newsRows}
@@ -701,9 +613,9 @@
 		{#if !isVesselMode}
 			<ShipRoutePanel
 				{filterRuntime}
-				{shipRouteCatalogLoading}
+				shipRouteCatalogLoading={catalogLoader.loading}
 				{shipRouteCatalogError}
-				loadShipRouteCatalog={() => void loadShipRouteCatalog(null)}
+				loadShipRouteCatalog={catalogLoader.reload}
 				shipRouteLoaderLoading={shipRouteLoader.loading}
 				shipRouteLoaderReload={shipRouteLoader.reload}
 				{selectedShipHbkId}
@@ -722,71 +634,6 @@
 			/>
 		{/if}
 
-		<div class="grid gap-4 md:grid-cols-3">
-			<Card>
-				<CardHeader>
-					<CardTitle>Map Config</CardTitle>
-					<CardDescription>Текущий server-resolved runtime profile</CardDescription>
-				</CardHeader>
-				<CardContent class="type-body-sm space-y-2 text-muted-foreground">
-					<p>
-						Requested mode: <span class="font-mono">{data.mapConfig.requestedMode}</span>
-					</p>
-					<p>
-						Effective mode: <span class="font-mono">{data.mapConfig.effectiveMode}</span>
-					</p>
-					<p>
-						Online style:
-						<span class="font-mono break-all"
-							>{data.mapConfig.onlineStyleUrl ?? 'not configured'}</span
-						>
-					</p>
-					<p>
-						Offline PMTiles:
-						<span class="font-mono break-all"
-							>{data.mapConfig.offlinePmtilesUrl ?? 'not configured'}</span
-						>
-					</p>
-				</CardContent>
-			</Card>
-
-			<Card>
-				<CardHeader>
-					<CardTitle>Offline Bundle Status</CardTitle>
-					<CardDescription>Что уже лежит в локальном PMTiles bundle</CardDescription>
-				</CardHeader>
-				<CardContent class="type-body-sm grid gap-2">
-					{#each assetChecklist as item}
-						<div
-							class={`flex items-center justify-between rounded-xl border px-3 py-2 ${toneClass(item.ready)}`}
-						>
-							<span>{item.label}</span>
-							<span class="font-mono text-[11px] uppercase">{item.ready ? 'ready' : 'missing'}</span
-							>
-						</div>
-					{/each}
-				</CardContent>
-			</Card>
-
-			<Card>
-				<CardHeader>
-					<CardTitle>Ops Commands</CardTitle>
-					<CardDescription>Как проверять basemap и фильтры локально</CardDescription>
-				</CardHeader>
-				<CardContent class="type-body-sm space-y-2 text-muted-foreground">
-					<p><span class="font-mono">pnpm map:assets:status</span> - проверить bundle</p>
-					<p>
-						<span class="font-mono">pnpm map:pmtiles:setup</span> - собрать локальный PMTiles bundle
-					</p>
-					<p>
-						<span class="font-mono">pnpm check</span> - проверить типы после изменения filter runtime
-					</p>
-					<p class="type-caption">
-						Текущие workspace endpoints: <span class="font-mono">/api/emis/search/*</span> и
-						<span class="font-mono"> /api/emis/map/*</span>
-					</p>
-				</CardContent>
-			</Card>
-		</div>
+		<EmisInfoCards mapConfig={data.mapConfig} {assetChecklist} />
 	</div>
 </div>
