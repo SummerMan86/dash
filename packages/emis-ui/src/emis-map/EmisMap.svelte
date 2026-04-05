@@ -37,7 +37,10 @@
 	import { acquirePmtilesProtocol, releasePmtilesProtocol } from './pmtiles-protocol';
 	import { buildPmtilesStyle } from './pmtiles-style';
 	import { createEmisMapInteractions } from './map-interactions';
-	import { fitVisibleEmisBounds, maybeFitRouteBounds as updateRouteFocusBounds } from './map-bounds';
+	import {
+		fitVisibleEmisBounds,
+		maybeFitRouteBounds as updateRouteFocusBounds
+	} from './map-bounds';
 
 	import type { BasemapSource } from './overlay-fetch';
 

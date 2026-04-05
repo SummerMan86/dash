@@ -1,8 +1,8 @@
 import { error, redirect, type Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
-import { attachNewsObjectsSchema } from '$entities/emis-link';
-import { createEmisNewsSchema } from '$entities/emis-news';
+import { attachNewsObjectsSchema } from '@dashboard-builder/emis-contracts/emis-link';
+import { createEmisNewsSchema } from '@dashboard-builder/emis-contracts/emis-news';
 import { assertWriteContext } from '$lib/server/emis/infra/writePolicy';
 import {
 	attachNewsObjectsService,
@@ -45,7 +45,7 @@ export const load: PageServerLoad = async ({ params }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ request, params }) => {
+	default: async ({ request, params, locals }) => {
 		const id = params.id;
 		if (!id || !UUID_RE.test(id)) throw error(404, 'News item not found');
 
@@ -56,14 +56,18 @@ export const actions: Actions = {
 		try {
 			ensureNewsFormRequired(values);
 			const payload = createEmisNewsSchema.parse(parseNewsForm(values));
-			updated = await updateNewsService(id, payload, assertWriteContext(request, 'manual-ui'));
+			updated = await updateNewsService(
+				id,
+				payload,
+				assertWriteContext(request, 'manual-ui', locals)
+			);
 		} catch (errorValue) {
 			return actionFailure(errorValue, values);
 		}
 
 		throw redirect(303, `/emis/news/${updated.id}`);
 	},
-	attachLink: async ({ request, params }) => {
+	attachLink: async ({ request, params, locals }) => {
 		const id = params.id;
 		if (!id || !UUID_RE.test(id)) throw error(404, 'News item not found');
 
@@ -86,7 +90,7 @@ export const actions: Actions = {
 					}
 				]
 			});
-			await attachNewsObjectsService(id, payload, assertWriteContext(request, 'manual-ui'));
+			await attachNewsObjectsService(id, payload, assertWriteContext(request, 'manual-ui', locals));
 		} catch (errorValue) {
 			return actionFailure(
 				errorValue,
@@ -97,7 +101,7 @@ export const actions: Actions = {
 
 		throw redirect(303, `/emis/news/${id}/edit`);
 	},
-	deleteLink: async ({ request, params }) => {
+	deleteLink: async ({ request, params, locals }) => {
 		const id = params.id;
 		if (!id || !UUID_RE.test(id)) throw error(404, 'News item not found');
 
@@ -112,7 +116,7 @@ export const actions: Actions = {
 			await deleteNewsObjectLinkService(
 				id,
 				objectId,
-				assertWriteContext(request, 'manual-ui')
+				assertWriteContext(request, 'manual-ui', locals)
 			);
 		} catch (errorValue) {
 			return actionFailure(errorValue, { objectId }, 'deleteLink');

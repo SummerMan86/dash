@@ -1,7 +1,11 @@
 import { access, readdir, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 
-import type { EmisMapBBox, EmisMapOfflineManifest, EmisPmtilesFileInfo } from '@dashboard-builder/emis-contracts/emis-map';
+import type {
+	EmisMapBBox,
+	EmisMapOfflineManifest,
+	EmisPmtilesFileInfo
+} from '@dashboard-builder/emis-contracts/emis-map';
 
 export const EMIS_OFFLINE_ASSET_ROOT_URL = '/emis-map/offline';
 export const EMIS_OFFLINE_ASSET_DIR = path.resolve(process.cwd(), 'static', 'emis-map', 'offline');

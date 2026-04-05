@@ -49,9 +49,7 @@
 </script>
 
 <div class="pointer-events-none absolute top-3 left-3 max-w-[min(92%,30rem)] space-y-2">
-	<div
-		class="rounded-xl border px-3 py-2 text-xs shadow-sm backdrop-blur-sm {getStatusTone()}"
-	>
+	<div class="rounded-xl border px-3 py-2 text-xs shadow-sm backdrop-blur-sm {getStatusTone()}">
 		<div class="flex flex-wrap items-center gap-2">
 			<span class="font-semibold tracking-[0.18em] uppercase">Map</span>
 			<span class="rounded-full border border-current/20 px-2 py-0.5">

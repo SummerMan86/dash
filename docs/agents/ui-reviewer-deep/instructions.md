@@ -14,18 +14,21 @@ Three-layer typography (`type-*` classes), CSS tokens в `apps/web/src/lib/share
 ## Checks
 
 ### 1. Layout & Visual Quality
+
 - Alignment, spacing (check against design tokens)
 - Typography hierarchy (правильные `type-*` классы)
 - Color usage (semantic tokens, не hardcoded)
 - Visual balance
 
 ### 2. Interaction Flows
+
 - Click through main user journey
 - Loading states (skeleton/spinner → content)
 - Empty states
 - Hover effects, focus indicators, transitions
 
 ### 3. Accessibility (a11y)
+
 - Images: alt text
 - Buttons/links: accessible names
 - Form inputs: labels
@@ -34,10 +37,12 @@ Three-layer typography (`type-*` classes), CSS tokens в `apps/web/src/lib/share
 - Semantic HTML (headings, landmarks)
 
 ### 4. Responsive Behavior
+
 - Ничего не overflow/collapse на узких viewport
 - Tables/charts handle narrow viewports
 
 ### 5. Design System Compliance
+
 - Используются tokens из `tokens.css`, не hardcoded values
 - Используются shared UI компоненты (`$shared/ui/*`), не one-off
 - Нет inline styles для значений, которые должны быть token-based

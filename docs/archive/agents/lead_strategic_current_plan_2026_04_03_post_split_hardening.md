@@ -4,6 +4,7 @@ Archived from `docs/agents/lead-strategic/current_plan.md` on `2026-04-03`
 after wave completion.
 
 ## Цель
+
 Закрыть наиболее важные архитектурные residuals после wave `ST-1..ST-10`, не переоткрывая topology decision и не смешивая их с новой package migration.
 
 Цели этой волны:
@@ -49,6 +50,7 @@ after wave completion.
 ## Подзадачи
 
 ### H-1: Make `emis-server` Transport-Agnostic
+
 - status: completed on `2026-04-03`
 - scope:
   - `packages/emis-server/src/infra/http.ts`
@@ -64,6 +66,7 @@ after wave completion.
   - no API contract changes in this slice
 
 #### H-1 Acceptance Checklist
+
 - `packages/emis-server` no longer imports directly from `@sveltejs/kit`
 - framework-agnostic helpers remain in `packages/emis-server`
 - SvelteKit transport glue lives in `apps/web` or another app-local transport-only layer
@@ -72,6 +75,7 @@ after wave completion.
 - report explicitly states whether any route files switched from shim imports to direct package imports during the slice
 
 ### H-2: Remove Invalid `emis-ui -> platform-datasets` Edge
+
 - status: completed on `2026-04-03`
 - scope:
   - `packages/emis-ui/*`
@@ -93,6 +97,7 @@ after wave completion.
   - no map UX changes in this slice
 
 #### H-2 Acceptance Checklist
+
 - `packages/emis-ui/package.json` no longer depends on `@dashboard-builder/platform-datasets`
 - `packages/emis-ui` imports only from allowed packages per target layout
 - `packages/emis-ui/src/emis-map/EmisMap.svelte` no longer imports `JsonValue` from `@dashboard-builder/platform-datasets`
@@ -100,6 +105,7 @@ after wave completion.
 - touched docs/AGENTS explain the corrected dependency shape if needed
 
 ### H-3: Normalize EMIS Route Imports Away From Legacy Shim Guidance
+
 - status: completed on `2026-04-03`
 - scope:
   - `apps/web/src/routes/api/emis/*`
@@ -122,6 +128,7 @@ after wave completion.
   - keep route code boring; do not mix this with module logic rewrites
 
 #### H-3 Acceptance Checklist
+
 - `apps/web/src/routes/api/emis/AGENTS.md` no longer presents shim imports as the default path for new routes
 - touched EMIS API routes use direct package imports where the package is already canonical
 - touched EMIS API routes keep importing app-owned transport glue from `$lib/server/emis/infra/http.ts`
@@ -131,6 +138,7 @@ after wave completion.
   - broader shim removal deferred
 
 ### H-4: Decompose EMIS Pressure Points Without UX Redesign
+
 - status: completed on `2026-04-03` (H-4a: EmisMap.svelte 1225→903; H-4b: +page.svelte 1559→767)
 - scope:
   - `packages/emis-ui/src/emis-map/EmisMap.svelte`
@@ -153,6 +161,7 @@ after wave completion.
   - if H-4a already consumes the safe review budget, stop after H-4a, report it explicitly, and re-enter for H-4b as the next tactical step under the same strategic umbrella
 
 #### H-4 Acceptance Checklist
+
 - main files are materially smaller and easier to review
 - extracted units have clear ownership and names
 - no user-visible UX redesign is introduced accidentally
@@ -161,6 +170,7 @@ after wave completion.
 - if only one of the two files is decomposed in the first pass, report must say which half of H-4 remains and why it was intentionally deferred
 
 ### H-5: Close Remaining Small Boundary Hardening Gaps
+
 - status: completed on `2026-04-03`
 - scope:
   - `apps/web/src/routes/dashboard/emis/vessel-positions/+page.server.ts`
@@ -184,12 +194,14 @@ after wave completion.
   - `fetchDataset` boundary gap is platform-level and may remain a separate follow-up if the slice would otherwise grow too broad
 
 #### H-5 Acceptance Checklist
+
 - `mapConfig` exception in EMIS BI route is removed, and the canonical access path is documented explicitly
 - page-size normalization duplication is removed without behavior change
 - `mapVesselsQuery` parameter assembly no longer relies on fragile manual index bookkeeping
 - if `fetchDataset` was not included, report says so explicitly and keeps it deferred
 
 ## Recommended Execution Order
+
 1. `H-1` completed: transport decoupling for `emis-server`.
 2. `H-2` completed: invalid `emis-ui` dependency edge removed.
 3. `H-3` completed: route import normalization and route-level doc cleanup.
@@ -201,6 +213,7 @@ after wave completion.
 ## Scope Boundaries
 
 ### In scope
+
 - package-boundary hardening
 - transport-vs-server separation cleanup
 - route import normalization where packages are already canonical
@@ -208,6 +221,7 @@ after wave completion.
 - small EMIS-facing residual cleanup from post-split backlog
 
 ### Out of scope
+
 - separate EMIS deployable/app split
 - broad BI-only cleanup unrelated to EMIS/platform boundaries
 - broad MIGRATION shim removal across the whole app
@@ -216,6 +230,7 @@ after wave completion.
 - big-bang redesign of `/emis` UX
 
 ## Review Gate Expectations
+
 - H-1:
   - `architecture-reviewer`
   - `code-reviewer`
@@ -241,6 +256,7 @@ after wave completion.
   - `security-reviewer` if touched server/query logic materially changes
 
 ## Worker Strategy
+
 - H-1 should be owned directly by `lead-tactical` or one focused worker; it is the main architectural blocker.
 - H-1 is already closed; do not spend worker capacity on it again.
 - H-2 may run in parallel with H-1 only if the write scopes are clearly disjoint.
@@ -255,6 +271,7 @@ after wave completion.
 - H-5 should stay narrow; if it starts absorbing `fetchDataset` or wider BI concerns, re-slice it.
 
 ## Lead-Tactical Kickoff
+
 1. Read this plan end-to-end before delegating anything.
 2. Re-read:
    - `docs/emis_session_bootstrap.md`

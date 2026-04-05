@@ -215,14 +215,14 @@ GPT-5.4 (lead-strategic) → план → Claude Opus (lead-tactical) → worker
 Определения субагентов: `.claude/agents/*.md`
 Детальные instructions: `docs/agents/{name}/instructions.md`
 
-| Ревьюер | Модель | Проверяет |
-|---|---|---|
-| `security-reviewer` | Sonnet | SQL injection, XSS, secrets, SSRF |
+| Ревьюер                 | Модель | Проверяет                                             |
+| ----------------------- | ------ | ----------------------------------------------------- |
+| `security-reviewer`     | Sonnet | SQL injection, XSS, secrets, SSRF                     |
 | `architecture-reviewer` | Sonnet | layer/import boundaries, server isolation, complexity |
-| `docs-reviewer` | Sonnet | Docs, DB truth, runtime contracts sync |
-| `code-reviewer` | Sonnet | Naming, conventions, maintainability |
-| `ui-reviewer` | Sonnet | Smoke test (только при frontend changes) |
-| `ui-reviewer-deep` | Opus | Deep UX/a11y audit (по запросу) |
+| `docs-reviewer`         | Sonnet | Docs, DB truth, runtime contracts sync                |
+| `code-reviewer`         | Sonnet | Naming, conventions, maintainability                  |
+| `ui-reviewer`           | Sonnet | Smoke test (только при frontend changes)              |
+| `ui-reviewer-deep`      | Opus   | Deep UX/a11y audit (по запросу)                       |
 
 ### Когда НЕ запускать Review Gate
 

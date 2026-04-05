@@ -17,15 +17,15 @@ export const GET: RequestHandler = handleEmisRoute(async ({ params }) => {
 	return json(object);
 }, 'Failed to load EMIS object');
 
-export const PATCH: RequestHandler = handleEmisRoute(async ({ params, request }) => {
+export const PATCH: RequestHandler = handleEmisRoute(async ({ params, request, locals }) => {
 	const id = requireUuid(params.id, 'object id');
 	const body = await parseJsonBody(request, updateEmisObjectSchema);
-	const updated = await updateObjectService(id, body, assertWriteContext(request, 'api'));
+	const updated = await updateObjectService(id, body, assertWriteContext(request, 'api', locals));
 	return json(updated);
 }, 'Failed to update EMIS object');
 
-export const DELETE: RequestHandler = handleEmisRoute(async ({ params, request }) => {
+export const DELETE: RequestHandler = handleEmisRoute(async ({ params, request, locals }) => {
 	const id = requireUuid(params.id, 'object id');
-	await softDeleteObjectService(id, assertWriteContext(request, 'api'));
+	await softDeleteObjectService(id, assertWriteContext(request, 'api', locals));
 	return json({ ok: true });
 }, 'Failed to delete EMIS object');

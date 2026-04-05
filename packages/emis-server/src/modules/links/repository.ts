@@ -1,6 +1,9 @@
 import type { PoolClient } from 'pg';
 
-import type { EmisObjectLinkInput, UpdateNewsObjectLinkInput } from '@dashboard-builder/emis-contracts/emis-link';
+import type {
+	EmisObjectLinkInput,
+	UpdateNewsObjectLinkInput
+} from '@dashboard-builder/emis-contracts/emis-link';
 
 import { getDb } from '../../infra/db';
 

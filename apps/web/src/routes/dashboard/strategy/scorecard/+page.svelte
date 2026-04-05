@@ -1,16 +1,22 @@
 <script lang="ts">
-	import type { DatasetResponse } from '$entities/dataset';
-	import { useFilterWorkspace } from '$entities/filter';
+	import type { DatasetResponse } from '@dashboard-builder/platform-datasets';
+	import { useFilterWorkspace } from '@dashboard-builder/platform-filters';
 	import { fetchDataset } from '$shared/api/fetchDataset';
-	import { useDebouncedLoader } from '$shared/lib/useDebouncedLoader.svelte';
-	import { cn } from '$shared/styles/utils';
-	import { Button } from '$shared/ui/button';
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$shared/ui/card';
-	import { DataTable } from '$shared/ui/data-table';
-	import { Badge } from '$shared/ui/badge';
-	import { StatCard } from '$shared/ui/stat-card';
-	import { formatDate, formatNumber, formatPercent } from '$shared/utils';
-	import { FilterPanel } from '$widgets/filters';
+	import { useDebouncedLoader } from '@dashboard-builder/platform-core';
+	import { cn } from '@dashboard-builder/platform-ui';
+	import { Button } from '@dashboard-builder/platform-ui';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardHeader,
+		CardTitle
+	} from '@dashboard-builder/platform-ui';
+	import { DataTable } from '@dashboard-builder/platform-ui';
+	import { Badge } from '@dashboard-builder/platform-ui';
+	import { StatCard } from '@dashboard-builder/platform-ui';
+	import { formatDate, formatNumber, formatPercent } from '@dashboard-builder/platform-core';
+	import { FilterPanel } from '@dashboard-builder/platform-filters/widgets';
 
 	import StrategyNav from '../StrategyNav.svelte';
 	import {

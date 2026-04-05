@@ -105,10 +105,12 @@
 Verdict: approve | request changes | needs design decision
 
 Why:
+
 - short reason 1
 - short reason 2
 
 Required follow-ups:
+
 - item or `none`
 ```
 

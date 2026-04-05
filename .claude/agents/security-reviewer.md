@@ -1,6 +1,6 @@
 ---
 name: security-reviewer
-description: "EMIS: security-reviewer. Reviews code changes for security vulnerabilities (SQL injection, XSS, secrets, SSRF, write-side guardrails). Run after every task that modifies code files."
+description: 'EMIS: security-reviewer. Reviews code changes for security vulnerabilities (SQL injection, XSS, secrets, SSRF, write-side guardrails). Run after every task that modifies code files.'
 tools: Read, Grep, Glob
 model: sonnet
 memory: project

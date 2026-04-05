@@ -26,16 +26,16 @@ src/
 
 ## Subpath exports
 
-| Subpath | Содержимое |
-|---|---|
-| `./emis-map` | `EmisMap`, `EmisPmtilesSpikeMap` components |
-| `./emis-map/layer-config` | layer management utilities |
-| `./emis-map/pmtiles-protocol` | protocol registration |
-| `./emis-map/pmtiles-style` | style builder |
-| `./emis-map/feature-normalizers` | GeoJSON feature normalizer functions |
-| `./emis-map/overlay-fetch` | overlay fetch utilities and layer mode types |
-| `./emis-map/popup-renderers` | popup content renderers |
-| `./emis-status-bar` | `EmisStatusBar` component |
+| Subpath                          | Содержимое                                   |
+| -------------------------------- | -------------------------------------------- |
+| `./emis-map`                     | `EmisMap`, `EmisPmtilesSpikeMap` components  |
+| `./emis-map/layer-config`        | layer management utilities                   |
+| `./emis-map/pmtiles-protocol`    | protocol registration                        |
+| `./emis-map/pmtiles-style`       | style builder                                |
+| `./emis-map/feature-normalizers` | GeoJSON feature normalizer functions         |
+| `./emis-map/overlay-fetch`       | overlay fetch utilities and layer mode types |
+| `./emis-map/popup-renderers`     | popup content renderers                      |
+| `./emis-status-bar`              | `EmisStatusBar` component                    |
 
 ## Что осталось в apps/web
 

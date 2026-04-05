@@ -4,12 +4,12 @@
 -->
 
 <script lang="ts">
-	import type { EmisMapNewsFeatureProperties } from '$entities/emis-map';
-	import type { EmisShipRouteVessel } from '$entities/emis-ship-route';
-	import type { FilterWorkspaceRuntime } from '$entities/filter';
-	import { Skeleton } from '$shared/ui/skeleton';
-	import { formatDate, formatNumber } from '$shared/utils';
-	import { FilterPanel } from '$widgets/filters';
+	import type { EmisMapNewsFeatureProperties } from '@dashboard-builder/emis-contracts/emis-map';
+	import type { EmisShipRouteVessel } from '@dashboard-builder/emis-contracts/emis-ship-route';
+	import type { FilterWorkspaceRuntime } from '@dashboard-builder/platform-filters';
+	import { Skeleton } from '@dashboard-builder/platform-ui';
+	import { formatDate, formatNumber } from '@dashboard-builder/platform-core';
+	import { FilterPanel } from '@dashboard-builder/platform-filters/widgets';
 
 	type VesselRow = EmisShipRouteVessel & { vesselLabel: string };
 	type NewsRow = EmisMapNewsFeatureProperties;

@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { cn } from '$shared/styles/utils';
-	import { Button } from '$shared/ui/button';
-	import { Card, CardContent, CardHeader, CardTitle } from '$shared/ui/card';
-	import { Input } from '$shared/ui/input';
-	import { Select } from '$shared/ui/select';
+	import { cn } from '@dashboard-builder/platform-ui';
+	import { Button } from '@dashboard-builder/platform-ui';
+	import { Card, CardContent, CardHeader, CardTitle } from '@dashboard-builder/platform-ui';
+	import { Input } from '@dashboard-builder/platform-ui';
+	import { Select } from '@dashboard-builder/platform-ui';
 
 	import type { DashboardWidget, WidgetType } from '../model/types';
 

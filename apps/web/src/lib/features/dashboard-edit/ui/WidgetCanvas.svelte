@@ -43,7 +43,7 @@
 <script lang="ts">
 	import { onDestroy, onMount, tick, type Snippet } from 'svelte';
 
-	import { cn } from '$shared/styles/utils';
+	import { cn } from '@dashboard-builder/platform-ui';
 
 	import { DEFAULT_GRID_CONFIG } from '../model/config';
 	import type { GridStackApi, GridStackNode } from '../model/gridstack.types';

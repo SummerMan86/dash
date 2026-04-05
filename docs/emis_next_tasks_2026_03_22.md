@@ -25,14 +25,18 @@ Current default order:
 2. ~~`M4` — MVE acceptance audit and sign-off~~ **completed** (`2026-04-05`, NW-5)
 3. ~~`P1` — vessel historical track~~ **completed** (`2026-04-04`)
 4. ~~`P2` — offline maps ops hardening~~ **completed** (`2026-04-05`)
+5. ~~`Phase 3` — tech debt cleanup (TD-1..TD-5)~~ **completed** (`2026-04-05`)
 
-All current backlog items are completed. Next priorities to be defined.
+6. ~~`Phase 4` — MVE deferrals (DF-1..DF-5)~~ **completed** (`2026-04-05`)
+
+All current backlog items are completed. Baseline Green / closed. No remaining MVE deferrals. Next priorities to be defined.
 
 ## MVE Closeout
 
 ### M3. Health, Readiness And API Error Logging — COMPLETED (`2026-04-05`, NW-4)
 
 All M3 subtasks delivered:
+
 - `M3.1` — `/api/emis/readyz` with DB-backed runtime readiness (schemas + published views)
 - `M3.2` — request correlation (`x-request-id`) and structured error logging in `handleEmisRoute()`
 - `M3.3` — 4 smoke checks for readiness + correlation contract
@@ -40,6 +44,7 @@ All M3 subtasks delivered:
 ### M4. MVE Acceptance Closeout And Sign-Off — COMPLETED (`2026-04-05`, NW-5)
 
 All M4 subtasks delivered:
+
 - `M4.1` — acceptance audit: all Section 7 criteria met, explicit deferrals documented
 - `M4.2` — bootstrap and backlog aligned with audit result
 - `M4.3` — full verification pass: 6/6 canonical checks green
@@ -51,6 +56,7 @@ MVE verdict: **accepted with explicit deferrals**.
 ### P1. Vessel Historical Track Integration — COMPLETED (`2026-04-04`)
 
 All P1 subtasks delivered:
+
 - `P1.1` — Behavior contract frozen in `docs/emis_vessel_track_contract.md`
 - `P1.2` — Historical track renders on map in vessel mode
 - `P1.3` — FlyTo on vessel selection via `vesselFlyToTarget`
@@ -60,16 +66,28 @@ All P1 subtasks delivered:
 ### P2. Offline Maps Ops Hardening — COMPLETED (`2026-04-05`)
 
 All P2 subtasks delivered:
+
 - `P2.1` — Range support verified against production adapter-node (206 Partial Content confirmed via `sirv` embedded in `@sveltejs/adapter-node`)
 - `P2.2` — Post-deploy verification checklist added to `docs/emis_offline_maps_ops.md` (section 11): 5-step checklist with success/failure signals and failure decision tree
 - `P2.3` — Region-expansion workflow documented as repeatable recipe in `docs/emis_offline_maps_ops.md` (section 7): extract, place, manifest update, verify, rebuild, deploy; plus safe replacement and removal procedures; freshness checking expanded (section 8)
 
 Canonical reference: `docs/emis_offline_maps_ops.md`
 
+### Phase 4. MVE Deferrals Implementation -- COMPLETED (`2026-04-05`)
+
+All Phase 4 slices delivered:
+
+- `DF-1` — Soft-delete UI buttons for objects and news detail pages (confirmation dialog + redirect)
+- `DF-2` — Admin CRUD for dictionaries: UI at `/emis/admin/dictionaries`, 6 API endpoints for countries/object_types/sources
+- `DF-3` — Session-based auth: login page, cookie-based sessions, role enforcement (viewer/editor/admin), admin route protection
+- `DF-5` — Governance closure: all MVE deferrals resolved, baseline Green, zero remaining deferrals
+
+MVE verdict updated: **accepted, no remaining deferrals**.
+
 ## Locked Decisions
 
-- dictionaries remain `seed-managed for MVE`
-- admin CRUD for dictionaries is deferred beyond MVE
+- Dictionaries are now manageable via admin CRUD (DF-2), seeds remain as bootstrap mechanism
+- Auth is opt-in via `EMIS_AUTH_MODE=session` (default: `none` for backward compatibility)
 
 See:
 

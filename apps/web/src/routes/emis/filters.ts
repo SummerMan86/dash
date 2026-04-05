@@ -1,4 +1,4 @@
-import type { FilterOption, FilterSpec } from '$entities/filter';
+import type { FilterOption, FilterSpec } from '@dashboard-builder/platform-filters';
 
 export const EMIS_FILTER_TARGETS = {
 	searchObjects: 'emis.search.objects',

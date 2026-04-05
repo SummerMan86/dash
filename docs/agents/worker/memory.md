@@ -4,6 +4,7 @@
 Здесь хранятся patterns и решения, общие для любого worker'а.
 
 При параллельной работе каждый worker использует **свой** файл:
+
 - `docs/agents/worker/memory-a.md` — Worker A
 - `docs/agents/worker/memory-b.md` — Worker B
 - и т.д.

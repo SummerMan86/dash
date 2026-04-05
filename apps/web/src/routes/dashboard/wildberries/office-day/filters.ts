@@ -1,4 +1,4 @@
-import type { FilterSpec } from '$entities/filter';
+import type { FilterSpec } from '@dashboard-builder/platform-filters';
 
 /**
  * Filter specifications for the Office-Day page.

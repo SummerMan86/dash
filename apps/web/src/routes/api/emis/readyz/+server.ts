@@ -145,7 +145,10 @@ export const GET: RequestHandler = async () => {
 			await pool.query(`SELECT 1 FROM ${view} LIMIT 0`);
 			checks[`view:${view}`] = { ok: true };
 		} catch (e) {
-			console.warn(`[readyz] view check failed for ${view}:`, e instanceof Error ? e.message : String(e));
+			console.warn(
+				`[readyz] view check failed for ${view}:`,
+				e instanceof Error ? e.message : String(e)
+			);
 			checks[`view:${view}`] = {
 				ok: false,
 				detail: 'view not accessible'

@@ -76,6 +76,7 @@ Required follow-ups:
 ```
 
 Severity:
+
 - `CRITICAL`: server isolation breach, SQL / business logic в routes, client import `$lib/server`, silent operational-vs-BI breach, 900+ growth без approved waiver
 - `WARNING`: wrong package/app home, layer boundary drift, complexity threshold, untracked exception/waiver
 - `INFO`: minor observation, не блокирует

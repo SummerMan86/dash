@@ -5,9 +5,9 @@
 
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { StatCard } from '$shared/ui/stat-card';
-	import { ChartCard } from '$shared/ui/chart-card';
-	import { Chart } from '$shared/ui/chart';
+	import { StatCard } from '@dashboard-builder/platform-ui';
+	import { ChartCard } from '@dashboard-builder/platform-ui';
+	import { Chart } from '@dashboard-builder/platform-ui';
 	import {
 		Sidebar,
 		SidebarInset,
@@ -15,9 +15,14 @@
 		SidebarNav,
 		SidebarProvider,
 		SidebarTrigger
-	} from '$shared/ui/sidebar';
+	} from '@dashboard-builder/platform-ui';
 	import { fetchDataset } from '$shared/api/fetchDataset';
-	import { formatCurrency, formatCompact, formatPercent, formatDate } from '$shared/utils';
+	import {
+		formatCurrency,
+		formatCompact,
+		formatPercent,
+		formatDate
+	} from '@dashboard-builder/platform-core';
 	import {
 		lineChartPreset,
 		barChartPreset,
@@ -25,8 +30,8 @@
 		getLineSeries,
 		getBarSeries,
 		getPieSeries
-	} from '$entities/charts';
-	import { resolveCssColorVar } from '$shared/styles/tokens';
+	} from '@dashboard-builder/platform-ui';
+	import { resolveCssColorVar } from '@dashboard-builder/platform-ui';
 	import type { EChartsOption } from 'echarts';
 	import type {
 		KpiSummary,

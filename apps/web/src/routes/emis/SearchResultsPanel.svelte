@@ -1,15 +1,25 @@
 <script lang="ts">
-	import type { EmisMapSelectedFeature } from '$entities/emis-map';
-	import type { EmisNewsSummary } from '$entities/emis-news';
-	import type { EmisObjectSummary } from '$entities/emis-object';
-	import { Button } from '$shared/ui/button';
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$shared/ui/card';
-	import { Skeleton } from '$shared/ui/skeleton';
+	import type { EmisMapSelectedFeature } from '@dashboard-builder/emis-contracts/emis-map';
+	import type { EmisNewsSummary } from '@dashboard-builder/emis-contracts/emis-news';
+	import type { EmisObjectSummary } from '@dashboard-builder/emis-contracts/emis-object';
+	import { Button } from '@dashboard-builder/platform-ui';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardHeader,
+		CardTitle
+	} from '@dashboard-builder/platform-ui';
+	import { Skeleton } from '@dashboard-builder/platform-ui';
 
 	import type { ShipRouteVesselOption } from './emisPageSelection';
 	import type { SearchResultKind } from './emisPageHelpers';
 	import { formatDate, formatCoordinate } from './emisPageHelpers';
-	import { getObjectDetailHref, getNewsDetailHref, getSelectedFeatureHref } from './emisPageSelection';
+	import {
+		getObjectDetailHref,
+		getNewsDetailHref,
+		getSelectedFeatureHref
+	} from './emisPageSelection';
 
 	let {
 		isVesselMode,
@@ -102,8 +112,7 @@
 				<div class="max-h-[600px] space-y-3 overflow-y-auto">
 					{#each shipRouteCatalog as vessel (vessel.shipHbkId)}
 						{@const isActive =
-							selectedFeature?.kind === 'vessel' &&
-							selectedFeature.id === String(vessel.shipHbkId)}
+							selectedFeature?.kind === 'vessel' && selectedFeature.id === String(vessel.shipHbkId)}
 						<button
 							type="button"
 							class={`w-full rounded-xl border p-3 text-left transition-colors ${
@@ -141,9 +150,7 @@
 							</div>
 							{#if vessel.flag || vessel.callsign || vessel.vesselType}
 								<div class="type-caption mt-1 text-muted-foreground">
-									{[vessel.vesselType, vessel.flag, vessel.callsign]
-										.filter(Boolean)
-										.join(' · ')}
+									{[vessel.vesselType, vessel.flag, vessel.callsign].filter(Boolean).join(' · ')}
 								</div>
 							{/if}
 							<div class="type-caption mt-1 text-muted-foreground">
@@ -195,9 +202,7 @@
 					<div class="type-caption mt-3 grid gap-1 text-muted-foreground">
 						{#if selectedFeature.kind === 'object'}
 							<div>
-								Status: <span class="font-medium text-foreground"
-									>{selectedFeature.status}</span
-								>
+								Status: <span class="font-medium text-foreground">{selectedFeature.status}</span>
 							</div>
 							<div>
 								Updated:
@@ -224,9 +229,7 @@
 							</div>
 						{:else if selectedFeature.kind === 'vessel'}
 							<div>
-								HBK: <span class="font-medium text-foreground"
-									>{selectedFeature.shipHbkId}</span
-								>
+								HBK: <span class="font-medium text-foreground">{selectedFeature.shipHbkId}</span>
 							</div>
 							{#if selectedFeature.imo}
 								<div>
@@ -235,8 +238,7 @@
 							{/if}
 							{#if selectedFeature.mmsi}
 								<div>
-									MMSI: <span class="font-medium text-foreground">{selectedFeature.mmsi}</span
-									>
+									MMSI: <span class="font-medium text-foreground">{selectedFeature.mmsi}</span>
 								</div>
 							{/if}
 							<div>

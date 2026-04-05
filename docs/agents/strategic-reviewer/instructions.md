@@ -14,6 +14,7 @@
 ## Вход
 
 Тебе дают только bounded context:
+
 - `docs/agents/lead-strategic/current_plan.md`
 - `docs/agents/lead-tactical/last_report.md`
 - diff или список changed files
@@ -42,17 +43,21 @@
 Verdict: accept-ready | needs follow-up | needs strategic decision
 
 Findings:
+
 - [CRITICAL|WARNING|INFO] file:line | описание
 - или "No issues found."
 
 Plan Fit:
+
 - <соответствует плану / есть scope drift / acceptance закрыт частично>
 
 Recommended next step:
+
 - <accept | request fixes | re-slice | escalate>
 ```
 
 Severity:
+
 - `CRITICAL` — нарушен scope/acceptance настолько, что приёмка сейчас неверна
 - `WARNING` — есть заметный gap, но это не architectural emergency
 - `INFO` — полезное наблюдение без блокировки

@@ -1,14 +1,20 @@
 <script lang="ts">
-	import type { EmisMapSelectedRouteFeature } from '$entities/emis-map';
-	import type { EmisShipRoutePoint } from '$entities/emis-ship-route';
-	import type { FilterWorkspaceRuntime } from '$entities/filter';
-	import { Button } from '$shared/ui/button';
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$shared/ui/card';
-	import { Skeleton } from '$shared/ui/skeleton';
-	import { FilterPanel } from '$widgets/filters';
+	import type { EmisMapSelectedRouteFeature } from '@dashboard-builder/emis-contracts/emis-map';
+	import type { EmisShipRoutePoint } from '@dashboard-builder/emis-contracts/emis-ship-route';
+	import type { FilterWorkspaceRuntime } from '@dashboard-builder/platform-filters';
+	import { Button } from '@dashboard-builder/platform-ui';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardHeader,
+		CardTitle
+	} from '@dashboard-builder/platform-ui';
+	import { Skeleton } from '@dashboard-builder/platform-ui';
+	import { FilterPanel } from '@dashboard-builder/platform-filters/widgets';
 
 	import type { ShipRouteVesselOption } from './emisPageSelection';
-	import type { EmisShipRouteSegment } from '$entities/emis-ship-route';
+	import type { EmisShipRouteSegment } from '@dashboard-builder/emis-contracts/emis-ship-route';
 	import type { RouteMode } from './emisPageHelpers';
 	import { formatDate, formatCoordinate, formatMetric, SHIP_ROUTE_LIMIT } from './emisPageHelpers';
 	import { EMIS_SHIP_ROUTE_FILTER_IDS } from './filters';
@@ -61,9 +67,9 @@
 		<CardHeader>
 			<CardTitle>Ship Route Slice</CardTitle>
 			<CardDescription>
-				Живой vertical slice поверх прямых `/api/emis/ship-routes/*` queries. Используем
-				`shipHbkId` как главный идентификатор и переиспользуем общий `dateRange`, если он
-				задан в workspace filters.
+				Живой vertical slice поверх прямых `/api/emis/ship-routes/*` queries. Используем `shipHbkId`
+				как главный идентификатор и переиспользуем общий `dateRange`, если он задан в workspace
+				filters.
 			</CardDescription>
 		</CardHeader>
 		<CardContent class="space-y-4">
@@ -305,10 +311,7 @@
 						<div class="type-body-sm font-medium text-foreground">
 							{routeModeShowsPoints
 								? formatMetric(shipRoutePoints[shipRoutePoints.length - 1].speed, ' kn')
-								: formatMetric(
-										shipRouteSegments[shipRouteSegments.length - 1].gapMinutes,
-										' min'
-									)}
+								: formatMetric(shipRouteSegments[shipRouteSegments.length - 1].gapMinutes, ' min')}
 						</div>
 						<div class="type-caption text-muted-foreground">
 							{routeModeShowsPoints
@@ -325,8 +328,8 @@
 		<CardHeader>
 			<CardTitle>Latest Track Points</CardTitle>
 			<CardDescription>
-				Последние точки выбранного маршрута. Этого достаточно, чтобы быстро проверить,
-				нормально ли `mart_emis` ложится в текущий workspace.
+				Последние точки выбранного маршрута. Этого достаточно, чтобы быстро проверить, нормально ли
+				`mart_emis` ложится в текущий workspace.
 			</CardDescription>
 		</CardHeader>
 		<CardContent class="space-y-3">

@@ -1,8 +1,14 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$shared/ui/card';
-	import { EmisPmtilesSpikeMap } from '$widgets/emis-map';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardHeader,
+		CardTitle
+	} from '@dashboard-builder/platform-ui';
+	import { EmisPmtilesSpikeMap } from '@dashboard-builder/emis-ui/emis-map';
 
 	let { data }: { data: PageData } = $props();
 

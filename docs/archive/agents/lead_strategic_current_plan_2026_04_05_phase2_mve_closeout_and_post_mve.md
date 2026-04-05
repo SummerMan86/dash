@@ -44,6 +44,7 @@
 ## Подзадачи
 
 ### P3.1: Baseline command and truthful checks hardening
+
 - status: completed on `2026-04-04` (docs-only)
 - scope:
   - `docs/agents/lead-strategic/current_plan.md`
@@ -64,12 +65,14 @@
   - next default slice is `P3.2`, not a rerun of `A5` or generic cleanup
 
 #### P3.1 Acceptance Checklist
+
 - another agent can run the baseline routine without guessing command order
 - docs do not imply a fully green architecture baseline
 - `current_plan.md` no longer presents the closed freeze wave as active
 - `lead-strategic` memory resumes from phase 2
 
 ### P3.2: Boundary gate repair for `EXC-ARCH-002` / `fetchDataset.ts`
+
 - status: completed on `2026-04-04`
 - scope:
   - platform-side boundary repair in `apps/web/src/lib/shared/api/fetchDataset.ts`
@@ -83,11 +86,13 @@
   - completed by moving `fetchDataset.ts` to direct package imports and removing redundant `cacheKeyQuery`
 
 #### P3.2 Acceptance Checklist
+
 - `pnpm lint:boundaries` no longer reports the known `fetchDataset.ts` violations
 - boundary ownership remains explicit, not hidden behind a temporary shim
 - `docs/emis_known_exceptions.md` is updated truthfully if the exception status changes
 
 ### P3.3: Package-aware enforcement / lint guardrails
+
 - status: completed on `2026-04-04`
 - scope:
   - `eslint.config.js`
@@ -108,6 +113,7 @@
   - specifically, do not silently pull the known `stock-alerts -> routes` issue into this slice unless it is taken as a tiny explicit fix or registered as a separate bounded exception
 
 #### P3.3 Acceptance Checklist
+
 - main package/app boundaries are mechanically enforced
 - `lint:boundaries` coverage includes the relevant `packages/*` surfaces, not only app-local rails
 - guardrails match current ownership truth, not pre-package assumptions
@@ -115,6 +121,7 @@
 - no silent reopening of unrelated cleanup
 
 ### P3.4: Bounded `EXC-ARCH-004` / `EmisMap.svelte` follow-up
+
 - status: completed on `2026-04-04`
 - scope:
   - one bounded EMIS UI decomposition follow-up or explicit waiver renewal
@@ -126,11 +133,13 @@
   - completed by extracting `map-interactions.ts` and `map-bounds.ts`, reducing `EmisMap.svelte` from `903` to `695` lines and closing `EXC-ARCH-004`
 
 #### P3.4 Acceptance Checklist
+
 - `EXC-ARCH-004` is either closed or explicitly renewed with owner + expiry
 - widget behavior remains unchanged
 - the slice stays bounded
 
 ### P3.5: Baseline rerun fallout / `platform-datasets` dev-SSR repair
+
 - status: completed on `2026-04-04`
 - scope:
   - `@dashboard-builder/platform-datasets` dev-SSR / workspace package resolution repair
@@ -170,12 +179,14 @@
     - no broad package export migration outside the failing path
 
 #### P3.5 Acceptance Checklist
+
 - `pnpm emis:smoke` is green again
 - dataset endpoint error contracts return the expected `400/404` responses
 - `/dashboard/emis`, `/dashboard/emis/ship-routes`, and `/dashboard/emis/provenance` no longer return `500` in smoke
 - `pnpm check`, `pnpm build`, `pnpm lint:boundaries`, `pnpm emis:offline-smoke`, and `pnpm emis:write-smoke` stay green
 
 ### P3.6: Later shim cleanup and residual mechanical cleanup
+
 - status: completed on `2026-04-04`
 - scope:
   - `// MIGRATION` re-export cleanup
@@ -205,11 +216,13 @@
     - `pnpm emis:write-smoke` — green
 
 #### P3.6 Acceptance Checklist
+
 - cleanup does not obscure ownership truth
 - cleanup stays later than baseline hardening, boundary repair and waiver handling
 - no reopening of accepted slices without concrete regression
 
 ## Recommended Execution Order
+
 1. `P3.1` — baseline routine and verdict alignment.
 2. `P3.2` — close the remaining boundary gate blocker.
 3. `P3.3` — harden package-aware enforcement.
@@ -253,6 +266,7 @@ Do not resume from `A5`, `P3.4`, or repo-wide doc sync.
 ## Scope Boundaries
 
 ### In scope
+
 - truthful baseline routine and verdict alignment
 - bounded boundary repairs
 - package-aware machine enforcement
@@ -261,6 +275,7 @@ Do not resume from `A5`, `P3.4`, or repo-wide doc sync.
 - later mechanical cleanup only after the blockers above
 
 ### Out of scope
+
 - new EMIS product features
 - separate EMIS deployable/app discussion
 - broad cross-repo refactor
@@ -299,6 +314,7 @@ Status:
 - не переписывать historical corpus и не открывать новый architecture redesign.
 
 ### DS-1: Active doc inventory and drift classification
+
 - status: completed on `2026-04-04`
 - scope:
   - root entry docs:
@@ -325,11 +341,13 @@ Status:
   - prioritize documents that shape agent behavior or newcomer reading order
 
 #### DS-1 Acceptance Checklist
+
 - another agent can tell which docs are in-scope for sync without guessing
 - the remaining patch set is limited to active source-of-truth and active workflow docs
 - historical docs are explicitly separated from active docs in the inventory
 
 ### DS-2: Agent and reviewer memory truth sync
+
 - status: completed on `2026-04-04`
 - scope:
   - `.claude/agent-memory/architecture-reviewer/project_emis_monorepo.md`
@@ -354,11 +372,13 @@ Status:
   - `last_report.md` may stay a report of its own session, but it must not mislead a new tactical lead about current baseline truth
 
 #### DS-2 Acceptance Checklist
+
 - active agent/reviewer memory no longer carries stale FSD-as-architecture guidance
 - no active memory file still claims `fetchDataset` or `EXC-ARCH-004` is live
 - historical reports remain historical rather than pretending to be current state
 
 ### DS-3: Navigation and ownership wording sweep
+
 - status: completed on `2026-04-04`
 - scope:
   - active `AGENTS.md` / local navigation docs that still drift from:
@@ -386,11 +406,13 @@ Status:
   - do not rewrite historical analysis docs unless an active index currently misclassifies them
 
 #### DS-3 Acceptance Checklist
+
 - active local navigation docs use the same ownership/boundary language as `docs/architecture.md`
 - no active AGENTS doc points readers at deleted shim files as if they were canonical
 - current entry-point docs agree on which files are canonical vs historical
 
 ### DS-4: Final consistency verification and handoff closeout
+
 - status: completed on `2026-04-04`
 - scope:
   - `docs/agents/lead-tactical/last_report.md`
@@ -418,6 +440,7 @@ Status:
   - no code/build rerun required unless a doc change exposes a real code/doc contradiction
 
 #### DS-4 Acceptance Checklist
+
 - active repo-wide docs do not contradict `docs/architecture.md`
 - active workflow/reviewer docs do not carry stale pre-`P3.6` blockers
 - lead-tactical can hand off a final doc-sync report without reopening architecture design
@@ -454,6 +477,7 @@ Status:
 - если сейчас прыгнуть в `P1`/`P2`, acceptance boundary снова размоется и MVE sign-off станет менее ясным.
 
 ### NW-1: Access model freeze and write-policy design
+
 - status: **completed** on `2026-04-04`
 - backlog mapping:
   - `M1.1`
@@ -504,6 +528,7 @@ Status:
    - write `last_report.md`
 
 #### NW-1 Acceptance Checklist
+
 - docs no longer imply a hidden full auth/RBAC system
 - the team can describe write authorization rules in one paragraph without reopening policy debate
 - `lead-tactical` can hand off implementation of a single shared write-policy helper without guessing behavior
@@ -511,6 +536,7 @@ Status:
 - `RUNTIME_CONTRACT.md` includes the write-policy helper contract
 
 ### NW-2: Centralized write guardrails rollout
+
 - status: **completed** on `2026-04-04`
 - backlog mapping:
   - `M1.3`
@@ -536,6 +562,7 @@ Status:
 - review gate: architecture-reviewer, security-reviewer, docs-reviewer, code-reviewer
 
 #### NW-2 Acceptance Checklist
+
 - `writePolicy.ts` exists at `apps/web/src/lib/server/emis/infra/writePolicy.ts`
 - route code no longer carries ad hoc write authorization logic (all use `assertWriteContext()`)
 - API writes and manual UI actions fail consistently when write context is invalid
@@ -544,6 +571,7 @@ Status:
 - `pnpm emis:write-smoke` stays green in permissive mode
 
 ### NW-3: Dictionary/admin scope freeze
+
 - status: **completed** on `2026-04-04`
 - backlog mapping:
   - `M2.1`
@@ -570,11 +598,13 @@ Status:
   - `architecture-steward` only if the decision reopens admin surface or changes active access/ownership docs
 
 #### NW-3 Acceptance Checklist
+
 - the team has one explicit answer: **seed-managed** ~~or `admin CRUD in MVE`~~
 - MVE docs stop implying both models at once — deferral notes added to MVE spec
 - active docs stop implying unfinished admin CRUD pages — seed-managed dictionaries and deferred admin role are stated explicitly
 
 ### NW-4: Health/readiness and API error logging hardening
+
 - status: **completed** on `2026-04-05`
 - backlog mapping:
   - `M3.1`
@@ -613,11 +643,13 @@ Status:
     - `pnpm emis:smoke` — green
 
 #### NW-4 Acceptance Checklist
+
 - `/api/emis/health` distinguishes service readiness from mere route liveness
 - EMIS API failures are logged centrally with useful correlation context
 - smoke verifies the readiness contract rather than relying on manual checks
 
 ### NW-5: MVE acceptance audit and sign-off
+
 - status: **completed** on `2026-04-05`
 - backlog mapping:
   - `M4.1`
@@ -635,6 +667,7 @@ Status:
   - sign-off only makes sense after access model, dictionary scope and observability gaps are resolved or explicitly accepted
 
 #### NW-5 Acceptance Checklist
+
 - MVE acceptance is audited against one explicit document set
 - bootstrap/backlog no longer overstate or understate the current implementation
 - the team has a truthful `accepted / accepted with explicit deferrals / not yet accepted` verdict

@@ -1,10 +1,16 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 
-	import { Button } from '$shared/ui/button';
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$shared/ui/card';
-	import { Input } from '$shared/ui/input';
-	import { Select } from '$shared/ui/select';
+	import { Button } from '@dashboard-builder/platform-ui';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardHeader,
+		CardTitle
+	} from '@dashboard-builder/platform-ui';
+	import { Input } from '@dashboard-builder/platform-ui';
+	import { Select } from '@dashboard-builder/platform-ui';
 
 	let { data }: { data: PageData } = $props();
 

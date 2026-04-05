@@ -1,12 +1,51 @@
 <script lang="ts">
 	import type { PageData } from './$types';
+	import { goto } from '$app/navigation';
 
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$shared/ui/card';
+	import {
+		Button,
+		Card,
+		CardContent,
+		CardDescription,
+		CardHeader,
+		CardTitle
+	} from '@dashboard-builder/platform-ui';
 
 	let { data }: { data: PageData } = $props();
 
+	let deleteDialogEl: HTMLDialogElement | undefined = $state();
+	let deleting = $state(false);
+	let deleteError: string | null = $state(null);
+
 	function formatDate(value: string) {
 		return new Date(value).toLocaleString('ru-RU');
+	}
+
+	function openDeleteDialog() {
+		deleteError = null;
+		deleteDialogEl?.showModal();
+	}
+
+	function closeDeleteDialog() {
+		deleteDialogEl?.close();
+	}
+
+	async function confirmDelete() {
+		deleting = true;
+		deleteError = null;
+		try {
+			const res = await fetch(`/api/emis/news/${data.news.id}`, { method: 'DELETE' });
+			if (!res.ok) {
+				const body = await res.json().catch(() => null);
+				throw new Error(body?.message ?? `Delete failed (${res.status})`);
+			}
+			closeDeleteDialog();
+			await goto('/emis/news');
+		} catch (err) {
+			deleteError = err instanceof Error ? err.message : 'Unknown error during deletion';
+		} finally {
+			deleting = false;
+		}
 	}
 </script>
 
@@ -22,6 +61,9 @@
 				<a class="underline underline-offset-4" href="/emis">/emis workspace</a>
 				<a class="underline underline-offset-4" href="/emis/news">/emis/news</a>
 				<a class="underline underline-offset-4" href={`/emis/news/${data.news.id}/edit`}>edit</a>
+				<button class="text-destructive underline underline-offset-4" onclick={openDeleteDialog}>
+					delete
+				</button>
 			</div>
 			<div class="space-y-2">
 				<div class="type-caption tracking-[0.24em] text-muted-foreground uppercase">EMIS News</div>
@@ -180,3 +222,31 @@
 		</Card>
 	</div>
 </div>
+
+<dialog
+	bind:this={deleteDialogEl}
+	class="rounded-xl border border-border bg-background p-0 shadow-lg backdrop:bg-black/50"
+	onclick={(e) => {
+		if (e.target === deleteDialogEl) closeDeleteDialog();
+	}}
+>
+	<div class="flex w-[min(24rem,90vw)] flex-col gap-4 p-6">
+		<h2 class="type-body-sm font-semibold text-foreground">Delete news item</h2>
+		<p class="type-body-sm text-muted-foreground">
+			Are you sure you want to delete <span class="font-medium text-foreground"
+				>{data.news.title}</span
+			>? This action performs a soft-delete and can be reversed by an administrator.
+		</p>
+		{#if deleteError}
+			<p class="type-body-sm text-destructive">{deleteError}</p>
+		{/if}
+		<div class="flex items-center justify-end gap-3">
+			<Button variant="outline" size="sm" onclick={closeDeleteDialog} disabled={deleting}>
+				Cancel
+			</Button>
+			<Button variant="destructive" size="sm" onclick={confirmDelete} loading={deleting}>
+				{deleting ? 'Deleting...' : 'Delete'}
+			</Button>
+		</div>
+	</div>
+</dialog>

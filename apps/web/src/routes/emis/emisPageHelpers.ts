@@ -1,5 +1,5 @@
-import type { EmisNewsSummary } from '$entities/emis-news';
-import type { EmisObjectSummary } from '$entities/emis-object';
+import type { EmisNewsSummary } from '@dashboard-builder/emis-contracts/emis-news';
+import type { EmisObjectSummary } from '@dashboard-builder/emis-contracts/emis-object';
 
 export const SHIP_ROUTE_LIMIT = 5000;
 

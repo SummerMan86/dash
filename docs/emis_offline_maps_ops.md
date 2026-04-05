@@ -167,16 +167,16 @@ Add the new file entry to the `pmtiles` array in `apps/web/static/emis-map/offli
 
 ```json
 {
-  "version": 1,
-  "createdAt": "2026-04-05T10:00:00.000Z",
-  "source": "https://build.protomaps.com/20260404.pmtiles",
-  "pmtiles": [
-    { "file": "world-z7.pmtiles", "bbox": "-180,-85,180,85", "maxzoom": 7 },
-    { "file": "moscow.pmtiles",   "bbox": "37.3,55.55,37.85,55.92", "maxzoom": 15 },
-    { "file": "sakhalin.pmtiles", "bbox": "141.5,46.5,145.0,51.5",  "maxzoom": 15 }
-  ],
-  "fonts": ["Noto Sans Italic", "Noto Sans Medium", "Noto Sans Regular"],
-  "sprites": ["v4/light", "v4/light@2x"]
+	"version": 1,
+	"createdAt": "2026-04-05T10:00:00.000Z",
+	"source": "https://build.protomaps.com/20260404.pmtiles",
+	"pmtiles": [
+		{ "file": "world-z7.pmtiles", "bbox": "-180,-85,180,85", "maxzoom": 7 },
+		{ "file": "moscow.pmtiles", "bbox": "37.3,55.55,37.85,55.92", "maxzoom": 15 },
+		{ "file": "sakhalin.pmtiles", "bbox": "141.5,46.5,145.0,51.5", "maxzoom": 15 }
+	],
+	"fonts": ["Noto Sans Italic", "Noto Sans Medium", "Noto Sans Regular"],
+	"sprites": ["v4/light", "v4/light@2x"]
 }
 ```
 
@@ -206,6 +206,7 @@ After deploy, run the post-deploy verification checklist (section 11).
 ### File order semantics
 
 The order of entries in `manifest.pmtiles` matters:
+
 - The runtime selects the **first** file whose name matches a local `.pmtiles` file on disk.
 - For coarse world coverage + detailed AOI, list the detailed region **after** the world file.
 - The world file provides fallback coverage; regional files provide high-zoom detail.
@@ -236,11 +237,11 @@ To update an existing region file (e.g., fresher data for Moscow):
 
 ### Manifest freshness fields
 
-| Field | Purpose |
-|---|---|
-| `createdAt` | When the manifest was last written. Primary freshness indicator. |
-| `source` | URL of the Protomaps daily build used. Contains the build date (e.g., `20260404`). |
-| `version` | Manifest schema version. Currently `1`. |
+| Field       | Purpose                                                                            |
+| ----------- | ---------------------------------------------------------------------------------- |
+| `createdAt` | When the manifest was last written. Primary freshness indicator.                   |
+| `source`    | URL of the Protomaps daily build used. Contains the build date (e.g., `20260404`). |
+| `version`   | Manifest schema version. Currently `1`.                                            |
 
 ### Check freshness
 
@@ -288,6 +289,7 @@ pnpm map:assets:install -- --source /abs/path/to/new-bundle
 ```
 
 Manual update:
+
 1. Replace the `.pmtiles` files.
 2. Edit `manifest.json`: update `createdAt`, `source`, and file entries.
 3. Run `pnpm map:assets:status` to verify.
@@ -335,12 +337,12 @@ No reverse proxy (nginx/caddy) is required for Range support. A reverse proxy ma
 
 ### Runtime matrix
 
-| Runtime path | Range support | Notes |
-|---|---|---|
-| `vite dev` (dev) | Yes | Vite built-in |
-| `adapter-node` (production) | Yes | Via embedded `sirv` |
-| nginx / caddy reverse proxy | Yes | Native; if used, ensure `proxy_pass` preserves Range headers |
-| `adapter-static` | N/A | No built-in server; host must support Range (nginx, S3, etc.) |
+| Runtime path                | Range support | Notes                                                         |
+| --------------------------- | ------------- | ------------------------------------------------------------- |
+| `vite dev` (dev)            | Yes           | Vite built-in                                                 |
+| `adapter-node` (production) | Yes           | Via embedded `sirv`                                           |
+| nginx / caddy reverse proxy | Yes           | Native; if used, ensure `proxy_pass` preserves Range headers  |
+| `adapter-static`            | N/A           | No built-in server; host must support Range (nginx, S3, etc.) |
 
 ### Verifying Range support after deploy
 
@@ -349,6 +351,7 @@ curl -s -D - -H 'Range: bytes=0-9' https://your.domain/emis-map/offline/world-z7
 ```
 
 Expected:
+
 - `HTTP/1.1 206 Partial Content`
 - `Accept-Ranges: bytes`
 - `Content-Range: bytes 0-9/<total-size>`
@@ -384,12 +387,14 @@ curl -s -D - -H 'Range: bytes=0-9' $BASE/emis-map/offline/world-z7.pmtiles -o /d
 ```
 
 Success signals:
+
 - `HTTP/1.1 206 Partial Content`
 - `Accept-Ranges: bytes`
 - `Content-Range: bytes 0-9/<file-size>`
 - `Content-Length: 10`
 
 Failure signals:
+
 - `200 OK` with full file body: reverse proxy is stripping Range headers
 - `404`: pmtiles file not in build output
 - `416 Range Not Satisfiable`: byte range exceeds file size (check file integrity)
@@ -401,6 +406,7 @@ curl -s $BASE/api/emis/map-config | python3 -m json.tool | head -20
 ```
 
 Check:
+
 - `effectiveMode` is `auto`, `online`, or `offline` as expected
 - `runtimeStatus` is `ready` or `degraded` (not `missing-assets` or `misconfigured`)
 - `offlinePmtilesUrl` is not null (offline bundle detected)
@@ -439,13 +445,13 @@ pnpm emis:offline-smoke -- --base-url $BASE
 
 ### Decision tree for failures
 
-| Symptom | Likely cause | Fix |
-|---|---|---|
-| 404 on pmtiles file | Assets not in build | Re-run `pnpm build`; check `static/emis-map/offline/` has files |
-| 200 instead of 206 | Reverse proxy strips Range | Configure nginx: `proxy_set_header Range $http_range;` |
-| `missing-assets` in map-config | Incomplete bundle | Run `pnpm map:assets:status` to see what is missing |
-| `misconfigured` in map-config | No online style + no offline bundle | Set `EMIS_MAPTILER_KEY` or install offline bundle |
-| Spike page 500 | Server-side error | Check server logs for stack trace |
+| Symptom                        | Likely cause                        | Fix                                                             |
+| ------------------------------ | ----------------------------------- | --------------------------------------------------------------- |
+| 404 on pmtiles file            | Assets not in build                 | Re-run `pnpm build`; check `static/emis-map/offline/` has files |
+| 200 instead of 206             | Reverse proxy strips Range          | Configure nginx: `proxy_set_header Range $http_range;`          |
+| `missing-assets` in map-config | Incomplete bundle                   | Run `pnpm map:assets:status` to see what is missing             |
+| `misconfigured` in map-config  | No online style + no offline bundle | Set `EMIS_MAPTILER_KEY` or install offline bundle               |
+| Spike page 500                 | Server-side error                   | Check server logs for stack trace                               |
 
 ## 12. Что не входит в текущий слой
 

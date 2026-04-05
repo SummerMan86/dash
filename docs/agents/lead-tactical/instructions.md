@@ -24,6 +24,7 @@ Workers создаются как **teammates** (Agent Teams в tmux), не ка
 Формат задачи: `docs/agents/templates.md`, секция 2 "Задача worker'у".
 
 Обязательно указать:
+
 - Чёткий scope (файлы, слои)
 - Что НЕ трогать
 - Base branch
@@ -57,6 +58,7 @@ Canonical branch/worktree protocol: `docs/agents/workflow.md`, секция 7 (`
 7. После handoff worker'а сначала проверь scope/placement, потом мержи в integration branch, и только после этого запускай Review Gate на интегрированном diff.
 
 Короткое правило:
+
 - `один worker = один branch = один worktree`
 - Review Gate всегда идет по `main..feature/<topic>`, не по worker branch
 - если есть сомнение, лучше меньше параллелизма, чем запутанная интеграция
@@ -74,6 +76,7 @@ Agent(subagent_type="code-reviewer", prompt="<diff + files>")
 ```
 
 Если изменены `.svelte`/`.css`/routes и dev server запущен:
+
 ```
 Agent(subagent_type="ui-reviewer", prompt="<routes to check>")
 ```
@@ -88,6 +91,7 @@ Agent(subagent_type="ui-reviewer", prompt="<routes to check>")
 ### Агрегация
 
 Собери findings, классифицируй по severity:
+
 - CRITICAL → исправь или эскалируй
 - WARNING → исправь до merge
 - INFO → отметь в report
@@ -99,6 +103,7 @@ Agent(subagent_type="ui-reviewer", prompt="<routes to check>")
 ## Эскалация к пользователю
 
 Эскалируй когда:
+
 - CRITICAL finding
 - Нужно изменение scope / приоритета
 - Новый контракт/schema/cross-module change
@@ -119,11 +124,12 @@ Agent(subagent_type="ui-reviewer", prompt="<routes to check>")
 Полный список: `docs/agents/workflow.md`, секция 6.
 
 Быстрая проверка перед каждым коммитом:
+
 - [ ] Код в правильном слое / package home?
 - [ ] SQL не в routes?
 - [ ] Server-only код не импортируется с клиента?
 - [ ] Schema changes отражены в db/?
-- [ ] Новые reusable контракты в packages/emis-contracts/*?
+- [ ] Новые reusable контракты в packages/emis-contracts/\*?
 - [ ] Файлы < 700 строк?
 
 ## Ключевые документы

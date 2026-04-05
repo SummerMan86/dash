@@ -9,14 +9,14 @@ Canonical docs:
 
 ## Субагенты-ревьюеры (`.claude/agents/`)
 
-| Файл | Модель | Проверяет |
-|---|---|---|
-| `security-reviewer.md` | Sonnet | SQL injection, XSS, secrets, SSRF |
-| `architecture-reviewer.md` | Sonnet | layer/import boundaries, server isolation, complexity |
-| `docs-reviewer.md` | Sonnet | Docs, DB truth, runtime contracts sync |
-| `code-reviewer.md` | Sonnet | Naming, conventions, maintainability |
-| `ui-reviewer.md` | Sonnet + Chrome | UI smoke-test (при frontend changes) |
-| `ui-reviewer-deep.md` | Opus + Chrome | Deep UX/a11y audit (по запросу) |
+| Файл                       | Модель          | Проверяет                                             |
+| -------------------------- | --------------- | ----------------------------------------------------- |
+| `security-reviewer.md`     | Sonnet          | SQL injection, XSS, secrets, SSRF                     |
+| `architecture-reviewer.md` | Sonnet          | layer/import boundaries, server isolation, complexity |
+| `docs-reviewer.md`         | Sonnet          | Docs, DB truth, runtime contracts sync                |
+| `code-reviewer.md`         | Sonnet          | Naming, conventions, maintainability                  |
+| `ui-reviewer.md`           | Sonnet + Chrome | UI smoke-test (при frontend changes)                  |
+| `ui-reviewer-deep.md`      | Opus + Chrome   | Deep UX/a11y audit (по запросу)                       |
 
 Детальные instructions для каждого ревьюера: `docs/agents/{name}/instructions.md`
 
@@ -34,7 +34,7 @@ Canonical docs:
 
 ### 1. Создай `.claude/agents/{name}.md`
 
-````markdown
+```markdown
 ---
 name: имя-агента
 description: Когда запускать этого агента.
@@ -46,7 +46,7 @@ memory: project
 Ты — [роль] для проекта на SvelteKit + TypeScript.
 
 Role instructions and escalation rules: `docs/agents/{name}/instructions.md`.
-````
+```
 
 ### 2. Добавь instructions в `docs/agents/`
 
@@ -59,13 +59,13 @@ Role instructions and escalation rules: `docs/agents/{name}/instructions.md`.
 
 ### Frontmatter
 
-| Поле | Значение | Описание |
-|---|---|---|
-| `name` | уникальное имя | латиница, дефисы |
-| `description` | когда использовать | для dispatch |
-| `tools` | `Read, Grep, Glob` | для ревьюеров — read-only |
-| `model` | `sonnet` / `opus` / `haiku` | стоимость vs качество |
-| `memory` | `project` | накапливает знания между сессиями |
+| Поле          | Значение                    | Описание                          |
+| ------------- | --------------------------- | --------------------------------- |
+| `name`        | уникальное имя              | латиница, дефисы                  |
+| `description` | когда использовать          | для dispatch                      |
+| `tools`       | `Read, Grep, Glob`          | для ревьюеров — read-only         |
+| `model`       | `sonnet` / `opus` / `haiku` | стоимость vs качество             |
+| `memory`      | `project`                   | накапливает знания между сессиями |
 
 ## Chrome и UI-reviewer
 

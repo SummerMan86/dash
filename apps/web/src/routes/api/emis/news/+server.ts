@@ -1,6 +1,9 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 
-import { createEmisNewsSchema, listEmisNewsQuerySchema } from '@dashboard-builder/emis-contracts/emis-news';
+import {
+	createEmisNewsSchema,
+	listEmisNewsQuerySchema
+} from '@dashboard-builder/emis-contracts/emis-news';
 import { assertWriteContext } from '$lib/server/emis/infra/writePolicy';
 import { EmisError } from '@dashboard-builder/emis-server/infra/errors';
 import {
@@ -62,8 +65,8 @@ export const GET: RequestHandler = handleEmisRoute(async ({ url }) => {
 	});
 }, 'Failed to load EMIS news');
 
-export const POST: RequestHandler = handleEmisRoute(async ({ request }) => {
+export const POST: RequestHandler = handleEmisRoute(async ({ request, locals }) => {
 	const body = await parseJsonBody(request, createEmisNewsSchema);
-	const created = await createNewsService(body, assertWriteContext(request, 'api'));
+	const created = await createNewsService(body, assertWriteContext(request, 'api', locals));
 	return json(created, { status: 201 });
 }, 'Failed to create EMIS news item');

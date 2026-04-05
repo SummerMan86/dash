@@ -6,6 +6,7 @@
 ## Решения и контекст
 
 ### Wave ST-1..ST-10 (closed, 2026-04-03)
+
 - All 10 structural slices accepted on `feature/emis-foundation-stabilization`
 - 8 packages: platform-core, db, platform-ui, platform-datasets, platform-filters, emis-contracts, emis-server, emis-ui
 - BI kept in app (bi-dashboards, bi-alerts) with justification
@@ -13,10 +14,12 @@
 - Integration branch: `feature/emis-foundation-stabilization`
 
 ### Wave H (EMIS Post-Split Hardening And Boundary Cleanup)
+
 - Integration branch: `feature/emis-post-split-hardening` (created from `feature/emis-foundation-stabilization`)
 - Plan: `docs/agents/lead-strategic/current_plan.md`
 
 #### H-1: Make emis-server transport-agnostic (DONE, 2026-04-03)
+
 - Moved `jsonEmisList`, `jsonEmisError`, `handleEmisRoute` from `packages/emis-server/src/infra/http.ts` → `apps/web/src/lib/server/emis/infra/http.ts`
 - Removed `@sveltejs/kit` from emis-server peerDependencies
 - Package-level http.ts now has only framework-agnostic parsing/validation/constants/types
@@ -30,6 +33,7 @@
 - Verification: pnpm check clean, pnpm build success, lint:boundaries 3 pre-existing only
 
 #### H-2: Remove invalid emis-ui -> platform-datasets edge (DONE, 2026-04-03)
+
 - Relocated `JsonPrimitive` and `JsonValue` from `platform-datasets/contract.ts` to `platform-core/src/types.ts` (canonical home)
 - `platform-datasets/contract.ts` now imports from `platform-core` and re-exports for backward compatibility
 - Added `@dashboard-builder/platform-core` as dependency of `platform-datasets` (allowed per target graph)
@@ -39,7 +43,9 @@
 - No behavioral changes, type-only relocation
 - Verification: pnpm check 0 errors, pnpm build success, lint:boundaries 3 pre-existing only (no new violations)
 - Review Gate: 3/3 reviewers passed (architecture, code, docs)
+
 #### H-3: Normalize EMIS route imports (DONE, 2026-04-03)
+
 - Replaced all `$entities/emis-*` imports with `@dashboard-builder/emis-contracts/*` (14 import lines across 14 route files)
 - Replaced all `$lib/server/emis/modules/*` imports with `@dashboard-builder/emis-server/modules/*` (18 import lines)
 - Replaced all `$lib/server/emis/infra/errors` imports with `@dashboard-builder/emis-server/infra/errors` (8 import lines)
@@ -51,7 +57,9 @@
 - No behavioral changes — import-only normalization
 - Verification: pnpm check 0 errors, pnpm build success, lint:boundaries 3 pre-existing only
 - Review Gate: architecture (PASS), code (PASS), docs (PASS)
+
 #### H-4a: Decompose EmisMap.svelte pressure (DONE, 2026-04-03)
+
 - EmisMap.svelte reduced from 1225 to 904 lines (26% reduction, 321 lines removed)
 - Extracted 3 files into `packages/emis-ui/src/emis-map/`:
   - `feature-normalizers.ts` (179 lines) — 5 pure normalizer functions
@@ -68,7 +76,9 @@
   - Fixed: pre-existing bug in `resolveVisibleLayers` — `showVessels` was missing `layer === 'all'`
   - Fixed: `BasemapSource` type duplication — extracted to `overlay-fetch.ts`, imported in both components
   - Fixed: stale line count in AGENTS.md follow-up note
+
 #### H-4b: Decompose +page.svelte route (DONE, 2026-04-03)
+
 - +page.svelte reduced from 1559 to 767 lines (51% reduction, 792 lines extracted)
 - Extracted 5 route-local files into `apps/web/src/routes/emis/`:
   - `emisPageHelpers.ts` (82 lines) — pure utility/formatting functions, type aliases (SearchResultKind, RouteMode, RouteUrlSelection), URL helpers, parsers
@@ -80,7 +90,9 @@
 - Removed unused imports: `EmisShipRouteVessel`, `Skeleton`, `EMIS_SHIP_ROUTE_FILTER_IDS` from +page.svelte
 - Updated AGENTS.md with new file listing
 - Verification: pnpm check 0 errors, pnpm build success, lint:boundaries 3 pre-existing only
+
 #### H-5: Close remaining boundary hardening gaps (DONE, 2026-04-03)
+
 - Residual 1 (mapConfig boundary exception): switched BI route `vessel-positions/+page.server.ts` from shim `$lib/server/emis/infra/mapConfig` to canonical `@dashboard-builder/emis-server/infra/mapConfig`; also normalized 2 EMIS routes (`emis/+page.server.ts`, `emis/pmtiles-spike/+page.server.ts`); deleted the now-unused shim `apps/web/src/lib/server/emis/infra/mapConfig.ts`; updated `routes/api/emis/AGENTS.md` to document deletion
 - Residual 2 (clampPageSize duplication): extracted `clampPageSize()` and `clampMapLimit()` to `packages/emis-server/src/infra/http.ts` using existing constants; replaced local copies in `modules/objects/queries.ts`, `modules/news/queries.ts`, `modules/map/queries.ts`; `ship-routes/queries.ts` has a different-signature `clampLimit(value, max)` -- left as-is (not duplicated)
 - Residual 3 (mapVesselsQuery fragile params): replaced hardcoded `$1`..`$4` with dynamic `$${values.length}` push-and-reference pattern, matching the style used by `appendBboxConditions` and all other query builders in the module; SQL semantics unchanged
@@ -215,20 +227,59 @@ All 5 P1 slices completed on `main`. Backlog mapping: P1.1 through P1.5.
   - `emis-smoke.mjs` — 2 new checks
 - Verification: all 6 canonical checks green (34/34 smoke checks)
 
+### Phase 3: Tech Debt Cleanup (DONE, 2026-04-05)
+
+All 5 TD slices completed on `feature/emis-phase3-tech-debt-cleanup`. Branch stats: 235 files changed, net -2507 lines.
+
+- TD-1 — `+page.svelte` decomposed from 799 to 639 lines (extracted `emisPageDataLoaders.ts`, `emisPageVesselMode.ts`, `EmisInfoCards.svelte`)
+- TD-2 — 72 MIGRATION re-export shims removed from `entities/`, `shared/`, `widgets/` (-3280 lines)
+- TD-3 — stock-alerts widget-to-routes boundary violation fixed (moved route-dependent code to widget-local helper)
+- TD-4 — Prettier formatting drift fixed across 90 files (32 re-drifted from subsequent TD-1/TD-2/TD-3 commits — cosmetic only)
+- TD-5 — Final baseline verdict: Green / baseline closed, zero carry-forward
+
+Key observations:
+
+- 16 server-side MIGRATION re-export shims remain in `apps/web/src/lib/server/emis/` — active re-exports with 9+ route consumers, explicitly out of TD-2 scope
+- `pnpm lint` (Prettier) not green due to re-drift from post-TD-4 commits — not in canonical 6 checks
+- All 6 canonical checks green: check, build, lint:boundaries, emis:smoke (33/33), emis:offline-smoke (9/9), emis:write-smoke (7/7)
+
+### Phase 4: MVE Deferrals Implementation (DONE, 2026-04-05)
+
+All DF slices completed on `feature/emis-phase3-tech-debt-cleanup`.
+
+- DF-1 — Soft-delete UI buttons for objects and news detail pages (confirmation dialog, redirect, error handling)
+- DF-2 — Admin CRUD for dictionaries: `/emis/admin/dictionaries` page, 6 API endpoints for countries/object_types/sources
+- DF-3 — Session-based auth: login page at `/emis/login`, cookie-based sessions (`auth.ts`), role enforcement in hooks + writePolicy, admin route protection
+- DF-5 — Governance closure: all MVE deferrals resolved, baseline Green, docs updated
+
+Key files added/modified:
+
+- `apps/web/src/lib/server/emis/infra/auth.ts` — session auth module (auth mode, user store, session store, role hierarchy, route classification)
+- `apps/web/src/lib/server/emis/infra/writePolicy.ts` — extended to support session-based actor resolution
+- `apps/web/src/routes/emis/login/` — login page (GET/POST)
+- `apps/web/src/routes/emis/admin/dictionaries/` — admin CRUD UI
+- `apps/web/src/routes/api/emis/dictionaries/` — 6 API endpoints (countries, object_types, sources)
+- `apps/web/src/routes/emis/objects/[id]/+page.svelte` — delete button added
+- `apps/web/src/routes/emis/news/[id]/+page.svelte` — delete button added
+- `hooks.server.ts` — session resolution middleware, auth enforcement
+
+MVE verdict: **accepted, no remaining deferrals** (upgraded from "accepted with explicit deferrals").
+
+Verification: all 6 canonical checks green (check, build, lint:boundaries, emis:smoke 38/38, offline-smoke 9/9, write-smoke 7/7).
+
 ## Заметки для следующей сессии
 
 - H-1..H-5 all done — wave H is complete
-- P3.1..P3.6 all done — phase 2 is complete, baseline is Green/closed
+- P3.1..P3.6 all done — phase 2 is complete
 - DS-1..DS-4 done — active docs layer synced with canonical architecture
-- NW-1 done — access model frozen, write-policy helper contract designed
-- NW-2 done — `assertWriteContext()` implemented, all write entry points wired, negative smoke added
-- NW-3 done — dictionaries frozen as seed-managed for MVE, admin CRUD deferred beyond MVE
-- NW-4 done — `/api/emis/readyz` + request correlation + structured error logging in `handleEmisRoute()`
-- NW-5 done — MVE accepted with explicit deferrals, all 6 checks green
-- **MVE is closed.**
-- **P1 done** — vessel historical track integration (track on map, flyTo, viewport-aware catalog, smoke coverage)
-- Next work: `P2` (offline maps ops hardening)
-- Pre-existing carry-forward (all deferred, none blocking):
-  - stock-alerts->routes layer-boundary violation
-  - remaining MIGRATION re-export shims in `entities/`, `shared/`, `widgets/` — code removal, not docs scope
-  - `pnpm lint` Prettier drift (not blocking)
+- NW-1..NW-5 done — access model, write-policy, dictionaries, observability, MVE acceptance
+- **MVE is closed. All deferrals resolved.**
+- **P1 done** — vessel historical track integration
+- **P2 done** — offline maps ops hardening
+- **Phase 3 done** — tech debt cleanup, baseline Green / closed
+- **Phase 4 done** — MVE deferrals (DF-1 soft-delete UI, DF-2 admin CRUD, DF-3 auth, DF-5 governance)
+- All carry-forward items from P1/P2 era are resolved
+- Remaining optional future cleanup:
+  - 16 server-side MIGRATION re-export shims (active, not dead code)
+  - `pnpm lint` Prettier re-drift (cosmetic)
+- Codebase is ready for next product planning cycle

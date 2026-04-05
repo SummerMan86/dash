@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button } from '$shared/ui/button';
+	import { Button } from '@dashboard-builder/platform-ui';
 	import {
 		Card,
 		CardHeader,
@@ -7,9 +7,9 @@
 		CardDescription,
 		CardContent,
 		CardFooter
-	} from '$shared/ui/card';
-	import { Input } from '$shared/ui/input';
-	import { Select } from '$shared/ui/select';
+	} from '@dashboard-builder/platform-ui';
+	import { Input } from '@dashboard-builder/platform-ui';
+	import { Select } from '@dashboard-builder/platform-ui';
 
 	let isLoading = $state(false);
 

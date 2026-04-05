@@ -8,7 +8,7 @@ import {
 	updateNewsObjectLinkService
 } from '@dashboard-builder/emis-server/modules/links/service';
 
-export const PATCH: RequestHandler = handleEmisRoute(async ({ params, request }) => {
+export const PATCH: RequestHandler = handleEmisRoute(async ({ params, request, locals }) => {
 	const newsId = requireUuid(params.id, 'news id');
 	const objectId = requireUuid(params.objectId, 'object id');
 	const body = await parseJsonBody(request, updateNewsObjectLinkSchema);
@@ -16,14 +16,14 @@ export const PATCH: RequestHandler = handleEmisRoute(async ({ params, request })
 		newsId,
 		objectId,
 		body,
-		assertWriteContext(request, 'api')
+		assertWriteContext(request, 'api', locals)
 	);
 	return json({ ok: true });
 }, 'Failed to update EMIS news-object link');
 
-export const DELETE: RequestHandler = handleEmisRoute(async ({ params, request }) => {
+export const DELETE: RequestHandler = handleEmisRoute(async ({ params, request, locals }) => {
 	const newsId = requireUuid(params.id, 'news id');
 	const objectId = requireUuid(params.objectId, 'object id');
-	await deleteNewsObjectLinkService(newsId, objectId, assertWriteContext(request, 'api'));
+	await deleteNewsObjectLinkService(newsId, objectId, assertWriteContext(request, 'api', locals));
 	return json({ ok: true });
 }, 'Failed to delete EMIS news-object link');

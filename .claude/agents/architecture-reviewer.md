@@ -1,6 +1,6 @@
 ---
 name: architecture-reviewer
-description: "EMIS: architecture-reviewer. Reviews code changes for layer/import boundaries, EMIS boundaries, server isolation, and complexity guardrails. Run after every task that modifies code files."
+description: 'EMIS: architecture-reviewer. Reviews code changes for layer/import boundaries, EMIS boundaries, server isolation, and complexity guardrails. Run after every task that modifies code files.'
 tools: Read, Grep, Glob
 model: sonnet
 memory: project
@@ -67,6 +67,7 @@ Required follow-ups:
 ```
 
 Severity guide:
+
 - CRITICAL: server isolation breach, SQL in routes, client importing $lib/server
 - WARNING: layer boundary violation, complexity threshold, missing alias
 - INFO: minor, non-blocking observation

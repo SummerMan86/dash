@@ -13,12 +13,12 @@ Repo-wide architecture contract живёт в [architecture.md](./architecture.m
 
 ### Классификация документов
 
-| Метка | Значение |
-|-------|----------|
-| **canonical** | Source of truth для active work. Читать первым. |
-| **active** | Supporting doc, полезен при работе по теме, но не source of truth. |
-| **reference** | External pointer, не хранится/не поддерживается в этом репозитории. |
-| **archive** | Historical only. Не source of truth. Читать только для исторического контекста. |
+| Метка         | Значение                                                                        |
+| ------------- | ------------------------------------------------------------------------------- |
+| **canonical** | Source of truth для active work. Читать первым.                                 |
+| **active**    | Supporting doc, полезен при работе по теме, но не source of truth.              |
+| **reference** | External pointer, не хранится/не поддерживается в этом репозитории.             |
+| **archive**   | Historical only. Не source of truth. Читать только для исторического контекста. |
 
 ## 2. Dashboard-builder / Strategy документация
 
@@ -26,97 +26,97 @@ Repo-wide architecture contract живёт в [architecture.md](./architecture.m
 
 ### Canonical
 
-| Документ | Владеет | Source of truth для |
-|----------|---------|---------------------|
-| `architecture.md` | repo-wide architecture contract | topology, ownership, execution paths, package/app boundaries и import rules |
-| `../apps/web/src/routes/dashboard/wildberries/dwh_for_wildberries_requirements.md` | Wildberries DWH contract | полный контракт с DWH: витрины, колонки, фильтры, алерты, требования к качеству |
-| `strategy/bi_strategy.md` | local dashboard-builder BI strategy contract | как переложить Power BI strategy/BSC постановку в MVE-архитектуру |
-| `../apps/web/src/routes/dashboard/strategy/AGENTS.md` | strategy route development contract | current pages, grain rules, filter contract и rollout path |
-| `../apps/web/src/lib/server/datasets/AGENTS.md` | dataset layer routing contract | как `strategy.*` datasets подключаются в app runtime |
-| `../packages/platform-datasets/AGENTS.md` | dataset runtime package contract | canonical `compileDataset`, dataset definitions и Postgres provider mapping |
-| `../apps/web/src/lib/server/providers/AGENTS.md` | provider mapping contract | как `strategy.*` datasets маппятся на `mart_strategy.slobi_*` |
-| `../db/schema_catalog.md` | active app DB catalog | какие app-схемы и SQL-объекты считаются рабочими |
-| `../db/current_schema.sql` | active app DB snapshot | текущая структура схем `emis`, `stg_emis`, `mart_emis`, `mart` |
-| `../db/applied_changes.md` | active app DB structural log | журнал DDL-изменений после snapshot baseline |
-| `ops/beget_deployment_plan.md` | deployment runbook | production deployment plan для `labinsight.ru` |
+| Документ                                                                           | Владеет                                      | Source of truth для                                                             |
+| ---------------------------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------- |
+| `architecture.md`                                                                  | repo-wide architecture contract              | topology, ownership, execution paths, package/app boundaries и import rules     |
+| `../apps/web/src/routes/dashboard/wildberries/dwh_for_wildberries_requirements.md` | Wildberries DWH contract                     | полный контракт с DWH: витрины, колонки, фильтры, алерты, требования к качеству |
+| `strategy/bi_strategy.md`                                                          | local dashboard-builder BI strategy contract | как переложить Power BI strategy/BSC постановку в MVE-архитектуру               |
+| `../apps/web/src/routes/dashboard/strategy/AGENTS.md`                              | strategy route development contract          | current pages, grain rules, filter contract и rollout path                      |
+| `../apps/web/src/lib/server/datasets/AGENTS.md`                                    | dataset layer routing contract               | как `strategy.*` datasets подключаются в app runtime                            |
+| `../packages/platform-datasets/AGENTS.md`                                          | dataset runtime package contract             | canonical `compileDataset`, dataset definitions и Postgres provider mapping     |
+| `../apps/web/src/lib/server/providers/AGENTS.md`                                   | provider mapping contract                    | как `strategy.*` datasets маппятся на `mart_strategy.slobi_*`                   |
+| `../db/schema_catalog.md`                                                          | active app DB catalog                        | какие app-схемы и SQL-объекты считаются рабочими                                |
+| `../db/current_schema.sql`                                                         | active app DB snapshot                       | текущая структура схем `emis`, `stg_emis`, `mart_emis`, `mart`                  |
+| `../db/applied_changes.md`                                                         | active app DB structural log                 | журнал DDL-изменений после snapshot baseline                                    |
+| `ops/beget_deployment_plan.md`                                                     | deployment runbook                           | production deployment plan для `labinsight.ru`                                  |
 
 ### Reference (external)
 
-| Документ | Владеет | Source of truth для |
-|----------|---------|---------------------|
+| Документ                                                                                                                                   | Владеет                             | Source of truth для                                           |
+| ------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------- | ------------------------------------------------------------- |
 | `/home/orl/Shl/КА/MS BI/bsc_model/agent_pack/docs/imported/dashboard-builder/4. strategy_entity_bsc_mart_pilot_verification_2026_03_21.md` | strategy pilot verification runbook | refresh и smoke-checks для `strategy_entity_*` + `mart.bsc_*` |
 
 ### Archive
 
-| Документ | Владеет | Source of truth для |
-|----------|---------|---------------------|
-| `current-project-analysis.md` | historical platform analysis | мартовский анализ проекта до package-era; полезен для исторического контекста, но не source of truth по текущей архитектуре |
-| `archive/strategy-v1/strategy_session_bootstrap.md` | historical strategy bootstrap | старый entry point по `strategy-drive` / `Strategy DWH v1` |
-| `archive/strategy-v1/strategy_dwh_v1.md` | historical strategy architecture | старые `strategy.*` data contracts, marts и dataset ids |
-| `archive/strategy-v1/strategy_newcomer_guide.md` | historical strategy onboarding | старый newcomer context по strategy-срезу |
-| `archive/strategy-v1/*` | historical strategy pack | старые audits, handoffs и parallel-intake notes |
+| Документ                                            | Владеет                          | Source of truth для                                                                                                         |
+| --------------------------------------------------- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `current-project-analysis.md`                       | historical platform analysis     | мартовский анализ проекта до package-era; полезен для исторического контекста, но не source of truth по текущей архитектуре |
+| `archive/strategy-v1/strategy_session_bootstrap.md` | historical strategy bootstrap    | старый entry point по `strategy-drive` / `Strategy DWH v1`                                                                  |
+| `archive/strategy-v1/strategy_dwh_v1.md`            | historical strategy architecture | старые `strategy.*` data contracts, marts и dataset ids                                                                     |
+| `archive/strategy-v1/strategy_newcomer_guide.md`    | historical strategy onboarding   | старый newcomer context по strategy-срезу                                                                                   |
+| `archive/strategy-v1/*`                             | historical strategy pack         | старые audits, handoffs и parallel-intake notes                                                                             |
 
 ## 3. EMIS документация
 
 ### Canonical
 
-| Документ | Владеет | Source of truth для |
-|----------|---------|---------------------|
-| `architecture.md` | repo-wide architecture contract | topology, ownership, execution paths, import rules, repo-wide boundaries и current EMIS package/app placement |
-| `emis_session_bootstrap.md` | текущее состояние и start-here entry point | где EMIS находится сейчас, что в фокусе и что читать дальше по типу задачи |
-| `emis_working_contract.md` | short EMIS working rules | decision path, non-negotiables, review triggers, DoD |
-| `emis_access_model.md` | EMIS access model | viewer/editor/admin, write guardrails и где enforce |
-| `emis_observability_contract.md` | EMIS observability contract | readiness/health endpoints, error logging, request correlation |
-| `emis_read_models_contract.md` | EMIS BI/read-side contract | published read-models (views/marts), datasets и BI routes coupling |
-| `emis_mve_product_contract.md` | MVE product contract | product scope, invariants и acceptance |
-| `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md` | runtime/API conventions | API design conventions, error shape, list meta, audit contract, query limits/sorts |
-| `../packages/emis-contracts/AGENTS.md` | EMIS contracts package navigation | где лежат canonical entity contracts, DTO и Zod schemas |
-| `../packages/emis-server/AGENTS.md` | EMIS server package navigation | где лежат canonical infra helpers и backend modules |
-| `../packages/emis-ui/AGENTS.md` | EMIS UI package navigation | где лежат canonical map/status UI exports |
-| `../apps/web/src/routes/emis/AGENTS.md` | EMIS workspace route contract | что остается в `/emis` route layer и что выносится из workspace |
-| `../apps/web/src/routes/dashboard/emis/AGENTS.md` | EMIS BI routes contract | границы BI route layer, dataset path и extraction rules |
+| Документ                                                    | Владеет                                    | Source of truth для                                                                                           |
+| ----------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| `architecture.md`                                           | repo-wide architecture contract            | topology, ownership, execution paths, import rules, repo-wide boundaries и current EMIS package/app placement |
+| `emis_session_bootstrap.md`                                 | текущее состояние и start-here entry point | где EMIS находится сейчас, что в фокусе и что читать дальше по типу задачи                                    |
+| `emis_working_contract.md`                                  | short EMIS working rules                   | decision path, non-negotiables, review triggers, DoD                                                          |
+| `emis_access_model.md`                                      | EMIS access model                          | viewer/editor/admin, write guardrails и где enforce                                                           |
+| `emis_observability_contract.md`                            | EMIS observability contract                | readiness/health endpoints, error logging, request correlation                                                |
+| `emis_read_models_contract.md`                              | EMIS BI/read-side contract                 | published read-models (views/marts), datasets и BI routes coupling                                            |
+| `emis_mve_product_contract.md`                              | MVE product contract                       | product scope, invariants и acceptance                                                                        |
+| `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md` | runtime/API conventions                    | API design conventions, error shape, list meta, audit contract, query limits/sorts                            |
+| `../packages/emis-contracts/AGENTS.md`                      | EMIS contracts package navigation          | где лежат canonical entity contracts, DTO и Zod schemas                                                       |
+| `../packages/emis-server/AGENTS.md`                         | EMIS server package navigation             | где лежат canonical infra helpers и backend modules                                                           |
+| `../packages/emis-ui/AGENTS.md`                             | EMIS UI package navigation                 | где лежат canonical map/status UI exports                                                                     |
+| `../apps/web/src/routes/emis/AGENTS.md`                     | EMIS workspace route contract              | что остается в `/emis` route layer и что выносится из workspace                                               |
+| `../apps/web/src/routes/dashboard/emis/AGENTS.md`           | EMIS BI routes contract                    | границы BI route layer, dataset path и extraction rules                                                       |
 
 ### Active
 
-| Документ | Владеет | Source of truth для |
-|----------|---------|---------------------|
+| Документ                         | Владеет                          | Source of truth для                                                                         |
+| -------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------- |
 | `emis_monorepo_target_layout.md` | target layout и migration policy | future package layout, import direction rules, alias policy; не current-state ownership map |
-| `emis_freeze_note.md` | frozen decisions и conventions | что не нужно переоткрывать без причины; не current ownership map |
-| `emis_review_gate.md` | EMIS review gate | lifecycle review, mandatory approve cases, approve checklist |
-| `emis_offline_maps_ops.md` | offline maps ops-runbook | эксплуатация MapTiler/PMTiles и production caveats |
-| `emis_next_tasks_2026_03_22.md` | backlog | remaining tasks и polish stack |
+| `emis_freeze_note.md`            | frozen decisions и conventions   | что не нужно переоткрывать без причины; не current ownership map                            |
+| `emis_review_gate.md`            | EMIS review gate                 | lifecycle review, mandatory approve cases, approve checklist                                |
+| `emis_offline_maps_ops.md`       | offline maps ops-runbook         | эксплуатация MapTiler/PMTiles и production caveats                                          |
+| `emis_next_tasks_2026_03_22.md`  | backlog                          | remaining tasks и polish stack                                                              |
 
 ### Archive
 
-| Документ | Владеет | Source of truth для |
-|----------|---------|---------------------|
-| `archive/emis/emis_implementation_reference_v1.md` | archived implementation rationale | retained implementation decisions, API/data assumptions и historical rollout order |
-| `archive/emis/emis_vessel_current_positions_handoff_plan.md` | completed task handoff | completed slice `layer=vessels` / current positions в `/emis` |
-| `archive/emis/emis_todo_vessel_markers.md` | completed task notes | historical vessel marker TODO notes |
-| `archive/emis/emis_handoff_2026_03_17.md` | archived EMIS snapshot | историческое состояние репозитория на 17 марта 2026 |
-| `archive/emis/emis_pmtiles_validation_wave.md` | archived validation note | historical context по PMTiles spike/validation wave |
+| Документ                                                     | Владеет                           | Source of truth для                                                                |
+| ------------------------------------------------------------ | --------------------------------- | ---------------------------------------------------------------------------------- |
+| `archive/emis/emis_implementation_reference_v1.md`           | archived implementation rationale | retained implementation decisions, API/data assumptions и historical rollout order |
+| `archive/emis/emis_vessel_current_positions_handoff_plan.md` | completed task handoff            | completed slice `layer=vessels` / current positions в `/emis`                      |
+| `archive/emis/emis_todo_vessel_markers.md`                   | completed task notes              | historical vessel marker TODO notes                                                |
+| `archive/emis/emis_handoff_2026_03_17.md`                    | archived EMIS snapshot            | историческое состояние репозитория на 17 марта 2026                                |
+| `archive/emis/emis_pmtiles_validation_wave.md`               | archived validation note          | historical context по PMTiles spike/validation wave                                |
 
 ## 3a. Agent Workflow документация
 
 ### Canonical
 
-| Документ | Владеет | Source of truth для |
-|----------|---------|---------------------|
-| `agents/workflow.md` | agent workflow и инварианты | процесс GPT-5.4 → Claude → review, правила, коммуникация |
-| `agents/roles.md` | agent role map | все роли, dispatch names, кто что делает |
-| `agents/templates.md` | agent communication templates | план, задача, handoff, report, review request/result |
-| `agents/lead-strategic/instructions.md` | GPT-5.4 lead instructions | как планировать, декомпозировать, принимать результаты |
-| `agents/architecture-steward/instructions.md` | GPT-5.4 architecture governance instructions | как держать architecture docs, placement decisions и waivers |
-| `agents/baseline-governor/instructions.md` | GPT-5.4 baseline governance instructions | как держать baseline status, known exceptions и stabilization verdict |
-| `agents/strategic-reviewer/instructions.md` | GPT-5.4 sidecar review instructions | как делать bounded strategic second opinion без нового full-context чата |
-| `agents/lead-tactical/instructions.md` | Claude Opus tactical lead instructions | как управлять workers, review gate, report |
-| `agents/worker/instructions.md` | Claude worker instructions | как выполнять задачи, self-check, handoff |
-| `agents/*-reviewer/instructions.md` | reviewer role instructions | checks, output format, scope для каждого ревьюера |
+| Документ                                      | Владеет                                      | Source of truth для                                                      |
+| --------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------ |
+| `agents/workflow.md`                          | agent workflow и инварианты                  | процесс GPT-5.4 → Claude → review, правила, коммуникация                 |
+| `agents/roles.md`                             | agent role map                               | все роли, dispatch names, кто что делает                                 |
+| `agents/templates.md`                         | agent communication templates                | план, задача, handoff, report, review request/result                     |
+| `agents/lead-strategic/instructions.md`       | GPT-5.4 lead instructions                    | как планировать, декомпозировать, принимать результаты                   |
+| `agents/architecture-steward/instructions.md` | GPT-5.4 architecture governance instructions | как держать architecture docs, placement decisions и waivers             |
+| `agents/baseline-governor/instructions.md`    | GPT-5.4 baseline governance instructions     | как держать baseline status, known exceptions и stabilization verdict    |
+| `agents/strategic-reviewer/instructions.md`   | GPT-5.4 sidecar review instructions          | как делать bounded strategic second opinion без нового full-context чата |
+| `agents/lead-tactical/instructions.md`        | Claude Opus tactical lead instructions       | как управлять workers, review gate, report                               |
+| `agents/worker/instructions.md`               | Claude worker instructions                   | как выполнять задачи, self-check, handoff                                |
+| `agents/*-reviewer/instructions.md`           | reviewer role instructions                   | checks, output format, scope для каждого ревьюера                        |
 
 ### Archive
 
-| Документ | Владеет | Source of truth для |
-|----------|---------|---------------------|
+| Документ           | Владеет                              | Source of truth для                                                                               |
+| ------------------ | ------------------------------------ | ------------------------------------------------------------------------------------------------- |
 | `archive/agents/*` | historical agent model and templates | старые agent operating model, playbook, roles и handoff templates до перехода на текущий workflow |
 
 ## 4. Reading Order

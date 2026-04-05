@@ -4,19 +4,19 @@
 
 ## Role Map
 
-| Роль | Агент | Модель | Технология | Persistence | Задача |
-|---|---|---|---|---|---|
-| **lead-strategic** | GPT-5.4 | GPT-5.4 | Отдельный чат | Между сессиями (memory.md) | Планирование, декомпозиция, приёмка |
-| **strategic-reviewer** | GPT-5.4 sidecar | GPT-5.4-mini / GPT-5.4 | **Subagent** (on-demand) | По вызову, reuse в рамках текущей сессии при необходимости | Узкая strategic second opinion по plan/report/diff |
-| **architecture-steward** | GPT-5.4 architecture governance role | GPT-5.4 | Отдельный чат или bounded strategic loop | Между сессиями (memory.md) | Canonical architecture docs, placement decisions, architecture waivers/exceptions |
-| **baseline-governor** | GPT-5.4 baseline governance role | GPT-5.4 | Отдельный чат или bounded strategic loop | Между сессиями (memory.md) | Baseline status, known exceptions validation, stabilization verdict |
-| **lead-tactical** | Claude Opus | Opus | tmux pane #0 | Сессия + memory.md | Управление, Review Gate, отчёты |
-| **worker** | Claude | Opus/Sonnet | **Agent Teams** (teammate, tmux pane) | Сессия + memory.md | Реализация подзадачи |
-| **architecture-reviewer** | Claude | Sonnet | **Subagent** (session-persistent) | Сессия (reuse через SendMessage) | Diff review по package/app boundaries, EMIS contour split, complexity |
-| **security-reviewer** | Claude | Sonnet | **Subagent** (session-persistent) | Сессия (reuse через SendMessage) | SQL injection, XSS, secrets |
-| **docs-reviewer** | Claude | Sonnet | **Subagent** (session-persistent) | Сессия (reuse через SendMessage) | Docs/contracts sync |
-| **code-reviewer** | Claude | Sonnet | **Subagent** (session-persistent) | Сессия (reuse через SendMessage) | Naming, conventions |
-| **ui-reviewer** | Claude | Sonnet/Opus | **Subagent** (on-demand) | По вызову, reuse если был создан | Smoke / deep UX (Chrome) |
+| Роль                      | Агент                                | Модель                 | Технология                               | Persistence                                                | Задача                                                                            |
+| ------------------------- | ------------------------------------ | ---------------------- | ---------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| **lead-strategic**        | GPT-5.4                              | GPT-5.4                | Отдельный чат                            | Между сессиями (memory.md)                                 | Планирование, декомпозиция, приёмка                                               |
+| **strategic-reviewer**    | GPT-5.4 sidecar                      | GPT-5.4-mini / GPT-5.4 | **Subagent** (on-demand)                 | По вызову, reuse в рамках текущей сессии при необходимости | Узкая strategic second opinion по plan/report/diff                                |
+| **architecture-steward**  | GPT-5.4 architecture governance role | GPT-5.4                | Отдельный чат или bounded strategic loop | Между сессиями (memory.md)                                 | Canonical architecture docs, placement decisions, architecture waivers/exceptions |
+| **baseline-governor**     | GPT-5.4 baseline governance role     | GPT-5.4                | Отдельный чат или bounded strategic loop | Между сессиями (memory.md)                                 | Baseline status, known exceptions validation, stabilization verdict               |
+| **lead-tactical**         | Claude Opus                          | Opus                   | tmux pane #0                             | Сессия + memory.md                                         | Управление, Review Gate, отчёты                                                   |
+| **worker**                | Claude                               | Opus/Sonnet            | **Agent Teams** (teammate, tmux pane)    | Сессия + memory.md                                         | Реализация подзадачи                                                              |
+| **architecture-reviewer** | Claude                               | Sonnet                 | **Subagent** (session-persistent)        | Сессия (reuse через SendMessage)                           | Diff review по package/app boundaries, EMIS contour split, complexity             |
+| **security-reviewer**     | Claude                               | Sonnet                 | **Subagent** (session-persistent)        | Сессия (reuse через SendMessage)                           | SQL injection, XSS, secrets                                                       |
+| **docs-reviewer**         | Claude                               | Sonnet                 | **Subagent** (session-persistent)        | Сессия (reuse через SendMessage)                           | Docs/contracts sync                                                               |
+| **code-reviewer**         | Claude                               | Sonnet                 | **Subagent** (session-persistent)        | Сессия (reuse через SendMessage)                           | Naming, conventions                                                               |
+| **ui-reviewer**           | Claude                               | Sonnet/Opus            | **Subagent** (on-demand)                 | По вызову, reuse если был создан                           | Smoke / deep UX (Chrome)                                                          |
 
 ## Коротко по ролям
 

@@ -384,31 +384,31 @@ Grain:
 
 ```ts
 const strategyFilters: FilterSpec[] = [
-  {
-    id: 'departmentCode',
-    type: 'select',
-    label: 'Департамент',
-    scope: 'workspace',
-    apply: 'server',
-    bindings: {
-      'strategy.entity_overview': { field: 'department_code', param: 'departmentCode' },
-      'strategy.scorecard_overview': { field: 'department_code', param: 'departmentCode' },
-      'strategy.performance_detail': { field: 'department_code', param: 'departmentCode' },
-      'strategy.cascade_detail': { field: 'department_code', param: 'departmentCode' }
-    }
-  },
-  {
-    id: 'strategyEntityId',
-    type: 'select',
-    label: 'Strategy Entity',
-    scope: 'workspace',
-    apply: 'server',
-    bindings: {
-      'strategy.entity_overview': { field: 'strategy_entity_id', param: 'strategyEntityId' },
-      'strategy.performance_detail': { field: 'strategy_entity_id', param: 'strategyEntityId' },
-      'strategy.cascade_detail': { field: 'strategy_entity_id', param: 'strategyEntityId' }
-    }
-  }
+	{
+		id: 'departmentCode',
+		type: 'select',
+		label: 'Департамент',
+		scope: 'workspace',
+		apply: 'server',
+		bindings: {
+			'strategy.entity_overview': { field: 'department_code', param: 'departmentCode' },
+			'strategy.scorecard_overview': { field: 'department_code', param: 'departmentCode' },
+			'strategy.performance_detail': { field: 'department_code', param: 'departmentCode' },
+			'strategy.cascade_detail': { field: 'department_code', param: 'departmentCode' }
+		}
+	},
+	{
+		id: 'strategyEntityId',
+		type: 'select',
+		label: 'Strategy Entity',
+		scope: 'workspace',
+		apply: 'server',
+		bindings: {
+			'strategy.entity_overview': { field: 'strategy_entity_id', param: 'strategyEntityId' },
+			'strategy.performance_detail': { field: 'strategy_entity_id', param: 'strategyEntityId' },
+			'strategy.cascade_detail': { field: 'strategy_entity_id', param: 'strategyEntityId' }
+		}
+	}
 ];
 ```
 

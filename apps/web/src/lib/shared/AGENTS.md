@@ -8,25 +8,24 @@
 shared/
 ├── api/
 │   └── fetchDataset.ts
-├── lib/
-│   └── useDebouncedLoader.svelte.ts
-├── ui/
 ├── styles/
 │   ├── tokens/
-│   ├── utils/
+│   │   └── tokens.css
 │   └── DESIGN_SYSTEM_GUIDE.md
-├── fixtures/
-└── utils/
+└── fixtures/
 ```
+
+Note: `lib/`, `ui/`, `utils/`, and `styles/utils/` MIGRATION re-export shims were removed in TD-2.
+Consumers now import directly from packages:
+
+- `@dashboard-builder/platform-ui` (UI components, `cn()`, tokens, chart presets)
+- `@dashboard-builder/platform-core` (`useDebouncedLoader`, formatters)
 
 ## Что здесь находится
 
 - `api/` - client-side facade для dataset-backed BI/read-side загрузки
-- `lib/` - маленькие reusable composables
-- `styles/` - tokens, design system docs, style helpers
-- `ui/` - базовые UI primitives
+- `styles/` - CSS tokens, design system docs
 - `fixtures/` - mock datasets
-- `utils/` - formatters и мелкие helpers
 
 ## Самые важные точки входа
 
@@ -44,43 +43,17 @@ shared/
 
 Operational EMIS routes могут ходить напрямую в `/api/emis/*`, не через dataset layer.
 
-### `lib/useDebouncedLoader.svelte.ts`
-
-Главный helper для реактивной загрузки без request storms.
-
-Он:
-
-- debounces reloads
-- не допускает parallel load storm
-- игнорирует stale responses
-
 ### `styles/`
 
 Содержит:
 
 - `DESIGN_SYSTEM_GUIDE.md` — единый справочник по дизайн-системе
-- design tokens
-- `cn()` helper
+- `tokens/tokens.css` — CSS custom properties (imported by `app.css`)
 
-Если нужно менять UI системно, начинать стоит отсюда.
+UI components, `cn()`, tokens (TS), formatters, `useDebouncedLoader` now live in packages:
 
-### `ui/`
-
-Базовые примитивы, на которых строятся страницы:
-
-- button
-- input
-- select
-- card
-- chart
-- stat-card
-- badge
-- data-table
-- sidebar
-- skeleton
-- metric/progress primitives
-
-Это не бизнес-виджеты, а нижний слой интерфейса.
+- `@dashboard-builder/platform-ui`
+- `@dashboard-builder/platform-core`
 
 ## Canonical usage
 
@@ -97,6 +70,5 @@ const data = await fetchDataset({
 ## When to go here
 
 - если меняешь визуальную основу приложения
-- если ищешь reusable component, а не page-specific UI
 - если хочешь понять, как страницы грузят данные
 - если выносишь что-то в platform layer для EMIS или других доменов

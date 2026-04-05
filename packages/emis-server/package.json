@@ -20,6 +20,7 @@
 		"./modules/links/repository": "./src/modules/links/repository.ts",
 		"./modules/links/service": "./src/modules/links/service.ts",
 		"./modules/dictionaries/repository": "./src/modules/dictionaries/repository.ts",
+		"./modules/dictionaries/service": "./src/modules/dictionaries/service.ts",
 		"./modules/map/queries": "./src/modules/map/queries.ts",
 		"./modules/ship-routes/queries": "./src/modules/ship-routes/queries.ts"
 	},

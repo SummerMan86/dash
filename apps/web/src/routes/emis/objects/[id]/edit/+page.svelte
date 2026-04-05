@@ -2,7 +2,13 @@
 	import type { ActionData, PageData } from './$types';
 
 	import ObjectEditorForm from '$lib/features/emis-manual-entry/ObjectEditorForm.svelte';
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$shared/ui/card';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardHeader,
+		CardTitle
+	} from '@dashboard-builder/platform-ui';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 

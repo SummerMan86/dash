@@ -1,5 +1,5 @@
 import type { ProductSummary } from './types';
-import { formatNumber, formatCurrency, formatPercent } from '$shared/utils';
+import { formatNumber, formatCurrency, formatPercent } from '@dashboard-builder/platform-core';
 
 export type RecommendationType =
 	| 'restock'

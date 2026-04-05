@@ -12,26 +12,26 @@ For the overall operating loop, review flow, and model choices see [emis_agent_o
 
 In the default operating mode, Claude Opus acts as `lead-orchestrator` — a consolidated lead + orchestrator + worker. It spawns reviewer subagents and aggregates findings within one session.
 
-| Role | Owner | Model | Notes |
-| ---- | ----- | ----- | ----- |
-| `user` | Human | — | Task owner, final merge authority |
-| `lead-orchestrator` | Claude Opus | Opus | Consolidated lead + orchestrator + worker |
-| `architecture-reviewer` | Subagent | Sonnet | FSD, boundaries, complexity |
-| `security-reviewer` | Subagent | Sonnet | SQL safety, XSS, secrets, write-side |
-| `docs-reviewer` (EMIS: `docs-contracts-reviewer`) | Subagent | Sonnet | Docs, DB truth, runtime contracts |
-| `codex-reviewer` (EMIS: `code-reviewer`) | Subagent | Codex/GPT | Independent cross-model quality pass |
-| `ui-reviewer` | Subagent | Sonnet | Smoke test (on-demand) |
-| `ui-reviewer-deep` | Subagent | Opus | Deep UX/a11y audit (on-demand) |
-| `worker` | Subagent in worktree | Sonnet/Opus | Parallel bounded slices (on-demand) |
+| Role                                              | Owner                | Model       | Notes                                     |
+| ------------------------------------------------- | -------------------- | ----------- | ----------------------------------------- |
+| `user`                                            | Human                | —           | Task owner, final merge authority         |
+| `lead-orchestrator`                               | Claude Opus          | Opus        | Consolidated lead + orchestrator + worker |
+| `architecture-reviewer`                           | Subagent             | Sonnet      | FSD, boundaries, complexity               |
+| `security-reviewer`                               | Subagent             | Sonnet      | SQL safety, XSS, secrets, write-side      |
+| `docs-reviewer` (EMIS: `docs-contracts-reviewer`) | Subagent             | Sonnet      | Docs, DB truth, runtime contracts         |
+| `codex-reviewer` (EMIS: `code-reviewer`)          | Subagent             | Codex/GPT   | Independent cross-model quality pass      |
+| `ui-reviewer`                                     | Subagent             | Sonnet      | Smoke test (on-demand)                    |
+| `ui-reviewer-deep`                                | Subagent             | Opus        | Deep UX/a11y audit (on-demand)            |
+| `worker`                                          | Subagent in worktree | Sonnet/Opus | Parallel bounded slices (on-demand)       |
 
 ### External lead mode (optional, for critical changes)
 
 When the user routes a diff to a separate Codex/GPT-5.4 session:
 
-| Role | Owner | Notes |
-| ---- | ----- | ----- |
-| `lead-integrator` | Codex GPT-5.4 (separate session) | Independent integration verdict |
-| `user` | Human | Routes handoffs between Claude Opus and external lead |
+| Role              | Owner                            | Notes                                                 |
+| ----------------- | -------------------------------- | ----------------------------------------------------- |
+| `lead-integrator` | Codex GPT-5.4 (separate session) | Independent integration verdict                       |
+| `user`            | Human                            | Routes handoffs between Claude Opus and external lead |
 
 ---
 
@@ -121,11 +121,13 @@ When the user routes a diff to a separate Codex/GPT-5.4 session:
 ### Output format
 
 No violations:
+
 ```
 Architecture OK
 ```
 
 Violations found:
+
 ```
 [VIOLATION] <file>:<line> — <rule violated>
   Detail: <what's wrong>
@@ -179,11 +181,13 @@ Violations found:
 ### Output format
 
 No issues:
+
 ```
 No security issues found.
 ```
 
 Issues found:
+
 ```
 [CRITICAL|WARNING|INFO] <file>:<line> — <description>
   Recommendation: <how to fix>
@@ -238,11 +242,13 @@ Convention: `AGENTS.md` is canonical over `CLAUDE.md` if both exist.
 ### Output format
 
 Docs current:
+
 ```
 Docs up to date
 ```
 
 Updates needed:
+
 ```
 [UPDATE] <doc-file> — <what needs changing>
   Reason: <which code change triggers this>
@@ -306,11 +312,13 @@ Runs via `codex exec --sandbox read-only` with a focused prompt containing the d
 ```
 
 Each finding:
+
 ```
 [SEVERITY] file:line — description
 ```
 
 No issues:
+
 ```
 No issues found.
 ```
@@ -377,11 +385,13 @@ No issues found.
 ### Output format
 
 UI correct:
+
 ```
 UI OK — [route] renders correctly, no console errors.
 ```
 
 Issues found:
+
 ```
 [CRITICAL|WARNING] [route] — <description>
   Console: <error message if any>
@@ -442,6 +452,7 @@ All of `ui-reviewer` (smoke) plus:
 ```
 
 Each finding:
+
 ```
 [CRITICAL|WARNING|SUGGESTION] [route] — <description>
   Expected: <what should be>
@@ -471,6 +482,7 @@ Each finding:
 ### Scope
 
 One of:
+
 - One endpoint
 - One widget
 - One form

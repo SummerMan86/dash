@@ -1,6 +1,6 @@
 ---
 name: docs-reviewer
-description: "EMIS: docs-contracts-reviewer. Checks docs, DB truth, runtime contracts, and code stay in sync (AGENTS.md, CLAUDE.md, schema files, RUNTIME_CONTRACT.md). Run after every task that modifies code."
+description: 'EMIS: docs-contracts-reviewer. Checks docs, DB truth, runtime contracts, and code stay in sync (AGENTS.md, CLAUDE.md, schema files, RUNTIME_CONTRACT.md). Run after every task that modifies code.'
 tools: Read, Grep, Glob
 model: sonnet
 memory: project
@@ -53,6 +53,7 @@ Required follow-ups:
 ```
 
 Severity guide:
+
 - CRITICAL: DB schema changed but db/current_schema.sql not updated, runtime contract stale
 - WARNING: new route/endpoint not reflected in docs, contract changed but downstream docs reference old version
 - INFO: minor docs improvement, non-blocking

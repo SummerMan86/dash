@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { Button } from '$shared/ui/button';
-	import { StatCard } from '$shared/ui/stat-card';
-	import { ChartCard } from '$shared/ui/chart-card';
-	import { Chart } from '$shared/ui/chart';
-	import { Card, CardContent, CardHeader, CardTitle } from '$shared/ui/card';
-	import { lineChartPreset, getLineSeries } from '$entities/charts';
-	import { resolveCssColorVar } from '$shared/styles/tokens';
+	import { Button } from '@dashboard-builder/platform-ui';
+	import { StatCard } from '@dashboard-builder/platform-ui';
+	import { ChartCard } from '@dashboard-builder/platform-ui';
+	import { Chart } from '@dashboard-builder/platform-ui';
+	import { Card, CardContent, CardHeader, CardTitle } from '@dashboard-builder/platform-ui';
+	import { lineChartPreset, getLineSeries } from '@dashboard-builder/platform-ui';
+	import { resolveCssColorVar } from '@dashboard-builder/platform-ui';
 
 	import {
 		useDashboardEditor,

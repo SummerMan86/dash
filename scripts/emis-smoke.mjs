@@ -455,8 +455,14 @@ const checks = [
 			assertListMeta(data?.meta, 'vessel catalog bbox');
 			// When bbox covers the whole world, we expect results (same as without bbox)
 			for (const row of rows) {
-				assert(typeof row.lastLatitude === 'number', 'vessel catalog bbox: filtered row must have lastLatitude');
-				assert(typeof row.lastLongitude === 'number', 'vessel catalog bbox: filtered row must have lastLongitude');
+				assert(
+					typeof row.lastLatitude === 'number',
+					'vessel catalog bbox: filtered row must have lastLatitude'
+				);
+				assert(
+					typeof row.lastLongitude === 'number',
+					'vessel catalog bbox: filtered row must have lastLongitude'
+				);
 			}
 		}
 	),
@@ -669,7 +675,42 @@ const checks = [
 				params: { limit: 5 }
 			})
 		}
-	)
+	),
+
+	// --- Dictionary CRUD endpoints ---
+	jsonCheck('api:dictionaries:countries:list', '/api/emis/dictionaries/countries', (data) => {
+		assertArray(data?.rows, 'countries rows');
+		assert(data.rows.length > 0, 'countries: expected at least one seeded country');
+		const first = data.rows[0];
+		assert(typeof first.code === 'string', 'country must have code');
+		assert(typeof first.nameRu === 'string', 'country must have nameRu');
+		assert(typeof first.nameEn === 'string', 'country must have nameEn');
+	}),
+	jsonCheck('api:dictionaries:object-types:list', '/api/emis/dictionaries/object-types', (data) => {
+		assertArray(data?.rows, 'object-types rows');
+		assert(data.rows.length > 0, 'object-types: expected at least one seeded type');
+		const first = data.rows[0];
+		assert(typeof first.id === 'string', 'object type must have id');
+		assert(typeof first.code === 'string', 'object type must have code');
+		assert(typeof first.name === 'string', 'object type must have name');
+		assert(typeof first.geometryKind === 'string', 'object type must have geometryKind');
+	}),
+	jsonCheck('api:dictionaries:sources:list', '/api/emis/dictionaries/sources', (data) => {
+		assertArray(data?.rows, 'sources rows');
+		assert(data.rows.length > 0, 'sources: expected at least one seeded source');
+		const first = data.rows[0];
+		assert(typeof first.id === 'string', 'source must have id');
+		assert(typeof first.code === 'string', 'source must have code');
+		assert(typeof first.name === 'string', 'source must have name');
+		assert(typeof first.kind === 'string', 'source must have kind');
+		assert(typeof first.isActive === 'boolean', 'source must have isActive');
+	}),
+
+	// Dictionary admin page
+	pageCheck('/emis/admin/dictionaries', 'Dictionaries'),
+
+	// --- Auth pages (always accessible regardless of EMIS_AUTH_MODE) ---
+	pageCheck('/emis/login', 'EMIS')
 ];
 
 async function runChecks(baseUrl) {

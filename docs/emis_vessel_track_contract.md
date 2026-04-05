@@ -71,16 +71,16 @@ No new endpoints. Changes to existing endpoints:
 
 ## Component Responsibilities
 
-| Component | P1 Change |
-|---|---|
-| `+page.svelte` | Wire `flyToTarget`, remove `isVesselMode` guard on route data props, add bbox state from map |
-| `EmisMap.svelte` | Already supports `flyToTarget` — no changes needed |
-| `SearchResultsPanel.svelte` | Receive refreshed catalog when viewport changes |
-| `ShipRoutePanel.svelte` | No change (stays hidden in vessel mode) |
-| `filters.ts` | No change |
-| `/api/emis/ship-routes/vessels` | Add optional bbox parameter |
-| `queries.ts` (ship-routes) | Add bbox filtering to `listShipRouteVesselsQuery` |
-| `emis-ship-route/schema.ts` | Add bbox to `listEmisShipRouteVesselsQuerySchema` |
+| Component                       | P1 Change                                                                                    |
+| ------------------------------- | -------------------------------------------------------------------------------------------- |
+| `+page.svelte`                  | Wire `flyToTarget`, remove `isVesselMode` guard on route data props, add bbox state from map |
+| `EmisMap.svelte`                | Already supports `flyToTarget` — no changes needed                                           |
+| `SearchResultsPanel.svelte`     | Receive refreshed catalog when viewport changes                                              |
+| `ShipRoutePanel.svelte`         | No change (stays hidden in vessel mode)                                                      |
+| `filters.ts`                    | No change                                                                                    |
+| `/api/emis/ship-routes/vessels` | Add optional bbox parameter                                                                  |
+| `queries.ts` (ship-routes)      | Add bbox filtering to `listShipRouteVesselsQuery`                                            |
+| `emis-ship-route/schema.ts`     | Add bbox to `listEmisShipRouteVesselsQuerySchema`                                            |
 
 ## Out of Scope
 

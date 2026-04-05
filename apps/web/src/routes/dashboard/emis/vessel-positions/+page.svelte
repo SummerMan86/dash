@@ -1,13 +1,16 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 
-	import type { EmisMapSelectedFeature, EmisMapNewsFeatureProperties } from '$entities/emis-map';
-	import type { EmisShipRouteVessel } from '$entities/emis-ship-route';
-	import { useFilterWorkspace } from '$entities/filter';
-	import { formatCompact, formatDate, formatNumber } from '$shared/utils';
+	import type {
+		EmisMapSelectedFeature,
+		EmisMapNewsFeatureProperties
+	} from '@dashboard-builder/emis-contracts/emis-map';
+	import type { EmisShipRouteVessel } from '@dashboard-builder/emis-contracts/emis-ship-route';
+	import { useFilterWorkspace } from '@dashboard-builder/platform-filters';
+	import { formatCompact, formatDate, formatNumber } from '@dashboard-builder/platform-core';
 	import { EmisDrawer } from '$widgets/emis-drawer';
-	import { EmisMap } from '$widgets/emis-map';
-	import { EmisStatusBar } from '$widgets/emis-status-bar';
+	import { EmisMap } from '@dashboard-builder/emis-ui/emis-map';
+	import { EmisStatusBar } from '@dashboard-builder/emis-ui/emis-status-bar';
 
 	import { vesselPositionsFilters, VESSEL_POSITIONS_FILTER_TARGETS } from './filters';
 

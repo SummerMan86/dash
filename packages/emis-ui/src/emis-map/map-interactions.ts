@@ -42,7 +42,11 @@ export function createEmisMapInteractions(
 		popup = null;
 	}
 
-	function openFeaturePopup(targetMap: MapLibreMap, feature: EmisMapSelectedFeature, lngLat: LngLatLike) {
+	function openFeaturePopup(
+		targetMap: MapLibreMap,
+		feature: EmisMapSelectedFeature,
+		lngLat: LngLatLike
+	) {
 		vesselTooltip?.remove();
 		vesselTooltip = null;
 		popup?.remove();
