@@ -24,7 +24,7 @@ Current default order:
 1. ~~`M3` — health/readiness and API diagnostics~~ **completed** (`2026-04-05`, NW-4)
 2. ~~`M4` — MVE acceptance audit and sign-off~~ **completed** (`2026-04-05`, NW-5)
 3. `P1` — vessel historical track
-4. `P2` — offline maps ops hardening
+4. ~~`P2` — offline maps ops hardening~~ **completed** (`2026-04-05`)
 
 Start with `P1.1` unless a session explicitly chooses another bounded open slice.
 
@@ -104,46 +104,14 @@ Done when:
 
 - historical-track behavior is exercised automatically
 
-### P2. Offline Maps Ops Hardening
+### P2. Offline Maps Ops Hardening — COMPLETED (`2026-04-05`)
 
-Goal:
+All P2 subtasks delivered:
+- `P2.1` — Range support verified against production adapter-node (206 Partial Content confirmed via `sirv` embedded in `@sveltejs/adapter-node`)
+- `P2.2` — Post-deploy verification checklist added to `docs/emis_offline_maps_ops.md` (section 11): 5-step checklist with success/failure signals and failure decision tree
+- `P2.3` — Region-expansion workflow documented as repeatable recipe in `docs/emis_offline_maps_ops.md` (section 7): extract, place, manifest update, verify, rebuild, deploy; plus safe replacement and removal procedures; freshness checking expanded (section 8)
 
-- harden deployment behavior for offline PMTiles beyond local/dev success
-
-#### P2.1. Verify Range support in production-shaped adapter-node path
-
-Session scope: verification only.
-
-Done when:
-
-- Range behavior is confirmed against the actual production runtime path
-
-#### P2.2. Encode post-deploy checks in ops docs
-
-Session scope: docs only.
-
-Deliver:
-
-- exact post-deploy verification steps
-- expected success/failure signals
-
-Done when:
-
-- deploy verification is repeatable by another operator or agent
-
-#### P2.3. Define region-expansion workflow for offline assets
-
-Session scope: docs first, code only if broken.
-
-Answer:
-
-- how a new PMTiles region is added
-- how manifest freshness is updated
-- how old assets are replaced safely
-
-Done when:
-
-- region expansion is a documented recipe, not tribal knowledge
+Canonical reference: `docs/emis_offline_maps_ops.md`
 
 ## Locked Decisions
 

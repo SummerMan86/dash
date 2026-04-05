@@ -644,12 +644,22 @@ Status:
 Only after `NW-5`:
 
 1. `P1` — vessel historical track integration
-2. `P2` — offline maps ops hardening
+2. `P2` — offline maps ops hardening — **completed** (`2026-04-05`)
 
 Why this order:
 
 - `P1` gives the highest user-facing value after MVE closeout
 - `P2` is important, but it is ops hardening around an already working offline/maps slice, not the main remaining acceptance ambiguity
+
+### P2 Completion Summary
+
+All P2 subtasks completed on `2026-04-05` (docs/verification only, no code changes):
+
+- `P2.1` — Range support verified against production `adapter-node` build: `206 Partial Content` confirmed via `sirv` embedded in `@sveltejs/adapter-node@5.5.4`
+- `P2.2` — Post-deploy verification checklist (5 steps + failure decision tree) added to `docs/emis_offline_maps_ops.md` section 11
+- `P2.3` — Region-expansion workflow documented as repeatable recipe: extract, place, manifest, verify, rebuild, deploy; plus safe replacement/removal and freshness checking
+
+Verification: `pnpm check` green, `pnpm build` green, `pnpm emis:offline-smoke` 9/9 green
 
 ## Recommended Next Handoff To Lead-Tactical
 
