@@ -21,67 +21,14 @@ Closed waves, resolved decisions and historical rollout notes do not belong here
 
 Current default order:
 
-1. `M1` — access model and write guardrails closeout
-2. `M3` — health/readiness and API diagnostics
-3. `M4` — MVE acceptance audit and sign-off
-4. `P1` — vessel historical track
-5. `P2` — offline maps ops hardening
+1. `M3` — health/readiness and API diagnostics
+2. `M4` — MVE acceptance audit and sign-off
+3. `P1` — vessel historical track
+4. `P2` — offline maps ops hardening
 
-Start with `M1.1` unless a session explicitly chooses another bounded open slice.
+Start with `M3.1` unless a session explicitly chooses another bounded open slice.
 
 ## MVE Closeout
-
-### M1. Access Model And Write Guardrails
-
-Status:
-
-- access model is documented
-- dictionary scope is already frozen as `seed-managed for MVE`
-- remaining work is to finish implementation hardening and verification around write policy
-
-#### M1.1. Confirm the live write-policy contract against current code
-
-Session scope: read-only audit.
-
-Read:
-
-- `docs/emis_access_model.md`
-- `apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
-- EMIS write routes/actions
-
-Deliver:
-
-- explicit verdict: what is already enforced
-- explicit residual gap list if any write entry point still diverges
-
-Done when:
-
-- the next implementation slice can target one concrete residual gap instead of re-reading the whole policy discussion
-
-#### M1.2. Close any remaining shared-helper wiring gaps
-
-Session scope: bounded transport/infra repair only.
-
-Deliver:
-
-- all EMIS write entry points use the shared helper consistently
-- no ad hoc route-local write-policy logic remains
-
-Done when:
-
-- API and manual UI writes follow one policy path
-
-#### M1.3. Negative-path verification for strict mode
-
-Session scope: smoke/tests only.
-
-Deliver:
-
-- at least one negative verification for strict mode with missing actor identity
-
-Done when:
-
-- `WRITE_NOT_ALLOWED` behavior is enforced automatically, not only described in docs
 
 ### M3. Health, Readiness And API Error Logging
 

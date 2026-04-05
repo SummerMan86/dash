@@ -85,9 +85,9 @@
   - phase 2 exit criteria are met
   - ordinary bounded feature work is open again; architecture-line follow-up is repo-wide doc sync only if still needed
   - repo-wide doc sync follow-up (`DS-1` through `DS-4`) is completed on `2026-04-04` as a docs-only bounded package
-  - next strategic-tactical opening order is now explicit in `current_plan.md`:
-    - `NW-1` / `NW-2` — access model + write guardrails
-    - `NW-3` — dictionary/admin scope freeze
+  - `NW-1` and `NW-2` are closed
+  - `NW-3` is accepted after post-cleanup doc recheck on `2026-04-05`
+  - next strategic-tactical opening order is now:
     - `NW-4` — readiness and API error logging
     - `NW-5` — MVE acceptance audit and sign-off
     - only after that: `P1`, then `P2`
@@ -175,7 +175,15 @@
     - completed `P3.4` EMIS UI waiver closure
     - completed full baseline rerun and closed the remaining dataset/runtime blocker
     - completed `P3.6` bounded cleanup removing dead app-side dataset/db shims
-  - next chat may open `NW-1` or another explicitly re-prioritized bounded slice; it should not rerun `P3.1`-`P3.6`, `DS-1`-`DS-4`, `A5`, or the already-green baseline fixes
+  - on `2026-04-05`, `NW-3` was rechecked against the post-cleanup active doc set and accepted
+  - small doc-truth fixes were applied to:
+    - `docs/agents/lead-strategic/current_plan.md`
+    - `docs/emis_next_tasks_2026_03_22.md`
+  - what was fixed:
+    - removed stale `screen #6` wording from the `NW-3` acceptance narrative
+    - removed stale "recommended next handoff = NW-3" wording
+    - removed closed `M1` items from the active backlog and made `M3.1` the truthful next default slice
+  - next chat should open `NW-4` unless the user explicitly reprioritizes; it should not rerun `P3.1`-`P3.6`, `DS-1`-`DS-4`, `NW-1`, `NW-2`, `NW-3`, `A5`, or the already-green baseline fixes
 - Current planned slices:
   - `P3.1` — completed
   - `P3.2` — completed
@@ -183,9 +191,9 @@
   - `P3.4` — completed
   - `P3.5` — completed
   - `P3.6` — completed
-  - `NW-1` — access model freeze and write-policy design
-  - `NW-2` — centralized write guardrails rollout
-  - `NW-3` — dictionary/admin scope freeze
+  - `NW-1` — completed
+  - `NW-2` — completed
+  - `NW-3` — completed and accepted after doc cleanup recheck
   - `NW-4` — health/readiness and API error logging hardening
   - `NW-5` — MVE acceptance audit and sign-off
 - Wave constraints:

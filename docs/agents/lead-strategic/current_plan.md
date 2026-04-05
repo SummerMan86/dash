@@ -562,7 +562,7 @@ Status:
   - dictionary data managed through `db/seeds/` (001_countries, 002_object_types, 003_sources)
   - admin role explicitly deferred beyond MVE
 - docs aligned:
-  - `emis_mve_product_contract.md`: screen #6 and admin role marked as deferred beyond MVE
+  - `emis_mve_product_contract.md`: MVE scope now explicitly keeps dictionary management seed-managed and admin CRUD out of scope
   - `emis_session_bootstrap.md`: dictionary scope decision marked as done
   - `emis_access_model.md`: already correct (admin deferred, seed-managed)
 - review gate:
@@ -572,7 +572,7 @@ Status:
 #### NW-3 Acceptance Checklist
 - the team has one explicit answer: **seed-managed** ~~or `admin CRUD in MVE`~~
 - MVE docs stop implying both models at once — deferral notes added to MVE spec
-- active docs stop implying unfinished admin CRUD pages — screen #6 and admin role explicitly deferred
+- active docs stop implying unfinished admin CRUD pages — seed-managed dictionaries and deferred admin role are stated explicitly
 
 ### NW-4: Health/readiness and API error logging hardening
 - status: ready for handoff
@@ -636,6 +636,5 @@ Why this order:
 
 Continue the current wave in this order:
 
-1. `NW-3` — scope decision package (`M2.1` + branch)
-2. `NW-4` — observability package (`M3.1-M3.4`)
-3. `NW-5` — acceptance/sign-off package (`M4.1-M4.3`)
+1. `NW-4` — observability package (`M3.1-M3.4`)
+2. `NW-5` — acceptance/sign-off package (`M4.1-M4.3`)
