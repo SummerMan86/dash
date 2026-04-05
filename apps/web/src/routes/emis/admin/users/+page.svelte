@@ -17,7 +17,13 @@
 	const ROLES = ['viewer', 'editor', 'admin'] as const;
 
 	// --- Users state ---
-	type UserRow = { id: string; username: string; role: string; createdAt: string; updatedAt: string };
+	type UserRow = {
+		id: string;
+		username: string;
+		role: string;
+		createdAt: string;
+		updatedAt: string;
+	};
 	let users: UserRow[] = $state(data.users.map((u) => ({ ...u })));
 	let currentUserId = data.currentUserId;
 
@@ -174,7 +180,9 @@
 		<header class="space-y-3">
 			<div class="type-caption flex flex-wrap items-center gap-3 text-muted-foreground">
 				<a class="underline underline-offset-4" href="/emis">/emis workspace</a>
-				<a class="underline underline-offset-4" href="/emis/admin/dictionaries">/admin/dictionaries</a>
+				<a class="underline underline-offset-4" href="/emis/admin/dictionaries"
+					>/admin/dictionaries</a
+				>
 			</div>
 			<div class="space-y-2">
 				<div class="type-caption tracking-[0.24em] text-muted-foreground uppercase">EMIS Admin</div>
@@ -239,12 +247,8 @@
 										</td>
 										<td class="py-2">
 											<div class="flex gap-2">
-												<Button size="sm" onclick={saveEdit} loading={editSaving}>
-													Save
-												</Button>
-												<Button size="sm" variant="ghost" onclick={cancelEdit}>
-													Cancel
-												</Button>
+												<Button size="sm" onclick={saveEdit} loading={editSaving}>Save</Button>
+												<Button size="sm" variant="ghost" onclick={cancelEdit}>Cancel</Button>
 											</div>
 										</td>
 									</tr>
@@ -305,8 +309,8 @@
 				<CardHeader>
 					<CardTitle class="text-destructive">Confirm Deletion</CardTitle>
 					<CardDescription>
-						Are you sure you want to delete user <strong>{userToDelete?.username}</strong>?
-						This action cannot be undone. All sessions of this user will be terminated.
+						Are you sure you want to delete user <strong>{userToDelete?.username}</strong>? This
+						action cannot be undone. All sessions of this user will be terminated.
 					</CardDescription>
 				</CardHeader>
 				<CardContent class="space-y-4">
@@ -318,17 +322,10 @@
 						</div>
 					{/if}
 					<div class="flex gap-3">
-						<Button
-							size="sm"
-							variant="destructive"
-							onclick={confirmDelete}
-							loading={deleteSaving}
-						>
+						<Button size="sm" variant="destructive" onclick={confirmDelete} loading={deleteSaving}>
 							Delete User
 						</Button>
-						<Button size="sm" variant="ghost" onclick={cancelDelete}>
-							Cancel
-						</Button>
+						<Button size="sm" variant="ghost" onclick={cancelDelete}>Cancel</Button>
 					</div>
 				</CardContent>
 			</Card>
@@ -351,11 +348,7 @@
 					</div>
 				{/if}
 				<div class="grid gap-3 sm:grid-cols-4">
-					<Input
-						bind:value={newUser.username}
-						placeholder="Username"
-						class="h-8"
-					/>
+					<Input bind:value={newUser.username} placeholder="Username" class="h-8" />
 					<Input
 						bind:value={newUser.password}
 						type="password"

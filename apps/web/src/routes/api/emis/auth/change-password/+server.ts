@@ -19,8 +19,14 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 
 import { changePasswordSchema } from '@dashboard-builder/emis-contracts/emis-user';
-import { getUserWithHash, updateUser } from '@dashboard-builder/emis-server/modules/users/repository';
-import { verifyPassword, hashPassword } from '@dashboard-builder/emis-server/modules/users/password';
+import {
+	getUserWithHash,
+	updateUser
+} from '@dashboard-builder/emis-server/modules/users/repository';
+import {
+	verifyPassword,
+	hashPassword
+} from '@dashboard-builder/emis-server/modules/users/password';
 import { EmisError } from '@dashboard-builder/emis-server/infra/errors';
 import { handleEmisRoute, parseJsonBody } from '$lib/server/emis/infra/http';
 import { deleteUserSessionsExcept, SESSION_COOKIE_NAME } from '$lib/server/emis/infra/auth';

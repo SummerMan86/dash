@@ -301,9 +301,7 @@ export async function authenticateUser(
 				'Migrate to DB users (emis.users table) for production.'
 		);
 
-		const envUser = envUsers.find(
-			(u) => u.username === username && u.password === password
-		);
+		const envUser = envUsers.find((u) => u.username === username && u.password === password);
 		if (!envUser) return null;
 
 		return {
@@ -349,9 +347,7 @@ async function isDbAvailable(): Promise<boolean> {
 			_dbAvailable = true;
 			return true;
 		} catch {
-			console.warn(
-				'[emis:auth] DB session store unavailable, falling back to in-memory sessions.'
-			);
+			console.warn('[emis:auth] DB session store unavailable, falling back to in-memory sessions.');
 			_dbAvailable = false;
 			return false;
 		} finally {

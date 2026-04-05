@@ -466,19 +466,15 @@ const checks = [
 		kind: 'auth',
 		run: async (baseUrl, ctx) => {
 			assert(ctx.editorSession, 'prerequisite: editor session not available');
-			const { response, data } = await fetchJson(
-				baseUrl,
-				'/api/emis/auth/change-password',
-				{
-					method: 'POST',
-					headers: { 'content-type': 'application/json' },
-					body: JSON.stringify({
-						currentPassword: 'totally-wrong-password',
-						newPassword: 'NewPassword123!'
-					}),
-					sessionCookie: ctx.editorSession
-				}
-			);
+			const { response, data } = await fetchJson(baseUrl, '/api/emis/auth/change-password', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({
+					currentPassword: 'totally-wrong-password',
+					newPassword: 'NewPassword123!'
+				}),
+				sessionCookie: ctx.editorSession
+			});
 			assert(response.status === 403, `expected 403, got ${response.status}`);
 			assert(
 				data?.code === 'INVALID_PASSWORD',
@@ -495,19 +491,15 @@ const checks = [
 		run: async (baseUrl, ctx) => {
 			assert(ctx.editorSession, 'prerequisite: editor session not available');
 			const newPassword = `NewEditorPass!${RUN_ID}`;
-			const { response, data } = await fetchJson(
-				baseUrl,
-				'/api/emis/auth/change-password',
-				{
-					method: 'POST',
-					headers: { 'content-type': 'application/json' },
-					body: JSON.stringify({
-						currentPassword: EDITOR_USER.password,
-						newPassword
-					}),
-					sessionCookie: ctx.editorSession
-				}
-			);
+			const { response, data } = await fetchJson(baseUrl, '/api/emis/auth/change-password', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({
+					currentPassword: EDITOR_USER.password,
+					newPassword
+				}),
+				sessionCookie: ctx.editorSession
+			});
 			assert(response.status === 200, `expected 200, got ${response.status}`);
 			assert(data?.ok === true, 'change-password response must have ok: true');
 
@@ -585,7 +577,9 @@ async function runChecks(baseUrl) {
 				durationMs: Date.now() - checkStartedAt,
 				error: error instanceof Error ? error.message : String(error)
 			});
-			console.log(`FAIL ${check.name} -- ${error instanceof Error ? error.message : String(error)}`);
+			console.log(
+				`FAIL ${check.name} -- ${error instanceof Error ? error.message : String(error)}`
+			);
 		}
 	}
 
@@ -618,7 +612,9 @@ async function main() {
 		console.log(`[emis:auth-smoke] run=${RUN_ID} creating test users...`);
 		await createTestUser(ADMIN_USER);
 		await createTestUser(EDITOR_USER);
-		console.log(`[emis:auth-smoke] test users created: ${ADMIN_USER.username}, ${EDITOR_USER.username}`);
+		console.log(
+			`[emis:auth-smoke] test users created: ${ADMIN_USER.username}, ${EDITOR_USER.username}`
+		);
 
 		if (baseUrl) {
 			console.log(`[emis:auth-smoke] using external server ${baseUrl}`);

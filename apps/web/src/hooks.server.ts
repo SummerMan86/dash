@@ -117,10 +117,7 @@ function emisAuthError(
 		code,
 		message
 	});
-	return json(
-		{ error: message, code },
-		{ status, headers: { 'x-request-id': requestId } }
-	);
+	return json({ error: message, code }, { status, headers: { 'x-request-id': requestId } });
 }
 
 // ============================================================================
@@ -159,13 +156,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 				// Admin API routes require admin role for all methods
 				// (docs/emis_access_model.md section 5 — /api/emis/admin/* is admin-only)
 				if (isAdminApiRoute(pathname) && !hasMinRole(session.role, 'admin')) {
-					return emisAuthError(
-						event.request,
-						pathname,
-						403,
-						'FORBIDDEN',
-						'Admin access required'
-					);
+					return emisAuthError(event.request, pathname, 403, 'FORBIDDEN', 'Admin access required');
 				}
 
 				// Dictionary API write routes require admin role
@@ -194,13 +185,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 				// Admin pages: require admin role
 				if (isAdminRoute(pathname) && !hasMinRole(session.role, 'admin')) {
-					return emisAuthError(
-						event.request,
-						pathname,
-						403,
-						'FORBIDDEN',
-						'Admin access required'
-					);
+					return emisAuthError(event.request, pathname, 403, 'FORBIDDEN', 'Admin access required');
 				}
 			}
 		}

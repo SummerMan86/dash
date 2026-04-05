@@ -172,10 +172,10 @@ This section is the canonical auth contract for production EMIS. The DF-3 implem
 
 Auth behavior is controlled by `EMIS_AUTH_MODE` env var:
 
-| Value     | When                                          | Behavior                                                                                    |
-| --------- | --------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `none`    | Dev/local, smoke tests (explicit opt-out)     | No session required. Actor resolved from headers (current MVE behavior). No login redirect. |
-| `session` | **Default.** Production and all deployments.  | Cookie-based sessions. Unauthenticated requests to protected routes redirect to login.      |
+| Value     | When                                         | Behavior                                                                                    |
+| --------- | -------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `none`    | Dev/local, smoke tests (explicit opt-out)    | No session required. Actor resolved from headers (current MVE behavior). No login redirect. |
+| `session` | **Default.** Production and all deployments. | Cookie-based sessions. Unauthenticated requests to protected routes redirect to login.      |
 
 **Default change (AUTH-7):** if `EMIS_AUTH_MODE` is not set, defaults to **`session`** (previously `none`). Dev workflows and smoke scripts must explicitly set `EMIS_AUTH_MODE=none` if auth is not desired. This is a **breaking change** from DF-3.
 
@@ -215,11 +215,13 @@ Session TTL is configurable via `EMIS_SESSION_TTL_HOURS` env var (default: 24).
 **Fallback (transition period):** env var `EMIS_USERS` (JSON array, same format as DF-3). The env fallback is used only when `emis.users` table is empty or unreachable. When DB users exist, `EMIS_USERS` env is ignored.
 
 Format for env fallback (unchanged from DF-3):
+
 ```
 EMIS_USERS='[{"id":"admin","username":"Admin","password":"admin123","role":"admin"}]'
 ```
 
 Resolution order in `getConfiguredUsers()`:
+
 1. Query `emis.users` table. If rows exist, use them (DB is source of truth).
 2. If table is empty or DB is unreachable, parse `EMIS_USERS` env var (with deprecation warning).
 3. If neither is available and `EMIS_ADMIN_PASSWORD` is set, auto-create admin user (see Initial Admin below).
@@ -229,13 +231,13 @@ Resolution order in `getConfiguredUsers()`:
 
 **Algorithm:** bcrypt.
 
-| Parameter    | Value                                  |
-| ------------ | -------------------------------------- |
-| Algorithm    | bcrypt                                 |
-| Cost factor  | 12 (default)                           |
-| Configurable | `EMIS_BCRYPT_ROUNDS` env var           |
-| Min rounds   | 10 (enforced, lower values rejected)   |
-| Max rounds   | 14 (enforced, higher values rejected)  |
+| Parameter    | Value                                 |
+| ------------ | ------------------------------------- |
+| Algorithm    | bcrypt                                |
+| Cost factor  | 12 (default)                          |
+| Configurable | `EMIS_BCRYPT_ROUNDS` env var          |
+| Min rounds   | 10 (enforced, lower values rejected)  |
+| Max rounds   | 14 (enforced, higher values rejected) |
 
 `authenticateUser()` changes from plaintext comparison to `bcrypt.compare()`. The async variant must be used to avoid blocking the event loop.
 
@@ -248,6 +250,7 @@ Passwords in `EMIS_USERS` env var remain plaintext for backward compatibility du
 **Fallback:** in-memory `Map<sessionId, EmisSession>` if DB is unreachable (graceful degradation). Sessions created in-memory are lost on server restart.
 
 Session lifecycle:
+
 - `createSession()`: INSERT into `emis.sessions`, return session ID.
 - `getSession()`: SELECT + expiry check. Expired sessions return null and are lazily deleted.
 - `deleteSession()`: DELETE from `emis.sessions`.
@@ -268,16 +271,17 @@ For fresh deployments without any users in the DB:
 
 API endpoints (admin role required):
 
-| Route                          | Method   | Purpose                          |
-| ------------------------------ | -------- | -------------------------------- |
-| `/api/emis/admin/users`        | `GET`    | List all users (no password_hash)|
-| `/api/emis/admin/users`        | `POST`   | Create user (username, password, role) |
-| `/api/emis/admin/users/:id`    | `PATCH`  | Update user (role, reset password) |
-| `/api/emis/admin/users/:id`    | `DELETE` | Delete user (hard delete)        |
+| Route                       | Method   | Purpose                                |
+| --------------------------- | -------- | -------------------------------------- |
+| `/api/emis/admin/users`     | `GET`    | List all users (no password_hash)      |
+| `/api/emis/admin/users`     | `POST`   | Create user (username, password, role) |
+| `/api/emis/admin/users/:id` | `PATCH`  | Update user (role, reset password)     |
+| `/api/emis/admin/users/:id` | `DELETE` | Delete user (hard delete)              |
 
 UI page: `/emis/admin/users` — list, create, edit, delete users.
 
 Constraints:
+
 - Admin cannot delete their own account.
 - `password_hash` is never returned in API responses.
 - Password field in create/update is optional on PATCH (omit to keep current password).
@@ -287,19 +291,21 @@ Constraints:
 
 API endpoint (any authenticated user):
 
-| Route                              | Method | Purpose                    |
-| ---------------------------------- | ------ | -------------------------- |
-| `/api/emis/auth/change-password`   | `POST` | Change own password        |
+| Route                            | Method | Purpose             |
+| -------------------------------- | ------ | ------------------- |
+| `/api/emis/auth/change-password` | `POST` | Change own password |
 
 Request body:
+
 ```json
 {
-  "currentPassword": "string",
-  "newPassword": "string"
+	"currentPassword": "string",
+	"newPassword": "string"
 }
 ```
 
 Behavior:
+
 1. Verify `currentPassword` against stored bcrypt hash.
 2. Validate `newPassword`: minimum 8 characters (configurable via `EMIS_MIN_PASSWORD_LENGTH`, default 8).
 3. Hash `newPassword` with bcrypt, update `emis.users.password_hash`.
@@ -370,6 +376,7 @@ export function assertWriteContext(
 **After AUTH-7 (default switch):** existing smoke scripts (`pnpm emis:smoke`, `pnpm emis:write-smoke`) must explicitly set `EMIS_AUTH_MODE=none` in their env. This is a breaking change from DF-3 where the default was `none`.
 
 Dedicated auth smoke script `pnpm emis:auth-smoke` tests auth flows in session mode:
+
 - Login with valid credentials -> 200 + session cookie
 - Login with invalid credentials -> failure
 - Access protected route without session -> 401/redirect
@@ -435,28 +442,28 @@ COMMENT ON COLUMN emis.sessions.expires_at IS 'Session expiry; default TTL 24h, 
 
 ### Env var summary
 
-| Variable                 | Default     | Purpose                                                      |
-| ------------------------ | ----------- | ------------------------------------------------------------ |
-| `EMIS_AUTH_MODE`         | `session`   | Auth mode: `none` (dev/smoke) or `session` (default)        |
-| `EMIS_USERS`             | (none)      | Legacy env-based user list (JSON array). Transition fallback.|
-| `EMIS_ADMIN_PASSWORD`    | (none)      | Auto-create admin on first start if DB users table is empty  |
-| `EMIS_BCRYPT_ROUNDS`     | `12`        | bcrypt cost factor (10..14)                                  |
-| `EMIS_SESSION_TTL_HOURS` | `24`        | Session time-to-live in hours                                |
-| `EMIS_MIN_PASSWORD_LENGTH`| `8`        | Minimum password length for change-password endpoint         |
-| `EMIS_WRITE_POLICY`      | `permissive`| Write-policy strictness (see section 4)                      |
+| Variable                   | Default      | Purpose                                                       |
+| -------------------------- | ------------ | ------------------------------------------------------------- |
+| `EMIS_AUTH_MODE`           | `session`    | Auth mode: `none` (dev/smoke) or `session` (default)          |
+| `EMIS_USERS`               | (none)       | Legacy env-based user list (JSON array). Transition fallback. |
+| `EMIS_ADMIN_PASSWORD`      | (none)       | Auto-create admin on first start if DB users table is empty   |
+| `EMIS_BCRYPT_ROUNDS`       | `12`         | bcrypt cost factor (10..14)                                   |
+| `EMIS_SESSION_TTL_HOURS`   | `24`         | Session time-to-live in hours                                 |
+| `EMIS_MIN_PASSWORD_LENGTH` | `8`          | Minimum password length for change-password endpoint          |
+| `EMIS_WRITE_POLICY`        | `permissive` | Write-policy strictness (see section 4)                       |
 
 ### Migration plan (AUTH-2 through AUTH-7)
 
 The migration is non-breaking: each slice adds capability without removing the previous one. Env-based users and in-memory sessions continue to work during the transition period.
 
-| Slice  | What changes                                   | Breaking? | Env fallback active? |
-| ------ | ---------------------------------------------- | --------- | -------------------- |
-| AUTH-2 | Add `emis.users` + `emis.sessions` tables      | No        | Yes (env still works)|
-| AUTH-3 | bcrypt hashing + DB user store as primary       | No        | Yes (env fallback if DB empty) |
-| AUTH-4 | DB session store as primary                     | No        | Yes (in-memory fallback if no DB) |
-| AUTH-5 | Admin user management API + UI                  | No        | N/A                  |
-| AUTH-6 | Change password API                             | No        | N/A                  |
-| AUTH-7 | Default `EMIS_AUTH_MODE` switches to `session`  | **Yes**   | Safety net fallback  |
+| Slice  | What changes                                   | Breaking? | Env fallback active?              |
+| ------ | ---------------------------------------------- | --------- | --------------------------------- |
+| AUTH-2 | Add `emis.users` + `emis.sessions` tables      | No        | Yes (env still works)             |
+| AUTH-3 | bcrypt hashing + DB user store as primary      | No        | Yes (env fallback if DB empty)    |
+| AUTH-4 | DB session store as primary                    | No        | Yes (in-memory fallback if no DB) |
+| AUTH-5 | Admin user management API + UI                 | No        | N/A                               |
+| AUTH-6 | Change password API                            | No        | N/A                               |
+| AUTH-7 | Default `EMIS_AUTH_MODE` switches to `session` | **Yes**   | Safety net fallback               |
 
 After AUTH-7, the `EMIS_USERS` env var is deprecated but still functional. It will be removed in a future cleanup slice.
 

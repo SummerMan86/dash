@@ -35,9 +35,7 @@ export const updateUserSchema = z
 
 /** Schema for changing own password (POST /api/emis/auth/change-password). */
 export const changePasswordSchema = z.object({
-	currentPassword: z
-		.string()
-		.min(1, 'currentPassword is required'),
+	currentPassword: z.string().min(1, 'currentPassword is required'),
 	newPassword: z
 		.string()
 		.min(8, 'newPassword must be at least 8 characters')

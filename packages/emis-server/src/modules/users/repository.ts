@@ -10,10 +10,7 @@
 
 import type { PoolClient } from 'pg';
 
-import type {
-	EmisUser,
-	EmisUserWithHash
-} from '@dashboard-builder/emis-contracts/emis-user';
+import type { EmisUser, EmisUserWithHash } from '@dashboard-builder/emis-contracts/emis-user';
 
 import { getDb } from '../../infra/db';
 
@@ -33,10 +30,7 @@ export async function listUsers(client?: PoolClient): Promise<EmisUser[]> {
 }
 
 /** Get user by ID. Returns null if not found. No password_hash. */
-export async function getUserById(
-	id: string,
-	client?: PoolClient
-): Promise<EmisUser | null> {
+export async function getUserById(id: string, client?: PoolClient): Promise<EmisUser | null> {
 	const db = getDb(client);
 	const result = await db.query(
 		`SELECT id, username, role, created_at, updated_at
@@ -154,10 +148,7 @@ export async function updateUser(
 }
 
 /** Delete a user by ID. Returns true if deleted, false if not found. */
-export async function deleteUser(
-	id: string,
-	client?: PoolClient
-): Promise<boolean> {
+export async function deleteUser(id: string, client?: PoolClient): Promise<boolean> {
 	const db = getDb(client);
 	const result = await db.query('DELETE FROM emis.users WHERE id = $1', [id]);
 	return (result.rowCount ?? 0) > 0;
@@ -177,10 +168,7 @@ export async function usernameExists(
 		);
 		return (result.rowCount ?? 0) > 0;
 	}
-	const result = await db.query(
-		'SELECT 1 FROM emis.users WHERE username = $1 LIMIT 1',
-		[username]
-	);
+	const result = await db.query('SELECT 1 FROM emis.users WHERE username = $1 LIMIT 1', [username]);
 	return (result.rowCount ?? 0) > 0;
 }
 

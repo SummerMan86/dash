@@ -88,10 +88,7 @@ export async function getSession(
 /**
  * Delete a specific session.
  */
-export async function deleteSession(
-	sessionId: string,
-	client?: PoolClient
-): Promise<void> {
+export async function deleteSession(sessionId: string, client?: PoolClient): Promise<void> {
 	const db = getDb(client);
 	await db.query('DELETE FROM emis.sessions WHERE id = $1', [sessionId]);
 }
@@ -100,10 +97,7 @@ export async function deleteSession(
  * Delete all sessions for a given user.
  * Used for user deactivation / admin password reset.
  */
-export async function deleteUserSessions(
-	userId: string,
-	client?: PoolClient
-): Promise<void> {
+export async function deleteUserSessions(userId: string, client?: PoolClient): Promise<void> {
 	const db = getDb(client);
 	await db.query('DELETE FROM emis.sessions WHERE user_id = $1', [userId]);
 }
@@ -118,23 +112,19 @@ export async function deleteUserSessionsExcept(
 	client?: PoolClient
 ): Promise<void> {
 	const db = getDb(client);
-	await db.query(
-		'DELETE FROM emis.sessions WHERE user_id = $1 AND id != $2',
-		[userId, keepSessionId]
-	);
+	await db.query('DELETE FROM emis.sessions WHERE user_id = $1 AND id != $2', [
+		userId,
+		keepSessionId
+	]);
 }
 
 /**
  * Delete all expired sessions.
  * Can be called periodically or on-demand for bulk cleanup.
  */
-export async function cleanupExpiredSessions(
-	client?: PoolClient
-): Promise<number> {
+export async function cleanupExpiredSessions(client?: PoolClient): Promise<number> {
 	const db = getDb(client);
-	const result = await db.query(
-		'DELETE FROM emis.sessions WHERE expires_at < now()'
-	);
+	const result = await db.query('DELETE FROM emis.sessions WHERE expires_at < now()');
 	return result.rowCount ?? 0;
 }
 
@@ -147,10 +137,7 @@ export async function getSessionUsername(
 	client?: PoolClient
 ): Promise<string | null> {
 	const db = getDb(client);
-	const result = await db.query(
-		'SELECT username FROM emis.users WHERE id = $1',
-		[userId]
-	);
+	const result = await db.query('SELECT username FROM emis.users WHERE id = $1', [userId]);
 	if (result.rowCount === 0) return null;
 	return result.rows[0].username as string;
 }

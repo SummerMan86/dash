@@ -3,6 +3,7 @@
 ## Цель
 
 Превратить текущую базовую auth (DF-3: env-based users, plaintext passwords, in-memory sessions, opt-in mode) в production-ready систему:
+
 - Auth обязателен по умолчанию
 - Пароли в bcrypt
 - Users в БД с admin UI
@@ -30,6 +31,7 @@
 ## Slices
 
 ### AUTH-1: Contract freeze — production auth design (docs only)
+
 - status: ready for handoff
 - scope:
   - Обновить `docs/emis_access_model.md` section 5 с новым контрактом
@@ -45,6 +47,7 @@
 - done when: контракт заморожен, migration plan ясен
 
 ### AUTH-2: DB schema — users and sessions tables
+
 - status: depends on AUTH-1
 - scope:
   - Создать таблицу `emis.users`:
@@ -75,6 +78,7 @@
   - `pnpm check`, `pnpm build` green
 
 ### AUTH-3: Bcrypt password hashing + DB user store
+
 - status: depends on AUTH-2
 - scope:
   - Добавить `bcrypt` dependency (или `@node-rs/bcrypt` для performance)
@@ -95,6 +99,7 @@
   - `pnpm check`, `pnpm build`, `pnpm lint:boundaries` green
 
 ### AUTH-4: DB session persistence
+
 - status: depends on AUTH-2
 - scope:
   - Рефакторить session store из in-memory Map в DB-backed:
@@ -113,6 +118,7 @@
   - `pnpm check`, `pnpm build` green
 
 ### AUTH-5: Admin user management UI
+
 - status: depends on AUTH-3
 - scope:
   - API endpoints:
@@ -139,6 +145,7 @@
   - Smoke checks для user management API
 
 ### AUTH-6: Change password flow
+
 - status: depends on AUTH-3
 - scope:
   - API: `POST /api/emis/auth/change-password` (any authenticated user)
@@ -161,6 +168,7 @@
   - `pnpm check`, `pnpm build` green
 
 ### AUTH-7: Default auth mode switch + smoke coverage
+
 - status: depends on AUTH-3, AUTH-4
 - scope:
   - Переключить `EMIS_AUTH_MODE` default с `none` на `session`
@@ -184,6 +192,7 @@
   - `pnpm check`, `pnpm build` green
 
 ### AUTH-8: Governance closure and final baseline
+
 - status: depends on all above
 - scope:
   - Full baseline: all 6 canonical checks + auth smoke

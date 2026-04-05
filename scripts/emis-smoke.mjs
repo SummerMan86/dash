@@ -731,10 +731,7 @@ const checks = [
 					const first = data.rows[0];
 					assert(typeof first.id === 'string', 'user must have id');
 					assert(typeof first.username === 'string', 'user must have username');
-					assert(
-						['viewer', 'editor', 'admin'].includes(first.role),
-						'user must have valid role'
-					);
+					assert(['viewer', 'editor', 'admin'].includes(first.role), 'user must have valid role');
 					assert(typeof first.createdAt === 'string', 'user must have createdAt');
 					assert(first.passwordHash === undefined, 'user must NOT expose passwordHash');
 					assert(first.password_hash === undefined, 'user must NOT expose password_hash');
@@ -751,7 +748,10 @@ const checks = [
 			const { response, text } = await fetchText(baseUrl, '/emis/admin/users');
 			// When DB has emis.users table, page renders normally
 			if (response.ok) {
-				assert(text.includes('User Management'), '/emis/admin/users is missing marker "User Management"');
+				assert(
+					text.includes('User Management'),
+					'/emis/admin/users is missing marker "User Management"'
+				);
 				return { status: response.status, marker: 'User Management' };
 			}
 			// When emis.users table is missing, server returns 500 — acceptable in smoke env
