@@ -26,8 +26,11 @@ function parseShipRouteVesselsQuery(url: URL) {
 		offsetCode: 'INVALID_SHIP_ROUTE_VESSELS_OFFSET'
 	});
 
+	const rawBbox = url.searchParams.get('bbox')?.trim() || undefined;
+
 	const parsed = listEmisShipRouteVesselsQuerySchema.safeParse({
 		q: url.searchParams.get('q')?.trim() || undefined,
+		bbox: rawBbox,
 		limit: paging.limit,
 		offset: paging.offset
 	});

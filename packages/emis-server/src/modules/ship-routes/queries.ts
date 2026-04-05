@@ -44,6 +44,21 @@ export async function listShipRouteVesselsQuery(
 	const conditions = ['ship_hbk_id IS NOT NULL'];
 	const values: unknown[] = [];
 
+	if (filters.bbox) {
+		const [west, south, east, north] = filters.bbox;
+		conditions.push('last_latitude IS NOT NULL', 'last_longitude IS NOT NULL');
+		values.push(west);
+		const westParam = `$${values.length}`;
+		values.push(east);
+		const eastParam = `$${values.length}`;
+		values.push(south);
+		const southParam = `$${values.length}`;
+		values.push(north);
+		const northParam = `$${values.length}`;
+		conditions.push(`last_longitude >= ${westParam} AND last_longitude <= ${eastParam}`);
+		conditions.push(`last_latitude >= ${southParam} AND last_latitude <= ${northParam}`);
+	}
+
 	if (filters.q) {
 		values.push(`%${filters.q}%`);
 		const qParam = `$${values.length}`;

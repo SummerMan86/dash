@@ -1,9 +1,12 @@
 import { z } from 'zod';
 
+import { mapBboxSchema } from '../../emis-map/model/schema';
+
 const routeDateTimeSchema = z.string().datetime({ offset: true });
 
 export const listEmisShipRouteVesselsQuerySchema = z.object({
 	q: z.string().trim().min(1).max(255).optional(),
+	bbox: mapBboxSchema.optional(),
 	limit: z.number().int().min(1).max(500).default(250),
 	offset: z.number().int().min(0).default(0)
 });

@@ -59,6 +59,7 @@
 		onRouteFeatureSelect?: (feature: EmisMapSelectedRouteFeature) => void;
 		onVesselsLoaded?: (data: OverlayFeatureData) => void;
 		onNewsLoaded?: (data: OverlayFeatureData) => void;
+		onBoundsChange?: (bbox: string) => void;
 		diagnostics?: boolean;
 		showFitBounds?: boolean;
 		mapHeight?: string;
@@ -81,6 +82,7 @@
 		onRouteFeatureSelect,
 		onVesselsLoaded,
 		onNewsLoaded,
+		onBoundsChange,
 		diagnostics = true,
 		showFitBounds = true,
 		mapHeight = 'h-[420px]',
@@ -336,6 +338,7 @@
 			vesselsCount = vessels.features.length;
 			resolvedBbox = bbox;
 			resolvedOverlayKey = overlayKey;
+			onBoundsChange?.(bbox);
 
 			if (vessels.features.length > 0) {
 				onVesselsLoaded?.({ features: vessels.features, total: vessels.features.length });

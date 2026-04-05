@@ -446,6 +446,22 @@ const checks = [
 	),
 	errorCheck('contract:map-vessels:no-bbox', '/api/emis/map/vessels', 400),
 
+	// --- Vessel catalog: viewport-aware bbox filtering (P1.4) ---
+	jsonCheck(
+		'api:ship-routes:vessels:bbox',
+		'/api/emis/ship-routes/vessels?bbox=-180,-90,180,90&limit=5',
+		(data) => {
+			const rows = assertArray(data?.rows, 'vessel catalog bbox rows');
+			assertListMeta(data?.meta, 'vessel catalog bbox');
+			// When bbox covers the whole world, we expect results (same as without bbox)
+			for (const row of rows) {
+				assert(typeof row.lastLatitude === 'number', 'vessel catalog bbox: filtered row must have lastLatitude');
+				assert(typeof row.lastLongitude === 'number', 'vessel catalog bbox: filtered row must have lastLongitude');
+			}
+		}
+	),
+	errorCheck('contract:vessels:bad-bbox', '/api/emis/ship-routes/vessels?bbox=invalid', 400),
+
 	// --- Runtime contract: meta shape on list endpoints ---
 	jsonCheck('contract:search-objects:meta', '/api/emis/search/objects?limit=3&offset=0', (data) => {
 		assertArray(data?.rows, 'search objects rows');

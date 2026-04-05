@@ -643,13 +643,25 @@ Status:
 
 Only after `NW-5`:
 
-1. `P1` — vessel historical track integration
+1. `P1` — vessel historical track integration — **completed** (`2026-04-04`)
 2. `P2` — offline maps ops hardening — **completed** (`2026-04-05`)
 
 Why this order:
 
 - `P1` gives the highest user-facing value after MVE closeout
 - `P2` is important, but it is ops hardening around an already working offline/maps slice, not the main remaining acceptance ambiguity
+
+### P1 Completion Summary
+
+All P1 subtasks completed on `2026-04-04`:
+
+- `P1.1` — Behavior contract frozen in `docs/emis_vessel_track_contract.md`: track loading trigger, data flow, flyTo, viewport-aware catalog
+- `P1.2` — Historical track now renders on map in vessel mode (removed `isVesselMode` guards on route data props)
+- `P1.3` — FlyTo on vessel selection wired via `vesselFlyToTarget` derived state + existing EmisMap `flyToTarget` prop
+- `P1.4` — Viewport-aware vessel catalog: optional `bbox` parameter on `/api/emis/ship-routes/vessels`, `onBoundsChange` callback on EmisMap, debounced catalog reload on viewport change
+- `P1.5` — 2 new smoke checks: `api:ship-routes:vessels:bbox` and `contract:vessels:bad-bbox`
+
+Verification: all 6 canonical checks green, `pnpm emis:smoke` 34/34
 
 ### P2 Completion Summary
 
@@ -666,7 +678,9 @@ Verification: `pnpm check` green, `pnpm build` green, `pnpm emis:offline-smoke` 
 MVE closeout wave is complete. All NW-1 through NW-5 are done.
 MVE verdict: **accepted with explicit deferrals** (2026-04-05).
 
-Continue with post-MVE work in this order:
+Post-MVE feature work status:
 
-1. `P1` — vessel historical track integration
-2. `P2` — offline maps ops hardening
+1. `P1` — vessel historical track integration — **completed** (`2026-04-04`)
+2. `P2` — offline maps ops hardening — **completed** (`2026-04-05`)
+
+Both post-MVE waves are complete. Next priorities to be defined by lead-strategic.

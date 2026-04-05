@@ -197,6 +197,24 @@ Docs/audit + verification only, no code changes. Backlog mapping: M4.1, M4.2, M4
 - Final verification pass: all 6 canonical checks green (check, build, lint:boundaries, emis:smoke 31/31, offline-smoke, write-smoke)
 - MVE verdict: **accepted with explicit deferrals**
 
+### P1: Vessel Historical Track Integration (DONE, 2026-04-04)
+
+All 5 P1 slices completed on `main`. Backlog mapping: P1.1 through P1.5.
+
+- P1.1 — Behavior contract frozen in `docs/emis_vessel_track_contract.md`
+- P1.2 — Removed `isVesselMode` guards on route data props in EmisMap invocation; historical track now renders in vessel mode
+- P1.3 — Added `vesselFlyToTarget` derived from selected vessel coordinates; wired `flyToTarget` prop to EmisMap
+- P1.4 — Added optional `bbox` parameter to `/api/emis/ship-routes/vessels` endpoint; added `onBoundsChange` callback to EmisMap; catalog refreshes on viewport change in vessel mode
+- P1.5 — Added 2 smoke checks: `api:ship-routes:vessels:bbox` (bbox filtering) and `contract:vessels:bad-bbox` (error shape on invalid bbox)
+- Key files changed:
+  - `+page.svelte` — route data flow, flyToTarget, bbox state, viewport-aware catalog loader
+  - `EmisMap.svelte` — `onBoundsChange` prop
+  - `emis-ship-route/model/schema.ts` — optional `bbox` in vessels query schema
+  - `ship-routes/queries.ts` — bbox filtering in `listShipRouteVesselsQuery`
+  - `ship-routes/vessels/+server.ts` — bbox URL param parsing
+  - `emis-smoke.mjs` — 2 new checks
+- Verification: all 6 canonical checks green (34/34 smoke checks)
+
 ## Заметки для следующей сессии
 
 - H-1..H-5 all done — wave H is complete
@@ -207,7 +225,9 @@ Docs/audit + verification only, no code changes. Backlog mapping: M4.1, M4.2, M4
 - NW-3 done — dictionaries frozen as seed-managed for MVE, admin CRUD deferred beyond MVE
 - NW-4 done — `/api/emis/readyz` + request correlation + structured error logging in `handleEmisRoute()`
 - NW-5 done — MVE accepted with explicit deferrals, all 6 checks green
-- **MVE is closed.** Next work is post-MVE: `P1` (vessel historical track) then `P2` (offline maps ops hardening)
+- **MVE is closed.**
+- **P1 done** — vessel historical track integration (track on map, flyTo, viewport-aware catalog, smoke coverage)
+- Next work: `P2` (offline maps ops hardening)
 - Pre-existing carry-forward (all deferred, none blocking):
   - stock-alerts->routes layer-boundary violation
   - remaining MIGRATION re-export shims in `entities/`, `shared/`, `widgets/` — code removal, not docs scope

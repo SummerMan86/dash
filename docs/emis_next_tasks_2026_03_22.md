@@ -23,10 +23,10 @@ Current default order:
 
 1. ~~`M3` — health/readiness and API diagnostics~~ **completed** (`2026-04-05`, NW-4)
 2. ~~`M4` — MVE acceptance audit and sign-off~~ **completed** (`2026-04-05`, NW-5)
-3. `P1` — vessel historical track
+3. ~~`P1` — vessel historical track~~ **completed** (`2026-04-04`)
 4. ~~`P2` — offline maps ops hardening~~ **completed** (`2026-04-05`)
 
-Start with `P1.1` unless a session explicitly chooses another bounded open slice.
+All current backlog items are completed. Next priorities to be defined.
 
 ## MVE Closeout
 
@@ -48,61 +48,14 @@ MVE verdict: **accepted with explicit deferrals**.
 
 ## Post-MVE Next Wave
 
-### P1. Vessel Historical Track Integration
+### P1. Vessel Historical Track Integration — COMPLETED (`2026-04-04`)
 
-Goal:
-
-- extend vessel mode from `current positions only` to `selected vessel + historical track`
-
-#### P1.1. Freeze selected-vessel track UX/API contract
-
-Session scope: contract only.
-
-Answer:
-
-- when track loads
-- whether points, segments, or both load by default
-- what the default route mode should be
-
-Done when:
-
-- UI and API follow one explicit behavior contract
-
-#### P1.2. Load historical track on vessel selection
-
-Session scope: one behavior only.
-
-Deliver:
-
-- selecting a vessel triggers historical track fetch
-
-Done when:
-
-- vessel mode shows current position plus selected-vessel history
-
-#### P1.3. Add `flyTo` on vessel selection
-
-Session scope: map interaction only.
-
-Done when:
-
-- selecting a vessel from the catalog moves the viewport to the vessel context
-
-#### P1.4. Make vessel catalog viewport-aware
-
-Session scope: catalog behavior only.
-
-Done when:
-
-- vessel list reflects current viewport or another explicitly documented alternative
-
-#### P1.5. Add regression coverage
-
-Session scope: smoke/verification only.
-
-Done when:
-
-- historical-track behavior is exercised automatically
+All P1 subtasks delivered:
+- `P1.1` — Behavior contract frozen in `docs/emis_vessel_track_contract.md`
+- `P1.2` — Historical track renders on map in vessel mode
+- `P1.3` — FlyTo on vessel selection via `vesselFlyToTarget`
+- `P1.4` — Viewport-aware vessel catalog with optional `bbox` parameter
+- `P1.5` — 2 smoke checks for bbox behavior (34/34 total smoke checks)
 
 ### P2. Offline Maps Ops Hardening — COMPLETED (`2026-04-05`)
 

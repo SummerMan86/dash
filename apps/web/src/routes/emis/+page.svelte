@@ -75,6 +75,7 @@
 	let shipRouteCatalogLoading = $state(false);
 	let shipRouteCatalogError = $state<string | null>(null);
 	let shipRouteError = $state<string | null>(null);
+	let mapBbox = $state<string | null>(null);
 
 	/* ── Derived state ──────────────────────────────────────────────── */
 
@@ -129,6 +130,11 @@
 	let selectedShipRouteVessel = $derived.by(
 		() => shipRouteCatalog.find((vessel) => String(vessel.shipHbkId) === selectedShipHbkId) ?? null
 	);
+	let vesselFlyToTarget = $derived.by(() => {
+		const vessel = selectedShipRouteVessel;
+		if (!vessel || vessel.lastLatitude === null || vessel.lastLongitude === null) return null;
+		return { lng: vessel.lastLongitude, lat: vessel.lastLatitude, zoom: 6 };
+	});
 	let shipRoutePointFeatureCollection = $derived.by(() =>
 		buildShipRoutePointFeatureCollection(shipRoutePoints, routeModeShowsPoints)
 	);
@@ -231,6 +237,10 @@
 		selectedRouteFeature = feature;
 	}
 
+	function handleBoundsChange(bbox: string) {
+		mapBbox = bbox;
+	}
+
 	function clearRouteSelection() {
 		selectedRouteFeature = null;
 	}
@@ -320,13 +330,16 @@
 		return { kind, rows: payload.rows, meta: payload.meta };
 	}
 
-	async function loadShipRouteCatalog() {
+	async function loadShipRouteCatalog(bbox?: string | null) {
 		shipRouteCatalogLoading = true;
 		shipRouteCatalogError = null;
 
 		try {
 			const url = new URL('/api/emis/ship-routes/vessels', window.location.origin);
 			url.searchParams.set('limit', '250');
+			if (bbox) {
+				url.searchParams.set('bbox', bbox);
+			}
 			const payload = await fetchJson<{ rows: ShipRouteVesselOption[] }>(url);
 			shipRouteCatalog = payload.rows;
 
@@ -524,6 +537,26 @@
 		);
 	});
 
+	let catalogBboxDebounce: ReturnType<typeof setTimeout> | null = null;
+	$effect(() => {
+		const bbox = mapBbox;
+		const vesselMode = isVesselMode;
+
+		if (!browser) return;
+
+		if (catalogBboxDebounce) clearTimeout(catalogBboxDebounce);
+		catalogBboxDebounce = setTimeout(
+			() => {
+				void loadShipRouteCatalog(vesselMode ? bbox : null);
+			},
+			400
+		);
+
+		return () => {
+			if (catalogBboxDebounce) clearTimeout(catalogBboxDebounce);
+		};
+	});
+
 	onMount(() => {
 		const initialTarget = parseSearchResultKind(
 			new URLSearchParams(window.location.search).get('target')
@@ -535,8 +568,6 @@
 		if (!initialRouteSelection) {
 			routeSelectionSyncEnabled = true;
 		}
-
-		void loadShipRouteCatalog();
 	});
 </script>
 
@@ -640,14 +671,16 @@
 						objectsQuery={mapObjectQuery}
 						newsQuery={mapNewsQuery}
 						vesselsQuery={mapVesselsQuery}
-						routePointsData={isVesselMode ? undefined : shipRoutePointFeatureCollection}
-						routeSegmentsData={isVesselMode ? undefined : shipRouteSegmentFeatureCollection}
-						routeFocusKey={isVesselMode ? null : selectedShipHbkId || null}
+						routePointsData={shipRoutePointFeatureCollection}
+						routeSegmentsData={shipRouteSegmentFeatureCollection}
+						routeFocusKey={selectedShipHbkId || null}
 						layer={activeLayer}
 						selectedFeature={selectedFeatureRef}
-						selectedRouteFeature={isVesselMode ? null : selectedRouteFeatureRef}
+						selectedRouteFeature={selectedRouteFeatureRef}
+						flyToTarget={vesselFlyToTarget}
 						onFeatureSelect={handleMapFeatureSelect}
 						onRouteFeatureSelect={handleMapRouteFeatureSelect}
+						onBoundsChange={handleBoundsChange}
 					/>
 				</CardContent>
 			</Card>
@@ -658,7 +691,7 @@
 				{shipRouteCatalog}
 				{shipRouteCatalogLoading}
 				{shipRouteCatalogError}
-				loadShipRouteCatalog={() => void loadShipRouteCatalog()}
+				loadShipRouteCatalog={() => void loadShipRouteCatalog(isVesselMode ? mapBbox : null)}
 				{selectedFeature}
 				{objectRows}
 				{newsRows}
@@ -677,7 +710,7 @@
 				{filterRuntime}
 				{shipRouteCatalogLoading}
 				{shipRouteCatalogError}
-				loadShipRouteCatalog={() => void loadShipRouteCatalog()}
+				loadShipRouteCatalog={() => void loadShipRouteCatalog(null)}
 				shipRouteLoaderLoading={shipRouteLoader.loading}
 				shipRouteLoaderReload={shipRouteLoader.reload}
 				{selectedShipHbkId}
