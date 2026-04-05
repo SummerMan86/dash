@@ -14,11 +14,7 @@
 	import { Button } from '$shared/ui/button';
 	import { Card, CardContent } from '$shared/ui/card';
 	import type { PresetName } from './filters';
-	import {
-		SCENARIO_PRESETS,
-		PRESET_LIST,
-		getPresetParams
-	} from './filters';
+	import { SCENARIO_PRESETS, PRESET_LIST, getPresetParams } from './filters';
 
 	interface Props {
 		/** Currently selected preset */

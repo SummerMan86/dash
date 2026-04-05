@@ -10,10 +10,7 @@
 <script lang="ts">
 	import { cn } from '$shared/styles/utils';
 	import type { StockStatus } from './types';
-	import {
-		getStatusColor,
-		getStatusLabel
-	} from './utils';
+	import { getStatusColor, getStatusLabel } from './utils';
 
 	interface Props {
 		/** Stock status */
