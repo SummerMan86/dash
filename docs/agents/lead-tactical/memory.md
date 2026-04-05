@@ -182,6 +182,21 @@ Observability package for EMIS operational routes. Backlog mapping: M3.1, M3.2, 
   - `current_plan.md` — NW-4 marked completed, next steps updated to NW-5 only
 - Verification: `pnpm check` green, `pnpm build` green, `pnpm lint:boundaries` green, `pnpm emis:smoke` green
 
+### NW-5: MVE Acceptance Audit and Sign-Off (DONE, 2026-04-05)
+
+Docs/audit + verification only, no code changes. Backlog mapping: M4.1, M4.2, M4.3.
+
+- Audited every acceptance criterion from `docs/emis_mve_product_contract.md` section 7:
+  - Data/platform: 6/6 done (snapshot DB truth, seeds, PostGIS+indexes, published read-models, Docker Compose, health/readiness)
+  - Objects/news/links: 5/5 done (CRUD objects, CRUD news, manage links, related news on object detail, related objects on news detail)
+  - Workspace/map: 5/5 done (map objects, map news, filter sync, bbox endpoints, real workspace scenario)
+  - BI integration: 3/3 done (4 datasets in UI, read-models documented, coexistence with BI)
+- Explicit deferrals (accepted, not blocking): auth/RBAC, admin CRUD, admin role, news soft-delete UI button
+- Updated `emis_session_bootstrap.md` — MVE accepted status, verification date, explicit deferrals
+- Updated `emis_next_tasks_2026_03_22.md` — M3/M4 completed, active order starts from P1
+- Final verification pass: all 6 canonical checks green (check, build, lint:boundaries, emis:smoke 31/31, offline-smoke, write-smoke)
+- MVE verdict: **accepted with explicit deferrals**
+
 ## Заметки для следующей сессии
 
 - H-1..H-5 all done — wave H is complete
@@ -191,7 +206,8 @@ Observability package for EMIS operational routes. Backlog mapping: M3.1, M3.2, 
 - NW-2 done — `assertWriteContext()` implemented, all write entry points wired, negative smoke added
 - NW-3 done — dictionaries frozen as seed-managed for MVE, admin CRUD deferred beyond MVE
 - NW-4 done — `/api/emis/readyz` + request correlation + structured error logging in `handleEmisRoute()`
-- Next: NW-5 (acceptance/sign-off package, M4.1-M4.3)
+- NW-5 done — MVE accepted with explicit deferrals, all 6 checks green
+- **MVE is closed.** Next work is post-MVE: `P1` (vessel historical track) then `P2` (offline maps ops hardening)
 - Pre-existing carry-forward (all deferred, none blocking):
   - stock-alerts->routes layer-boundary violation
   - remaining MIGRATION re-export shims in `entities/`, `shared/`, `widgets/` — code removal, not docs scope

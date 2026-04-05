@@ -1,114 +1,102 @@
-# NW-4: Health/Readiness and API Error Logging Hardening — Completion Report
+# NW-5: MVE Acceptance Audit and Sign-Off — Completion Report
 
-**Package:** NW-4 (MVE closeout wave, observability)
+**Package:** NW-5 (MVE closeout wave, final acceptance)
 **Date:** 2026-04-05
 **Branch:** `main`
-**Backlog mapping:** M3.1, M3.2, M3.3, M3.4
-**Depends on:** NW-2 (completed), NW-3 (completed)
+**Backlog mapping:** M4.1, M4.2, M4.3
+**Depends on:** NW-1 (completed), NW-2 (completed), NW-3 (completed), NW-4 (completed)
 
 ## Status: DONE
 
-All four milestones completed. EMIS operational routes now have DB-backed readiness, request correlation, and structured error logging.
+MVE verdict: **accepted with explicit deferrals**.
 
-## M3.1: `/api/emis/readyz` DB-backed readiness endpoint
+All acceptance criteria from `docs/emis_mve_product_contract.md` section 7 are met.
+Explicit deferrals are documented and none are blocking.
 
-Created `apps/web/src/routes/api/emis/readyz/+server.ts` (170 lines).
+## M4.1: Acceptance Audit Against Product Contract
 
-Checks (executed in order, early-exit on critical failure):
-1. `DATABASE_URL` is set
-2. PostgreSQL connectivity (`SELECT 1`)
-3. Required schemas: `emis`, `stg_emis`, `mart_emis`, `mart`
-4. Published views: `mart.emis_news_flat`, `mart.emis_objects_dim`, `mart.emis_object_news_facts`, `mart.emis_ship_route_vessels`, `mart_emis.ship_route_points`, `mart_emis.ship_route_segments`
+Audited every criterion from section 7 of `docs/emis_mve_product_contract.md` against actual code and runtime state.
 
-Security: published-view identifiers validated at module load via `SAFE_VIEW_RE` regex guard.
+### Data / Platform
 
-Returns:
-- `200 { status: 'ready', checks: {...}, durationMs }` — all critical checks pass
-- `503 { status: 'not_ready', checks: {...}, failures: [...], durationMs }` — any critical check fails
+| Criterion | Status | Evidence |
+|-----------|--------|----------|
+| Snapshot-first DB truth for active EMIS schemas | **done** | `db/current_schema.sql` covers `emis`, `stg_emis`, `mart_emis`, `mart`; `db/schema_catalog.md` and `db/applied_changes.md` present |
+| Reference seed data loads repeatably | **done** | `db/seeds/001_countries.sql`, `002_object_types.sql`, `003_sources.sql` |
+| PostGIS and required indexes present | **done** | `CREATE EXTENSION IF NOT EXISTS postgis`; GiST indexes on `emis.objects.geom` and `emis.news_items.geom`; FTS GIN index on news; btree indexes on all key lookup columns |
+| Published read-models for BI | **done** | 4 mart views: `mart.emis_news_flat`, `mart.emis_objects_dim`, `mart.emis_object_news_facts`, `mart.emis_ship_route_vessels`; 2 mart_emis views for ship routes |
+| App launches locally via Docker Compose | **done** | `docker-compose.yml` with `postgis/postgis:16-3.4` image + healthcheck |
+| Health/readiness contract documented and verifiable | **done** | `/api/emis/health` (repo/snapshot), `/api/emis/readyz` (DB-backed runtime); documented in `RUNTIME_CONTRACT.md` and `emis_observability_contract.md`; smoke-verified |
 
-Canonical contract: `docs/emis_observability_contract.md` section 3.2.
+### Objects / News / Links
 
-## M3.2: Request correlation (`x-request-id`)
+| Criterion | Status | Evidence |
+|-----------|--------|----------|
+| Create, edit, soft-delete object | **done** | API: `POST /api/emis/objects`, `PATCH /api/emis/objects/:id`, `DELETE /api/emis/objects/:id`; UI: `/emis/objects/new`, `/emis/objects/:id/edit`; smoke: `emis:write-smoke` object-flow (create + update + delete + audit) |
+| Create and edit news | **done** | API: `POST /api/emis/news`, `PATCH /api/emis/news/:id`, `DELETE /api/emis/news/:id`; UI: `/emis/news/new`, `/emis/news/:id/edit`; smoke: `emis:write-smoke` news-flow |
+| Manage news-object links | **done** | API: `POST /api/emis/news/:id/objects`, `PATCH /api/emis/news/:id/objects/:oid`, `DELETE /api/emis/news/:id/objects/:oid`; smoke: `emis:write-smoke` link-flow (attach + update + detach + audit) |
+| Object detail shows related news | **done** | `/emis/objects/:id` detail page with server-loaded related news |
+| News detail shows related objects | **done** | `/emis/news/:id` detail page with server-loaded related objects |
 
-Enhanced `handleEmisRoute()` in `apps/web/src/lib/server/emis/infra/http.ts`:
+### Workspace / Map
 
-- Accepts `x-request-id` from incoming request headers (truncated to 128 chars)
-- Generates UUID via `crypto.randomUUID()` if header is missing
-- Returns `x-request-id` in response headers on both success and error paths
-- Success path: sets header directly on the response object
-- Error path: passes correlation headers through `jsonEmisError()`
+| Criterion | Status | Evidence |
+|-----------|--------|----------|
+| Map shows objects | **done** | `/api/emis/map/objects` endpoint with GeoJSON response; bbox filtering |
+| Map shows news with coordinates | **done** | `/api/emis/map/news` endpoint with GeoJSON response; bbox filtering |
+| Filters synchronize list and map | **done** | `/emis` workspace with `filters.ts`; search endpoints for objects/news; map endpoints with bbox |
+| Map endpoints use bbox/viewport filter | **done** | All 3 map endpoints (`objects`, `news`, `vessels`) require/support bbox parameter; contract error for missing bbox verified by smoke |
+| Workspace is a real working scenario | **done** | `/emis` page: map + search results panel + ship route panel; 767-line main page + 5 extracted helpers/panels; smoke returns 200 with "Workspace" marker |
 
-`jsonEmisError()` updated to accept optional `headers` parameter.
+### BI Integration
 
-## M3.3: Structured error logging
+| Criterion | Status | Evidence |
+|-----------|--------|----------|
+| At least one EMIS dataset connected to BI/BFF and used in UI | **done** | 4 datasets: `emis.news_flat`, `emis.object_news_facts`, `emis.objects_dim`, `emis.ship_route_vessels`; all return 200 in smoke; 4 BI route pages: `/dashboard/emis`, `/dashboard/emis/ship-routes`, `/dashboard/emis/provenance`, `/dashboard/emis/vessel-positions` |
+| EMIS published read-models documented | **done** | `docs/emis_read_models_contract.md` with full dataset-to-view mapping and evolution policy |
+| EMIS coexists with BI without namespace/contract conflicts | **done** | EMIS uses `emis.*` dataset namespace; operational path and BI path are separate; `lint:boundaries` enforces no cross-contamination; BI routes do not import operational modules |
 
-Added `logEmisError()` to `handleEmisRoute()`:
+### Explicit Deferrals (accepted, not blocking)
 
-On every 4xx/5xx response, emits a JSON structured log:
-- `service: 'emis'`
-- `level: 'error'` (5xx) or `'warn'` (4xx)
-- `requestId`, `method`, `path`, `status`, `code`, `durationMs`
-- `actorId` — included when present (tracing only, not auth)
-- `message` — included when available
+| Item | Status | Reason |
+|------|--------|--------|
+| Full auth / sessions / RBAC | **explicitly deferred** | Trusted internal network model; documented in `emis_access_model.md` |
+| Admin CRUD for dictionaries | **explicitly deferred** | Seed-managed for MVE; decision frozen in NW-3 |
+| Admin role enforcement | **explicitly deferred** | No admin-only operations exist |
+| News soft-delete via UI button | **partial** | API supports DELETE; UI delete button not wired on news detail page (objects have it) |
 
-Output: `console.error` for 5xx, `console.warn` for 4xx.
+## M4.2: Bootstrap and Backlog Alignment
 
-NOT logged: request bodies, PII, large GeoJSON payloads.
+Updated:
+- `docs/emis_session_bootstrap.md` — section 6 now reflects MVE accepted status, explicit deferrals, and post-MVE priorities
+- `docs/emis_session_bootstrap.md` — section 4 now shows last verification date and results
+- `docs/emis_next_tasks_2026_03_22.md` — M3 and M4 marked completed; active order starts from P1
 
-## M3.4: Smoke coverage
+## M4.3: Final Verification Pass
 
-Added 4 checks to `scripts/emis-smoke.mjs`:
-
-| Check | What it verifies |
-|-------|-----------------|
-| `api:readyz` | Endpoint responds with valid shape (200 or 503 accepted) |
-| `contract:request-id:generated` | Server generates `x-request-id` when not sent |
-| `contract:request-id:echo` | Server echoes back client-sent `x-request-id` |
-| `contract:error-correlation` | Error responses (400) include echoed `x-request-id` |
-
-## Verification
+All 6 canonical checks green on `2026-04-05`:
 
 | Check | Result |
 |-------|--------|
 | `pnpm check` | 0 errors, 0 warnings |
-| `pnpm build` | success |
+| `pnpm build` | success (15.13s) |
 | `pnpm lint:boundaries` | no violations |
-| `pnpm emis:smoke` | green (all checks including new ones) |
+| `pnpm emis:smoke` | 31/31 checks pass (pages, APIs, contracts, datasets) |
+| `pnpm emis:offline-smoke` | all checks pass (bundle ready, spike page, Range support) |
+| `pnpm emis:write-smoke` | all flows pass (object, news, link, write-policy, cleanup) |
 
-## Acceptance Checklist
+## Acceptance Checklist (NW-5)
 
 | Criterion | Status |
 |-----------|--------|
-| `/api/emis/readyz` exists and returns structured readiness | PASS |
-| Published-view identifiers validated at module load | PASS |
-| `handleEmisRoute()` adds `x-request-id` to all responses | PASS |
-| Missing `x-request-id` generates UUID | PASS |
-| Incoming `x-request-id` echoed and truncated to 128 chars | PASS |
-| Error responses include structured JSON log | PASS |
-| Correlation headers constructed only in error path | PASS |
-| 4 new smoke checks pass | PASS |
-| `pnpm check` green | PASS |
-| `pnpm build` green | PASS |
-| `pnpm lint:boundaries` green | PASS |
-| `pnpm emis:smoke` green | PASS |
-
-## Docs Updated
-
-- `apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md` — added request correlation, structured error logging, health/readiness endpoint sections; updated `handleEmisRoute()` description
-- `docs/emis_observability_contract.md` — upgraded sections 3.2, 4.1, 4.2, 4.3 from target to implemented; added response shape examples
-- `docs/agents/lead-strategic/current_plan.md` — NW-4 status changed to completed; next steps updated to NW-5 only
+| MVE acceptance is audited against one explicit document set | PASS |
+| Bootstrap/backlog no longer overstate or understate implementation | PASS |
+| Team has truthful verdict | PASS: **accepted with explicit deferrals** |
 
 ## Files Changed
 
-- `apps/web/src/routes/api/emis/readyz/+server.ts` — **new** (170 lines)
-- `apps/web/src/lib/server/emis/infra/http.ts` — request correlation, structured error logging, `jsonEmisError` headers param
-- `apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md` — new sections added
-- `docs/emis_observability_contract.md` — target -> implemented status
-- `docs/agents/lead-strategic/current_plan.md` — NW-4 completed, next steps
-- `scripts/emis-smoke.mjs` — 4 new smoke checks
+- `docs/emis_session_bootstrap.md` — sections 4 and 6 updated
+- `docs/emis_next_tasks_2026_03_22.md` — M3/M4 marked completed, active order updated
 - `docs/agents/lead-tactical/last_report.md` — this report
-- `docs/agents/lead-tactical/memory.md` — NW-4 context added
-
-## Review Gate
-
-Required: architecture-reviewer, security-reviewer, docs-reviewer, code-reviewer.
+- `docs/agents/lead-tactical/memory.md` — NW-5 context added
+- `docs/agents/lead-strategic/current_plan.md` — NW-5 status updated

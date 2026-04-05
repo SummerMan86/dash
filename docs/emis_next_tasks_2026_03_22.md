@@ -21,112 +21,30 @@ Closed waves, resolved decisions and historical rollout notes do not belong here
 
 Current default order:
 
-1. `M3` — health/readiness and API diagnostics
-2. `M4` — MVE acceptance audit and sign-off
+1. ~~`M3` — health/readiness and API diagnostics~~ **completed** (`2026-04-05`, NW-4)
+2. ~~`M4` — MVE acceptance audit and sign-off~~ **completed** (`2026-04-05`, NW-5)
 3. `P1` — vessel historical track
 4. `P2` — offline maps ops hardening
 
-Start with `M3.1` unless a session explicitly chooses another bounded open slice.
+Start with `P1.1` unless a session explicitly chooses another bounded open slice.
 
 ## MVE Closeout
 
-### M3. Health, Readiness And API Error Logging
+### M3. Health, Readiness And API Error Logging — COMPLETED (`2026-04-05`, NW-4)
 
-Goal:
+All M3 subtasks delivered:
+- `M3.1` — `/api/emis/readyz` with DB-backed runtime readiness (schemas + published views)
+- `M3.2` — request correlation (`x-request-id`) and structured error logging in `handleEmisRoute()`
+- `M3.3` — 4 smoke checks for readiness + correlation contract
 
-- turn diagnostics into a real operational contract instead of a snapshot-file presence check only
+### M4. MVE Acceptance Closeout And Sign-Off — COMPLETED (`2026-04-05`, NW-5)
 
-#### M3.1. Implement DB-backed readiness endpoint
+All M4 subtasks delivered:
+- `M4.1` — acceptance audit: all Section 7 criteria met, explicit deferrals documented
+- `M4.2` — bootstrap and backlog aligned with audit result
+- `M4.3` — full verification pass: 6/6 canonical checks green
 
-Session scope: endpoint + contract only.
-
-Deliver:
-
-- `GET /api/emis/readyz` or equivalent documented readiness contract
-- DB connectivity and required schema/view checks
-
-Done when:
-
-- runtime readiness is distinguishable from repo/snapshot readiness
-
-#### M3.2. Add request correlation and centralized EMIS error logging
-
-Session scope: app-owned transport glue only.
-
-Suggested ownership:
-
-- `apps/web/src/lib/server/emis/infra/*`
-
-Deliver:
-
-- request id propagation
-- one centralized structured error logging point for EMIS routes
-
-Done when:
-
-- route handlers do not need ad hoc logging
-- logs include enough context for tracing without leaking secrets
-
-#### M3.3. Add verification for the readiness/logging contract
-
-Session scope: smoke/targeted checks only.
-
-Deliver:
-
-- automated check for readiness contract
-- targeted verification for error/logging path when practical
-
-Done when:
-
-- diagnostics behavior is checked automatically
-
-### M4. MVE Acceptance Closeout And Sign-Off
-
-#### M4.1. Acceptance audit against the product contract
-
-Session scope: docs/audit only.
-
-Read:
-
-- `docs/emis_mve_product_contract.md`
-- `docs/emis_session_bootstrap.md`
-
-Deliver:
-
-- checklist with `done`, `partial`, or `explicitly deferred` per acceptance item
-
-Done when:
-
-- there is one unambiguous MVE status snapshot
-
-#### M4.2. Align bootstrap and backlog with the audit result
-
-Session scope: docs only.
-
-Deliver:
-
-- `docs/emis_session_bootstrap.md` updated
-- this backlog updated
-
-Done when:
-
-- current focus in docs matches actual remaining work
-
-#### M4.3. Final verification pass
-
-Session scope: verification only.
-
-Run when environment is available:
-
-- `pnpm db:reset`
-- `pnpm db:seed`
-- `pnpm emis:smoke`
-- `pnpm emis:write-smoke`
-- `pnpm emis:offline-smoke`
-
-Done when:
-
-- MVE sign-off is backed by actual checks, not doc review only
+MVE verdict: **accepted with explicit deferrals**.
 
 ## Post-MVE Next Wave
 

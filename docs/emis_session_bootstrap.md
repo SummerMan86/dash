@@ -12,7 +12,7 @@
 
 ## 1. Current State
 
-Статус на `2026-04-04`:
+Статус на `2026-04-05`:
 
 - EMIS развивается внутри текущего `SvelteKit` приложения как `single deployable app`.
 - High-level framing: `modular monolith` с тремя контурами:
@@ -59,14 +59,15 @@
 
 ## 4. Current Verification Status
 
-- Post-freeze baseline считается `Green / baseline closed`.
-- Canonical routine на текущем baseline:
-  - `pnpm check`
-  - `pnpm build`
-  - `pnpm lint:boundaries`
-  - `pnpm emis:smoke`
-  - `pnpm emis:offline-smoke`
-  - `pnpm emis:write-smoke` when write-side relevant
+- Baseline: `Green / baseline closed`.
+- Last full verification pass: `2026-04-05` (NW-5 acceptance audit).
+- All 6 canonical checks green:
+  - `pnpm check` — 0 errors
+  - `pnpm build` — success
+  - `pnpm lint:boundaries` — no violations
+  - `pnpm emis:smoke` — 31/31 checks pass
+  - `pnpm emis:offline-smoke` — all checks pass
+  - `pnpm emis:write-smoke` — all flows pass (object, news, link, write-policy)
 
 ## 5. Non-Negotiables
 
@@ -80,19 +81,27 @@
 
 ## 6. Current Focus
 
-### MVE closeout
+### MVE status
 
-- health/readiness contract и centralized API error logging:
-  [docs/emis_observability_contract.md](./emis_observability_contract.md)
-- после этого:
-  acceptance audit against [docs/emis_mve_product_contract.md](./emis_mve_product_contract.md)
+MVE has been **accepted with explicit deferrals** on `2026-04-05`.
+
+Acceptance audit completed against [docs/emis_mve_product_contract.md](./emis_mve_product_contract.md).
+All acceptance criteria from section 7 are met. Explicit deferrals are documented below.
+
+### Explicit deferrals (accepted, not blocking MVE)
+
+- Full auth / sessions / RBAC: deferred beyond MVE (trusted internal network model)
+- Admin CRUD for dictionaries: deferred, seed-managed in MVE
+- Admin role enforcement: deferred, no admin-only operations exist
+- AIS/track data as MVE requirement: not required (already present as bonus)
+- Soft-delete of news: not exposed through UI (API supports it; UI soft-delete button not wired)
 
 ### Post-MVE next wave
 
-- vessel historical track integration
-- offline maps ops hardening
+- `P1` — vessel historical track integration
+- `P2` — offline maps ops hardening
 
-Live backlog читать в [docs/emis_next_tasks_2026_03_22.md](./emis_next_tasks_2026_03_22.md).
+Live backlog: [docs/emis_next_tasks_2026_03_22.md](./emis_next_tasks_2026_03_22.md).
 
 ## 7. Read Next
 

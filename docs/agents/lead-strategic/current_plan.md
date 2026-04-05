@@ -618,7 +618,7 @@ Status:
 - smoke verifies the readiness contract rather than relying on manual checks
 
 ### NW-5: MVE acceptance audit and sign-off
-- status: ready for handoff
+- status: **completed** on `2026-04-05`
 - backlog mapping:
   - `M4.1`
   - `M4.2`
@@ -653,6 +653,10 @@ Why this order:
 
 ## Recommended Next Handoff To Lead-Tactical
 
-Continue the current wave in this order:
+MVE closeout wave is complete. All NW-1 through NW-5 are done.
+MVE verdict: **accepted with explicit deferrals** (2026-04-05).
 
-1. `NW-5` — acceptance/sign-off package (`M4.1-M4.3`)
+Continue with post-MVE work in this order:
+
+1. `P1` — vessel historical track integration
+2. `P2` — offline maps ops hardening
