@@ -32,10 +32,7 @@ export const actions: Actions = {
 		try {
 			ensureNewsFormRequired(values);
 			const payload = createEmisNewsSchema.parse(parseNewsForm(values));
-			created = await createNewsService(
-				payload,
-				assertWriteContext(request, 'manual-ui', locals)
-			);
+			created = await createNewsService(payload, assertWriteContext(request, 'manual-ui', locals));
 		} catch (error) {
 			return actionFailure(error, values);
 		}

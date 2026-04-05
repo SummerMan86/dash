@@ -253,6 +253,7 @@ All DF slices completed on `feature/emis-phase3-tech-debt-cleanup`.
 - DF-5 — Governance closure: all MVE deferrals resolved, baseline Green, docs updated
 
 Key files added/modified:
+
 - `apps/web/src/lib/server/emis/infra/auth.ts` — session auth module (auth mode, user store, session store, role hierarchy, route classification)
 - `apps/web/src/lib/server/emis/infra/writePolicy.ts` — extended to support session-based actor resolution
 - `apps/web/src/routes/emis/login/` — login page (GET/POST)

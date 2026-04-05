@@ -90,11 +90,7 @@ export const actions: Actions = {
 					}
 				]
 			});
-			await attachNewsObjectsService(
-				id,
-				payload,
-				assertWriteContext(request, 'manual-ui', locals)
-			);
+			await attachNewsObjectsService(id, payload, assertWriteContext(request, 'manual-ui', locals));
 		} catch (errorValue) {
 			return actionFailure(
 				errorValue,

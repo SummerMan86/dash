@@ -64,10 +64,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 			// EMIS API routes: return 401 JSON for unauthenticated
 			if (isEmisApiRoute(pathname)) {
 				if (!session) {
-					return json(
-						{ error: 'Authentication required', code: 'UNAUTHORIZED' },
-						{ status: 401 }
-					);
+					return json({ error: 'Authentication required', code: 'UNAUTHORIZED' }, { status: 401 });
 				}
 
 				// Admin API routes (dictionaries) - require admin for write methods
@@ -84,10 +81,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 				// Admin pages: require admin role
 				if (isAdminRoute(pathname) && !hasMinRole(session.role, 'admin')) {
-					return json(
-						{ error: 'Admin access required', code: 'FORBIDDEN' },
-						{ status: 403 }
-					);
+					return json({ error: 'Admin access required', code: 'FORBIDDEN' }, { status: 403 });
 				}
 			}
 		}

@@ -1,9 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import {
-	deleteSession,
-	SESSION_COOKIE_NAME
-} from '$lib/server/emis/infra/auth';
+import { deleteSession, SESSION_COOKIE_NAME } from '$lib/server/emis/infra/auth';
 
 export const load: PageServerLoad = async () => {
 	// GET /emis/logout — redirect to login (logout is POST-only)

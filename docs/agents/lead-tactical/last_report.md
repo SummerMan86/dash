@@ -24,13 +24,13 @@ All 6 canonical checks green:
 
 ## MVE Deferrals Audit
 
-| Deferral | Status | Evidence |
-| --- | --- | --- |
-| Auth / sessions / RBAC | Resolved (DF-3) | `auth.ts`, hooks middleware, `writePolicy.ts` with session support |
-| Admin CRUD for dictionaries | Resolved (DF-2) | `/emis/admin/dictionaries` page, 6 API endpoints |
-| Admin role enforcement | Resolved (DF-3) | hooks middleware protects `/emis/admin/*`, admin role required |
-| News soft-delete UI | Resolved (DF-1) | Delete button in `/emis/news/[id]/+page.svelte` with confirmation |
-| Objects soft-delete UI | Resolved (DF-1) | Delete button in `/emis/objects/[id]/+page.svelte` with confirmation |
+| Deferral                    | Status          | Evidence                                                             |
+| --------------------------- | --------------- | -------------------------------------------------------------------- |
+| Auth / sessions / RBAC      | Resolved (DF-3) | `auth.ts`, hooks middleware, `writePolicy.ts` with session support   |
+| Admin CRUD for dictionaries | Resolved (DF-2) | `/emis/admin/dictionaries` page, 6 API endpoints                     |
+| Admin role enforcement      | Resolved (DF-3) | hooks middleware protects `/emis/admin/*`, admin role required       |
+| News soft-delete UI         | Resolved (DF-1) | Delete button in `/emis/news/[id]/+page.svelte` with confirmation    |
+| Objects soft-delete UI      | Resolved (DF-1) | Delete button in `/emis/objects/[id]/+page.svelte` with confirmation |
 
 MVE verdict: **accepted, no remaining deferrals** (upgraded from "accepted with explicit deferrals").
 

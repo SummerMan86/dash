@@ -267,9 +267,7 @@
 				<a class="underline underline-offset-4" href="/emis/news">/emis/news</a>
 			</div>
 			<div class="space-y-2">
-				<div class="type-caption tracking-[0.24em] text-muted-foreground uppercase">
-					EMIS Admin
-				</div>
+				<div class="type-caption tracking-[0.24em] text-muted-foreground uppercase">EMIS Admin</div>
 				<h1 class="type-page-title">Dictionaries</h1>
 				<p class="type-body-sm max-w-3xl text-muted-foreground">
 					Manage reference data: countries, object types and sources. These dictionaries are used
@@ -288,7 +286,9 @@
 			</CardHeader>
 			<CardContent class="space-y-4">
 				{#if countryError}
-					<div class="type-body-sm rounded border border-destructive/30 bg-destructive/10 p-3 text-destructive">
+					<div
+						class="type-body-sm rounded border border-destructive/30 bg-destructive/10 p-3 text-destructive"
+					>
 						{countryError}
 					</div>
 				{/if}
@@ -297,9 +297,9 @@
 					<table class="type-body-sm w-full text-left">
 						<thead>
 							<tr class="border-b border-border/60 text-muted-foreground">
-								<th class="pb-2 pr-4 font-medium">Code</th>
-								<th class="pb-2 pr-4 font-medium">Name (RU)</th>
-								<th class="pb-2 pr-4 font-medium">Name (EN)</th>
+								<th class="pr-4 pb-2 font-medium">Code</th>
+								<th class="pr-4 pb-2 font-medium">Name (RU)</th>
+								<th class="pr-4 pb-2 font-medium">Name (EN)</th>
 								<th class="pb-2 font-medium">Actions</th>
 							</tr>
 						</thead>
@@ -377,7 +377,9 @@
 			</CardHeader>
 			<CardContent class="space-y-4">
 				{#if objectTypeError}
-					<div class="type-body-sm rounded border border-destructive/30 bg-destructive/10 p-3 text-destructive">
+					<div
+						class="type-body-sm rounded border border-destructive/30 bg-destructive/10 p-3 text-destructive"
+					>
 						{objectTypeError}
 					</div>
 				{/if}
@@ -386,10 +388,10 @@
 					<table class="type-body-sm w-full text-left">
 						<thead>
 							<tr class="border-b border-border/60 text-muted-foreground">
-								<th class="pb-2 pr-4 font-medium">Code</th>
-								<th class="pb-2 pr-4 font-medium">Name</th>
-								<th class="pb-2 pr-4 font-medium">Geometry</th>
-								<th class="pb-2 pr-4 font-medium">Icon</th>
+								<th class="pr-4 pb-2 font-medium">Code</th>
+								<th class="pr-4 pb-2 font-medium">Name</th>
+								<th class="pr-4 pb-2 font-medium">Geometry</th>
+								<th class="pr-4 pb-2 font-medium">Icon</th>
 								<th class="pb-2 font-medium">Actions</th>
 							</tr>
 						</thead>
@@ -439,11 +441,7 @@
 										<td class="py-2 pr-4">{ot.geometryKind}</td>
 										<td class="py-2 pr-4">{ot.iconKey ?? '—'}</td>
 										<td class="py-2">
-											<Button
-												size="sm"
-												variant="ghost"
-												onclick={() => startEditObjectType(ot.id)}
-											>
+											<Button size="sm" variant="ghost" onclick={() => startEditObjectType(ot.id)}>
 												Edit
 											</Button>
 										</td>
@@ -481,7 +479,9 @@
 			</CardHeader>
 			<CardContent class="space-y-4">
 				{#if sourceError}
-					<div class="type-body-sm rounded border border-destructive/30 bg-destructive/10 p-3 text-destructive">
+					<div
+						class="type-body-sm rounded border border-destructive/30 bg-destructive/10 p-3 text-destructive"
+					>
 						{sourceError}
 					</div>
 				{/if}
@@ -490,11 +490,11 @@
 					<table class="type-body-sm w-full text-left">
 						<thead>
 							<tr class="border-b border-border/60 text-muted-foreground">
-								<th class="pb-2 pr-4 font-medium">Code</th>
-								<th class="pb-2 pr-4 font-medium">Name</th>
-								<th class="pb-2 pr-4 font-medium">Kind</th>
-								<th class="pb-2 pr-4 font-medium">Base URL</th>
-								<th class="pb-2 pr-4 font-medium">Active</th>
+								<th class="pr-4 pb-2 font-medium">Code</th>
+								<th class="pr-4 pb-2 font-medium">Name</th>
+								<th class="pr-4 pb-2 font-medium">Kind</th>
+								<th class="pr-4 pb-2 font-medium">Base URL</th>
+								<th class="pr-4 pb-2 font-medium">Active</th>
 								<th class="pb-2 font-medium">Actions</th>
 							</tr>
 						</thead>
@@ -519,14 +519,8 @@
 										</td>
 										<td class="py-2">
 											<div class="flex gap-2">
-												<Button size="sm" onclick={saveSource} loading={sourceSaving}>
-													Save
-												</Button>
-												<Button
-													size="sm"
-													variant="ghost"
-													onclick={() => (editingSourceId = null)}
-												>
+												<Button size="sm" onclick={saveSource} loading={sourceSaving}>Save</Button>
+												<Button size="sm" variant="ghost" onclick={() => (editingSourceId = null)}>
 													Cancel
 												</Button>
 											</div>
@@ -537,16 +531,12 @@
 										<td class="py-2 pr-4 font-mono">{src.code}</td>
 										<td class="py-2 pr-4">{src.name}</td>
 										<td class="py-2 pr-4">{src.kind}</td>
-										<td class="py-2 pr-4 max-w-[200px] truncate font-mono text-xs">
+										<td class="max-w-[200px] truncate py-2 pr-4 font-mono text-xs">
 											{src.baseUrl ?? '—'}
 										</td>
 										<td class="py-2 pr-4">{src.isActive ? 'Yes' : 'No'}</td>
 										<td class="py-2">
-											<Button
-												size="sm"
-												variant="ghost"
-												onclick={() => startEditSource(src.id)}
-											>
+											<Button size="sm" variant="ghost" onclick={() => startEditSource(src.id)}>
 												Edit
 											</Button>
 										</td>
@@ -564,7 +554,7 @@
 						<Input bind:value={newSource.name} placeholder="Name" class="h-8" />
 						<Input bind:value={newSource.kind} placeholder="Kind" class="h-8" />
 						<Input bind:value={newSource.baseUrl} placeholder="Base URL" class="h-8" />
-						<label class="flex items-center gap-2 type-caption text-muted-foreground">
+						<label class="type-caption flex items-center gap-2 text-muted-foreground">
 							<input type="checkbox" bind:checked={newSource.isActive} />
 							Active
 						</label>

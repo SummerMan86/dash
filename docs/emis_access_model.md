@@ -64,21 +64,21 @@ Roles describe **authorization intent**, not runtime enforcement. MVE does not h
 
 ### Implemented (DF-3, 2026-04-05)
 
-| Mechanism                        | Where                                                                         | What it does                                                                                              |
-| -------------------------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Session-based authentication     | `apps/web/src/lib/server/emis/infra/auth.ts` + `hooks.server.ts`             | Cookie-based sessions; login/logout flow at `/emis/login`; env-configured users via `EMIS_USERS`          |
-| Role-based access control (RBAC) | `hooks.server.ts` middleware + `assertWriteContext()` in `writePolicy.ts`     | Session role enforcement: viewer (read), editor (write), admin (admin pages + write)                      |
-| Admin route protection           | `hooks.server.ts` middleware                                                  | `/emis/admin/*` pages require admin role; unauthenticated users redirected to login                       |
-| Admin CRUD for dictionaries      | `/api/emis/dictionaries/*` + `/emis/admin/dictionaries`                       | Full CRUD UI for countries, object_types, sources; write endpoints require editor+ role via writePolicy    |
+| Mechanism                        | Where                                                                     | What it does                                                                                            |
+| -------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Session-based authentication     | `apps/web/src/lib/server/emis/infra/auth.ts` + `hooks.server.ts`          | Cookie-based sessions; login/logout flow at `/emis/login`; env-configured users via `EMIS_USERS`        |
+| Role-based access control (RBAC) | `hooks.server.ts` middleware + `assertWriteContext()` in `writePolicy.ts` | Session role enforcement: viewer (read), editor (write), admin (admin pages + write)                    |
+| Admin route protection           | `hooks.server.ts` middleware                                              | `/emis/admin/*` pages require admin role; unauthenticated users redirected to login                     |
+| Admin CRUD for dictionaries      | `/api/emis/dictionaries/*` + `/emis/admin/dictionaries`                   | Full CRUD UI for countries, object_types, sources; write endpoints require editor+ role via writePolicy |
 
 ### No remaining deferrals
 
 All mechanisms previously listed as "deferred beyond MVE" have been implemented in DF-3 (session-based auth) or resolved through the operating model:
 
-| Mechanism                                  | Status                                                                                            |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------- |
-| Authentication (SSO, API keys, basic auth) | Implemented as session-based auth (DF-3). Toggle: `EMIS_AUTH_MODE=session`. Default: `none`.      |
-| Session management                         | Implemented: cookie-based sessions, in-memory store, 24h TTL. See section 5.                      |
+| Mechanism                                  | Status                                                                                             |
+| ------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| Authentication (SSO, API keys, basic auth) | Implemented as session-based auth (DF-3). Toggle: `EMIS_AUTH_MODE=session`. Default: `none`.       |
+| Session management                         | Implemented: cookie-based sessions, in-memory store, 24h TTL. See section 5.                       |
 | Role-based access control (RBAC)           | Implemented: viewer/editor/admin with role hierarchy. Enforced in hooks + writePolicy.             |
 | Per-entity permission model                | Not implemented (not required). All editors can write all entities.                                |
 | Admin role enforcement                     | Implemented: `/emis/admin/*` pages require admin role. Dictionary API writes require editor+ role. |
@@ -169,8 +169,8 @@ The return type is identical (`EmisWriteContext`), so downstream service/reposit
 
 Auth behavior is controlled by `EMIS_AUTH_MODE` env var:
 
-| Value     | When                              | Behavior                                                                                   |
-| --------- | --------------------------------- | ------------------------------------------------------------------------------------------ |
+| Value     | When                              | Behavior                                                                                    |
+| --------- | --------------------------------- | ------------------------------------------------------------------------------------------- |
 | `none`    | Dev/local default, smoke tests    | No session required. Actor resolved from headers (current MVE behavior). No login redirect. |
 | `session` | Production / when auth is desired | Cookie-based sessions. Unauthenticated requests to protected routes redirect to login.      |
 
@@ -180,10 +180,10 @@ If `EMIS_AUTH_MODE` is not set, defaults to `none` (backward-compatible with exi
 
 ```typescript
 type EmisSession = {
-  userId: string;       // unique user identifier (e.g. "admin", "editor1")
-  username: string;     // display name
-  role: EmisRole;       // 'viewer' | 'editor' | 'admin'
-  createdAt: number;    // Unix timestamp (ms) when session was created
+	userId: string; // unique user identifier (e.g. "admin", "editor1")
+	username: string; // display name
+	role: EmisRole; // 'viewer' | 'editor' | 'admin'
+	createdAt: number; // Unix timestamp (ms) when session was created
 };
 
 type EmisRole = 'viewer' | 'editor' | 'admin';
@@ -191,15 +191,15 @@ type EmisRole = 'viewer' | 'editor' | 'admin';
 
 ### Cookie contract
 
-| Property   | Value                                             |
-| ---------- | ------------------------------------------------- |
-| Name       | `emis_session`                                    |
-| Content    | Opaque session ID (random UUID)                   |
-| Path       | `/`                                               |
-| HttpOnly   | `true`                                            |
-| SameSite   | `Lax`                                             |
-| Secure     | `true` in production, `false` in dev              |
-| Max-Age    | 86400 (24 hours)                                  |
+| Property | Value                                |
+| -------- | ------------------------------------ |
+| Name     | `emis_session`                       |
+| Content  | Opaque session ID (random UUID)      |
+| Path     | `/`                                  |
+| HttpOnly | `true`                               |
+| SameSite | `Lax`                                |
+| Secure   | `true` in production, `false` in dev |
+| Max-Age  | 86400 (24 hours)                     |
 
 ### Session store
 
@@ -223,11 +223,11 @@ Fallback: if `EMIS_USERS` is not set and `EMIS_AUTH_MODE=session`, the app logs 
 
 ### Login page
 
-| Route          | Method | Purpose                                         |
-| -------------- | ------ | ----------------------------------------------- |
-| `/emis/login`  | GET    | Render login form                               |
-| `/emis/login`  | POST   | Authenticate credentials, set cookie, redirect  |
-| `/emis/logout` | POST   | Clear session cookie, redirect to login         |
+| Route          | Method | Purpose                                        |
+| -------------- | ------ | ---------------------------------------------- |
+| `/emis/login`  | GET    | Render login form                              |
+| `/emis/login`  | POST   | Authenticate credentials, set cookie, redirect |
+| `/emis/logout` | POST   | Clear session cookie, redirect to login        |
 
 Login form fields: `username`, `password`.
 
@@ -249,12 +249,12 @@ SvelteKit `handle` hook in `hooks.server.ts`:
 
 ### Role enforcement rules
 
-| Route pattern       | Required role | Enforcement point                                    |
-| ------------------- | ------------- | ---------------------------------------------------- |
-| `GET /api/emis/*`   | `viewer+`     | Hook middleware (session required when auth=session)  |
-| `POST/PATCH/DELETE /api/emis/*` | `editor+` | `assertWriteContext()` (extended) |
-| `/emis/admin/*`     | `admin`       | Hook middleware                                       |
-| `/emis/*` (pages)   | `viewer+`     | Hook middleware (session required when auth=session)  |
+| Route pattern                   | Required role | Enforcement point                                    |
+| ------------------------------- | ------------- | ---------------------------------------------------- |
+| `GET /api/emis/*`               | `viewer+`     | Hook middleware (session required when auth=session) |
+| `POST/PATCH/DELETE /api/emis/*` | `editor+`     | `assertWriteContext()` (extended)                    |
+| `/emis/admin/*`                 | `admin`       | Hook middleware                                      |
+| `/emis/*` (pages)               | `viewer+`     | Hook middleware (session required when auth=session) |
 
 Role hierarchy: `admin` > `editor` > `viewer`.
 
@@ -272,9 +272,9 @@ The function signature changes to accept an optional `locals` parameter:
 
 ```typescript
 export function assertWriteContext(
-  request: Request,
-  source: EmisWriteSource,
-  locals?: App.Locals
+	request: Request,
+	source: EmisWriteSource,
+	locals?: App.Locals
 ): EmisWriteContext;
 ```
 
@@ -289,11 +289,11 @@ When testing auth flows specifically, set `EMIS_AUTH_MODE=session` and `EMIS_USE
 ```typescript
 // app.d.ts
 declare global {
-  namespace App {
-    interface Locals {
-      emisSession?: EmisSession | null;
-    }
-  }
+	namespace App {
+		interface Locals {
+			emisSession?: EmisSession | null;
+		}
+	}
 }
 ```
 

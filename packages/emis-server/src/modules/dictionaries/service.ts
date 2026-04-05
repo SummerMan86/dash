@@ -26,7 +26,11 @@ import {
 
 export async function createCountryService(input: CreateCountryInput) {
 	if (await countryExists(input.code)) {
-		throw new EmisError(409, 'COUNTRY_ALREADY_EXISTS', `Country with code "${input.code}" already exists`);
+		throw new EmisError(
+			409,
+			'COUNTRY_ALREADY_EXISTS',
+			`Country with code "${input.code}" already exists`
+		);
 	}
 	return insertCountry(input);
 }

@@ -92,11 +92,7 @@ export function assertWriteContext(
 		const session: EmisSession | null | undefined = locals?.emisSession;
 
 		if (!session) {
-			throw new EmisError(
-				401,
-				'UNAUTHORIZED',
-				'Authentication required for write operations.'
-			);
+			throw new EmisError(401, 'UNAUTHORIZED', 'Authentication required for write operations.');
 		}
 
 		if (!hasMinRole(session.role, 'editor')) {

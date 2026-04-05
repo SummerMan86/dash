@@ -237,9 +237,7 @@ export async function objectTypeCodeExists(
 		);
 		return (result.rowCount ?? 0) > 0;
 	}
-	const result = await db.query('SELECT 1 FROM emis.object_types WHERE code = $1 LIMIT 1', [
-		code
-	]);
+	const result = await db.query('SELECT 1 FROM emis.object_types WHERE code = $1 LIMIT 1', [code]);
 	return (result.rowCount ?? 0) > 0;
 }
 

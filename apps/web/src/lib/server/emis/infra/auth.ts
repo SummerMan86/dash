@@ -95,7 +95,9 @@ function getConfiguredUsers(): EmisUserConfig[] {
 		);
 
 		if (_parsedUsers.length === 0) {
-			console.warn('[emis:auth] EMIS_USERS parsed but no valid users found. Auth will be disabled.');
+			console.warn(
+				'[emis:auth] EMIS_USERS parsed but no valid users found. Auth will be disabled.'
+			);
 		}
 
 		return _parsedUsers;
@@ -117,10 +119,7 @@ export function isSessionAuthReady(): boolean {
  * Authenticate a user by username and password.
  * Returns the user config if valid, null otherwise.
  */
-export function authenticateUser(
-	username: string,
-	password: string
-): EmisUserConfig | null {
+export function authenticateUser(username: string, password: string): EmisUserConfig | null {
 	const users = getConfiguredUsers();
 	return users.find((u) => u.username === username && u.password === password) ?? null;
 }

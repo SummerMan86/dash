@@ -3,6 +3,7 @@
 ## Цель
 
 Реализовать три явных deferral из MVE acceptance audit (NW-5):
+
 1. Soft-delete UI для объектов и новостей
 2. Admin CRUD для справочников (countries, object_types, sources)
 3. Базовая auth/access control
@@ -26,6 +27,7 @@
 ## Slices
 
 ### DF-1: Soft-delete UI buttons for objects and news
+
 - status: completed (2026-04-05)
 - scope:
   - Add delete button to object detail page (`/emis/objects/[id]`)
@@ -49,6 +51,7 @@
   - Manual smoke: delete object/news via UI, verify soft-delete in catalog
 
 ### DF-2: Admin CRUD for dictionaries
+
 - status: completed (2026-04-05)
 - depends on: none (independent of DF-1)
 - scope:
@@ -78,6 +81,7 @@
   - Smoke coverage for dictionary CRUD
 
 ### DF-3: Basic auth and access control
+
 - status: completed (2026-04-05)
 - depends on: DF-2 (admin pages exist to protect)
 - scope:
@@ -123,6 +127,7 @@ DF-2 (admin CRUD) → DF-3 (auth) ────→ DF-5
 - DF-5 (governance closure) runs after all others
 
 ### DF-5: Governance closure and final baseline
+
 - status: completed (2026-04-05)
 - scope:
   - Full baseline verification (all 6 canonical checks)

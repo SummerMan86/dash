@@ -3,11 +3,7 @@ import { z } from 'zod';
 // --- Countries ---
 
 export const createCountrySchema = z.object({
-	code: z
-		.string()
-		.trim()
-		.length(2, 'Country code must be exactly 2 characters')
-		.toUpperCase(),
+	code: z.string().trim().length(2, 'Country code must be exactly 2 characters').toUpperCase(),
 	nameRu: z.string().trim().min(1, 'nameRu is required').max(255),
 	nameEn: z.string().trim().min(1, 'nameEn is required').max(255)
 });

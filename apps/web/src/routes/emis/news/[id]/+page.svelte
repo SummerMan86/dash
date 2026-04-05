@@ -61,10 +61,7 @@
 				<a class="underline underline-offset-4" href="/emis">/emis workspace</a>
 				<a class="underline underline-offset-4" href="/emis/news">/emis/news</a>
 				<a class="underline underline-offset-4" href={`/emis/news/${data.news.id}/edit`}>edit</a>
-				<button
-					class="text-destructive underline underline-offset-4"
-					onclick={openDeleteDialog}
-				>
+				<button class="text-destructive underline underline-offset-4" onclick={openDeleteDialog}>
 					delete
 				</button>
 			</div>
@@ -229,13 +226,16 @@
 <dialog
 	bind:this={deleteDialogEl}
 	class="rounded-xl border border-border bg-background p-0 shadow-lg backdrop:bg-black/50"
-	onclick={(e) => { if (e.target === deleteDialogEl) closeDeleteDialog(); }}
+	onclick={(e) => {
+		if (e.target === deleteDialogEl) closeDeleteDialog();
+	}}
 >
 	<div class="flex w-[min(24rem,90vw)] flex-col gap-4 p-6">
 		<h2 class="type-body-sm font-semibold text-foreground">Delete news item</h2>
 		<p class="type-body-sm text-muted-foreground">
-			Are you sure you want to delete <span class="font-medium text-foreground">{data.news.title}</span>?
-			This action performs a soft-delete and can be reversed by an administrator.
+			Are you sure you want to delete <span class="font-medium text-foreground"
+				>{data.news.title}</span
+			>? This action performs a soft-delete and can be reversed by an administrator.
 		</p>
 		{#if deleteError}
 			<p class="type-body-sm text-destructive">{deleteError}</p>
