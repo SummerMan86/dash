@@ -65,8 +65,8 @@ export const GET: RequestHandler = handleEmisRoute(async ({ url }) => {
 	});
 }, 'Failed to load EMIS news');
 
-export const POST: RequestHandler = handleEmisRoute(async ({ request }) => {
+export const POST: RequestHandler = handleEmisRoute(async ({ request, locals }) => {
 	const body = await parseJsonBody(request, createEmisNewsSchema);
-	const created = await createNewsService(body, assertWriteContext(request, 'api'));
+	const created = await createNewsService(body, assertWriteContext(request, 'api', locals));
 	return json(created, { status: 201 });
 }, 'Failed to create EMIS news item');

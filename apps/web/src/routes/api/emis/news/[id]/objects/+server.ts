@@ -5,9 +5,9 @@ import { assertWriteContext } from '$lib/server/emis/infra/writePolicy';
 import { handleEmisRoute, parseJsonBody, requireUuid } from '$lib/server/emis/infra/http';
 import { attachNewsObjectsService } from '@dashboard-builder/emis-server/modules/links/service';
 
-export const POST: RequestHandler = handleEmisRoute(async ({ params, request }) => {
+export const POST: RequestHandler = handleEmisRoute(async ({ params, request, locals }) => {
 	const newsId = requireUuid(params.id, 'news id');
 	const body = await parseJsonBody(request, attachNewsObjectsSchema);
-	await attachNewsObjectsService(newsId, body, assertWriteContext(request, 'api'));
+	await attachNewsObjectsService(newsId, body, assertWriteContext(request, 'api', locals));
 	return json({ ok: true });
 }, 'Failed to attach objects to EMIS news item');

@@ -10,8 +10,8 @@ export const GET: RequestHandler = handleEmisRoute(async () => {
 	return json({ rows: await listSources() });
 }, 'Failed to load EMIS sources');
 
-export const POST: RequestHandler = handleEmisRoute(async ({ request }) => {
-	assertWriteContext(request, 'api');
+export const POST: RequestHandler = handleEmisRoute(async ({ request, locals }) => {
+	assertWriteContext(request, 'api', locals);
 	const body = await parseJsonBody(request, createSourceSchema);
 	const created = await createSourceService(body);
 	return json(created, { status: 201 });

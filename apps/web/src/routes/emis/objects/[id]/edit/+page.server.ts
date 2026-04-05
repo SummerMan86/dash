@@ -35,7 +35,7 @@ export const load: PageServerLoad = async ({ params }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ request, params }) => {
+	default: async ({ request, params, locals }) => {
 		const id = params.id;
 		if (!id || !UUID_RE.test(id)) throw error(404, 'Object not found');
 
@@ -46,7 +46,11 @@ export const actions: Actions = {
 		try {
 			ensureObjectFormRequired(values);
 			const payload = createEmisObjectSchema.parse(parseObjectForm(values));
-			updated = await updateObjectService(id, payload, assertWriteContext(request, 'manual-ui'));
+			updated = await updateObjectService(
+				id,
+				payload,
+				assertWriteContext(request, 'manual-ui', locals)
+			);
 		} catch (errorValue) {
 			return actionFailure(errorValue, values);
 		}

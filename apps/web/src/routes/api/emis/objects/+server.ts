@@ -62,8 +62,8 @@ export const GET: RequestHandler = handleEmisRoute(async ({ url }) => {
 	});
 }, 'Failed to load EMIS objects');
 
-export const POST: RequestHandler = handleEmisRoute(async ({ request }) => {
+export const POST: RequestHandler = handleEmisRoute(async ({ request, locals }) => {
 	const body = await parseJsonBody(request, createEmisObjectSchema);
-	const created = await createObjectService(body, assertWriteContext(request, 'api'));
+	const created = await createObjectService(body, assertWriteContext(request, 'api', locals));
 	return json(created, { status: 201 });
 }, 'Failed to create EMIS object');

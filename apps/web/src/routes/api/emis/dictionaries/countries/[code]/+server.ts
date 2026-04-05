@@ -13,9 +13,9 @@ function requireCountryCode(value: string | undefined): string {
 	return value.trim().toUpperCase();
 }
 
-export const PATCH: RequestHandler = handleEmisRoute(async ({ params, request }) => {
+export const PATCH: RequestHandler = handleEmisRoute(async ({ params, request, locals }) => {
 	const code = requireCountryCode(params.code);
-	assertWriteContext(request, 'api');
+	assertWriteContext(request, 'api', locals);
 	const body = await parseJsonBody(request, updateCountrySchema);
 	const updated = await updateCountryService(code, body);
 	return json(updated);

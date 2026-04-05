@@ -24,7 +24,7 @@ export const load: PageServerLoad = async () => {
 };
 
 export const actions: Actions = {
-	default: async ({ request }) => {
+	default: async ({ request, locals }) => {
 		const formData = await request.formData();
 		const values = readObjectFormValues(formData);
 
@@ -32,7 +32,10 @@ export const actions: Actions = {
 		try {
 			ensureObjectFormRequired(values);
 			const payload = createEmisObjectSchema.parse(parseObjectForm(values));
-			created = await createObjectService(payload, assertWriteContext(request, 'manual-ui'));
+			created = await createObjectService(
+				payload,
+				assertWriteContext(request, 'manual-ui', locals)
+			);
 		} catch (error) {
 			return actionFailure(error, values);
 		}

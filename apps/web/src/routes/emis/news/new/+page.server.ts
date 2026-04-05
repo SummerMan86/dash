@@ -24,7 +24,7 @@ export const load: PageServerLoad = async () => {
 };
 
 export const actions: Actions = {
-	default: async ({ request }) => {
+	default: async ({ request, locals }) => {
 		const formData = await request.formData();
 		const values = readNewsFormValues(formData);
 
@@ -32,7 +32,10 @@ export const actions: Actions = {
 		try {
 			ensureNewsFormRequired(values);
 			const payload = createEmisNewsSchema.parse(parseNewsForm(values));
-			created = await createNewsService(payload, assertWriteContext(request, 'manual-ui'));
+			created = await createNewsService(
+				payload,
+				assertWriteContext(request, 'manual-ui', locals)
+			);
 		} catch (error) {
 			return actionFailure(error, values);
 		}

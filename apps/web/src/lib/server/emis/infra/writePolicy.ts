@@ -3,11 +3,15 @@
  *
  * Wraps `resolveEmisWriteContext()` (audit utility from emis-server) with
  * configurable policy enforcement. This is the single checkpoint for write
- * authorization in MVE.
+ * authorization.
  *
- * Canonical contract: docs/emis_access_model.md section 4.
+ * Canonical contract: docs/emis_access_model.md sections 4 and 5.
  *
- * Modes:
+ * Supports two auth modes (EMIS_AUTH_MODE):
+ *   - none (default): actor from headers, write-policy from EMIS_WRITE_POLICY
+ *   - session: actor from session, role-based write enforcement
+ *
+ * Write-policy modes (EMIS_WRITE_POLICY, only relevant when EMIS_AUTH_MODE=none):
  *   - strict  (EMIS_WRITE_POLICY=strict or NODE_ENV=production): requires
  *             explicit actor header; missing actor -> throw EmisError(403,
  *             WRITE_NOT_ALLOWED).
@@ -24,6 +28,7 @@ import {
 	type EmisWriteContext
 } from '@dashboard-builder/emis-server/infra/audit';
 import { EmisError } from '@dashboard-builder/emis-server/infra/errors';
+import { isSessionAuthReady, hasMinRole, type EmisSession } from './auth';
 
 export type { EmisWriteSource, EmisWriteContext };
 
@@ -60,16 +65,56 @@ function getExplicitActorId(request: Request): string | null {
 /**
  * Validate write context for an EMIS write operation.
  *
- * In strict mode (EMIS_WRITE_POLICY=strict or production): requires an explicit
- * actor identity via x-emis-actor-id or x-actor-id header. Rejects with 403 if
- * missing.
+ * When EMIS_AUTH_MODE=session and session auth is ready:
+ *   - Requires a valid session with editor+ role.
+ *   - Actor ID is derived from session userId.
+ *   - Rejects with 401 if no session, 403 if insufficient role.
  *
- * In permissive mode (EMIS_WRITE_POLICY=permissive or dev/local default): falls
- * back to source-based default actor (same behavior as resolveEmisWriteContext).
+ * When EMIS_AUTH_MODE=none (default):
+ *   - In strict mode (EMIS_WRITE_POLICY=strict or production): requires explicit
+ *     actor identity via x-emis-actor-id or x-actor-id header. Rejects with 403.
+ *   - In permissive mode (EMIS_WRITE_POLICY=permissive or dev/local default):
+ *     falls back to source-based default actor.
  *
- * @throws EmisError(403, 'WRITE_NOT_ALLOWED') in strict mode when actor is missing
+ * @param request - The incoming HTTP request
+ * @param source - The write source ('api' | 'manual-ui' | 'server')
+ * @param locals - Optional App.Locals containing emisSession (for session-based auth)
+ * @throws EmisError(401, 'UNAUTHORIZED') when session auth is active but no session
+ * @throws EmisError(403, 'WRITE_NOT_ALLOWED') when role is insufficient or actor is missing
  */
-export function assertWriteContext(request: Request, source: EmisWriteSource): EmisWriteContext {
+export function assertWriteContext(
+	request: Request,
+	source: EmisWriteSource,
+	locals?: App.Locals
+): EmisWriteContext {
+	// Session-based auth mode
+	if (isSessionAuthReady()) {
+		const session: EmisSession | null | undefined = locals?.emisSession;
+
+		if (!session) {
+			throw new EmisError(
+				401,
+				'UNAUTHORIZED',
+				'Authentication required for write operations.'
+			);
+		}
+
+		if (!hasMinRole(session.role, 'editor')) {
+			throw new EmisError(
+				403,
+				'WRITE_NOT_ALLOWED',
+				'Insufficient role for write operations. Editor or admin role required.'
+			);
+		}
+
+		// Use session userId as actor for audit trail
+		return {
+			actorId: session.userId,
+			source
+		};
+	}
+
+	// Header-based auth mode (EMIS_AUTH_MODE=none, current MVE behavior)
 	if (isStrictMode()) {
 		const explicitActor = getExplicitActorId(request);
 		if (!explicitActor) {

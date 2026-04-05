@@ -10,8 +10,8 @@ export const GET: RequestHandler = handleEmisRoute(async () => {
 	return json({ rows: await listObjectTypes() });
 }, 'Failed to load EMIS object types');
 
-export const POST: RequestHandler = handleEmisRoute(async ({ request }) => {
-	assertWriteContext(request, 'api');
+export const POST: RequestHandler = handleEmisRoute(async ({ request, locals }) => {
+	assertWriteContext(request, 'api', locals);
 	const body = await parseJsonBody(request, createObjectTypeSchema);
 	const created = await createObjectTypeService(body);
 	return json(created, { status: 201 });

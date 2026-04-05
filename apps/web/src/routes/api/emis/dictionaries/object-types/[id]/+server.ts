@@ -5,9 +5,9 @@ import { handleEmisRoute, parseJsonBody, requireUuid } from '$lib/server/emis/in
 import { assertWriteContext } from '$lib/server/emis/infra/writePolicy';
 import { updateObjectTypeService } from '@dashboard-builder/emis-server/modules/dictionaries/service';
 
-export const PATCH: RequestHandler = handleEmisRoute(async ({ params, request }) => {
+export const PATCH: RequestHandler = handleEmisRoute(async ({ params, request, locals }) => {
 	const id = requireUuid(params.id, 'object type id');
-	assertWriteContext(request, 'api');
+	assertWriteContext(request, 'api', locals);
 	const body = await parseJsonBody(request, updateObjectTypeSchema);
 	const updated = await updateObjectTypeService(id, body);
 	return json(updated);
