@@ -1,0 +1,65 @@
+import { fail, redirect } from '@sveltejs/kit';
+import type { Actions, PageServerLoad } from './$types';
+import {
+	authenticateUser,
+	createSession,
+	isSessionAuthReady,
+	SESSION_COOKIE_NAME,
+	SESSION_COOKIE_MAX_AGE,
+	isSecureCookie
+} from '$lib/server/emis/infra/auth';
+
+export const load: PageServerLoad = async ({ locals, url }) => {
+	// If already authenticated, redirect to emis home
+	if (locals.emisSession) {
+		const redirectTo = url.searchParams.get('redirect') || '/emis';
+		throw redirect(303, redirectTo);
+	}
+
+	return {
+		authEnabled: isSessionAuthReady()
+	};
+};
+
+export const actions: Actions = {
+	default: async ({ request, cookies, url }) => {
+		if (!isSessionAuthReady()) {
+			return fail(400, {
+				error: 'Authentication is not configured. Set EMIS_AUTH_MODE=session and EMIS_USERS.',
+				username: ''
+			});
+		}
+
+		const formData = await request.formData();
+		const username = (formData.get('username') as string)?.trim() ?? '';
+		const password = (formData.get('password') as string) ?? '';
+
+		if (!username || !password) {
+			return fail(400, {
+				error: 'Username and password are required.',
+				username
+			});
+		}
+
+		const user = authenticateUser(username, password);
+		if (!user) {
+			return fail(401, {
+				error: 'Invalid username or password.',
+				username
+			});
+		}
+
+		const sessionId = createSession(user);
+
+		cookies.set(SESSION_COOKIE_NAME, sessionId, {
+			path: '/',
+			httpOnly: true,
+			sameSite: 'lax',
+			secure: isSecureCookie(),
+			maxAge: SESSION_COOKIE_MAX_AGE
+		});
+
+		const redirectTo = url.searchParams.get('redirect') || '/emis';
+		throw redirect(303, redirectTo);
+	}
+};
