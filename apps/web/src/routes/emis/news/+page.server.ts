@@ -1,7 +1,7 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
-import { listEmisNewsQuerySchema } from '$entities/emis-news';
+import { listEmisNewsQuerySchema } from '@dashboard-builder/emis-contracts/emis-news';
 import { EmisError } from '$lib/server/emis/infra/errors';
 import {
 	EMIS_DEFAULT_LIST_LIMIT,

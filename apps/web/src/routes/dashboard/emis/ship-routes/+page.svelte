@@ -3,16 +3,16 @@
 	import type { EChartsOption } from 'echarts';
 
 	import { fetchDataset } from '$shared/api/fetchDataset';
-	import { useDebouncedLoader } from '$shared/lib/useDebouncedLoader.svelte';
-	import { Button } from '$shared/ui/button';
-	import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '$shared/ui/card';
-	import { Chart } from '$shared/ui/chart';
-	import { ChartCard } from '$shared/ui/chart-card';
-	import { StatCard } from '$shared/ui/stat-card';
-	import { formatCompact, formatDate, formatNumber } from '$shared/utils';
-	import type { DatasetResponse, JsonValue } from '$entities/dataset';
-	import { useFilterWorkspace } from '$entities/filter';
-	import { FilterPanel } from '$widgets/filters';
+	import { useDebouncedLoader } from '@dashboard-builder/platform-core';
+	import { Button } from '@dashboard-builder/platform-ui';
+	import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@dashboard-builder/platform-ui';
+	import { Chart } from '@dashboard-builder/platform-ui';
+	import { ChartCard } from '@dashboard-builder/platform-ui';
+	import { StatCard } from '@dashboard-builder/platform-ui';
+	import { formatCompact, formatDate, formatNumber } from '@dashboard-builder/platform-core';
+	import type { DatasetResponse, JsonValue } from '@dashboard-builder/platform-datasets';
+	import { useFilterWorkspace } from '@dashboard-builder/platform-filters';
+	import { FilterPanel } from '@dashboard-builder/platform-filters/widgets';
 
 	import { emisShipRouteBiFilters } from './filters';
 

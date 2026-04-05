@@ -1,4 +1,4 @@
-import type { JsonValue } from '$entities/dataset';
+import type { JsonValue } from '@dashboard-builder/platform-datasets';
 
 export type StrategyRow = Record<string, JsonValue>;
 export type SortDir = 'asc' | 'desc';

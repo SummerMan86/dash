@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { Card, CardContent, CardHeader, CardTitle } from '$shared/ui/card';
-	import { Chart } from '$shared/ui/chart';
-	import { Sparkline } from '$shared/ui/sparkline';
+	import { Card, CardContent, CardHeader, CardTitle } from '@dashboard-builder/platform-ui';
+	import { Chart } from '@dashboard-builder/platform-ui';
+	import { Sparkline } from '@dashboard-builder/platform-ui';
 	import type { EChartsOption } from 'echarts';
 	import {
 		kpiSummary,

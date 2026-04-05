@@ -1,10 +1,10 @@
 <script lang="ts">
-	import type { EmisMapSelectedFeature } from '$entities/emis-map';
-	import type { EmisNewsSummary } from '$entities/emis-news';
-	import type { EmisObjectSummary } from '$entities/emis-object';
-	import { Button } from '$shared/ui/button';
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$shared/ui/card';
-	import { Skeleton } from '$shared/ui/skeleton';
+	import type { EmisMapSelectedFeature } from '@dashboard-builder/emis-contracts/emis-map';
+	import type { EmisNewsSummary } from '@dashboard-builder/emis-contracts/emis-news';
+	import type { EmisObjectSummary } from '@dashboard-builder/emis-contracts/emis-object';
+	import { Button } from '@dashboard-builder/platform-ui';
+	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@dashboard-builder/platform-ui';
+	import { Skeleton } from '@dashboard-builder/platform-ui';
 
 	import type { ShipRouteVesselOption } from './emisPageSelection';
 	import type { SearchResultKind } from './emisPageHelpers';

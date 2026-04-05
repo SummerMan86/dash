@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 
-	import { cn } from '$shared/styles/utils';
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$shared/ui/card';
+	import { cn } from '@dashboard-builder/platform-ui';
+	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@dashboard-builder/platform-ui';
 
 	import type { DashboardWidget } from '../model';
 

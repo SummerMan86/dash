@@ -1,7 +1,7 @@
 import { error, redirect, type Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
-import { createEmisObjectSchema } from '$entities/emis-object';
+import { createEmisObjectSchema } from '@dashboard-builder/emis-contracts/emis-object';
 import { assertWriteContext } from '$lib/server/emis/infra/writePolicy';
 import { getObjectDetailQuery } from '$lib/server/emis/modules/objects/queries';
 import { updateObjectService } from '$lib/server/emis/modules/objects/service';

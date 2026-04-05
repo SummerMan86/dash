@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { cn } from '$shared/styles/utils';
+	import { cn } from '@dashboard-builder/platform-ui';
 
 	interface Props {
 		class?: string;

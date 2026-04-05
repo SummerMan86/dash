@@ -3,9 +3,9 @@
 	import type { ActionData, PageData } from './$types';
 
 	import NewsEditorForm from '$lib/features/emis-manual-entry/NewsEditorForm.svelte';
-	import { Button } from '$shared/ui/button';
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$shared/ui/card';
-	import { Input } from '$shared/ui/input';
+	import { Button } from '@dashboard-builder/platform-ui';
+	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@dashboard-builder/platform-ui';
+	import { Input } from '@dashboard-builder/platform-ui';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 

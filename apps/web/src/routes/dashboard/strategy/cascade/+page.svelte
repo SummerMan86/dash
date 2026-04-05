@@ -3,16 +3,16 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 
-	import type { DatasetResponse, JsonValue } from '$entities/dataset';
-	import { useFilterWorkspace } from '$entities/filter';
+	import type { DatasetResponse, JsonValue } from '@dashboard-builder/platform-datasets';
+	import { useFilterWorkspace } from '@dashboard-builder/platform-filters';
 	import { fetchDataset } from '$shared/api/fetchDataset';
-	import { useDebouncedLoader } from '$shared/lib/useDebouncedLoader.svelte';
-	import { Badge } from '$shared/ui/badge';
-	import { Button } from '$shared/ui/button';
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$shared/ui/card';
-	import { DataTable } from '$shared/ui/data-table';
-	import { formatDate, formatNumber, formatPercent, truncate } from '$shared/utils';
-	import { FilterPanel } from '$widgets/filters';
+	import { useDebouncedLoader } from '@dashboard-builder/platform-core';
+	import { Badge } from '@dashboard-builder/platform-ui';
+	import { Button } from '@dashboard-builder/platform-ui';
+	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@dashboard-builder/platform-ui';
+	import { DataTable } from '@dashboard-builder/platform-ui';
+	import { formatDate, formatNumber, formatPercent, truncate } from '@dashboard-builder/platform-core';
+	import { FilterPanel } from '@dashboard-builder/platform-filters/widgets';
 
 	import StrategyNav from '../StrategyNav.svelte';
 	import {

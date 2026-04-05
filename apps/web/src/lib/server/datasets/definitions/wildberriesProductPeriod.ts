@@ -1,6 +1,6 @@
-import type { DatasetId, DatasetQuery } from '$entities/dataset';
-import type { DatasetIr } from '$entities/dataset';
-import { ir } from '$entities/dataset';
+import type { DatasetId, DatasetQuery } from '@dashboard-builder/platform-datasets';
+import type { DatasetIr } from '@dashboard-builder/platform-datasets';
+import { ir } from '@dashboard-builder/platform-datasets';
 
 export const PRODUCT_PERIOD_DATASETS = {
 	factProductPeriod: 'wildberries.fact_product_period'

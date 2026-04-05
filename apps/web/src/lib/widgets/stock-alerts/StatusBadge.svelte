@@ -8,7 +8,7 @@
 -->
 
 <script lang="ts">
-	import { cn } from '$shared/styles/utils';
+	import { cn } from '@dashboard-builder/platform-ui';
 	import type { StockStatus } from './types';
 	import { getStatusColor, getStatusLabel } from './utils';
 

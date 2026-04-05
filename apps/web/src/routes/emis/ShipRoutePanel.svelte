@@ -1,14 +1,14 @@
 <script lang="ts">
-	import type { EmisMapSelectedRouteFeature } from '$entities/emis-map';
-	import type { EmisShipRoutePoint } from '$entities/emis-ship-route';
-	import type { FilterWorkspaceRuntime } from '$entities/filter';
-	import { Button } from '$shared/ui/button';
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$shared/ui/card';
-	import { Skeleton } from '$shared/ui/skeleton';
-	import { FilterPanel } from '$widgets/filters';
+	import type { EmisMapSelectedRouteFeature } from '@dashboard-builder/emis-contracts/emis-map';
+	import type { EmisShipRoutePoint } from '@dashboard-builder/emis-contracts/emis-ship-route';
+	import type { FilterWorkspaceRuntime } from '@dashboard-builder/platform-filters';
+	import { Button } from '@dashboard-builder/platform-ui';
+	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@dashboard-builder/platform-ui';
+	import { Skeleton } from '@dashboard-builder/platform-ui';
+	import { FilterPanel } from '@dashboard-builder/platform-filters/widgets';
 
 	import type { ShipRouteVesselOption } from './emisPageSelection';
-	import type { EmisShipRouteSegment } from '$entities/emis-ship-route';
+	import type { EmisShipRouteSegment } from '@dashboard-builder/emis-contracts/emis-ship-route';
 	import type { RouteMode } from './emisPageHelpers';
 	import { formatDate, formatCoordinate, formatMetric, SHIP_ROUTE_LIMIT } from './emisPageHelpers';
 	import { EMIS_SHIP_ROUTE_FILTER_IDS } from './filters';

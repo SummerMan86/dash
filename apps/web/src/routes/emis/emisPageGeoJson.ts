@@ -1,4 +1,4 @@
-import type { EmisShipRoutePoint, EmisShipRouteSegment } from '$entities/emis-ship-route';
+import type { EmisShipRoutePoint, EmisShipRouteSegment } from '@dashboard-builder/emis-contracts/emis-ship-route';
 
 export function buildShipRoutePointFeatureCollection(
 	points: EmisShipRoutePoint[],

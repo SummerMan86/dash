@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import type { EmisCountry, EmisObjectType } from '$entities/emis-dictionary';
+	import type { EmisCountry, EmisObjectType } from '@dashboard-builder/emis-contracts/emis-dictionary';
 
-	import { Button } from '$shared/ui/button';
-	import { Input } from '$shared/ui/input';
-	import { Select } from '$shared/ui/select';
+	import { Button } from '@dashboard-builder/platform-ui';
+	import { Input } from '@dashboard-builder/platform-ui';
+	import { Select } from '@dashboard-builder/platform-ui';
 
 	type FieldErrors = Record<string, string>;
 

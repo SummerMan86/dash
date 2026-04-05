@@ -1,4 +1,4 @@
-import type { JsonValue } from '$entities/dataset';
+import type { JsonValue } from '@dashboard-builder/platform-datasets';
 
 export type FactProductPeriodRow = {
 	nm_id: number;

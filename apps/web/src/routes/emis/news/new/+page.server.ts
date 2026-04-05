@@ -1,7 +1,7 @@
 import { redirect, type Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
-import { createEmisNewsSchema } from '$entities/emis-news';
+import { createEmisNewsSchema } from '@dashboard-builder/emis-contracts/emis-news';
 import { assertWriteContext } from '$lib/server/emis/infra/writePolicy';
 import { createNewsService } from '$lib/server/emis/modules/news/service';
 

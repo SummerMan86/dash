@@ -1,8 +1,8 @@
 import { error, redirect, type Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
-import { attachNewsObjectsSchema } from '$entities/emis-link';
-import { createEmisNewsSchema } from '$entities/emis-news';
+import { attachNewsObjectsSchema } from '@dashboard-builder/emis-contracts/emis-link';
+import { createEmisNewsSchema } from '@dashboard-builder/emis-contracts/emis-news';
 import { assertWriteContext } from '$lib/server/emis/infra/writePolicy';
 import {
 	attachNewsObjectsService,

@@ -2,8 +2,8 @@
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
 
-	import { Button } from '$shared/ui/button';
-	import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '$shared/ui/card';
+	import { Button } from '@dashboard-builder/platform-ui';
+	import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@dashboard-builder/platform-ui';
 
 	import { STRATEGY_NAV_ITEMS } from './constants';
 

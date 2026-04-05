@@ -1,19 +1,19 @@
 <script lang="ts">
 	import { fetchDataset } from '$shared/api';
-	import { useDebouncedLoader } from '$shared/lib/useDebouncedLoader.svelte';
-	import { useFilterWorkspace } from '$entities/filter';
-	import { FilterPanel } from '$widgets/filters';
-	import { Button } from '$shared/ui/button';
-	import { StatCard } from '$shared/ui/stat-card';
-	import { ChartCard } from '$shared/ui/chart-card';
-	import { Chart } from '$shared/ui/chart';
-	import { Sparkline } from '$shared/ui/sparkline';
-	import { Badge } from '$shared/ui/badge';
-	import { Input } from '$shared/ui/input';
-	import { Select } from '$shared/ui/select';
-	import { lineChartPreset, getLineSeries } from '$shared/ui/chart/presets';
-	import { getChartPalette, resolveCssColorVar } from '$shared/styles/tokens';
-	import type { JsonValue } from '$entities/dataset';
+	import { useDebouncedLoader } from '@dashboard-builder/platform-core';
+	import { useFilterWorkspace } from '@dashboard-builder/platform-filters';
+	import { FilterPanel } from '@dashboard-builder/platform-filters/widgets';
+	import { Button } from '@dashboard-builder/platform-ui';
+	import { StatCard } from '@dashboard-builder/platform-ui';
+	import { ChartCard } from '@dashboard-builder/platform-ui';
+	import { Chart } from '@dashboard-builder/platform-ui';
+	import { Sparkline } from '@dashboard-builder/platform-ui';
+	import { Badge } from '@dashboard-builder/platform-ui';
+	import { Input } from '@dashboard-builder/platform-ui';
+	import { Select } from '@dashboard-builder/platform-ui';
+	import { lineChartPreset, getLineSeries } from '@dashboard-builder/platform-ui';
+	import { getChartPalette, resolveCssColorVar } from '@dashboard-builder/platform-ui';
+	import type { JsonValue } from '@dashboard-builder/platform-datasets';
 
 	import { productAnalyticsFilters } from './filters';
 	import type { ProductSummary } from './types';
@@ -43,7 +43,7 @@
 		formatDate,
 		formatRating,
 		truncate
-	} from '$shared/utils';
+	} from '@dashboard-builder/platform-core';
 
 	// --- Filters ---
 	const filterRuntime = useFilterWorkspace({

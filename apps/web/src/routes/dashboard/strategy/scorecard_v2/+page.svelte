@@ -1,21 +1,21 @@
 <script lang="ts">
-	import type { DatasetResponse } from '$entities/dataset';
+	import type { DatasetResponse } from '@dashboard-builder/platform-datasets';
 	import type { EChartsOption } from 'echarts';
-	import { useFilterWorkspace } from '$entities/filter';
+	import { useFilterWorkspace } from '@dashboard-builder/platform-filters';
 	import { fetchDataset } from '$shared/api/fetchDataset';
-	import { useDebouncedLoader } from '$shared/lib/useDebouncedLoader.svelte';
-	import { cn } from '$shared/styles/utils';
-	import { Button } from '$shared/ui/button';
-	import { Card, CardContent, CardHeader, CardTitle } from '$shared/ui/card';
-	import { Chart } from '$shared/ui/chart';
-	import { DataTable } from '$shared/ui/data-table';
-	import { Badge } from '$shared/ui/badge';
-	import { ProgressCircle } from '$shared/ui/progress-circle';
-	import { ProgressBar } from '$shared/ui/progress-bar';
-	import { formatDate, formatNumber, formatPercent } from '$shared/utils';
-	import { FilterPanel } from '$widgets/filters';
-	import { barChartPreset, getChartPalette } from '$shared/ui/chart/presets';
-	import { resolveCssColorVar } from '$shared/styles/tokens';
+	import { useDebouncedLoader } from '@dashboard-builder/platform-core';
+	import { cn } from '@dashboard-builder/platform-ui';
+	import { Button } from '@dashboard-builder/platform-ui';
+	import { Card, CardContent, CardHeader, CardTitle } from '@dashboard-builder/platform-ui';
+	import { Chart } from '@dashboard-builder/platform-ui';
+	import { DataTable } from '@dashboard-builder/platform-ui';
+	import { Badge } from '@dashboard-builder/platform-ui';
+	import { ProgressCircle } from '@dashboard-builder/platform-ui';
+	import { ProgressBar } from '@dashboard-builder/platform-ui';
+	import { formatDate, formatNumber, formatPercent } from '@dashboard-builder/platform-core';
+	import { FilterPanel } from '@dashboard-builder/platform-filters/widgets';
+	import { barChartPreset, getChartPalette } from '@dashboard-builder/platform-ui';
+	import { resolveCssColorVar } from '@dashboard-builder/platform-ui';
 
 	import StrategyNav from '../StrategyNav.svelte';
 	import {

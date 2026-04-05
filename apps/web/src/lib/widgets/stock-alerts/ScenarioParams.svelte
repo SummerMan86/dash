@@ -10,9 +10,9 @@
 -->
 
 <script lang="ts">
-	import { cn } from '$shared/styles/utils';
-	import { Button } from '$shared/ui/button';
-	import { Card, CardContent } from '$shared/ui/card';
+	import { cn } from '@dashboard-builder/platform-ui';
+	import { Button } from '@dashboard-builder/platform-ui';
+	import { Card, CardContent } from '@dashboard-builder/platform-ui';
 	import type { PresetName } from './filters';
 	import { SCENARIO_PRESETS, PRESET_LIST, getPresetParams } from './filters';
 

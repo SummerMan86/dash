@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { Button } from '$shared/ui/button';
-	import { Card, CardContent, CardHeader, CardTitle } from '$shared/ui/card';
+	import { Button } from '@dashboard-builder/platform-ui';
+	import { Card, CardContent, CardHeader, CardTitle } from '@dashboard-builder/platform-ui';
 
 	import {
 		useDashboardEditor,

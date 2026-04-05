@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { fetchDataset } from '$shared/api/fetchDataset';
-	import { useDebouncedLoader } from '$shared/lib/useDebouncedLoader.svelte';
-	import { Button } from '$shared/ui/button';
-	import { Input } from '$shared/ui/input';
-	import { formatNumber } from '$shared/utils';
-	import type { DatasetResponse, JsonValue } from '$entities/dataset';
-	import { useFilterWorkspace } from '$entities/filter';
-	import { FilterPanel } from '$widgets/filters';
+	import { useDebouncedLoader } from '@dashboard-builder/platform-core';
+	import { Button } from '@dashboard-builder/platform-ui';
+	import { Input } from '@dashboard-builder/platform-ui';
+	import { formatNumber } from '@dashboard-builder/platform-core';
+	import type { DatasetResponse, JsonValue } from '@dashboard-builder/platform-datasets';
+	import { useFilterWorkspace } from '@dashboard-builder/platform-filters';
+	import { FilterPanel } from '@dashboard-builder/platform-filters/widgets';
 	import { officeDayFilters } from './filters';
 
 	const datasetId = 'wildberries.fact_product_office_day';

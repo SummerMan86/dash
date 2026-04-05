@@ -2,15 +2,15 @@
 	import { onMount } from 'svelte';
 
 	import { fetchDataset } from '$shared/api/fetchDataset';
-	import { useDebouncedLoader } from '$shared/lib/useDebouncedLoader.svelte';
-	import { cn } from '$shared/styles/utils';
-	import { Button } from '$shared/ui/button';
-	import { Card, CardContent, CardHeader, CardTitle } from '$shared/ui/card';
-	import { StatCard } from '$shared/ui/stat-card';
-	import { Select } from '$shared/ui/select';
-	import type { DatasetResponse, JsonValue } from '$entities/dataset';
-	import { useFilterWorkspace } from '$entities/filter';
-	import { FilterPanel } from '$widgets/filters';
+	import { useDebouncedLoader } from '@dashboard-builder/platform-core';
+	import { cn } from '@dashboard-builder/platform-ui';
+	import { Button } from '@dashboard-builder/platform-ui';
+	import { Card, CardContent, CardHeader, CardTitle } from '@dashboard-builder/platform-ui';
+	import { StatCard } from '@dashboard-builder/platform-ui';
+	import { Select } from '@dashboard-builder/platform-ui';
+	import type { DatasetResponse, JsonValue } from '@dashboard-builder/platform-datasets';
+	import { useFilterWorkspace } from '@dashboard-builder/platform-filters';
+	import { FilterPanel } from '@dashboard-builder/platform-filters/widgets';
 	import { StatusBadge, ScenarioParams } from '$widgets/stock-alerts';
 
 	import { stockAlertFilters, DEFAULT_PRESET, getPresetParams, type PresetName } from './filters';
@@ -23,7 +23,7 @@
 		getUniqueRegions,
 		getSkuForOffice
 	} from './aggregation';
-	import { formatNumber, formatCompact, formatDate } from '$shared/utils';
+	import { formatNumber, formatCompact, formatDate } from '@dashboard-builder/platform-core';
 	import { getStatusTextColor } from './utils';
 
 	const datasetId = 'wildberries.fact_product_office_day';

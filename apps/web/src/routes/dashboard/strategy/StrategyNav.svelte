@@ -2,7 +2,7 @@
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
 
-	import { Button } from '$shared/ui/button';
+	import { Button } from '@dashboard-builder/platform-ui';
 
 	import { STRATEGY_NAV_ITEMS } from './constants';
 

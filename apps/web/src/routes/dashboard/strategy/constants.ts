@@ -1,5 +1,5 @@
-import type { DatasetId } from '$entities/dataset';
-import type { FilterOption } from '$entities/filter';
+import type { DatasetId } from '@dashboard-builder/platform-datasets';
+import type { FilterOption } from '@dashboard-builder/platform-filters';
 
 export const STRATEGY_WORKSPACE_ID = 'dashboard-strategy';
 

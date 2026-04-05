@@ -1,4 +1,4 @@
-import type { FilterSpec } from '$entities/filter';
+import type { FilterSpec } from '@dashboard-builder/platform-filters';
 
 export const productAnalyticsFilters: FilterSpec[] = [
 	{

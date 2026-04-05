@@ -1,7 +1,7 @@
-import type { DatasetResponse, JsonValue } from '$entities/dataset';
-import type { DatasetIr, IrExpr, IrOrderBy, IrSelectItem } from '$entities/dataset';
-import type { Provider, ServerContext } from '$entities/dataset';
-import { CONTRACT_VERSION } from '$entities/dataset';
+import type { DatasetResponse, JsonValue } from '@dashboard-builder/platform-datasets';
+import type { DatasetIr, IrExpr, IrOrderBy, IrSelectItem } from '@dashboard-builder/platform-datasets';
+import type { Provider, ServerContext } from '@dashboard-builder/platform-datasets';
+import { CONTRACT_VERSION } from '@dashboard-builder/platform-datasets';
 
 import {
 	kpiSummary,

@@ -1,9 +1,9 @@
-import type { EmisMapSelectedFeature, EmisMapSelectedRouteFeature } from '$entities/emis-map';
+import type { EmisMapSelectedFeature, EmisMapSelectedRouteFeature } from '@dashboard-builder/emis-contracts/emis-map';
 import type {
 	EmisShipRoutePoint,
 	EmisShipRouteSegment,
 	EmisShipRouteVessel
-} from '$entities/emis-ship-route';
+} from '@dashboard-builder/emis-contracts/emis-ship-route';
 
 export type ShipRouteVesselOption = EmisShipRouteVessel & { vesselLabel: string };
 

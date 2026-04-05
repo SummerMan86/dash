@@ -1,4 +1,4 @@
-import type { FilterOption, FilterSpec } from '$entities/filter';
+import type { FilterOption, FilterSpec } from '@dashboard-builder/platform-filters';
 
 export const VESSEL_POSITIONS_FILTER_TARGETS = {
 	mapVessels: 'emis.map.vessels',

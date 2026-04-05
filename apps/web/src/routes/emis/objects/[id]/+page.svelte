@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$shared/ui/card';
+	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@dashboard-builder/platform-ui';
 
 	let { data }: { data: PageData } = $props();
 

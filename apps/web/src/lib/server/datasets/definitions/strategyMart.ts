@@ -1,5 +1,5 @@
-import type { DatasetId, DatasetIr, DatasetQuery } from '$entities/dataset';
-import { ir } from '$entities/dataset';
+import type { DatasetId, DatasetIr, DatasetQuery } from '@dashboard-builder/platform-datasets';
+import { ir } from '@dashboard-builder/platform-datasets';
 
 export const STRATEGY_MART_DATASETS = {
 	entityOverview: 'strategy.entity_overview',
