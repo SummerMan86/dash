@@ -14,7 +14,23 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 // Only scan directories where boundary rules are defined in eslint.config.js
-const targets = [
+import { readdirSync, statSync } from 'node:fs';
+
+/** Check if a directory contains any lintable files (.ts, .js, .svelte) */
+function hasLintableFiles(dir) {
+	try {
+		const entries = readdirSync(dir, { recursive: true });
+		return entries.some(
+			(e) =>
+				(e.endsWith('.ts') || e.endsWith('.js') || e.endsWith('.svelte')) &&
+				statSync(join(dir, String(e))).isFile()
+		);
+	} catch {
+		return false;
+	}
+}
+
+const allTargets = [
 	'packages/*/src/',
 	'apps/web/src/lib/shared/',
 	'apps/web/src/lib/entities/',
@@ -22,7 +38,14 @@ const targets = [
 	'apps/web/src/lib/widgets/',
 	'apps/web/src/routes/api/emis/',
 	'apps/web/src/routes/dashboard/emis/'
-].join(' ');
+];
+
+// Filter out directories with no lintable files to avoid ESLint errors
+const targets = allTargets.filter((t) => {
+	// Glob patterns (like packages/*/src/) are always kept
+	if (t.includes('*')) return true;
+	return hasLintableFiles(t);
+}).join(' ');
 
 // Write ESLint JSON to a temp file to avoid stdout buffer issues with execSync
 const tmpFile = join(tmpdir(), `lint-boundaries-${process.pid}.json`);
