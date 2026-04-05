@@ -9,11 +9,11 @@
 
 <script lang="ts">
 	import { cn } from '$shared/styles/utils';
-	import type { StockStatus } from '../../../routes/dashboard/wildberries/stock-alerts/types';
+	import type { StockStatus } from './types';
 	import {
 		getStatusColor,
 		getStatusLabel
-	} from '../../../routes/dashboard/wildberries/stock-alerts/utils';
+	} from './utils';
 
 	interface Props {
 		/** Stock status */

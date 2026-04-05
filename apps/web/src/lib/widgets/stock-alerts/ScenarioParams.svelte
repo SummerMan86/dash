@@ -13,12 +13,12 @@
 	import { cn } from '$shared/styles/utils';
 	import { Button } from '$shared/ui/button';
 	import { Card, CardContent } from '$shared/ui/card';
-	import type { PresetName } from '../../../routes/dashboard/wildberries/stock-alerts/filters';
+	import type { PresetName } from './filters';
 	import {
 		SCENARIO_PRESETS,
 		PRESET_LIST,
 		getPresetParams
-	} from '../../../routes/dashboard/wildberries/stock-alerts/filters';
+	} from './filters';
 
 	interface Props {
 		/** Currently selected preset */

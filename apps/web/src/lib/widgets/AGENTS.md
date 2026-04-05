@@ -24,7 +24,7 @@ App-level Wildberries stock alert widgets:
 - `ScenarioParams.svelte`
 - `StatusBadge.svelte`
 
-Note: imports types from `routes/dashboard/wildberries/stock-alerts/` (pre-existing layer-boundary concern, not ST-8 scope).
+Types, utils, and filter presets are co-located here (canonical). Route-layer files re-export from `$widgets/stock-alerts/*`.
 
 ### `emis-map/` and `emis-status-bar/`
 
