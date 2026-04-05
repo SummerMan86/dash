@@ -6,12 +6,28 @@
  *   - 'none' (default): no auth, backward-compatible with MVE
  *   - 'session': cookie-based sessions, login required for protected routes
  *
+ * User store (AUTH-3):
+ *   - Primary: DB table `emis.users` via emis-server user repository + bcrypt
+ *   - Fallback: `EMIS_USERS` env var (plaintext passwords, transition period)
+ *
+ * Session store (AUTH-4):
+ *   - Primary: DB table `emis.sessions` via emis-server session repository
+ *   - Fallback: in-memory Map if DB is unreachable (graceful degradation)
+ *   - Sessions survive server restart when DB is available
+ *
  * Canonical contract: docs/emis_access_model.md section 5.
  *
- * No SQL. No business logic beyond auth enforcement.
+ * No SQL in this file. DB queries delegated to emis-server repositories.
  */
 
 import { randomUUID } from 'node:crypto';
+
+import * as sessionRepo from '@dashboard-builder/emis-server/modules/sessions/repository';
+import {
+	getUserWithHash,
+	hasDbUsers
+} from '@dashboard-builder/emis-server/modules/users/repository';
+import { verifyPassword } from '@dashboard-builder/emis-server/modules/users/password';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -48,6 +64,23 @@ export function isAuthEnabled(): boolean {
 }
 
 // ---------------------------------------------------------------------------
+// Session TTL
+// ---------------------------------------------------------------------------
+
+function getSessionTtlHours(): number {
+	const raw = process.env.EMIS_SESSION_TTL_HOURS;
+	if (raw) {
+		const parsed = parseInt(raw, 10);
+		if (!isNaN(parsed) && parsed > 0) return parsed;
+	}
+	return 24;
+}
+
+function getSessionMaxAgeMs(): number {
+	return getSessionTtlHours() * 60 * 60 * 1000;
+}
+
+// ---------------------------------------------------------------------------
 // Role hierarchy
 // ---------------------------------------------------------------------------
 
@@ -62,29 +95,29 @@ export function hasMinRole(actual: EmisRole, required: EmisRole): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// User store (env-based)
+// User store — env-based (legacy fallback)
 // ---------------------------------------------------------------------------
 
-let _parsedUsers: EmisUserConfig[] | null = null;
+let _parsedEnvUsers: EmisUserConfig[] | null = null;
 
-function getConfiguredUsers(): EmisUserConfig[] {
-	if (_parsedUsers !== null) return _parsedUsers;
+function getEnvUsers(): EmisUserConfig[] {
+	if (_parsedEnvUsers !== null) return _parsedEnvUsers;
 
 	const raw = process.env.EMIS_USERS?.trim();
 	if (!raw) {
-		_parsedUsers = [];
-		return _parsedUsers;
+		_parsedEnvUsers = [];
+		return _parsedEnvUsers;
 	}
 
 	try {
 		const parsed = JSON.parse(raw);
 		if (!Array.isArray(parsed)) {
-			console.warn('[emis:auth] EMIS_USERS must be a JSON array. Auth will be disabled.');
-			_parsedUsers = [];
-			return _parsedUsers;
+			console.warn('[emis:auth] EMIS_USERS must be a JSON array. Env fallback disabled.');
+			_parsedEnvUsers = [];
+			return _parsedEnvUsers;
 		}
 
-		_parsedUsers = parsed.filter(
+		_parsedEnvUsers = parsed.filter(
 			(u: unknown): u is EmisUserConfig =>
 				typeof u === 'object' &&
 				u !== null &&
@@ -94,47 +127,248 @@ function getConfiguredUsers(): EmisUserConfig[] {
 				['viewer', 'editor', 'admin'].includes((u as EmisUserConfig).role)
 		);
 
-		if (_parsedUsers.length === 0) {
+		if (_parsedEnvUsers.length === 0) {
 			console.warn(
-				'[emis:auth] EMIS_USERS parsed but no valid users found. Auth will be disabled.'
+				'[emis:auth] EMIS_USERS parsed but no valid users found. Env fallback disabled.'
 			);
 		}
 
-		return _parsedUsers;
+		return _parsedEnvUsers;
 	} catch {
-		console.warn('[emis:auth] Failed to parse EMIS_USERS JSON. Auth will be disabled.');
-		_parsedUsers = [];
-		return _parsedUsers;
+		console.warn('[emis:auth] Failed to parse EMIS_USERS JSON. Env fallback disabled.');
+		_parsedEnvUsers = [];
+		return _parsedEnvUsers;
+	}
+}
+
+// ---------------------------------------------------------------------------
+// User store — DB availability check (cached)
+// ---------------------------------------------------------------------------
+
+/**
+ * Cached flag: null = not checked yet, true/false = DB has users.
+ * Resets on server restart or explicit invalidation.
+ */
+let _dbUsersAvailable: boolean | null = null;
+
+/**
+ * Check if DB users exist. Cached after first successful check.
+ * On DB error, returns false (falls back to env).
+ */
+async function getDbUsersAvailable(): Promise<boolean> {
+	if (_dbUsersAvailable !== null) return _dbUsersAvailable;
+
+	try {
+		_dbUsersAvailable = await hasDbUsers();
+		return _dbUsersAvailable;
+	} catch (err) {
+		console.warn('[emis:auth] Cannot reach emis.users table, falling back to env users.', err);
+		return false;
 	}
 }
 
 /**
- * Check if session auth can actually work (auth mode is session + users configured).
+ * Invalidate the DB users cache. Call after creating/deleting users
+ * so that subsequent auth checks re-query the DB.
  */
-export function isSessionAuthReady(): boolean {
-	return isAuthEnabled() && getConfiguredUsers().length > 0;
+export function invalidateDbUsersCache(): void {
+	_dbUsersAvailable = null;
+}
+
+// ---------------------------------------------------------------------------
+// Session auth readiness
+// ---------------------------------------------------------------------------
+
+/**
+ * Async check: can session auth work?
+ * Auth mode is session AND (DB users exist OR env users configured).
+ */
+export async function isSessionAuthReadyAsync(): Promise<boolean> {
+	if (!isAuthEnabled()) return false;
+
+	const dbReady = await getDbUsersAvailable();
+	if (dbReady) return true;
+
+	return getEnvUsers().length > 0;
 }
 
 /**
- * Authenticate a user by username and password.
- * Returns the user config if valid, null otherwise.
+ * Synchronous check for session auth readiness.
+ * Uses cached DB check result. If DB hasn't been checked yet, only considers env users.
+ * Prefer isSessionAuthReadyAsync() in async contexts.
  */
-export function authenticateUser(username: string, password: string): EmisUserConfig | null {
-	const users = getConfiguredUsers();
-	return users.find((u) => u.username === username && u.password === password) ?? null;
+export function isSessionAuthReady(): boolean {
+	if (!isAuthEnabled()) return false;
+
+	// If we've already checked DB and it has users
+	if (_dbUsersAvailable === true) return true;
+
+	// Env fallback
+	if (getEnvUsers().length > 0) return true;
+
+	return false;
 }
 
 // ---------------------------------------------------------------------------
-// Session store (in-memory)
+// Authentication
 // ---------------------------------------------------------------------------
 
-const SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
+/**
+ * Authenticate a user by username and password.
+ *
+ * Resolution order (AUTH-3 contract, docs/emis_access_model.md section 5):
+ *   1. If DB users exist: look up by username, verify with bcrypt.compare()
+ *   2. If DB empty/unreachable AND EMIS_USERS env set: plaintext compare (backward compat)
+ *
+ * Returns { id, username, role } on success, null on failure.
+ * Async because bcrypt.compare() is async (non-blocking).
+ */
+export async function authenticateUser(
+	username: string,
+	password: string
+): Promise<{ id: string; username: string; role: EmisRole } | null> {
+	const dbAvailable = await getDbUsersAvailable();
 
-const sessions = new Map<string, EmisSession>();
+	// Try DB first
+	if (dbAvailable) {
+		try {
+			const dbUser = await getUserWithHash(username);
+			if (!dbUser) return null;
 
-export function createSession(user: { id: string; username: string; role: EmisRole }): string {
+			const match = await verifyPassword(password, dbUser.passwordHash);
+			if (!match) return null;
+
+			return {
+				id: dbUser.id,
+				username: dbUser.username,
+				role: dbUser.role as EmisRole
+			};
+		} catch (err) {
+			console.warn('[emis:auth] DB auth lookup failed, trying env fallback.', err);
+			// Only fall through to env if DB was supposed to be available but failed
+		}
+	}
+
+	// Env fallback: plaintext comparison (backward compat with DF-3)
+	const envUsers = getEnvUsers();
+	if (envUsers.length > 0) {
+		if (dbAvailable) {
+			// DB has users but query failed on this specific call — don't use env fallback
+			// (env is only for when DB is empty, not for error recovery)
+			return null;
+		}
+
+		console.warn(
+			'[emis:auth] Using EMIS_USERS env fallback for authentication. ' +
+				'Migrate to DB users (emis.users table) for production.'
+		);
+
+		const envUser = envUsers.find(
+			(u) => u.username === username && u.password === password
+		);
+		if (!envUser) return null;
+
+		return {
+			id: envUser.id,
+			username: envUser.username,
+			role: envUser.role
+		};
+	}
+
+	return null;
+}
+
+// ---------------------------------------------------------------------------
+// In-memory session fallback
+// ---------------------------------------------------------------------------
+
+const memorySessions = new Map<string, EmisSession>();
+
+// ---------------------------------------------------------------------------
+// DB availability detection
+// ---------------------------------------------------------------------------
+
+/**
+ * Check whether the DB session store is available.
+ * Tries to use the session repo; if it throws (no DATABASE_URL, connection error),
+ * we fall back to in-memory.
+ */
+let _dbAvailable: boolean | null = null;
+let _dbCheckPromise: Promise<boolean> | null = null;
+
+async function isDbAvailable(): Promise<boolean> {
+	// If we already checked and got a definitive answer, use it
+	if (_dbAvailable !== null) return _dbAvailable;
+
+	// Avoid concurrent probe calls
+	if (_dbCheckPromise) return _dbCheckPromise;
+
+	_dbCheckPromise = (async () => {
+		try {
+			// Quick probe: try to get a non-existent session.
+			// If the table exists and DB is reachable, this returns null (not an error).
+			await sessionRepo.getSession('00000000-0000-0000-0000-000000000000');
+			_dbAvailable = true;
+			return true;
+		} catch {
+			console.warn(
+				'[emis:auth] DB session store unavailable, falling back to in-memory sessions.'
+			);
+			_dbAvailable = false;
+			return false;
+		} finally {
+			_dbCheckPromise = null;
+		}
+	})();
+
+	return _dbCheckPromise;
+}
+
+/**
+ * Reset DB availability flag. Call this to force a re-check
+ * (e.g., after a reconnect).
+ */
+export function resetDbAvailability(): void {
+	_dbAvailable = null;
+}
+
+// ---------------------------------------------------------------------------
+// Session store (DB-backed with in-memory fallback)
+// ---------------------------------------------------------------------------
+
+/**
+ * Create a session. Primary: DB. Fallback: in-memory Map.
+ * Returns the session ID (UUID).
+ */
+export async function createSession(user: {
+	id: string;
+	username: string;
+	role: EmisRole;
+}): Promise<string> {
+	const ttlHours = getSessionTtlHours();
+
+	if (await isDbAvailable()) {
+		try {
+			const sessionId = await sessionRepo.createSession(user.id, user.role, ttlHours);
+
+			// Also store in memory for fast reads (cache)
+			memorySessions.set(sessionId, {
+				userId: user.id,
+				username: user.username,
+				role: user.role,
+				createdAt: Date.now()
+			});
+
+			return sessionId;
+		} catch (err) {
+			console.warn('[emis:auth] DB createSession failed, falling back to in-memory:', err);
+			_dbAvailable = false;
+		}
+	}
+
+	// In-memory fallback
 	const sessionId = randomUUID();
-	sessions.set(sessionId, {
+	memorySessions.set(sessionId, {
 		userId: user.id,
 		username: user.username,
 		role: user.role,
@@ -143,21 +377,149 @@ export function createSession(user: { id: string; username: string; role: EmisRo
 	return sessionId;
 }
 
-export function getSession(sessionId: string): EmisSession | null {
-	const session = sessions.get(sessionId);
+/**
+ * Get a session by ID. Primary: DB. Fallback: in-memory Map.
+ * Returns null if session not found or expired.
+ */
+export async function getSession(sessionId: string): Promise<EmisSession | null> {
+	if (await isDbAvailable()) {
+		try {
+			// Check in-memory cache first for username (DB sessions don't store username)
+			const cached = memorySessions.get(sessionId);
+
+			const dbSession = await sessionRepo.getSession(sessionId);
+			if (!dbSession) {
+				// Clean up memory cache if DB says session is gone
+				if (cached) memorySessions.delete(sessionId);
+				return null;
+			}
+
+			// We need the username. Check cache first, then query DB.
+			let username = cached?.username;
+			if (!username) {
+				username = (await sessionRepo.getSessionUsername(dbSession.userId)) ?? 'unknown';
+			}
+
+			const session: EmisSession = {
+				userId: dbSession.userId,
+				username,
+				role: dbSession.role as EmisRole,
+				createdAt: dbSession.createdAt.getTime()
+			};
+
+			// Update memory cache
+			memorySessions.set(sessionId, session);
+
+			return session;
+		} catch (err) {
+			console.warn('[emis:auth] DB getSession failed, falling back to in-memory:', err);
+			_dbAvailable = false;
+		}
+	}
+
+	// In-memory fallback
+	const session = memorySessions.get(sessionId);
 	if (!session) return null;
 
 	// Check expiry
-	if (Date.now() - session.createdAt > SESSION_MAX_AGE_MS) {
-		sessions.delete(sessionId);
+	if (Date.now() - session.createdAt > getSessionMaxAgeMs()) {
+		memorySessions.delete(sessionId);
 		return null;
 	}
 
 	return session;
 }
 
-export function deleteSession(sessionId: string): void {
-	sessions.delete(sessionId);
+/**
+ * Delete a session by ID. Primary: DB. Fallback: in-memory Map.
+ */
+export async function deleteSession(sessionId: string): Promise<void> {
+	// Always remove from memory cache
+	memorySessions.delete(sessionId);
+
+	if (await isDbAvailable()) {
+		try {
+			await sessionRepo.deleteSession(sessionId);
+		} catch (err) {
+			console.warn('[emis:auth] DB deleteSession failed:', err);
+		}
+	}
+}
+
+/**
+ * Delete all sessions for a given user.
+ * Used for change-password flows and user deactivation.
+ */
+export async function deleteUserSessions(userId: string): Promise<void> {
+	// Clean from memory cache
+	for (const [id, session] of memorySessions) {
+		if (session.userId === userId) {
+			memorySessions.delete(id);
+		}
+	}
+
+	if (await isDbAvailable()) {
+		try {
+			await sessionRepo.deleteUserSessions(userId);
+		} catch (err) {
+			console.warn('[emis:auth] DB deleteUserSessions failed:', err);
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Periodic cleanup
+// ---------------------------------------------------------------------------
+
+let _cleanupInterval: ReturnType<typeof setInterval> | null = null;
+
+/**
+ * Start periodic cleanup of expired sessions.
+ * Runs every `intervalMinutes` (default: 60).
+ * Cleans both DB (if available) and in-memory store.
+ */
+export function startSessionCleanup(intervalMinutes = 60): void {
+	if (_cleanupInterval) return; // Already running
+
+	const intervalMs = intervalMinutes * 60 * 1000;
+	const maxAgeMs = getSessionMaxAgeMs();
+
+	_cleanupInterval = setInterval(async () => {
+		// Clean in-memory expired sessions
+		const now = Date.now();
+		for (const [id, session] of memorySessions) {
+			if (now - session.createdAt > maxAgeMs) {
+				memorySessions.delete(id);
+			}
+		}
+
+		// Clean DB expired sessions
+		if (await isDbAvailable()) {
+			try {
+				const count = await sessionRepo.cleanupExpiredSessions();
+				if (count > 0) {
+					console.log(`[emis:auth] Cleaned up ${count} expired sessions from DB.`);
+				}
+			} catch (err) {
+				console.warn('[emis:auth] DB session cleanup failed:', err);
+			}
+		}
+	}, intervalMs);
+
+	// Don't prevent Node.js from exiting
+	if (_cleanupInterval.unref) {
+		_cleanupInterval.unref();
+	}
+}
+
+/**
+ * Stop periodic session cleanup.
+ */
+export function stopSessionCleanup(): void {
+	if (_cleanupInterval) {
+		clearInterval(_cleanupInterval);
+		_cleanupInterval = null;
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -165,7 +527,12 @@ export function deleteSession(sessionId: string): void {
 // ---------------------------------------------------------------------------
 
 export const SESSION_COOKIE_NAME = 'emis_session';
-export const SESSION_COOKIE_MAX_AGE = 86400; // 24 hours in seconds
+
+export function getSessionCookieMaxAge(): number {
+	return getSessionTtlHours() * 60 * 60; // seconds
+}
+
+export const SESSION_COOKIE_MAX_AGE = 86400; // 24 hours in seconds (legacy constant)
 
 export function isSecureCookie(): boolean {
 	return process.env.NODE_ENV === 'production';
@@ -199,4 +566,3 @@ export function isAdminRoute(pathname: string): boolean {
 export function isDictionaryApiRoute(pathname: string): boolean {
 	return pathname.startsWith('/api/emis/dictionaries/');
 }
-

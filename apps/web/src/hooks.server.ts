@@ -18,6 +18,8 @@ import {
 	isEmisApiRoute,
 	isEmisPageRoute,
 	isSessionAuthReady,
+	isSessionAuthReadyAsync,
+	startSessionCleanup,
 	SESSION_COOKIE_NAME
 } from '$lib/server/emis/infra/auth';
 
@@ -30,6 +32,23 @@ import {
 if (process.env.ENABLE_ALERT_SCHEDULER !== 'false') {
 	startAlertScheduler();
 }
+
+// ============================================================================
+// Auth Startup Probe (warm up DB caches for user + session stores)
+// ============================================================================
+
+// Fire-and-forget: probe DB availability so that isSessionAuthReady() sync check
+// works correctly from the first request onwards. Also starts session cleanup.
+isSessionAuthReadyAsync()
+	.then((ready) => {
+		if (ready) {
+			console.log('[hooks.server] EMIS session auth ready (user store detected).');
+			startSessionCleanup();
+		}
+	})
+	.catch(() => {
+		// Silently ignore — individual request paths handle DB unavailability.
+	});
 
 // Graceful shutdown handlers
 process.on('SIGTERM', () => {
@@ -114,7 +133,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 	// ---- Session resolution (always, regardless of auth mode) ----
 	const sessionId = cookies.get(SESSION_COOKIE_NAME);
 	if (sessionId) {
-		const session = getSession(sessionId);
+		const session = await getSession(sessionId);
 		event.locals.emisSession = session;
 	}
 

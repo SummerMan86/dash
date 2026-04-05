@@ -3,7 +3,7 @@ import type { Actions, PageServerLoad } from './$types';
 import {
 	authenticateUser,
 	createSession,
-	isSessionAuthReady,
+	isSessionAuthReadyAsync,
 	SESSION_COOKIE_NAME,
 	SESSION_COOKIE_MAX_AGE,
 	isSecureCookie
@@ -29,15 +29,15 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	}
 
 	return {
-		authEnabled: isSessionAuthReady()
+		authEnabled: await isSessionAuthReadyAsync()
 	};
 };
 
 export const actions: Actions = {
 	default: async ({ request, cookies, url }) => {
-		if (!isSessionAuthReady()) {
+		if (!(await isSessionAuthReadyAsync())) {
 			return fail(400, {
-				error: 'Authentication is not configured. Set EMIS_AUTH_MODE=session and EMIS_USERS.',
+				error: 'Authentication is not configured. Set EMIS_AUTH_MODE=session and configure users.',
 				username: ''
 			});
 		}
@@ -53,7 +53,7 @@ export const actions: Actions = {
 			});
 		}
 
-		const user = authenticateUser(username, password);
+		const user = await authenticateUser(username, password);
 		if (!user) {
 			return fail(401, {
 				error: 'Invalid username or password.',
@@ -61,7 +61,7 @@ export const actions: Actions = {
 			});
 		}
 
-		const sessionId = createSession(user);
+		const sessionId = await createSession(user);
 
 		cookies.set(SESSION_COOKIE_NAME, sessionId, {
 			path: '/',

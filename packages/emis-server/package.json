@@ -22,14 +22,19 @@
 		"./modules/dictionaries/repository": "./src/modules/dictionaries/repository.ts",
 		"./modules/dictionaries/service": "./src/modules/dictionaries/service.ts",
 		"./modules/map/queries": "./src/modules/map/queries.ts",
-		"./modules/ship-routes/queries": "./src/modules/ship-routes/queries.ts"
+		"./modules/ship-routes/queries": "./src/modules/ship-routes/queries.ts",
+		"./modules/sessions/repository": "./src/modules/sessions/repository.ts",
+		"./modules/users/repository": "./src/modules/users/repository.ts",
+		"./modules/users/password": "./src/modules/users/password.ts"
 	},
 	"dependencies": {
 		"@dashboard-builder/db": "workspace:*",
 		"@dashboard-builder/emis-contracts": "workspace:*",
+		"bcryptjs": "^2.4.3",
 		"zod": "^3.23.8"
 	},
 	"devDependencies": {
+		"@types/bcryptjs": "^2.4.6",
 		"@types/pg": "^8.16.0"
 	},
 	"peerDependencies": {
