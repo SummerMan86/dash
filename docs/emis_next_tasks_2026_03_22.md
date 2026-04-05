@@ -27,7 +27,9 @@ Current default order:
 4. ~~`P2` — offline maps ops hardening~~ **completed** (`2026-04-05`)
 5. ~~`Phase 3` — tech debt cleanup (TD-1..TD-5)~~ **completed** (`2026-04-05`)
 
-All current backlog items are completed. Baseline Green / closed. Next priorities to be defined.
+6. ~~`Phase 4` — MVE deferrals (DF-1..DF-5)~~ **completed** (`2026-04-05`)
+
+All current backlog items are completed. Baseline Green / closed. No remaining MVE deferrals. Next priorities to be defined.
 
 ## MVE Closeout
 
@@ -71,10 +73,21 @@ All P2 subtasks delivered:
 
 Canonical reference: `docs/emis_offline_maps_ops.md`
 
+### Phase 4. MVE Deferrals Implementation -- COMPLETED (`2026-04-05`)
+
+All Phase 4 slices delivered:
+
+- `DF-1` — Soft-delete UI buttons for objects and news detail pages (confirmation dialog + redirect)
+- `DF-2` — Admin CRUD for dictionaries: UI at `/emis/admin/dictionaries`, 6 API endpoints for countries/object_types/sources
+- `DF-3` — Session-based auth: login page, cookie-based sessions, role enforcement (viewer/editor/admin), admin route protection
+- `DF-5` — Governance closure: all MVE deferrals resolved, baseline Green, zero remaining deferrals
+
+MVE verdict updated: **accepted, no remaining deferrals**.
+
 ## Locked Decisions
 
-- dictionaries remain `seed-managed for MVE`
-- admin CRUD for dictionaries is deferred beyond MVE
+- Dictionaries are now manageable via admin CRUD (DF-2), seeds remain as bootstrap mechanism
+- Auth is opt-in via `EMIS_AUTH_MODE=session` (default: `none` for backward compatibility)
 
 See:
 

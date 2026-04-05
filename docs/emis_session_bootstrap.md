@@ -60,12 +60,12 @@
 ## 4. Current Verification Status
 
 - Baseline: `Green / baseline closed`.
-- Last full verification pass: `2026-04-05` (TD-5 governance closure, Phase 3 tech debt cleanup).
+- Last full verification pass: `2026-04-05` (DF-5 governance closure, Phase 4 MVE deferrals resolved).
 - All 6 canonical checks green:
   - `pnpm check` — 0 errors, 0 warnings
   - `pnpm build` — success
   - `pnpm lint:boundaries` — no violations
-  - `pnpm emis:smoke` — 33/33 checks pass
+  - `pnpm emis:smoke` — 38/38 checks pass
   - `pnpm emis:offline-smoke` — 9/9 checks pass
   - `pnpm emis:write-smoke` — 7/7 flows pass (object, news, link, write-policy)
 
@@ -83,18 +83,18 @@
 
 ### MVE status
 
-MVE has been **accepted with explicit deferrals** on `2026-04-05`.
+MVE has been **accepted, no remaining deferrals** as of `2026-04-05`.
 
 Acceptance audit completed against [docs/emis_mve_product_contract.md](./emis_mve_product_contract.md).
-All acceptance criteria from section 7 are met. Explicit deferrals are documented below.
+All acceptance criteria from section 7 are met. All explicit deferrals have been resolved in Phase 4 (DF-1 through DF-5).
 
-### Explicit deferrals (accepted, not blocking MVE)
+### Explicit deferrals (all resolved)
 
-- Full auth / sessions / RBAC: deferred beyond MVE (trusted internal network model)
-- Admin CRUD for dictionaries: deferred, seed-managed in MVE
-- Admin role enforcement: deferred, no admin-only operations exist
+- ~~Full auth / sessions / RBAC~~ -- implemented in DF-3: session-based auth, login page, role enforcement
+- ~~Admin CRUD for dictionaries~~ -- implemented in DF-2: `/emis/admin/dictionaries` with full CRUD for 3 tables
+- ~~Admin role enforcement~~ -- implemented in DF-3: admin routes protected, role hierarchy enforced
+- ~~Soft-delete of news/objects~~ -- implemented in DF-1: delete buttons with confirmation dialog on detail pages
 - AIS/track data as MVE requirement: not required (already present as bonus)
-- Soft-delete of news: not exposed through UI (API supports it; UI soft-delete button not wired)
 
 ### Post-MVE completed waves
 
@@ -106,6 +106,11 @@ All acceptance criteria from section 7 are met. Explicit deferrals are documente
   - TD-3: stock-alerts boundary violation fixed
   - TD-4: Prettier drift fixed
   - TD-5: Final baseline verdict — Green / baseline closed
+- `Phase 4` — MVE deferrals implementation (completed 2026-04-05)
+  - DF-1: Soft-delete UI buttons for objects and news detail pages
+  - DF-2: Admin CRUD for dictionaries (countries, object_types, sources)
+  - DF-3: Session-based auth with role enforcement (login, RBAC, admin protection)
+  - DF-5: Governance closure — all deferrals resolved, baseline Green
 
 Live backlog: [docs/emis_next_tasks_2026_03_22.md](./emis_next_tasks_2026_03_22.md).
 

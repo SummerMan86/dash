@@ -1,71 +1,68 @@
-# TD-5: Final Baseline Verdict After Tech Debt Cleanup
+# Report: DF-5 — Governance Closure After MVE Deferrals Implementation
 
-**Package:** Phase 3 — Tech Debt Cleanup (TD-1 through TD-5)
-**Date:** 2026-04-05
-**Branch:** `feature/emis-phase3-tech-debt-cleanup`
-**Role:** baseline-governor
+## Статус
 
-## Baseline Verdict
+Выполнено.
 
-Status: Green
-Verdict: baseline closed
+## Что сделано
 
-Why:
+- DF-1: completed — soft-delete UI buttons for objects and news detail pages with confirmation dialog, redirect, and error handling
+- DF-2: completed — admin CRUD for dictionaries (countries, object_types, sources) at `/emis/admin/dictionaries` with 6 API endpoints
+- DF-3: completed — session-based auth: login page at `/emis/login`, cookie-based sessions, role enforcement (viewer/editor/admin), admin route protection, `assertWriteContext()` extended for session-based actor resolution
+- DF-5: completed — governance closure: full baseline verification, all MVE deferrals verified as resolved, docs updated
 
-- All 6 canonical checks green end-to-end
-- TD-1 through TD-4 all completed: page decomp, shim removal, boundary fix, formatting
-- Zero live architecture exceptions
-- Zero carry-forward items in TD scope
-- `+page.svelte` at 639 lines — under 700-line threshold, no exception needed
-- MIGRATION shims removed from `entities/`, `shared/`, `widgets/` (TD-2 scope)
-- stock-alerts boundary violation closed (TD-3)
-- `pnpm lint:boundaries` reports zero violations
+## Baseline Verification
 
-Checks:
+All 6 canonical checks green:
 
 - `pnpm check`: green (0 errors, 0 warnings)
 - `pnpm build`: green (success)
 - `pnpm lint:boundaries`: green (no violations)
-- `pnpm emis:smoke`: green (33/33 pass)
+- `pnpm emis:smoke`: green (38/38 pass)
 - `pnpm emis:offline-smoke`: green (9/9 pass)
 - `pnpm emis:write-smoke`: green (7/7 pass)
 
-Known Exceptions:
+## MVE Deferrals Audit
 
-- none
+| Deferral | Status | Evidence |
+| --- | --- | --- |
+| Auth / sessions / RBAC | Resolved (DF-3) | `auth.ts`, hooks middleware, `writePolicy.ts` with session support |
+| Admin CRUD for dictionaries | Resolved (DF-2) | `/emis/admin/dictionaries` page, 6 API endpoints |
+| Admin role enforcement | Resolved (DF-3) | hooks middleware protects `/emis/admin/*`, admin role required |
+| News soft-delete UI | Resolved (DF-1) | Delete button in `/emis/news/[id]/+page.svelte` with confirmation |
+| Objects soft-delete UI | Resolved (DF-1) | Delete button in `/emis/objects/[id]/+page.svelte` with confirmation |
 
-Allowed Next Work:
+MVE verdict: **accepted, no remaining deferrals** (upgraded from "accepted with explicit deferrals").
 
-- Codebase is ready for the next product planning cycle
-- New feature waves, auth/RBAC, admin UI, news ingestion, BI expansion all unblocked
+## Review Gate
 
-Required Follow-ups:
+Not applicable for DF-5 (governance closure is a verification + docs-only slice).
 
-- none (for canonical baseline)
+### Architecture / exceptions
 
-## Non-Canonical Observations
+- architecture-steward: not needed (no new placement decisions)
+- known exceptions / waivers touched: `none`
+- Known exceptions registry: zero live exceptions
 
-The following are informational findings that do not affect the baseline verdict:
+## Doc Updates
 
-### Prettier drift (32 files)
+- `docs/emis_access_model.md` — added DF-3 implementation section, updated deferred table to "no remaining deferrals", updated summary paragraph
+- `docs/emis_session_bootstrap.md` — MVE status updated to "accepted, no remaining deferrals", Phase 4 added to completed waves, verification status updated (38/38 smoke)
+- `docs/emis_next_tasks_2026_03_22.md` — Phase 4 added as completed, locked decisions updated
+- `docs/emis_mve_product_contract.md` — status date updated, deferral notes updated to reflect implementation
+- `docs/emis_known_exceptions.md` — baseline status updated to DF-5, smoke counts updated
+- `docs/agents/lead-strategic/current_plan.md` — DF-1, DF-2, DF-3, DF-5 all marked completed
+- `docs/agents/lead-tactical/memory.md` — Phase 4 context added
 
-`pnpm lint` (Prettier) fails on 32 files. This is NOT in the canonical 6 checks. The drift was introduced by TD-1 (page decomp), TD-2 (shim removal), and TD-3 (stock-alerts fix) commits that ran after TD-4 (Prettier fix). A single `npx prettier --write .` would resolve it. This is cosmetic and does not affect type safety, build, boundaries, or runtime behavior.
+## Ветки
 
-### Server-side MIGRATION re-export shims (16 files)
+- integration branch: `feature/emis-phase3-tech-debt-cleanup`
+- worker branches merged: none (DF-5 is governance-only)
 
-16 MIGRATION re-export shims remain in `apps/web/src/lib/server/emis/`. These are active re-exports with 9+ route-level consumers. They were explicitly out of TD-2 scope (which targeted `entities/`, `shared/`, `widgets/` only). These are not dead code and are not a baseline issue — they serve as the transport glue layer. Normalizing them to direct package imports is a future optional cleanup.
+## Готовность
 
-## TD Summary
+Готово к merge. All MVE deferrals resolved. Baseline Green / closed.
 
-| Slice | Description                         | Status    | Key Result                                                 |
-| ----- | ----------------------------------- | --------- | ---------------------------------------------------------- |
-| TD-1  | Decompose `+page.svelte`            | completed | 799 -> 639 lines (-20%)                                    |
-| TD-2  | Remove MIGRATION re-export shims    | completed | 72 shims removed (-3280 lines)                             |
-| TD-3  | Fix stock-alerts boundary violation | completed | `lint:boundaries` zero violations                          |
-| TD-4  | Fix Prettier drift                  | completed | 90 files formatted (32 re-drifted from subsequent commits) |
-| TD-5  | Final baseline verdict              | completed | Green / baseline closed                                    |
+## Вопросы к lead-strategic
 
-## Branch Stats
-
-- 235 files changed, 1975 insertions, 4482 deletions (net -2507 lines)
-- 7 commits on `feature/emis-phase3-tech-debt-cleanup`
+Нет.

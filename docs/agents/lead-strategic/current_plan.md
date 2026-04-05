@@ -26,7 +26,7 @@
 ## Slices
 
 ### DF-1: Soft-delete UI buttons for objects and news
-- status: ready for handoff
+- status: completed (2026-04-05)
 - scope:
   - Add delete button to object detail page (`/emis/objects/[id]`)
   - Add delete button to news detail page (`/emis/news/[id]`)
@@ -49,7 +49,7 @@
   - Manual smoke: delete object/news via UI, verify soft-delete in catalog
 
 ### DF-2: Admin CRUD for dictionaries
-- status: ready for handoff
+- status: completed (2026-04-05)
 - depends on: none (independent of DF-1)
 - scope:
   - Admin pages for managing 3 dictionary tables: `countries`, `object_types`, `sources`
@@ -78,7 +78,7 @@
   - Smoke coverage for dictionary CRUD
 
 ### DF-3: Basic auth and access control
-- status: ready for handoff
+- status: completed (2026-04-05)
 - depends on: DF-2 (admin pages exist to protect)
 - scope:
   - Session-based authentication (simple login flow)
@@ -123,7 +123,7 @@ DF-2 (admin CRUD) → DF-3 (auth) ────→ DF-5
 - DF-5 (governance closure) runs after all others
 
 ### DF-5: Governance closure and final baseline
-- status: depends on DF-1, DF-2, DF-3
+- status: completed (2026-04-05)
 - scope:
   - Full baseline verification (all 6 canonical checks)
   - Update MVE acceptance audit — remove all explicit deferrals

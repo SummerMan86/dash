@@ -243,18 +243,42 @@ Key observations:
 - `pnpm lint` (Prettier) not green due to re-drift from post-TD-4 commits — not in canonical 6 checks
 - All 6 canonical checks green: check, build, lint:boundaries, emis:smoke (33/33), emis:offline-smoke (9/9), emis:write-smoke (7/7)
 
+### Phase 4: MVE Deferrals Implementation (DONE, 2026-04-05)
+
+All DF slices completed on `feature/emis-phase3-tech-debt-cleanup`.
+
+- DF-1 — Soft-delete UI buttons for objects and news detail pages (confirmation dialog, redirect, error handling)
+- DF-2 — Admin CRUD for dictionaries: `/emis/admin/dictionaries` page, 6 API endpoints for countries/object_types/sources
+- DF-3 — Session-based auth: login page at `/emis/login`, cookie-based sessions (`auth.ts`), role enforcement in hooks + writePolicy, admin route protection
+- DF-5 — Governance closure: all MVE deferrals resolved, baseline Green, docs updated
+
+Key files added/modified:
+- `apps/web/src/lib/server/emis/infra/auth.ts` — session auth module (auth mode, user store, session store, role hierarchy, route classification)
+- `apps/web/src/lib/server/emis/infra/writePolicy.ts` — extended to support session-based actor resolution
+- `apps/web/src/routes/emis/login/` — login page (GET/POST)
+- `apps/web/src/routes/emis/admin/dictionaries/` — admin CRUD UI
+- `apps/web/src/routes/api/emis/dictionaries/` — 6 API endpoints (countries, object_types, sources)
+- `apps/web/src/routes/emis/objects/[id]/+page.svelte` — delete button added
+- `apps/web/src/routes/emis/news/[id]/+page.svelte` — delete button added
+- `hooks.server.ts` — session resolution middleware, auth enforcement
+
+MVE verdict: **accepted, no remaining deferrals** (upgraded from "accepted with explicit deferrals").
+
+Verification: all 6 canonical checks green (check, build, lint:boundaries, emis:smoke 38/38, offline-smoke 9/9, write-smoke 7/7).
+
 ## Заметки для следующей сессии
 
 - H-1..H-5 all done — wave H is complete
 - P3.1..P3.6 all done — phase 2 is complete
 - DS-1..DS-4 done — active docs layer synced with canonical architecture
 - NW-1..NW-5 done — access model, write-policy, dictionaries, observability, MVE acceptance
-- **MVE is closed.**
+- **MVE is closed. All deferrals resolved.**
 - **P1 done** — vessel historical track integration
 - **P2 done** — offline maps ops hardening
 - **Phase 3 done** — tech debt cleanup, baseline Green / closed
+- **Phase 4 done** — MVE deferrals (DF-1 soft-delete UI, DF-2 admin CRUD, DF-3 auth, DF-5 governance)
 - All carry-forward items from P1/P2 era are resolved
 - Remaining optional future cleanup:
   - 16 server-side MIGRATION re-export shims (active, not dead code)
-  - `pnpm lint` Prettier re-drift (32 files, cosmetic)
+  - `pnpm lint` Prettier re-drift (cosmetic)
 - Codebase is ready for next product planning cycle

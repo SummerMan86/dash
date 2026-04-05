@@ -62,15 +62,26 @@ Roles describe **authorization intent**, not runtime enforcement. MVE does not h
 | ------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | Write-policy helper | `assertWriteContext()` in `apps/web/src/lib/server/emis/infra/writePolicy.ts` | Validates that write context is present and actor is identified; rejects with 403 in strict mode |
 
-### Explicitly deferred beyond MVE
+### Implemented (DF-3, 2026-04-05)
 
-| Mechanism                                  | Why deferred                                                                      |
-| ------------------------------------------ | --------------------------------------------------------------------------------- |
-| Authentication (SSO, API keys, basic auth) | No requirement for user identity beyond actor headers in trusted contour          |
-| Session management                         | No login/logout flow needed in trusted contour                                    |
-| Role-based access control (RBAC)           | Roles are semantic intent, not runtime enforcement; all trusted users are editors |
-| Per-entity permission model                | All editors can write all entities; no row-level or entity-scoped restrictions    |
-| Admin role enforcement                     | No admin-only operations exist yet                                                |
+| Mechanism                        | Where                                                                         | What it does                                                                                              |
+| -------------------------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Session-based authentication     | `apps/web/src/lib/server/emis/infra/auth.ts` + `hooks.server.ts`             | Cookie-based sessions; login/logout flow at `/emis/login`; env-configured users via `EMIS_USERS`          |
+| Role-based access control (RBAC) | `hooks.server.ts` middleware + `assertWriteContext()` in `writePolicy.ts`     | Session role enforcement: viewer (read), editor (write), admin (admin pages + write)                      |
+| Admin route protection           | `hooks.server.ts` middleware                                                  | `/emis/admin/*` pages require admin role; unauthenticated users redirected to login                       |
+| Admin CRUD for dictionaries      | `/api/emis/dictionaries/*` + `/emis/admin/dictionaries`                       | Full CRUD UI for countries, object_types, sources; write endpoints require editor+ role via writePolicy    |
+
+### No remaining deferrals
+
+All mechanisms previously listed as "deferred beyond MVE" have been implemented in DF-3 (session-based auth) or resolved through the operating model:
+
+| Mechanism                                  | Status                                                                                            |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| Authentication (SSO, API keys, basic auth) | Implemented as session-based auth (DF-3). Toggle: `EMIS_AUTH_MODE=session`. Default: `none`.      |
+| Session management                         | Implemented: cookie-based sessions, in-memory store, 24h TTL. See section 5.                      |
+| Role-based access control (RBAC)           | Implemented: viewer/editor/admin with role hierarchy. Enforced in hooks + writePolicy.             |
+| Per-entity permission model                | Not implemented (not required). All editors can write all entities.                                |
+| Admin role enforcement                     | Implemented: `/emis/admin/*` pages require admin role. Dictionary API writes require editor+ role. |
 
 ## 4. Write-Policy Helper Contract
 
@@ -301,7 +312,7 @@ When auth is introduced post-MVE:
 
 ## 7. One-Paragraph Summary
 
-EMIS MVE runs in a trusted internal network where all users can read freely. Write operations require actor identification via the `x-emis-actor-id` or `x-actor-id` header. All write entry points (API routes and form actions) call `assertWriteContext()` from `apps/web/src/lib/server/emis/infra/writePolicy.ts`, which wraps `resolveEmisWriteContext()` with policy enforcement: in production-shaped (strict) mode (`EMIS_WRITE_POLICY=strict`), missing actor identity results in a 403 `WRITE_NOT_ALLOWED` rejection; in dev/local (permissive) mode (default), a source-based default actor is used for convenience. Full authentication, sessions, and RBAC are explicitly deferred beyond MVE.
+EMIS supports two auth modes controlled by `EMIS_AUTH_MODE`. In **session mode** (`EMIS_AUTH_MODE=session`): users authenticate via `/emis/login` with credentials from the `EMIS_USERS` env var; sessions are cookie-based with 24h TTL; unauthenticated requests to EMIS routes receive 401 (API) or redirect to login (pages); write operations require editor+ role; admin pages (`/emis/admin/*`) require admin role; all enforcement flows through SvelteKit hooks and `assertWriteContext()`. In **none mode** (`EMIS_AUTH_MODE=none`, default): the system operates in trusted-network mode where all users can read freely; write operations require actor identification via `x-emis-actor-id` or `x-actor-id` header; in strict write-policy mode (`EMIS_WRITE_POLICY=strict` or production), missing actor identity results in 403; in permissive mode (default), a source-based default actor is used. All MVE deferrals (auth, RBAC, admin CRUD) have been resolved as of DF-3 (2026-04-05).
 
 ## 8. Related Documents
 
