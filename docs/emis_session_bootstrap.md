@@ -60,14 +60,15 @@
 ## 4. Current Verification Status
 
 - Baseline: `Green / baseline closed`.
-- Last full verification pass: `2026-04-05` (DF-5 governance closure, Phase 4 MVE deferrals resolved).
-- All 6 canonical checks green:
+- Last full verification pass: `2026-04-05` (AUTH-8 governance closure, Phase 5 production auth hardening).
+- All 7 canonical checks green:
   - `pnpm check` — 0 errors, 0 warnings
   - `pnpm build` — success
   - `pnpm lint:boundaries` — no violations
-  - `pnpm emis:smoke` — 38/38 checks pass
-  - `pnpm emis:offline-smoke` — 9/9 checks pass
-  - `pnpm emis:write-smoke` — 7/7 flows pass (object, news, link, write-policy)
+  - `EMIS_AUTH_MODE=none pnpm emis:smoke` — 40/40 checks pass
+  - `EMIS_AUTH_MODE=none pnpm emis:offline-smoke` — 9/9 checks pass
+  - `EMIS_AUTH_MODE=none pnpm emis:write-smoke` — 7/7 flows pass (object, news, link, write-policy)
+  - `pnpm emis:auth-smoke` — 10/10 checks pass (login, RBAC, change-password, redirect)
 
 ## 5. Non-Negotiables
 
@@ -111,6 +112,15 @@ All acceptance criteria from section 7 are met. All explicit deferrals have been
   - DF-2: Admin CRUD for dictionaries (countries, object_types, sources)
   - DF-3: Session-based auth with role enforcement (login, RBAC, admin protection)
   - DF-5: Governance closure — all deferrals resolved, baseline Green
+- `Phase 5` — Production auth hardening (completed 2026-04-05)
+  - AUTH-1: Contract freeze for production auth design
+  - AUTH-2: DB schema — `emis.users` + `emis.sessions` tables
+  - AUTH-3: bcrypt password hashing + DB user store (bcryptjs, env fallback)
+  - AUTH-4: DB session persistence (in-memory fallback for graceful degradation)
+  - AUTH-5: Admin user management UI at `/emis/admin/users`
+  - AUTH-6: Change password flow at `/emis/settings` + API
+  - AUTH-7: Default auth mode switched to `session`, auth-smoke added
+  - AUTH-8: Governance closure — all checks green, baseline closed
 
 Live backlog: [docs/emis_next_tasks_2026_03_22.md](./emis_next_tasks_2026_03_22.md).
 

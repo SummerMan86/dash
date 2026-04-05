@@ -1,4 +1,4 @@
-# Report: DF-5 — Governance Closure After MVE Deferrals Implementation
+# Report: AUTH-8 — Governance Closure After Production Auth Hardening
 
 ## Статус
 
@@ -6,37 +6,51 @@
 
 ## Что сделано
 
-- DF-1: completed — soft-delete UI buttons for objects and news detail pages with confirmation dialog, redirect, and error handling
-- DF-2: completed — admin CRUD for dictionaries (countries, object_types, sources) at `/emis/admin/dictionaries` with 6 API endpoints
-- DF-3: completed — session-based auth: login page at `/emis/login`, cookie-based sessions, role enforcement (viewer/editor/admin), admin route protection, `assertWriteContext()` extended for session-based actor resolution
-- DF-5: completed — governance closure: full baseline verification, all MVE deferrals verified as resolved, docs updated
+- AUTH-1: completed — contract freeze for production auth design in `docs/emis_access_model.md` section 5
+- AUTH-2: completed — DB schema: `emis.users` + `emis.sessions` tables in `db/current_schema.sql`
+- AUTH-3: completed — bcrypt password hashing (bcryptjs, cost 12) + DB user store with env fallback
+- AUTH-4: completed — DB session persistence with in-memory fallback, lazy expiry cleanup
+- AUTH-5: completed — admin user management at `/emis/admin/users` (UI + 4 API endpoints)
+- AUTH-6: completed — change password at `/emis/settings` + `/api/emis/auth/change-password`
+- AUTH-7: completed — default auth mode switched to `session`, `pnpm emis:auth-smoke` added
+- AUTH-8: completed — governance closure: all checks green, docs updated, baseline closed
 
 ## Baseline Verification
 
-All 6 canonical checks green:
+All 7 checks green:
 
 - `pnpm check`: green (0 errors, 0 warnings)
 - `pnpm build`: green (success)
 - `pnpm lint:boundaries`: green (no violations)
-- `pnpm emis:smoke`: green (38/38 pass)
-- `pnpm emis:offline-smoke`: green (9/9 pass)
-- `pnpm emis:write-smoke`: green (7/7 pass)
+- `EMIS_AUTH_MODE=none pnpm emis:smoke`: green (40/40 pass)
+- `EMIS_AUTH_MODE=none pnpm emis:offline-smoke`: green (9/9 pass)
+- `EMIS_AUTH_MODE=none pnpm emis:write-smoke`: green (7/7 pass)
+- `pnpm emis:auth-smoke`: green (10/10 pass)
+- `npx prettier --check .`: green (all files formatted)
 
-## MVE Deferrals Audit
+## Fixes During AUTH-8
 
-| Deferral                    | Status          | Evidence                                                             |
-| --------------------------- | --------------- | -------------------------------------------------------------------- |
-| Auth / sessions / RBAC      | Resolved (DF-3) | `auth.ts`, hooks middleware, `writePolicy.ts` with session support   |
-| Admin CRUD for dictionaries | Resolved (DF-2) | `/emis/admin/dictionaries` page, 6 API endpoints                     |
-| Admin role enforcement      | Resolved (DF-3) | hooks middleware protects `/emis/admin/*`, admin role required       |
-| News soft-delete UI         | Resolved (DF-1) | Delete button in `/emis/news/[id]/+page.svelte` with confirmation    |
-| Objects soft-delete UI      | Resolved (DF-1) | Delete button in `/emis/objects/[id]/+page.svelte` with confirmation |
+1. **auth.ts safety-net fix**: `getAuthMode()` now skips the safety-net fallback when `EMIS_AUTH_MODE=session` is explicitly set. Previously, the safety-net checked synchronously for DB users (always `null` at startup) and could incorrectly fall back to `none` even with explicit `session` mode.
+2. **auth-smoke bcrypt import fix**: `scripts/emis-auth-smoke.mjs` was importing `bcrypt` (not installed); changed to use `bcryptjs` via `createRequire` from `packages/emis-server/node_modules/`.
+3. **auth-smoke SvelteKit form action handling**: Updated login checks to handle SvelteKit's JSON envelope format (`{"type":"redirect","status":303,...}`) instead of expecting raw 303 HTTP responses.
+4. **auth-smoke page redirect fix**: Fixed destructuring bug where `fetch()` Response was incorrectly destructured as `{ response }`.
+5. **Prettier ignore**: Added `.svelte-kit/` and `.claude/` to `.prettierignore` to exclude build output and tool config from formatting checks.
 
-MVE verdict: **accepted, no remaining deferrals** (upgraded from "accepted with explicit deferrals").
+## AUTH Slices Audit
+
+| Slice  | Evidence                                                                     |
+| ------ | ---------------------------------------------------------------------------- |
+| AUTH-1 | `docs/emis_access_model.md` section 5 — contract frozen                      |
+| AUTH-2 | `db/current_schema.sql` — `emis.users` + `emis.sessions` tables              |
+| AUTH-3 | `packages/emis-server/src/modules/users/password.ts` — bcryptjs              |
+| AUTH-4 | `packages/emis-server/src/modules/sessions/repository.ts` — DB session store |
+| AUTH-5 | `apps/web/src/routes/emis/admin/users/` — page + page.server                 |
+| AUTH-6 | `apps/web/src/routes/emis/settings/` — page + page.server                    |
+| AUTH-7 | `auth.ts` getAuthMode() defaults to session; `scripts/emis-auth-smoke.mjs`   |
 
 ## Review Gate
 
-Not applicable for DF-5 (governance closure is a verification + docs-only slice).
+Not applicable for AUTH-8 (governance closure is a verification + docs + fixes slice).
 
 ### Architecture / exceptions
 
@@ -46,22 +60,22 @@ Not applicable for DF-5 (governance closure is a verification + docs-only slice)
 
 ## Doc Updates
 
-- `docs/emis_access_model.md` — added DF-3 implementation section, updated deferred table to "no remaining deferrals", updated summary paragraph
-- `docs/emis_session_bootstrap.md` — MVE status updated to "accepted, no remaining deferrals", Phase 4 added to completed waves, verification status updated (38/38 smoke)
-- `docs/emis_next_tasks_2026_03_22.md` — Phase 4 added as completed, locked decisions updated
-- `docs/emis_mve_product_contract.md` — status date updated, deferral notes updated to reflect implementation
-- `docs/emis_known_exceptions.md` — baseline status updated to DF-5, smoke counts updated
-- `docs/agents/lead-strategic/current_plan.md` — DF-1, DF-2, DF-3, DF-5 all marked completed
-- `docs/agents/lead-tactical/memory.md` — Phase 4 context added
+- `docs/agents/lead-strategic/current_plan.md` — all AUTH-1..AUTH-8 marked completed
+- `docs/emis_session_bootstrap.md` — Phase 5 added to completed waves, verification status updated
+- `docs/emis_next_tasks_2026_03_22.md` — Phase 5 added as completed, locked decisions updated
+- `docs/emis_access_model.md` — section 6 updated (stale "when auth is introduced" wording replaced)
+- `RUNTIME_CONTRACT.md` — auth endpoints section added (login, logout, change-password, admin users, settings)
+- `docs/agents/lead-tactical/memory.md` — Phase 5 context added
+- `docs/agents/lead-tactical/last_report.md` — this report
 
 ## Ветки
 
-- integration branch: `feature/emis-phase3-tech-debt-cleanup`
-- worker branches merged: none (DF-5 is governance-only)
+- integration branch: `feature/emis-phase5-auth-hardening`
+- worker branches merged: none (AUTH-8 is governance-only)
 
 ## Готовность
 
-Готово к merge. All MVE deferrals resolved. Baseline Green / closed.
+Готово к merge. All Phase 5 auth hardening slices implemented and verified. Baseline Green / closed.
 
 ## Вопросы к lead-strategic
 

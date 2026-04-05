@@ -32,7 +32,7 @@
 
 ### AUTH-1: Contract freeze — production auth design (docs only)
 
-- status: ready for handoff
+- status: **completed** (2026-04-04)
 - scope:
   - Обновить `docs/emis_access_model.md` section 5 с новым контрактом
   - Зафиксировать решения:
@@ -48,7 +48,7 @@
 
 ### AUTH-2: DB schema — users and sessions tables
 
-- status: depends on AUTH-1
+- status: **completed** (2026-04-04)
 - scope:
   - Создать таблицу `emis.users`:
     ```sql
@@ -79,7 +79,7 @@
 
 ### AUTH-3: Bcrypt password hashing + DB user store
 
-- status: depends on AUTH-2
+- status: **completed** (2026-04-05)
 - scope:
   - Добавить `bcrypt` dependency (или `@node-rs/bcrypt` для performance)
   - Рефакторить `auth.ts`:
@@ -100,7 +100,7 @@
 
 ### AUTH-4: DB session persistence
 
-- status: depends on AUTH-2
+- status: **completed** (2026-04-05)
 - scope:
   - Рефакторить session store из in-memory Map в DB-backed:
     - `createSession()`: INSERT в `emis.sessions`
@@ -119,7 +119,7 @@
 
 ### AUTH-5: Admin user management UI
 
-- status: depends on AUTH-3
+- status: **completed** (2026-04-05)
 - scope:
   - API endpoints:
     - `GET /api/emis/admin/users` — list users (admin only)
@@ -146,7 +146,7 @@
 
 ### AUTH-6: Change password flow
 
-- status: depends on AUTH-3
+- status: **completed** (2026-04-05)
 - scope:
   - API: `POST /api/emis/auth/change-password` (any authenticated user)
     - Body: `{ currentPassword, newPassword }`
@@ -169,7 +169,7 @@
 
 ### AUTH-7: Default auth mode switch + smoke coverage
 
-- status: depends on AUTH-3, AUTH-4
+- status: **completed** (2026-04-05)
 - scope:
   - Переключить `EMIS_AUTH_MODE` default с `none` на `session`
   - Обновить auth.ts: `getAuthMode()` returns `session` when env not set
@@ -193,7 +193,7 @@
 
 ### AUTH-8: Governance closure and final baseline
 
-- status: depends on all above
+- status: **completed** (2026-04-05)
 - scope:
   - Full baseline: all 6 canonical checks + auth smoke
   - Update docs:

@@ -267,6 +267,40 @@ MVE verdict: **accepted, no remaining deferrals** (upgraded from "accepted with 
 
 Verification: all 6 canonical checks green (check, build, lint:boundaries, emis:smoke 38/38, offline-smoke 9/9, write-smoke 7/7).
 
+### Phase 5: Production Auth Hardening (DONE, 2026-04-05)
+
+All AUTH slices completed on `feature/emis-phase5-auth-hardening`.
+
+- AUTH-1 — Contract freeze in `docs/emis_access_model.md` section 5
+- AUTH-2 — DB schema: `emis.users` + `emis.sessions` tables in `db/current_schema.sql`
+- AUTH-3 — bcrypt password hashing (bcryptjs, cost 12) + DB user store with env fallback
+- AUTH-4 — DB session persistence (in-memory fallback), lazy expiry cleanup
+- AUTH-5 — Admin user management at `/emis/admin/users` (UI + 4 API endpoints)
+- AUTH-6 — Change password at `/emis/settings` + `/api/emis/auth/change-password`
+- AUTH-7 — Default auth mode switched to `session`; `pnpm emis:auth-smoke` added (10 checks)
+- AUTH-8 — Governance closure: all checks green (7 canonical + auth-smoke + Prettier), docs updated
+
+Key files added/modified:
+
+- `packages/emis-server/src/modules/users/password.ts` — bcryptjs hashing
+- `packages/emis-server/src/modules/users/repository.ts` — DB user store
+- `packages/emis-server/src/modules/sessions/repository.ts` — DB session store
+- `packages/emis-contracts/src/emis-user/` — user model contracts
+- `apps/web/src/lib/server/emis/infra/auth.ts` — refactored to use DB user/session stores, safety-net logic
+- `apps/web/src/routes/emis/admin/users/` — admin user management UI
+- `apps/web/src/routes/emis/settings/` — change password UI
+- `apps/web/src/routes/api/emis/auth/change-password/+server.ts` — change-password API
+- `apps/web/src/routes/api/emis/admin/users/` — admin user management API
+- `scripts/emis-auth-smoke.mjs` — auth smoke (10 checks: login, RBAC, change-password, redirect)
+
+Fixes during AUTH-8 governance:
+
+- `getAuthMode()` safety-net now only activates when `EMIS_AUTH_MODE` is not explicitly set
+- `emis-auth-smoke.mjs`: fixed bcrypt import (bcryptjs via createRequire), SvelteKit form action JSON envelope handling, fetch Response destructuring
+- `.prettierignore`: added `.svelte-kit/` and `.claude/`
+
+Verification: all 7 canonical checks green + auth-smoke 10/10 + Prettier clean.
+
 ## Заметки для следующей сессии
 
 - H-1..H-5 all done — wave H is complete
@@ -278,8 +312,10 @@ Verification: all 6 canonical checks green (check, build, lint:boundaries, emis:
 - **P2 done** — offline maps ops hardening
 - **Phase 3 done** — tech debt cleanup, baseline Green / closed
 - **Phase 4 done** — MVE deferrals (DF-1 soft-delete UI, DF-2 admin CRUD, DF-3 auth, DF-5 governance)
+- **Phase 5 done** — production auth hardening (AUTH-1..AUTH-8), baseline Green / closed
 - All carry-forward items from P1/P2 era are resolved
+- Auth is on by default (`EMIS_AUTH_MODE` defaults to `session`); smoke scripts use `EMIS_AUTH_MODE=none`
 - Remaining optional future cleanup:
   - 16 server-side MIGRATION re-export shims (active, not dead code)
-  - `pnpm lint` Prettier re-drift (cosmetic)
+  - `EMIS_USERS` env var deprecated but still functional (transition fallback)
 - Codebase is ready for next product planning cycle

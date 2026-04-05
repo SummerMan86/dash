@@ -335,3 +335,52 @@ Route file: `apps/web/src/routes/api/emis/readyz/+server.ts`.
 | `assertWriteContext()` | Write-policy checkpoint (see "Write-policy contract" section) |
 
 Routes import transport helpers from `$lib/server/emis/infra/http` and write-policy helper from `$lib/server/emis/infra/writePolicy`.
+
+## Auth endpoints (Phase 5)
+
+**Status:** implemented (AUTH-1 through AUTH-8, 2026-04-05).
+
+### Login / Logout
+
+| Route          | Method | Purpose                                        | Auth required |
+| -------------- | ------ | ---------------------------------------------- | ------------- |
+| `/emis/login`  | GET    | Render login form                              | No            |
+| `/emis/login`  | POST   | Authenticate credentials, set cookie, redirect | No            |
+| `/emis/logout` | POST   | Clear session cookie, redirect to login        | No            |
+
+### Change password
+
+| Route                            | Method | Purpose             | Auth required     |
+| -------------------------------- | ------ | ------------------- | ----------------- |
+| `/api/emis/auth/change-password` | POST   | Change own password | Any authenticated |
+
+Request: `{ currentPassword, newPassword }`. Invalidates all other sessions on success.
+
+### Admin user management
+
+| Route                       | Method | Purpose                                | Auth required |
+| --------------------------- | ------ | -------------------------------------- | ------------- |
+| `/api/emis/admin/users`     | GET    | List all users (no password_hash)      | Admin         |
+| `/api/emis/admin/users`     | POST   | Create user (username, password, role) | Admin         |
+| `/api/emis/admin/users/:id` | PATCH  | Update user (role, reset password)     | Admin         |
+| `/api/emis/admin/users/:id` | DELETE | Delete user (hard delete)              | Admin         |
+
+UI page: `/emis/admin/users`.
+
+### Settings page
+
+| Route            | Purpose                  | Auth required     |
+| ---------------- | ------------------------ | ----------------- |
+| `/emis/settings` | Change own password (UI) | Any authenticated |
+
+### Auth error codes
+
+| Code               | Status | When                                                  |
+| ------------------ | ------ | ----------------------------------------------------- |
+| `UNAUTHORIZED`     | 401    | No valid session on protected API/page route          |
+| `FORBIDDEN`        | 403    | Session role insufficient (e.g. editor on admin page) |
+| `INVALID_PASSWORD` | 403    | Wrong current password in change-password             |
+
+### Canonical reference
+
+Full auth contract: `docs/emis_access_model.md` section 5.

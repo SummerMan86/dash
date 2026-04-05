@@ -65,8 +65,9 @@ type EmisUserConfig = {
 export function getAuthMode(): 'none' | 'session' {
 	const mode = process.env.EMIS_AUTH_MODE;
 	if (mode === 'none') return 'none';
+	if (mode === 'session') return 'session'; // Explicit — skip safety net
 
-	// Default is 'session'. Check safety net.
+	// No explicit mode set: default is 'session'. Check safety net.
 	if (!_safetyNetChecked) {
 		_safetyNetChecked = true;
 		const hasEnvUsers = (process.env.EMIS_USERS?.trim() ?? '').length > 0;

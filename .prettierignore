@@ -5,5 +5,11 @@ yarn.lock
 bun.lock
 bun.lockb
 
+# Build output
+.svelte-kit/
+
+# Tool config
+.claude/
+
 # Miscellaneous
 /apps/web/static/

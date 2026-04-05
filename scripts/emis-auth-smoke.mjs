@@ -106,10 +106,15 @@ async function closePool() {
 // ---------------------------------------------------------------------------
 
 async function hashPassword(password) {
-	// Use the same bcrypt lib as the app
-	const bcrypt = await import('bcrypt');
+	// Use the same bcrypt lib as the app (bcryptjs — pure JS, no native deps).
+	// bcryptjs lives in packages/emis-server/node_modules; use createRequire to resolve.
+	const { createRequire } = await import('node:module');
+	const emiserverRequire = createRequire(
+		new URL('../packages/emis-server/package.json', import.meta.url)
+	);
+	const bcrypt = emiserverRequire('bcryptjs');
 	const rounds = parseInt(process.env.EMIS_BCRYPT_ROUNDS ?? '12', 10);
-	return bcrypt.default.hash(password, rounds);
+	return bcrypt.hash(password, rounds);
 }
 
 const createdUserIds = [];
@@ -168,8 +173,12 @@ function withTimeout(promise, timeoutMs, label) {
 
 /**
  * Perform a login via the /emis/login form action.
- * Returns { response, cookies } where cookies is a Map of cookie name -> value.
- * We use redirect: 'manual' to capture the 303 redirect and Set-Cookie header.
+ * Returns { response, cookies, body } where cookies is a Map of cookie name -> value.
+ *
+ * SvelteKit form actions return JSON envelopes (HTTP 200) instead of raw redirects:
+ *   - Success: 200 + {"type":"redirect","status":303,"location":"/emis"} + Set-Cookie
+ *   - Failure: 200 + {"type":"failure","status":401,"data":{"error":"..."}} (no Set-Cookie)
+ * We parse both formats so smoke checks can inspect the logical status.
  */
 async function doLogin(baseUrl, username, password, signal) {
 	const formBody = new URLSearchParams({ username, password });
@@ -189,7 +198,16 @@ async function doLogin(baseUrl, username, password, signal) {
 		cookies.set(name.trim(), valueParts.join('=').trim());
 	}
 
-	return { response, cookies };
+	// Parse JSON body for SvelteKit envelope
+	let body = null;
+	try {
+		const text = await response.text();
+		body = text ? JSON.parse(text) : null;
+	} catch {
+		// Not JSON — ignore
+	}
+
+	return { response, cookies, body };
 }
 
 /**
@@ -331,20 +349,25 @@ function assert(condition, message) {
 }
 
 const checks = [
-	// 1. Login with valid admin credentials -> 303 redirect + session cookie
+	// 1. Login with valid admin credentials -> redirect (303) + session cookie
+	//    SvelteKit returns: HTTP 200 + JSON {"type":"redirect","status":303,...} + Set-Cookie
 	{
 		name: 'auth:login:valid-admin',
 		kind: 'auth',
 		run: async (baseUrl, ctx) => {
-			const { response, cookies } = await withTimeout(
+			const { response, cookies, body } = await withTimeout(
 				async (signal) => doLogin(baseUrl, ADMIN_USER.username, ADMIN_USER.password, signal),
 				REQUEST_TIMEOUT_MS,
 				'login valid admin'
 			);
-			// SvelteKit form actions redirect on success with 303
+			// SvelteKit form actions wrap redirects in a 200 JSON envelope
+			const isRawRedirect = response.status === 303 || response.status === 302;
+			const isEnvelopeRedirect =
+				response.status === 200 && body?.type === 'redirect' && body?.status === 303;
 			assert(
-				response.status === 303 || response.status === 302,
-				`expected 302/303 redirect, got ${response.status}`
+				isRawRedirect || isEnvelopeRedirect,
+				`expected redirect (raw 303 or SvelteKit envelope), got HTTP ${response.status}` +
+					(body ? ` body.type=${body.type}` : '')
 			);
 			const sessionCookie = cookies.get('emis_session');
 			assert(
@@ -352,28 +375,31 @@ const checks = [
 				'emis_session cookie must be set after successful login'
 			);
 			ctx.adminSession = sessionCookie;
-			return { status: response.status, hasSession: true };
+			return { status: body?.status ?? response.status, hasSession: true };
 		}
 	},
 
-	// 2. Login with invalid credentials -> no redirect (re-render with error)
+	// 2. Login with invalid credentials -> no redirect (failure with error)
+	//    SvelteKit returns: HTTP 200 + JSON {"type":"failure","status":401,...} (no Set-Cookie)
 	{
 		name: 'auth:login:invalid-credentials',
 		kind: 'auth',
 		run: async (baseUrl) => {
-			const { response, cookies } = await withTimeout(
+			const { response, cookies, body } = await withTimeout(
 				async (signal) => doLogin(baseUrl, 'nonexistent-user', 'wrong-password', signal),
 				REQUEST_TIMEOUT_MS,
 				'login invalid'
 			);
-			// SvelteKit form actions return 400/401 on failure (re-render with error)
-			assert(
-				response.status === 200 || response.status === 400 || response.status === 401,
-				`expected 200/400/401 for failed login, got ${response.status}`
-			);
+			// SvelteKit form actions wrap failures in a 200 JSON envelope with type=failure
+			const isFailure =
+				response.status === 200 ||
+				response.status === 400 ||
+				response.status === 401 ||
+				(body?.type === 'failure' && (body?.status === 400 || body?.status === 401));
+			assert(isFailure, `expected failure response for invalid login, got ${response.status}`);
 			const sessionCookie = cookies.get('emis_session');
 			assert(!sessionCookie, 'emis_session cookie must NOT be set after failed login');
-			return { status: response.status, hasSession: false };
+			return { status: body?.status ?? response.status, hasSession: false };
 		}
 	},
 
@@ -394,19 +420,23 @@ const checks = [
 		name: 'auth:login:valid-editor',
 		kind: 'auth',
 		run: async (baseUrl, ctx) => {
-			const { response, cookies } = await withTimeout(
+			const { response, cookies, body } = await withTimeout(
 				async (signal) => doLogin(baseUrl, EDITOR_USER.username, EDITOR_USER.password, signal),
 				REQUEST_TIMEOUT_MS,
 				'login valid editor'
 			);
+			const isRawRedirect = response.status === 303 || response.status === 302;
+			const isEnvelopeRedirect =
+				response.status === 200 && body?.type === 'redirect' && body?.status === 303;
 			assert(
-				response.status === 303 || response.status === 302,
-				`expected 302/303, got ${response.status}`
+				isRawRedirect || isEnvelopeRedirect,
+				`expected redirect (raw 303 or SvelteKit envelope), got HTTP ${response.status}` +
+					(body ? ` body.type=${body.type}` : '')
 			);
 			const sessionCookie = cookies.get('emis_session');
 			assert(sessionCookie && sessionCookie.length > 0, 'editor session cookie must be set');
 			ctx.editorSession = sessionCookie;
-			return { status: response.status, hasSession: true };
+			return { status: body?.status ?? response.status, hasSession: true };
 		}
 	},
 
@@ -504,14 +534,21 @@ const checks = [
 			assert(data?.ok === true, 'change-password response must have ok: true');
 
 			// Verify login with new password works
-			const { response: loginResp, cookies } = await withTimeout(
+			const {
+				response: loginResp,
+				cookies,
+				body: loginBody
+			} = await withTimeout(
 				async (signal) => doLogin(baseUrl, EDITOR_USER.username, newPassword, signal),
 				REQUEST_TIMEOUT_MS,
 				'login after password change'
 			);
+			const isRawRedirect = loginResp.status === 303 || loginResp.status === 302;
+			const isEnvelopeRedirect =
+				loginResp.status === 200 && loginBody?.type === 'redirect' && loginBody?.status === 303;
 			assert(
-				loginResp.status === 303 || loginResp.status === 302,
-				`login after password change: expected 302/303, got ${loginResp.status}`
+				isRawRedirect || isEnvelopeRedirect,
+				`login after password change: expected redirect, got HTTP ${loginResp.status}`
 			);
 			const newSession = cookies.get('emis_session');
 			assert(newSession, 'new session cookie must be set after login with changed password');
@@ -525,7 +562,7 @@ const checks = [
 		name: 'auth:page:redirect-to-login',
 		kind: 'auth',
 		run: async (baseUrl) => {
-			const { response } = await withTimeout(
+			const response = await withTimeout(
 				async (signal) =>
 					fetch(`${baseUrl}/emis`, {
 						signal,

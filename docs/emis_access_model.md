@@ -469,16 +469,16 @@ After AUTH-7, the `EMIS_USERS` env var is deprecated but still functional. It wi
 
 ## 6. Actor vs Role Clarification
 
-| Term      | What it is                                                   | MVE status                         |
-| --------- | ------------------------------------------------------------ | ---------------------------------- |
-| `actorId` | Opaque string for audit trail (from headers or auto-default) | Enforced via audit contract        |
-| `role`    | `viewer` / `editor` / `admin` (authorization intent)         | Semantic only, no runtime resolver |
+| Term      | What it is                                                   | Current status                                               |
+| --------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| `actorId` | Opaque string for audit trail (from headers or auto-default) | Enforced via audit contract; session-derived in session mode |
+| `role`    | `viewer` / `editor` / `admin` (authorization intent)         | Runtime-enforced via session + hooks middleware (Phase 5)    |
 
-When auth is introduced post-MVE:
+Since Phase 5 (production auth hardening):
 
-- `actorId` should be derived from session identity, not from arbitrary headers.
-- `role` should be resolved from a session/token, not assumed.
-- The write-policy helper should be extended, not replaced.
+- In session mode, `actorId` is derived from `session.userId` (not arbitrary headers).
+- `role` is resolved from the authenticated session and enforced in hooks + `assertWriteContext()`.
+- In none mode (dev/smoke), the MVE behavior is unchanged: header-based actor, no role enforcement.
 
 ## 7. One-Paragraph Summary
 

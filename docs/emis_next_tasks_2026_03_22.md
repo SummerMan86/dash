@@ -29,7 +29,9 @@ Current default order:
 
 6. ~~`Phase 4` — MVE deferrals (DF-1..DF-5)~~ **completed** (`2026-04-05`)
 
-All current backlog items are completed. Baseline Green / closed. No remaining MVE deferrals. Next priorities to be defined.
+7. ~~`Phase 5` — Production auth hardening (AUTH-1..AUTH-8)~~ **completed** (`2026-04-05`)
+
+All current backlog items are completed. Baseline Green / closed. Production auth ready. Next priorities to be defined.
 
 ## MVE Closeout
 
@@ -84,10 +86,27 @@ All Phase 4 slices delivered:
 
 MVE verdict updated: **accepted, no remaining deferrals**.
 
+### Phase 5. Production Auth Hardening -- COMPLETED (`2026-04-05`)
+
+All Phase 5 slices delivered:
+
+- `AUTH-1` — Contract freeze: production auth design frozen in `docs/emis_access_model.md` section 5
+- `AUTH-2` — DB schema: `emis.users` + `emis.sessions` tables, indexes, FK constraints
+- `AUTH-3` — bcrypt password hashing (bcryptjs, cost 12) + DB user store (env fallback for transition)
+- `AUTH-4` — DB session persistence (in-memory fallback for graceful degradation), lazy expiry cleanup
+- `AUTH-5` — Admin user management: `/emis/admin/users` UI + 4 API endpoints (list, create, update, delete)
+- `AUTH-6` — Change password: `/emis/settings` UI + `/api/emis/auth/change-password` API, session invalidation
+- `AUTH-7` — Default auth mode switched from `none` to `session`; `pnpm emis:auth-smoke` added (10 checks)
+- `AUTH-8` — Governance closure: all canonical + auth checks green, docs updated, baseline closed
+
+Production auth ready. EMIS can be safely exposed to the team.
+
 ## Locked Decisions
 
 - Dictionaries are now manageable via admin CRUD (DF-2), seeds remain as bootstrap mechanism
-- Auth is opt-in via `EMIS_AUTH_MODE=session` (default: `none` for backward compatibility)
+- Auth is **on by default** (`EMIS_AUTH_MODE` defaults to `session`); opt out with `EMIS_AUTH_MODE=none` for dev/smoke
+- Users stored in `emis.users` (DB), passwords as bcrypt hashes; env fallback (`EMIS_USERS`) for transition only
+- Sessions stored in `emis.sessions` (DB), in-memory fallback if DB unreachable
 
 See:
 
