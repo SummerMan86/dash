@@ -5,7 +5,10 @@ import { assertWriteContext } from '$lib/server/emis/infra/writePolicy';
 import { EmisError } from '@dashboard-builder/emis-server/infra/errors';
 import { handleEmisRoute, parseJsonBody, requireUuid } from '$lib/server/emis/infra/http';
 import { getNewsDetailQuery } from '@dashboard-builder/emis-server/modules/news/queries';
-import { softDeleteNewsService, updateNewsService } from '@dashboard-builder/emis-server/modules/news/service';
+import {
+	softDeleteNewsService,
+	updateNewsService
+} from '@dashboard-builder/emis-server/modules/news/service';
 
 export const GET: RequestHandler = handleEmisRoute(async ({ params }) => {
 	const id = requireUuid(params.id, 'news id');

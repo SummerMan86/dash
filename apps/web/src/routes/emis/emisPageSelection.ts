@@ -1,8 +1,9 @@
+import type { EmisMapSelectedFeature, EmisMapSelectedRouteFeature } from '$entities/emis-map';
 import type {
-	EmisMapSelectedFeature,
-	EmisMapSelectedRouteFeature
-} from '$entities/emis-map';
-import type { EmisShipRoutePoint, EmisShipRouteSegment, EmisShipRouteVessel } from '$entities/emis-ship-route';
+	EmisShipRoutePoint,
+	EmisShipRouteSegment,
+	EmisShipRouteVessel
+} from '$entities/emis-ship-route';
 
 export type ShipRouteVesselOption = EmisShipRouteVessel & { vesselLabel: string };
 
@@ -55,15 +56,12 @@ export function buildRouteSegmentSelection(
 	};
 }
 
-export function buildVesselSelectionFeature(
-	vessel: ShipRouteVesselOption
-): EmisMapSelectedFeature {
+export function buildVesselSelectionFeature(vessel: ShipRouteVesselOption): EmisMapSelectedFeature {
 	return {
 		id: String(vessel.shipHbkId),
 		kind: 'vessel',
 		title: vessel.vesselName,
-		subtitle:
-			[vessel.vesselType, vessel.flag, vessel.callsign].filter(Boolean).join(' · ') || null,
+		subtitle: [vessel.vesselType, vessel.flag, vessel.callsign].filter(Boolean).join(' · ') || null,
 		colorKey: 'vessel',
 		shipHbkId: vessel.shipHbkId,
 		imo: vessel.imo,

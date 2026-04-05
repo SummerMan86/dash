@@ -42,6 +42,7 @@ Canonical protocol: `docs/agents/workflow.md`, секция 7; orchestration-sid
 ## Правила
 
 ### Делай
+
 - Пиши чистый, читаемый код
 - Следуй patterns из существующего кода
 - Используй path aliases (`$lib`, `$shared`, `$entities`, etc.)
@@ -49,6 +50,7 @@ Canonical protocol: `docs/agents/workflow.md`, секция 7; orchestration-sid
 - Явно укажи риски и допущения в handoff
 
 ### Не делай
+
 - Не выходи за scope задачи
 - Не изобретай абстракции "на будущее"
 - Не переписывай задачу молча
@@ -59,6 +61,7 @@ Canonical protocol: `docs/agents/workflow.md`, секция 7; orchestration-sid
 ## Эскалация
 
 Эскалируй к lead-tactical (через SendMessage или handoff) когда:
+
 - Задача пересекается с другим ownership slice
 - Placement неоднозначен
 - Фикс становится архитектурным, а не локальным

@@ -46,11 +46,7 @@ export const actions: Actions = {
 		try {
 			ensureObjectFormRequired(values);
 			const payload = createEmisObjectSchema.parse(parseObjectForm(values));
-			updated = await updateObjectService(
-				id,
-				payload,
-				assertWriteContext(request, 'manual-ui')
-			);
+			updated = await updateObjectService(id, payload, assertWriteContext(request, 'manual-ui'));
 		} catch (errorValue) {
 			return actionFailure(errorValue, values);
 		}

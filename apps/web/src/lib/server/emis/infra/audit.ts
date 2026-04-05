@@ -6,4 +6,7 @@ export type {
 	EmisAuditAction,
 	EmisAuditEntry
 } from '@dashboard-builder/emis-server/infra/audit';
-export { resolveEmisWriteContext, insertAuditLog } from '@dashboard-builder/emis-server/infra/audit';
+export {
+	resolveEmisWriteContext,
+	insertAuditLog
+} from '@dashboard-builder/emis-server/infra/audit';

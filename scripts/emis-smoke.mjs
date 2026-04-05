@@ -455,8 +455,14 @@ const checks = [
 			assertListMeta(data?.meta, 'vessel catalog bbox');
 			// When bbox covers the whole world, we expect results (same as without bbox)
 			for (const row of rows) {
-				assert(typeof row.lastLatitude === 'number', 'vessel catalog bbox: filtered row must have lastLatitude');
-				assert(typeof row.lastLongitude === 'number', 'vessel catalog bbox: filtered row must have lastLongitude');
+				assert(
+					typeof row.lastLatitude === 'number',
+					'vessel catalog bbox: filtered row must have lastLatitude'
+				);
+				assert(
+					typeof row.lastLongitude === 'number',
+					'vessel catalog bbox: filtered row must have lastLongitude'
+				);
 			}
 		}
 	),

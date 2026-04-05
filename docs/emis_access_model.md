@@ -49,28 +49,28 @@ Roles describe **authorization intent**, not runtime enforcement. MVE does not h
 
 ### Enforced in MVE (current state)
 
-| Mechanism | Where | What it does |
-| --- | --- | --- |
-| Actor attribution | `resolveEmisWriteContext()` in `packages/emis-server/src/infra/audit.ts` | Resolves `actorId` from `x-emis-actor-id` / `x-actor-id` headers; auto-defaults per source |
-| Audit trail | `insertAuditLog()` in every write service | Append-only `emis.audit_log` row within the same transaction |
-| DB-level invariants | Partial unique indexes, FK constraints, append-only audit trigger | Prevents data corruption regardless of application-level checks |
-| Deployment contour | Trusted internal network | No public internet exposure of the application |
+| Mechanism           | Where                                                                    | What it does                                                                               |
+| ------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| Actor attribution   | `resolveEmisWriteContext()` in `packages/emis-server/src/infra/audit.ts` | Resolves `actorId` from `x-emis-actor-id` / `x-actor-id` headers; auto-defaults per source |
+| Audit trail         | `insertAuditLog()` in every write service                                | Append-only `emis.audit_log` row within the same transaction                               |
+| DB-level invariants | Partial unique indexes, FK constraints, append-only audit trigger        | Prevents data corruption regardless of application-level checks                            |
+| Deployment contour  | Trusted internal network                                                 | No public internet exposure of the application                                             |
 
 ### Implemented (NW-2, 2026-04-04)
 
-| Mechanism | Where | What it does |
-| --- | --- | --- |
+| Mechanism           | Where                                                                         | What it does                                                                                     |
+| ------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | Write-policy helper | `assertWriteContext()` in `apps/web/src/lib/server/emis/infra/writePolicy.ts` | Validates that write context is present and actor is identified; rejects with 403 in strict mode |
 
 ### Explicitly deferred beyond MVE
 
-| Mechanism | Why deferred |
-| --- | --- |
-| Authentication (SSO, API keys, basic auth) | No requirement for user identity beyond actor headers in trusted contour |
-| Session management | No login/logout flow needed in trusted contour |
-| Role-based access control (RBAC) | Roles are semantic intent, not runtime enforcement; all trusted users are editors |
-| Per-entity permission model | All editors can write all entities; no row-level or entity-scoped restrictions |
-| Admin role enforcement | No admin-only operations exist yet |
+| Mechanism                                  | Why deferred                                                                      |
+| ------------------------------------------ | --------------------------------------------------------------------------------- |
+| Authentication (SSO, API keys, basic auth) | No requirement for user identity beyond actor headers in trusted contour          |
+| Session management                         | No login/logout flow needed in trusted contour                                    |
+| Role-based access control (RBAC)           | Roles are semantic intent, not runtime enforcement; all trusted users are editors |
+| Per-entity permission model                | All editors can write all entities; no row-level or entity-scoped restrictions    |
+| Admin role enforcement                     | No admin-only operations exist yet                                                |
 
 ## 4. Write-Policy Helper Contract
 
@@ -102,17 +102,14 @@ Replace the current pattern where `resolveEmisWriteContext()` is called directly
  *
  * @throws EmisError(403, 'WRITE_NOT_ALLOWED', message) in strict mode when actor is missing
  */
-export function assertWriteContext(
-  request: Request,
-  source: EmisWriteSource
-): EmisWriteContext;
+export function assertWriteContext(request: Request, source: EmisWriteSource): EmisWriteContext;
 ```
 
 ### Behavior modes
 
-| Mode | When active | Actor header missing | Actor header present |
-| --- | --- | --- | --- |
-| **strict** | `EMIS_WRITE_POLICY=strict` or production | 403 `WRITE_NOT_ALLOWED` | Resolve actor from header, return `EmisWriteContext` |
+| Mode           | When active                                           | Actor header missing                                                              | Actor header present                                 |
+| -------------- | ----------------------------------------------------- | --------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| **strict**     | `EMIS_WRITE_POLICY=strict` or production              | 403 `WRITE_NOT_ALLOWED`                                                           | Resolve actor from header, return `EmisWriteContext` |
 | **permissive** | `EMIS_WRITE_POLICY=permissive` or dev/local (default) | Auto-default actor per source (`api-client`, `local-manual-ui`, `server-process`) | Resolve actor from header, return `EmisWriteContext` |
 
 Mode is determined by `EMIS_WRITE_POLICY` env var. If not set, defaults to `permissive` (backward-compatible with current dev workflow).
@@ -121,8 +118,8 @@ Mode is determined by `EMIS_WRITE_POLICY` env var. If not set, defaults to `perm
 
 ```json
 {
-  "error": "Write operations require actor identification. Set x-emis-actor-id or x-actor-id header.",
-  "code": "WRITE_NOT_ALLOWED"
+	"error": "Write operations require actor identification. Set x-emis-actor-id or x-actor-id header.",
+	"code": "WRITE_NOT_ALLOWED"
 }
 ```
 
@@ -136,11 +133,11 @@ Every write entry point (API route handler or form action) replaces its current 
 
 ```typescript
 // Before (audit-only, never rejects):
-const ctx = resolveEmisWriteContext(request, 'api');       // API routes
+const ctx = resolveEmisWriteContext(request, 'api'); // API routes
 const ctx = resolveEmisWriteContext(request, 'manual-ui'); // form actions
 
 // After (policy + audit):
-const ctx = assertWriteContext(request, 'api');       // API routes
+const ctx = assertWriteContext(request, 'api'); // API routes
 const ctx = assertWriteContext(request, 'manual-ui'); // form actions
 ```
 
@@ -155,12 +152,13 @@ The return type is identical (`EmisWriteContext`), so downstream service/reposit
 
 ## 5. Actor vs Role Clarification
 
-| Term | What it is | MVE status |
-| --- | --- | --- |
-| `actorId` | Opaque string for audit trail (from headers or auto-default) | Enforced via audit contract |
-| `role` | `viewer` / `editor` / `admin` (authorization intent) | Semantic only, no runtime resolver |
+| Term      | What it is                                                   | MVE status                         |
+| --------- | ------------------------------------------------------------ | ---------------------------------- |
+| `actorId` | Opaque string for audit trail (from headers or auto-default) | Enforced via audit contract        |
+| `role`    | `viewer` / `editor` / `admin` (authorization intent)         | Semantic only, no runtime resolver |
 
 When auth is introduced post-MVE:
+
 - `actorId` should be derived from session identity, not from arbitrary headers.
 - `role` should be resolved from a session/token, not assumed.
 - The write-policy helper should be extended, not replaced.

@@ -6,6 +6,7 @@
 ## Решения и контекст
 
 ### Wave ST-1..ST-10 (closed, 2026-04-03)
+
 - All 10 structural slices accepted on `feature/emis-foundation-stabilization`
 - 8 packages: platform-core, db, platform-ui, platform-datasets, platform-filters, emis-contracts, emis-server, emis-ui
 - BI kept in app (bi-dashboards, bi-alerts) with justification
@@ -13,10 +14,12 @@
 - Integration branch: `feature/emis-foundation-stabilization`
 
 ### Wave H (EMIS Post-Split Hardening And Boundary Cleanup)
+
 - Integration branch: `feature/emis-post-split-hardening` (created from `feature/emis-foundation-stabilization`)
 - Plan: `docs/agents/lead-strategic/current_plan.md`
 
 #### H-1: Make emis-server transport-agnostic (DONE, 2026-04-03)
+
 - Moved `jsonEmisList`, `jsonEmisError`, `handleEmisRoute` from `packages/emis-server/src/infra/http.ts` → `apps/web/src/lib/server/emis/infra/http.ts`
 - Removed `@sveltejs/kit` from emis-server peerDependencies
 - Package-level http.ts now has only framework-agnostic parsing/validation/constants/types
@@ -30,6 +33,7 @@
 - Verification: pnpm check clean, pnpm build success, lint:boundaries 3 pre-existing only
 
 #### H-2: Remove invalid emis-ui -> platform-datasets edge (DONE, 2026-04-03)
+
 - Relocated `JsonPrimitive` and `JsonValue` from `platform-datasets/contract.ts` to `platform-core/src/types.ts` (canonical home)
 - `platform-datasets/contract.ts` now imports from `platform-core` and re-exports for backward compatibility
 - Added `@dashboard-builder/platform-core` as dependency of `platform-datasets` (allowed per target graph)
@@ -39,7 +43,9 @@
 - No behavioral changes, type-only relocation
 - Verification: pnpm check 0 errors, pnpm build success, lint:boundaries 3 pre-existing only (no new violations)
 - Review Gate: 3/3 reviewers passed (architecture, code, docs)
+
 #### H-3: Normalize EMIS route imports (DONE, 2026-04-03)
+
 - Replaced all `$entities/emis-*` imports with `@dashboard-builder/emis-contracts/*` (14 import lines across 14 route files)
 - Replaced all `$lib/server/emis/modules/*` imports with `@dashboard-builder/emis-server/modules/*` (18 import lines)
 - Replaced all `$lib/server/emis/infra/errors` imports with `@dashboard-builder/emis-server/infra/errors` (8 import lines)
@@ -51,7 +57,9 @@
 - No behavioral changes — import-only normalization
 - Verification: pnpm check 0 errors, pnpm build success, lint:boundaries 3 pre-existing only
 - Review Gate: architecture (PASS), code (PASS), docs (PASS)
+
 #### H-4a: Decompose EmisMap.svelte pressure (DONE, 2026-04-03)
+
 - EmisMap.svelte reduced from 1225 to 904 lines (26% reduction, 321 lines removed)
 - Extracted 3 files into `packages/emis-ui/src/emis-map/`:
   - `feature-normalizers.ts` (179 lines) — 5 pure normalizer functions
@@ -68,7 +76,9 @@
   - Fixed: pre-existing bug in `resolveVisibleLayers` — `showVessels` was missing `layer === 'all'`
   - Fixed: `BasemapSource` type duplication — extracted to `overlay-fetch.ts`, imported in both components
   - Fixed: stale line count in AGENTS.md follow-up note
+
 #### H-4b: Decompose +page.svelte route (DONE, 2026-04-03)
+
 - +page.svelte reduced from 1559 to 767 lines (51% reduction, 792 lines extracted)
 - Extracted 5 route-local files into `apps/web/src/routes/emis/`:
   - `emisPageHelpers.ts` (82 lines) — pure utility/formatting functions, type aliases (SearchResultKind, RouteMode, RouteUrlSelection), URL helpers, parsers
@@ -80,7 +90,9 @@
 - Removed unused imports: `EmisShipRouteVessel`, `Skeleton`, `EMIS_SHIP_ROUTE_FILTER_IDS` from +page.svelte
 - Updated AGENTS.md with new file listing
 - Verification: pnpm check 0 errors, pnpm build success, lint:boundaries 3 pre-existing only
+
 #### H-5: Close remaining boundary hardening gaps (DONE, 2026-04-03)
+
 - Residual 1 (mapConfig boundary exception): switched BI route `vessel-positions/+page.server.ts` from shim `$lib/server/emis/infra/mapConfig` to canonical `@dashboard-builder/emis-server/infra/mapConfig`; also normalized 2 EMIS routes (`emis/+page.server.ts`, `emis/pmtiles-spike/+page.server.ts`); deleted the now-unused shim `apps/web/src/lib/server/emis/infra/mapConfig.ts`; updated `routes/api/emis/AGENTS.md` to document deletion
 - Residual 2 (clampPageSize duplication): extracted `clampPageSize()` and `clampMapLimit()` to `packages/emis-server/src/infra/http.ts` using existing constants; replaced local copies in `modules/objects/queries.ts`, `modules/news/queries.ts`, `modules/map/queries.ts`; `ship-routes/queries.ts` has a different-signature `clampLimit(value, max)` -- left as-is (not duplicated)
 - Residual 3 (mapVesselsQuery fragile params): replaced hardcoded `$1`..`$4` with dynamic `$${values.length}` push-and-reference pattern, matching the style used by `appendBboxConditions` and all other query builders in the module; SQL semantics unchanged

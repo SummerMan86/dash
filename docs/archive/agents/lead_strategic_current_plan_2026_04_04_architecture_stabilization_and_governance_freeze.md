@@ -62,6 +62,7 @@
 ## Подзадачи
 
 ### A0: Architecture-First Freeze
+
 - status: completed on `2026-04-04`
 - scope:
   - `docs/agents/lead-strategic/current_plan.md`
@@ -76,11 +77,13 @@
   - не смешивать эту wave с feature expansion
 
 #### A0 Acceptance Checklist
+
 - active plan явно говорит `architecture first`
 - следующий tactical диалог не стартует с refactor-by-default
 - out-of-scope список исключает broad product work
 
 ### A1: Simplify Canonical Architecture Contract
+
 - status: completed on `2026-04-04`
 - scope:
   - `docs/architecture.md`
@@ -100,11 +103,13 @@
   - убрать лишний “целевой шум” из current-state docs
 
 #### A1 Acceptance Checklist
+
 - у EMIS есть один ясный canonical architecture story
 - `baseline`, `working contract` и `bootstrap` говорят одно и то же о current ownership
 - новый участник может понять placement rules без чтения historical phase docs
 
 ### A2: Separate Current State vs Target Layout vs Historical Docs
+
 - status: completed on `2026-04-04`
 - scope:
   - `docs/emis_freeze_note.md`
@@ -122,11 +127,13 @@
   - если документ уже не current-canonical, это должно быть видно сразу
 
 #### A2 Acceptance Checklist
+
 - no canonical doc contradicts the current package architecture
 - `target layout` remains future/migration doc, not accidental current-state source
 - `freeze note` and `implementation spec` no longer mislead a new agent about current ownership
 
 ### A3: Create And Wire Known Exceptions Registry
+
 - status: completed on `2026-04-04`
 - scope:
   - `docs/emis_known_exceptions.md`
@@ -145,11 +152,13 @@
   - исключения не должны больше жить только в memory/report text
 
 #### A3 Acceptance Checklist
+
 - canonical registry существует
 - active architecture/baseline exceptions перечислены в одном месте
 - workflow и bootstrap ссылаются на registry как на обязательный источник truth
 
 ### A4: Define Architecture Governance Role Model
+
 - status: completed on `2026-04-04`
 - scope:
   - `docs/agents/roles.md`
@@ -181,12 +190,14 @@
     - known exceptions and complexity waivers use one explicit approval path
 
 #### A4 Acceptance Checklist
+
 - role model is explicit and non-overlapping
 - there is no accidental “second strategic lead”
 - package-boundary review rules are documented
 - oversized-file policy and exception handling are coherent with active EMIS docs
 
 ### A5: Prepare Phase-2 Enforcement And Refactor Backlog
+
 - status: completed on `2026-04-04`
 - scope:
   - `docs/agents/lead-strategic/current_plan.md`
@@ -233,6 +244,7 @@
       shim cleanup and other residual mechanical cleanup
 
 #### A5 Acceptance Checklist
+
 - next wave order is explicit
 - the first implementation slice after docs freeze is explicit
 - `EXC-ARCH-002` and `EXC-ARCH-004` are mapped to bounded follow-up work
@@ -241,6 +253,7 @@
 - future code stabilization can start from an accepted architecture baseline
 
 ## Recommended Execution Order
+
 1. `A0` — freeze architecture-first scope.
 2. `A1` — simplify the canonical architecture story.
 3. `A2` — separate current / target / historical docs.
@@ -277,6 +290,7 @@ If the next chat continues from this freeze by default, open **phase 2** from `P
 ## Scope Boundaries
 
 ### In scope
+
 - EMIS architecture concept clarification
 - canonical docs truthfulness
 - current vs target vs history separation
@@ -285,6 +299,7 @@ If the next chat continues from this freeze by default, open **phase 2** from `P
 - sequencing for later enforcement/refactor work
 
 ### Out of scope
+
 - new EMIS product features
 - broad code refactor
 - mass shim removal

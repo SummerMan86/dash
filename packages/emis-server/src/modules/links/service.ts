@@ -1,4 +1,7 @@
-import type { AttachNewsObjectsSchemaInput, UpdateNewsObjectLinkInput } from '@dashboard-builder/emis-contracts/emis-link';
+import type {
+	AttachNewsObjectsSchemaInput,
+	UpdateNewsObjectLinkInput
+} from '@dashboard-builder/emis-contracts/emis-link';
 
 import type { EmisWriteContext } from '../../infra/audit';
 import { insertAuditLog } from '../../infra/audit';

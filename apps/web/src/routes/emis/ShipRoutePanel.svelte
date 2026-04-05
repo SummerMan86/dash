@@ -61,9 +61,9 @@
 		<CardHeader>
 			<CardTitle>Ship Route Slice</CardTitle>
 			<CardDescription>
-				Живой vertical slice поверх прямых `/api/emis/ship-routes/*` queries. Используем
-				`shipHbkId` как главный идентификатор и переиспользуем общий `dateRange`, если он
-				задан в workspace filters.
+				Живой vertical slice поверх прямых `/api/emis/ship-routes/*` queries. Используем `shipHbkId`
+				как главный идентификатор и переиспользуем общий `dateRange`, если он задан в workspace
+				filters.
 			</CardDescription>
 		</CardHeader>
 		<CardContent class="space-y-4">
@@ -305,10 +305,7 @@
 						<div class="type-body-sm font-medium text-foreground">
 							{routeModeShowsPoints
 								? formatMetric(shipRoutePoints[shipRoutePoints.length - 1].speed, ' kn')
-								: formatMetric(
-										shipRouteSegments[shipRouteSegments.length - 1].gapMinutes,
-										' min'
-									)}
+								: formatMetric(shipRouteSegments[shipRouteSegments.length - 1].gapMinutes, ' min')}
 						</div>
 						<div class="type-caption text-muted-foreground">
 							{routeModeShowsPoints
@@ -325,8 +322,8 @@
 		<CardHeader>
 			<CardTitle>Latest Track Points</CardTitle>
 			<CardDescription>
-				Последние точки выбранного маршрута. Этого достаточно, чтобы быстро проверить,
-				нормально ли `mart_emis` ложится в текущий workspace.
+				Последние точки выбранного маршрута. Этого достаточно, чтобы быстро проверить, нормально ли
+				`mart_emis` ложится в текущий workspace.
 			</CardDescription>
 		</CardHeader>
 		<CardContent class="space-y-3">

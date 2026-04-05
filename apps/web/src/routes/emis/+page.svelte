@@ -18,11 +18,7 @@
 	import { FilterPanel } from '$widgets/filters';
 	import { EmisMap } from '$widgets/emis-map';
 
-	import {
-		emisWorkspaceFilters,
-		EMIS_FILTER_TARGETS,
-		EMIS_PRIMARY_FILTER_IDS
-	} from './filters';
+	import { emisWorkspaceFilters, EMIS_FILTER_TARGETS, EMIS_PRIMARY_FILTER_IDS } from './filters';
 	import type { SearchResultKind, RouteUrlSelection } from './emisPageHelpers';
 	import {
 		appendQueryParams,
@@ -545,12 +541,9 @@
 		if (!browser) return;
 
 		if (catalogBboxDebounce) clearTimeout(catalogBboxDebounce);
-		catalogBboxDebounce = setTimeout(
-			() => {
-				void loadShipRouteCatalog(vesselMode ? bbox : null);
-			},
-			400
-		);
+		catalogBboxDebounce = setTimeout(() => {
+			void loadShipRouteCatalog(vesselMode ? bbox : null);
+		}, 400);
 
 		return () => {
 			if (catalogBboxDebounce) clearTimeout(catalogBboxDebounce);

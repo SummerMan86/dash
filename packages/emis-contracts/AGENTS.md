@@ -6,15 +6,15 @@ EMIS entity types, Zod validation schemas и shared DTO.
 
 Каждая entity — отдельный subpath export:
 
-| Subpath | Содержимое |
-|---|---|
-| `./emis-geo` | `EmisPointGeometry`, `pointGeometrySchema` |
-| `./emis-dictionary` | `EmisCountry`, `EmisObjectType`, `EmisSource` |
-| `./emis-news` | news summary/detail types, create/update/list schemas |
-| `./emis-object` | object summary/detail types, create/update/list schemas |
-| `./emis-link` | news-object link types, attach/update schemas |
-| `./emis-ship-route` | vessel/point/segment types, list query schemas |
-| `./emis-map` | map config/feature/query types, bbox/filter schemas |
+| Subpath             | Содержимое                                              |
+| ------------------- | ------------------------------------------------------- |
+| `./emis-geo`        | `EmisPointGeometry`, `pointGeometrySchema`              |
+| `./emis-dictionary` | `EmisCountry`, `EmisObjectType`, `EmisSource`           |
+| `./emis-news`       | news summary/detail types, create/update/list schemas   |
+| `./emis-object`     | object summary/detail types, create/update/list schemas |
+| `./emis-link`       | news-object link types, attach/update schemas           |
+| `./emis-ship-route` | vessel/point/segment types, list query schemas          |
+| `./emis-map`        | map config/feature/query types, bbox/filter schemas     |
 
 ## Внутренние зависимости
 

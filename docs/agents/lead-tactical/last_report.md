@@ -42,12 +42,14 @@ All 5 P1 slices completed. Vessel mode now supports selected-vessel historical t
 ## P1.4: Make Vessel Catalog Viewport-Aware
 
 Server-side:
+
 - Added optional `bbox` parameter to `listEmisShipRouteVesselsQuerySchema` (reuses `mapBboxSchema` from emis-map contracts)
 - Added bbox filtering to `listShipRouteVesselsQuery` in `packages/emis-server/src/modules/ship-routes/queries.ts`: when bbox is provided, filters on `last_latitude`/`last_longitude` within the bounding box
 - Updated route handler `apps/web/src/routes/api/emis/ship-routes/vessels/+server.ts` to parse and pass `bbox` from URL params
 - Backward-compatible: when bbox is omitted, returns all vessels
 
 Client-side:
+
 - Added `onBoundsChange` callback prop to `EmisMap.svelte` -- fires after each successful overlay refresh with the current bbox string
 - Added `mapBbox` state to `+page.svelte`
 - Added `handleBoundsChange` handler that updates `mapBbox`
@@ -66,21 +68,23 @@ Client-side:
 
 All 6 canonical checks green:
 
-| Check | Result |
-|-------|--------|
-| `pnpm check` | 0 errors, 0 warnings |
-| `pnpm build` | success |
-| `pnpm lint:boundaries` | no violations |
-| `pnpm emis:smoke` | 34/34 checks pass |
-| `pnpm emis:offline-smoke` | all checks pass |
-| `pnpm emis:write-smoke` | all flows pass |
+| Check                     | Result               |
+| ------------------------- | -------------------- |
+| `pnpm check`              | 0 errors, 0 warnings |
+| `pnpm build`              | success              |
+| `pnpm lint:boundaries`    | no violations        |
+| `pnpm emis:smoke`         | 34/34 checks pass    |
+| `pnpm emis:offline-smoke` | all checks pass      |
+| `pnpm emis:write-smoke`   | all flows pass       |
 
 ## Files Changed
 
 ### New files
+
 - `docs/emis_vessel_track_contract.md` — behavior contract for P1
 
 ### Modified files
+
 - `apps/web/src/routes/emis/+page.svelte` — removed isVesselMode guards, added flyToTarget, onBoundsChange, bbox-aware catalog loader
 - `packages/emis-ui/src/emis-map/EmisMap.svelte` — added `onBoundsChange` prop
 - `packages/emis-contracts/src/emis-ship-route/model/schema.ts` — added optional `bbox` to vessels query schema

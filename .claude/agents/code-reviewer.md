@@ -1,6 +1,6 @@
 ---
 name: code-reviewer
-description: "EMIS: code-reviewer. Reviews code changes for implementation quality, naming, framework conventions, and maintainability audit. Run after every task that modifies code files."
+description: 'EMIS: code-reviewer. Reviews code changes for implementation quality, naming, framework conventions, and maintainability audit. Run after every task that modifies code files.'
 tools: Read, Grep, Glob
 model: sonnet
 memory: project
@@ -48,6 +48,7 @@ Required follow-ups:
 ```
 
 Severity guide:
+
 - CRITICAL: bug, incorrect behavior, logic error
 - WARNING: maintainability problem, naming confusion, unnecessary complexity
 - INFO: minor improvement, non-blocking

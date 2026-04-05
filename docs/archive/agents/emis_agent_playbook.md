@@ -5,6 +5,7 @@ Executable workflow for the EMIS multi-agent operating model.
 This playbook turns the operating model into step-by-step instructions. It answers: "I have a task — what do I do now?"
 
 References:
+
 - [Operating Model](./emis_agent_operating_model.md) — roles, rules, model choices
 - [Agent Roles](./emis_agent_roles.md) — canonical role definitions
 - [Worker Handoff Template](./emis_worker_handoff_template.md) — worker output format
@@ -56,10 +57,10 @@ Does this change alter EMIS operational vs BI/read-side boundaries?
   NO  → use the answer above
 ```
 
-| Tier | Review | Merge |
-|------|--------|-------|
-| **Tier 1** | Lead self-review | User confirms |
-| **Tier 2** | Full Review Gate (4 reviewers in parallel) | User confirms |
+| Tier       | Review                                       | Merge         |
+| ---------- | -------------------------------------------- | ------------- |
+| **Tier 1** | Lead self-review                             | User confirms |
+| **Tier 2** | Full Review Gate (4 reviewers in parallel)   | User confirms |
 | **Tier 3** | Full Review Gate + external lead recommended | User confirms |
 
 ---
@@ -100,11 +101,13 @@ When a task is non-trivial, lead-orchestrator creates a decomposition plan befor
 # Decomposition: <task name>
 
 ## Overview
+
 <1-2 sentences: what we're building and why>
 
 ## Subtasks
 
 ### ST-1: <name>
+
 - scope: <files/layers to touch>
 - depends on: — (or ST-N)
 - owner: lead | worker
@@ -112,6 +115,7 @@ When a task is non-trivial, lead-orchestrator creates a decomposition plan befor
 - estimated size: S | M | L
 
 ### ST-2: <name>
+
 - scope: <files/layers>
 - depends on: ST-1
 - owner: worker
@@ -119,10 +123,12 @@ When a task is non-trivial, lead-orchestrator creates a decomposition plan befor
 - estimated size: M
 
 ## Dependency Graph
+
 ST-1 → ST-3
 ST-2 → ST-3 (ST-1 and ST-2 are parallel)
 
 ## Risks
+
 - <risk and mitigation>
 ```
 
@@ -138,28 +144,35 @@ When lead-orchestrator spawns a worker subagent, it sends this structured instru
 # Worker Instruction
 
 ## Task
+
 <clear, bounded description of what to implement>
 
 ## Scope boundary
+
 - files to touch: <list>
 - layers: <route UI | widgets | entities | server/emis | dataset/BI | db/docs>
 - do NOT touch: <files/modules outside scope>
 
 ## Base branch
+
 <branch name to create worktree from>
 
 ## Feature branch
+
 agent/worker/<task-slug>
 
 ## Architecture constraints
+
 - <relevant EMIS invariants from operating model section 6>
 - <relevant patterns from existing code>
 
 ## Expected output
+
 Use the worker handoff template (docs/emis_worker_handoff_template.md).
 Commit your work and provide the handoff note.
 
 ## Checks to run
+
 - TypeScript: no type errors in touched files
 - <any specific validation>
 ```
@@ -174,11 +187,11 @@ After implementation is complete and committed, lead-orchestrator runs the Revie
 
 ### Reviewer assignment by tier
 
-| Tier | Reviewers |
-|------|-----------|
-| Tier 1 | Lead self-review only |
+| Tier   | Reviewers                                                                          |
+| ------ | ---------------------------------------------------------------------------------- |
+| Tier 1 | Lead self-review only                                                              |
 | Tier 2 | `architecture-reviewer` + `security-reviewer` + `docs-reviewer` + `codex-reviewer` |
-| Tier 3 | All Tier 2 + `ui-reviewer` (if frontend) + external lead (recommended) |
+| Tier 3 | All Tier 2 + `ui-reviewer` (if frontend) + external lead (recommended)             |
 
 ### Diff preparation
 
@@ -189,12 +202,14 @@ After implementation is complete and committed, lead-orchestrator runs the Revie
 ### Spawn protocol
 
 **First task in session:**
+
 ```
 Spawn 4 reviewer agents in parallel (Agent tool, subagent_type for each).
 Each receives: diff + changed file list + their role instructions.
 ```
 
 **Subsequent tasks in same session:**
+
 ```
 SendMessage to existing reviewer agents with new diff.
 ```
@@ -231,20 +246,24 @@ After all reviewers return, lead-orchestrator aggregates findings.
 ### Findings by severity
 
 **CRITICAL** (blocks merge):
+
 - [security-reviewer] file:line — description
   Fix: <what lead-orchestrator proposes>
 
 **WARNING** (should fix):
+
 - [architecture-reviewer] file:line — description
   Fix: <proposed fix>
 - [codex-reviewer] file:line — description
   Fix: <proposed fix>
 
 **INFO** (noted, not blocking):
+
 - [docs-reviewer] file — docs update suggested
   Action: will fix
 
 ### Reviewer verdicts
+
 - architecture-reviewer: OK
 - security-reviewer: 1 WARNING
 - docs-reviewer: 1 UPDATE needed
@@ -252,6 +271,7 @@ After all reviewers return, lead-orchestrator aggregates findings.
 - ui-reviewer: not triggered (no frontend changes)
 
 ### Resolution plan
+
 - WARNING items: will fix now
 - INFO items: will fix now
 - CRITICAL items: <escalated to user / none>
@@ -281,6 +301,7 @@ Lead-orchestrator escalates to user when:
 **Context**: <what happened, which reviewer flagged it>
 
 **Options**:
+
 1. <option A> — <consequence>
 2. <option B> — <consequence>
 3. <option C> — <consequence>
@@ -291,6 +312,7 @@ Lead-orchestrator escalates to user when:
 ```
 
 The user responds with one of:
+
 - **Approve** recommendation
 - **Choose** a different option
 - **Request redesign** — lead goes back to decomposition
@@ -457,6 +479,7 @@ User: "Add Wikimapia objects to EMIS map"
 ### Step 2: Clarification
 
 Lead asks:
+
 - Source: live API or import to DB? → **Import to DB**
 - Layer: separate or part of objects? → **Part of objects layer**
 - Scope: all categories or specific? → **Specific categories**
@@ -465,6 +488,7 @@ Lead asks:
 ### Step 3: Research & planning
 
 Lead investigates:
+
 - Wikimapia API status → deprecated, unreliable
 - OSM Overpass → recommended alternative (free, current)
 - EMIS objects schema → `external_id` + `source_origin='import'` fit perfectly
@@ -505,6 +529,7 @@ Lead merges, implements ST-7, ST-8, ST-9.
 ### Step 8: Review Gate
 
 Lead spawns 4 reviewers on `git diff main..feature/emis-geo-import`:
+
 - architecture-reviewer: checks FSD boundaries, server isolation
 - security-reviewer: checks SQL parameterization, no raw SQL in routes, API key handling
 - docs-reviewer: checks AGENTS.md, applied_changes.md, .env.example updates
@@ -536,16 +561,16 @@ Lead fixes docs. Presents to user. User confirms. Merge.
 
 ## Quick Reference
 
-| I need to... | Go to section |
-|-------------|---------------|
-| Start a new task | 1. Task Intake |
-| Decide the review tier | 2. Tier Decision Tree |
+| I need to...                       | Go to section                   |
+| ---------------------------------- | ------------------------------- |
+| Start a new task                   | 1. Task Intake                  |
+| Decide the review tier             | 2. Tier Decision Tree           |
 | Decide: implement or spawn workers | 3. Implementation Decision Tree |
-| Break a task into subtasks | 4. Decomposition Plan |
-| Write instructions for a worker | 5. Worker Instruction Template |
-| Run the Review Gate | 6. Review Gate |
-| Present findings to user | 7. Findings Aggregation |
-| Escalate a decision to user | 8. Escalation Protocol |
-| Request merge | 9. Merge Confirmation |
-| End session with WIP | 10. Session Continuity |
-| See a full example | 12. End-to-End Example |
+| Break a task into subtasks         | 4. Decomposition Plan           |
+| Write instructions for a worker    | 5. Worker Instruction Template  |
+| Run the Review Gate                | 6. Review Gate                  |
+| Present findings to user           | 7. Findings Aggregation         |
+| Escalate a decision to user        | 8. Escalation Protocol          |
+| Request merge                      | 9. Merge Confirmation           |
+| End session with WIP               | 10. Session Continuity          |
+| See a full example                 | 12. End-to-End Example          |

@@ -44,7 +44,11 @@ try {
 	console.error('No ESLint output file. Check that eslint is installed and targets exist.');
 	process.exit(2);
 } finally {
-	try { unlinkSync(tmpFile); } catch { /* ignore cleanup errors */ }
+	try {
+		unlinkSync(tmpFile);
+	} catch {
+		/* ignore cleanup errors */
+	}
 }
 
 let results;

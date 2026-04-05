@@ -69,10 +69,7 @@ function getExplicitActorId(request: Request): string | null {
  *
  * @throws EmisError(403, 'WRITE_NOT_ALLOWED') in strict mode when actor is missing
  */
-export function assertWriteContext(
-	request: Request,
-	source: EmisWriteSource
-): EmisWriteContext {
+export function assertWriteContext(request: Request, source: EmisWriteSource): EmisWriteContext {
 	if (isStrictMode()) {
 		const explicitActor = getExplicitActorId(request);
 		if (!explicitActor) {

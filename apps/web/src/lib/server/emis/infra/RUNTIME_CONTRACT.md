@@ -50,6 +50,7 @@ This section is the FE/BE agreement on how EMIS APIs are designed.
 ### Request correlation
 
 All EMIS operational routes wrapped with `handleEmisRoute()`:
+
 - Accept `x-request-id` from incoming request headers
 - Generate a UUID if the header is missing
 - Return `x-request-id` in response headers (on both success and error)
@@ -57,6 +58,7 @@ All EMIS operational routes wrapped with `handleEmisRoute()`:
 ### Structured error logging
 
 On any error (4xx/5xx), `handleEmisRoute()` emits a JSON structured log:
+
 - `service: 'emis'`, `level`, `requestId`, `method`, `path`, `status`, `code`, `durationMs`
 - `actorId` included when present (tracing only, not auth)
 - `message` included when available
@@ -186,8 +188,8 @@ All EMIS write entry points (API routes and form actions) call `assertWriteConte
 
 ### Helper
 
-| Helper | Canonical location | Purpose |
-| --- | --- | --- |
+| Helper                                | Canonical location                                                                     | Purpose                                                                      |
+| ------------------------------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | `assertWriteContext(request, source)` | `apps/web/src/lib/server/emis/infra/writePolicy.ts` (approved by architecture-steward) | Validate write context, enforce actor requirement, return `EmisWriteContext` |
 
 ### Behavior
@@ -199,9 +201,9 @@ All EMIS write entry points (API routes and form actions) call `assertWriteConte
 
 ### Error code
 
-| Code | Status | When |
-| --- | --- | --- |
-| `WRITE_NOT_ALLOWED` | 403 | Strict mode, no actor header provided |
+| Code                | Status | When                                  |
+| ------------------- | ------ | ------------------------------------- |
+| `WRITE_NOT_ALLOWED` | 403    | Strict mode, no actor header provided |
 
 ### Integration rule
 
@@ -209,7 +211,7 @@ Every route handler or form action that performs a write must replace direct `re
 
 ```typescript
 // Canonical pattern for all write entry points:
-const ctx = assertWriteContext(request, 'api');       // API routes
+const ctx = assertWriteContext(request, 'api'); // API routes
 const ctx = assertWriteContext(request, 'manual-ui'); // form actions
 ```
 
@@ -287,12 +289,14 @@ Returns `{ service: 'emis', status: 'snapshot-ready', db: {...}, docs: {...} }`.
 **Status:** implemented (NW-4).
 
 DB-backed runtime readiness. Checks:
+
 1. `DATABASE_URL` is set
 2. PostgreSQL connectivity
 3. Required schemas: `emis`, `stg_emis`, `mart_emis`, `mart`
 4. Published views: `mart.emis_news_flat`, `mart.emis_objects_dim`, `mart.emis_object_news_facts`, `mart.emis_ship_route_vessels`, `mart_emis.ship_route_points`, `mart_emis.ship_route_segments`
 
 Returns:
+
 - `200 { status: 'ready', checks: {...}, durationMs }` when all pass
 - `503 { status: 'not_ready', checks: {...}, failures: [...], durationMs }` when any fail
 
@@ -316,16 +320,16 @@ Route file: `apps/web/src/routes/api/emis/readyz/+server.ts`.
 
 ### App-layer transport (SvelteKit) — `apps/web/src/lib/server/emis/infra/http.ts`
 
-| Helper                     | Purpose                               |
-| -------------------------- | ------------------------------------- |
-| `jsonEmisList()`           | Standard `{rows, meta}` response      |
-| `jsonEmisError()`          | Standard `{error, code}` response     |
-| `handleEmisRoute()`        | Error boundary + request correlation + structured error logging |
+| Helper              | Purpose                                                         |
+| ------------------- | --------------------------------------------------------------- |
+| `jsonEmisList()`    | Standard `{rows, meta}` response                                |
+| `jsonEmisError()`   | Standard `{error, code}` response                               |
+| `handleEmisRoute()` | Error boundary + request correlation + structured error logging |
 
 ### App-layer write policy — `apps/web/src/lib/server/emis/infra/writePolicy.ts`
 
-| Helper                     | Purpose                               |
-| -------------------------- | ------------------------------------- |
-| `assertWriteContext()`     | Write-policy checkpoint (see "Write-policy contract" section) |
+| Helper                 | Purpose                                                       |
+| ---------------------- | ------------------------------------------------------------- |
+| `assertWriteContext()` | Write-policy checkpoint (see "Write-policy contract" section) |
 
 Routes import transport helpers from `$lib/server/emis/infra/http` and write-policy helper from `$lib/server/emis/infra/writePolicy`.

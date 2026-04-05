@@ -34,16 +34,19 @@ EMIS — отдельный доменный контур внутри того 
 ## Когда использовать strategic-reviewer
 
 Используй optional sidecar `strategic-reviewer`, если:
+
 - report большой и нужен быстрый второй проход по acceptance checklist
 - diff спорный и хочется отделить final verdict от первичного чтения
 - новая сессия и нужно быстро восстановить strategic state по `plan + report + diff`
 
 Правила:
+
 - давай ему только узкий контекст
 - он не заменяет твою финальную приёмку
 - не превращай его в параллельного `lead-strategic` с отдельным plan ownership
 
 Model policy:
+
 - default: `gpt-5.4-mini` with `reasoning_effort=medium`
 - escalate to `gpt-5.4` with `reasoning_effort=high`, если:
   - возможен `needs strategic decision`
@@ -55,6 +58,7 @@ Model policy:
 ## После приёмки задачи
 
 После каждого принятого slice:
+
 - быстро сверяй следующий planned slice с новым состоянием репозитория
 - если нужна только локальная коррекция формулировки, acceptance или tactical assumption, правь `current_plan.md` сразу
 - если переход между slice'ами спорный или зависит от тонкого architectural outcome, подключай `strategic-reviewer`

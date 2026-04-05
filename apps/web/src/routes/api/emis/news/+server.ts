@@ -1,6 +1,9 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 
-import { createEmisNewsSchema, listEmisNewsQuerySchema } from '@dashboard-builder/emis-contracts/emis-news';
+import {
+	createEmisNewsSchema,
+	listEmisNewsQuerySchema
+} from '@dashboard-builder/emis-contracts/emis-news';
 import { assertWriteContext } from '$lib/server/emis/infra/writePolicy';
 import { EmisError } from '@dashboard-builder/emis-server/infra/errors';
 import {

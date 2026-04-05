@@ -107,11 +107,7 @@ export function buildOverlayUrls(
 /**
  * Compute a deduplication key for the current overlay request.
  */
-export function buildOverlayKey(
-	layer: EmisLayerMode,
-	bbox: string,
-	urls: OverlayUrls
-): string {
+export function buildOverlayKey(layer: EmisLayerMode, bbox: string, urls: OverlayUrls): string {
 	return [
 		layer,
 		bbox,

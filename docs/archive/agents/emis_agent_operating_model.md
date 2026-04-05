@@ -290,10 +290,10 @@ Minimum rules:
 
 Not every change needs the full review gate:
 
-| Tier | When | Review |
-| ---- | ---- | ------ |
-| **Tier 1** (cosmetic) | copy/text/style-only, no logic change | Claude Opus self-review + user confirm |
-| **Tier 2** (bounded) | single-module bugfix, small feature | Full Review Gate (4 reviewers) |
+| Tier                  | When                                    | Review                                       |
+| --------------------- | --------------------------------------- | -------------------------------------------- |
+| **Tier 1** (cosmetic) | copy/text/style-only, no logic change   | Claude Opus self-review + user confirm       |
+| **Tier 2** (bounded)  | single-module bugfix, small feature     | Full Review Gate (4 reviewers)               |
 | **Tier 3** (critical) | new route/contract/schema, cross-module | Full Review Gate + external lead recommended |
 
 Claude Opus determines the tier and includes it in the review summary. The user may override.
@@ -312,14 +312,14 @@ For EMIS work, use the following mapping:
 
 Practical alias table:
 
-| `.claude/agents/` name (dispatch) | EMIS alias | Root Review Gate role | Notes |
-| ---------------------------------- | ----------------------- | --------------------- | ----- |
-| `architecture-reviewer` | `architecture-reviewer` | `architecture-reviewer` | same name everywhere |
-| `security-reviewer` | `security-reviewer` | `security-reviewer` | same name everywhere |
-| `docs-reviewer` | `docs-contracts-reviewer` | `docs-reviewer` | EMIS alias makes runtime/db contract ownership explicit |
-| `codex-reviewer` | `code-reviewer` | `codex-reviewer` | EMIS alias emphasizes implementation-quality review |
-| `ui-reviewer` | `ui-reviewer` | `ui-reviewer` | same name everywhere |
-| `ui-reviewer-deep` | `ui-reviewer` (deep) | `ui-reviewer` | Opus-level UX/a11y audit |
+| `.claude/agents/` name (dispatch) | EMIS alias                | Root Review Gate role   | Notes                                                   |
+| --------------------------------- | ------------------------- | ----------------------- | ------------------------------------------------------- |
+| `architecture-reviewer`           | `architecture-reviewer`   | `architecture-reviewer` | same name everywhere                                    |
+| `security-reviewer`               | `security-reviewer`       | `security-reviewer`     | same name everywhere                                    |
+| `docs-reviewer`                   | `docs-contracts-reviewer` | `docs-reviewer`         | EMIS alias makes runtime/db contract ownership explicit |
+| `codex-reviewer`                  | `code-reviewer`           | `codex-reviewer`        | EMIS alias emphasizes implementation-quality review     |
+| `ui-reviewer`                     | `ui-reviewer`             | `ui-reviewer`           | same name everywhere                                    |
+| `ui-reviewer-deep`                | `ui-reviewer` (deep)      | `ui-reviewer`           | Opus-level UX/a11y audit                                |
 
 Full role definitions: [emis_agent_roles.md](./emis_agent_roles.md).
 
@@ -397,21 +397,21 @@ Model diversity reduces correlated blind spots. The default assignment optimizes
 
 ### Default assignment (consolidated mode)
 
-| Role | Model | Why |
-| ---- | ----- | --- |
-| `lead-orchestrator` | Claude Opus | strongest context, orchestration, and implementation |
-| `architecture-reviewer` | Claude Sonnet (subagent) | fast, cheap, good at structural review |
-| `security-reviewer` | Claude Sonnet (subagent) | efficient risk scanning |
-| `docs-reviewer` | Claude Sonnet (subagent) | consistency checks across docs and contracts |
-| `codex-reviewer` | Codex/GPT via `codex exec` | cross-model independent second opinion |
-| `worker` (parallel) | Claude Sonnet/Opus (subagent in worktree) | bounded implementation |
-| `ui-reviewer` | Claude Sonnet (subagent + Chrome) | quick smoke validation |
-| `ui-reviewer-deep` | Claude Opus (subagent + Chrome) | nuanced UX/a11y audit |
+| Role                    | Model                                     | Why                                                  |
+| ----------------------- | ----------------------------------------- | ---------------------------------------------------- |
+| `lead-orchestrator`     | Claude Opus                               | strongest context, orchestration, and implementation |
+| `architecture-reviewer` | Claude Sonnet (subagent)                  | fast, cheap, good at structural review               |
+| `security-reviewer`     | Claude Sonnet (subagent)                  | efficient risk scanning                              |
+| `docs-reviewer`         | Claude Sonnet (subagent)                  | consistency checks across docs and contracts         |
+| `codex-reviewer`        | Codex/GPT via `codex exec`                | cross-model independent second opinion               |
+| `worker` (parallel)     | Claude Sonnet/Opus (subagent in worktree) | bounded implementation                               |
+| `ui-reviewer`           | Claude Sonnet (subagent + Chrome)         | quick smoke validation                               |
+| `ui-reviewer-deep`      | Claude Opus (subagent + Chrome)           | nuanced UX/a11y audit                                |
 
 ### External lead assignment (critical changes)
 
-| Role | Model | Why |
-| ---- | ----- | --- |
+| Role              | Model                              | Why                                                        |
+| ----------------- | ---------------------------------- | ---------------------------------------------------------- |
 | `lead-integrator` | Codex `gpt-5.4` (separate session) | independent integration judgment from another model family |
 
 ### Independence guarantees

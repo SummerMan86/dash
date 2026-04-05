@@ -67,4 +67,4 @@ Server-only consumers should now import these canonical packages directly:
 
 - BI routes (strategy, wildberries, analytics) must NOT import EMIS operational packages
 - EMIS read-side dashboards (routes/dashboard/emis/) access data through dataset/IR layer
-- Both domains share platform-* packages but do not cross-import
+- Both domains share platform-\* packages but do not cross-import

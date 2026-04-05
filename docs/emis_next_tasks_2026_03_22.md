@@ -33,6 +33,7 @@ All current backlog items are completed. Next priorities to be defined.
 ### M3. Health, Readiness And API Error Logging — COMPLETED (`2026-04-05`, NW-4)
 
 All M3 subtasks delivered:
+
 - `M3.1` — `/api/emis/readyz` with DB-backed runtime readiness (schemas + published views)
 - `M3.2` — request correlation (`x-request-id`) and structured error logging in `handleEmisRoute()`
 - `M3.3` — 4 smoke checks for readiness + correlation contract
@@ -40,6 +41,7 @@ All M3 subtasks delivered:
 ### M4. MVE Acceptance Closeout And Sign-Off — COMPLETED (`2026-04-05`, NW-5)
 
 All M4 subtasks delivered:
+
 - `M4.1` — acceptance audit: all Section 7 criteria met, explicit deferrals documented
 - `M4.2` — bootstrap and backlog aligned with audit result
 - `M4.3` — full verification pass: 6/6 canonical checks green
@@ -51,6 +53,7 @@ MVE verdict: **accepted with explicit deferrals**.
 ### P1. Vessel Historical Track Integration — COMPLETED (`2026-04-04`)
 
 All P1 subtasks delivered:
+
 - `P1.1` — Behavior contract frozen in `docs/emis_vessel_track_contract.md`
 - `P1.2` — Historical track renders on map in vessel mode
 - `P1.3` — FlyTo on vessel selection via `vesselFlyToTarget`
@@ -60,6 +63,7 @@ All P1 subtasks delivered:
 ### P2. Offline Maps Ops Hardening — COMPLETED (`2026-04-05`)
 
 All P2 subtasks delivered:
+
 - `P2.1` — Range support verified against production adapter-node (206 Partial Content confirmed via `sirv` embedded in `@sveltejs/adapter-node`)
 - `P2.2` — Post-deploy verification checklist added to `docs/emis_offline_maps_ops.md` (section 11): 5-step checklist with success/failure signals and failure decision tree
 - `P2.3` — Region-expansion workflow documented as repeatable recipe in `docs/emis_offline_maps_ops.md` (section 7): extract, place, manifest update, verify, rebuild, deploy; plus safe replacement and removal procedures; freshness checking expanded (section 8)

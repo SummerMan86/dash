@@ -44,6 +44,7 @@ Required follow-ups:
 ```
 
 Severity:
+
 - CRITICAL: DB schema changed но db/current_schema.sql не обновлён, runtime contract устарел
 - WARNING: новый route/endpoint не в docs, contract изменился но downstream docs ссылаются на старую версию
 - INFO: minor docs improvement, не блокирует

@@ -19,6 +19,7 @@
 ## Slices
 
 ### TD-1: Decompose `+page.svelte` (799 → target < 650)
+
 - status: ready for handoff
 - file: `apps/web/src/routes/emis/+page.svelte` (799 lines)
 - architecture-reviewer WARNING from P1 review: exceeds 700-line threshold
@@ -36,6 +37,7 @@
   - architecture-reviewer passes without warnings
 
 ### TD-2: Remove MIGRATION re-export shims
+
 - status: ready for handoff
 - scope: dead re-export shims in `entities/`, `shared/`, `widgets/` directories
   - these are `export { X } from '@dashboard-builder/...'` files left from the ST-1..ST-10 package extraction
@@ -54,6 +56,7 @@
   - all 6 canonical checks green
 
 ### TD-3: Fix stock-alerts layer-boundary violation
+
 - status: ready for handoff
 - scope: `stock-alerts` module imports from `routes` layer (pre-existing violation)
 - approach:
@@ -67,6 +70,7 @@
   - `pnpm check` + `pnpm build` green
 
 ### TD-4: Fix Prettier drift
+
 - status: ready for handoff
 - scope: `pnpm lint` currently fails due to Prettier formatting drift across the codebase
 - approach:
@@ -81,6 +85,7 @@
   - all 6 canonical checks green
 
 ### TD-5: Register `+page.svelte` exception closure and final baseline
+
 - status: depends on TD-1
 - scope: governance closure
 - approach:
@@ -116,6 +121,7 @@ TD-5 is the final governance gate.
 
 After TD-5, the codebase is ready for the next product planning cycle.
 Potential directions (not in scope for this plan):
+
 - Auth/RBAC implementation
 - Admin UI for dictionaries
 - News ingestion from external sources

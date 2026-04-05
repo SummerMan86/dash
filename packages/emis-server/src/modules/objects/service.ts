@@ -1,6 +1,9 @@
 import type { PoolClient } from 'pg';
 
-import type { CreateEmisObjectInput, UpdateEmisObjectInput } from '@dashboard-builder/emis-contracts/emis-object';
+import type {
+	CreateEmisObjectInput,
+	UpdateEmisObjectInput
+} from '@dashboard-builder/emis-contracts/emis-object';
 
 import type { EmisWriteContext } from '../../infra/audit';
 import { insertAuditLog } from '../../infra/audit';

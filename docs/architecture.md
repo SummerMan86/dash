@@ -42,24 +42,24 @@ Reusable код живёт в `packages/*`. App-specific composition живёт 
 
 **Platform packages** (foundation и cross-domain runtime):
 
-| Package | Что содержит |
-|---|---|
-| `platform-core` | Утилиты, форматирование, хелперы. Leaf foundation |
-| `platform-ui` | UI-примитивы, chart presets, design tokens, стили |
+| Package             | Что содержит                                                                       |
+| ------------------- | ---------------------------------------------------------------------------------- |
+| `platform-core`     | Утилиты, форматирование, хелперы. Leaf foundation                                  |
+| `platform-ui`       | UI-примитивы, chart presets, design tokens, стили                                  |
 | `platform-datasets` | DatasetQuery/Response/Ir, compileDataset, postgresProvider, BI dataset definitions |
-| `platform-filters` | Filter store, planner, filter widgets |
-| `db` | PG pool, connection helpers. Leaf foundation |
+| `platform-filters`  | Filter store, planner, filter widgets                                              |
+| `db`                | PG pool, connection helpers. Leaf foundation                                       |
 
 `platform-core`, `platform-ui`, `platform-filters` и `db` не знают о доменных пакетах.
 `platform-datasets` остаётся platform runtime для BI/read-side, но может содержать domain dataset definitions, которые компилируются в общий dataset contract.
 
 **Domain packages** (EMIS):
 
-| Package | Что содержит |
-|---|---|
-| `emis-contracts` | Entity types, DTO, Zod schemas |
-| `emis-server` | Server infra + семантические backend-модули |
-| `emis-ui` | Reusable map/status UI (EmisMap, EmisStatusBar) |
+| Package          | Что содержит                                    |
+| ---------------- | ----------------------------------------------- |
+| `emis-contracts` | Entity types, DTO, Zod schemas                  |
+| `emis-server`    | Server infra + семантические backend-модули     |
+| `emis-ui`        | Reusable map/status UI (EmisMap, EmisStatusBar) |
 
 **App leaf** (`apps/web`):
 
@@ -107,14 +107,14 @@ routes/api/*, +page.server.ts, +layout.server.ts
 src/lib/server/*  (BFF, datasets, providers, alerts, app server glue)
 ```
 
-| Слой | Путь | Alias | Что содержит |
-|---|---|---|---|
-| `shared` | `src/lib/shared/` | `$shared` | API facade, UI kit re-exports, утилиты, fixtures |
-| `entities` | `src/lib/entities/` | `$entities` | Контракты, типы, re-exports из packages |
-| `features` | `src/lib/features/` | `$features` | Крупные user-facing функции (dashboard-edit, emis-manual-entry) |
-| `widgets` | `src/lib/widgets/` | `$widgets` | Композитные UI-блоки (filters, emis-drawer, stock-alerts) |
-| `routes` | `src/routes/` | — | Страницы, API endpoints, layout. SvelteKit convention |
-| `server` | `src/lib/server/` | — | BFF: datasets, providers, alerts, strategy. **Server-only**, не импортируется из client-кода |
+| Слой       | Путь                | Alias       | Что содержит                                                                                 |
+| ---------- | ------------------- | ----------- | -------------------------------------------------------------------------------------------- |
+| `shared`   | `src/lib/shared/`   | `$shared`   | API facade, UI kit re-exports, утилиты, fixtures                                             |
+| `entities` | `src/lib/entities/` | `$entities` | Контракты, типы, re-exports из packages                                                      |
+| `features` | `src/lib/features/` | `$features` | Крупные user-facing функции (dashboard-edit, emis-manual-entry)                              |
+| `widgets`  | `src/lib/widgets/`  | `$widgets`  | Композитные UI-блоки (filters, emis-drawer, stock-alerts)                                    |
+| `routes`   | `src/routes/`       | —           | Страницы, API endpoints, layout. SvelteKit convention                                        |
+| `server`   | `src/lib/server/`   | —           | BFF: datasets, providers, alerts, strategy. **Server-only**, не импортируется из client-кода |
 
 **Однонаправленные зависимости между слоями:**
 
@@ -164,17 +164,17 @@ src/lib/server/*  (BFF, datasets, providers, alerts, app server glue)
 
 ### Explicit rules
 
-| Package | Can import from | Cannot import from |
-|---|---|---|
-| `platform-core` | — (leaf foundation) | everything else |
-| `platform-ui` | `platform-core` | emis-*, bi-*, apps/*, datasets, filters, db |
-| `platform-datasets` | `platform-core`, `db` | emis-*, bi-*, apps/*, platform-ui |
-| `platform-filters` | `platform-core`, `platform-ui`, `platform-datasets` | emis-*, apps/* |
-| `db` | — (leaf foundation) | everything else |
-| `emis-contracts` | `platform-core` (types only) | emis-server, emis-ui, apps/* |
-| `emis-server` | `emis-contracts`, `platform-core`, `platform-datasets`, `db` | emis-ui, apps/* |
-| `emis-ui` | `emis-contracts`, `platform-core`, `platform-ui`, `platform-filters` | emis-server, apps/* |
-| `apps/web` | всё (leaf consumer) | — |
+| Package             | Can import from                                                      | Cannot import from                           |
+| ------------------- | -------------------------------------------------------------------- | -------------------------------------------- |
+| `platform-core`     | — (leaf foundation)                                                  | everything else                              |
+| `platform-ui`       | `platform-core`                                                      | emis-_, bi-_, apps/\*, datasets, filters, db |
+| `platform-datasets` | `platform-core`, `db`                                                | emis-_, bi-_, apps/\*, platform-ui           |
+| `platform-filters`  | `platform-core`, `platform-ui`, `platform-datasets`                  | emis-_, apps/_                               |
+| `db`                | — (leaf foundation)                                                  | everything else                              |
+| `emis-contracts`    | `platform-core` (types only)                                         | emis-server, emis-ui, apps/\*                |
+| `emis-server`       | `emis-contracts`, `platform-core`, `platform-datasets`, `db`         | emis-ui, apps/\*                             |
+| `emis-ui`           | `emis-contracts`, `platform-core`, `platform-ui`, `platform-filters` | emis-server, apps/\*                         |
+| `apps/web`          | всё (leaf consumer)                                                  | —                                            |
 
 ### Non-negotiable boundaries
 
@@ -220,7 +220,7 @@ pnpm check              # type/parse verification (svelte-check)
 
 - BI routes не импортируют EMIS operational packages
 - EMIS operational не тащит dataset/IR абстракцию
-- Оба домена используют platform-* пакеты, но не cross-импортируют друг друга
+- Оба домена используют platform-\* пакеты, но не cross-импортируют друг друга
 - EMIS-данные попадают в BI только через published DB views (`mart.emis_*`, `mart_emis.*`)
 
 ### Current EMIS package/app placement
@@ -252,13 +252,13 @@ Compatibility shims at old app paths re-export from packages and are not ownersh
 
 ## 5. Alias policy
 
-| Alias | Resolves to | Статус |
-|---|---|---|
-| `$lib` | `apps/web/src/lib` | Активен |
-| `$shared` | `apps/web/src/lib/shared` | Активен, будет удалён после extraction |
+| Alias       | Resolves to                 | Статус                                 |
+| ----------- | --------------------------- | -------------------------------------- |
+| `$lib`      | `apps/web/src/lib`          | Активен                                |
+| `$shared`   | `apps/web/src/lib/shared`   | Активен, будет удалён после extraction |
 | `$entities` | `apps/web/src/lib/entities` | Активен, будет удалён после extraction |
-| `$features` | `apps/web/src/lib/features` | Активен |
-| `$widgets` | `apps/web/src/lib/widgets` | Активен, будет удалён после extraction |
+| `$features` | `apps/web/src/lib/features` | Активен                                |
+| `$widgets`  | `apps/web/src/lib/widgets`  | Активен, будет удалён после extraction |
 
 Код в `packages/*` использует package name (`@dashboard-builder/platform-ui`), не aliases.
 Код в `apps/web/`, который ещё не перемещён, продолжает использовать aliases.
@@ -267,23 +267,23 @@ Compatibility shims at old app paths re-export from packages and are not ownersh
 
 ### Current state
 
-| Документ | Что описывает |
-|---|---|
-| **этот документ** | Repo-wide architecture contract: topology, ownership, paths, layers, import rules и current EMIS package/app placement |
-| `emis_session_bootstrap.md` | Start-here summary, current focus и task-driven reading order |
-| `emis_working_contract.md` | Короткие рабочие правила для EMIS development |
-| `emis_known_exceptions.md` | Live architecture exceptions / waivers, если baseline ещё не закрыт |
+| Документ                    | Что описывает                                                                                                          |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| **этот документ**           | Repo-wide architecture contract: topology, ownership, paths, layers, import rules и current EMIS package/app placement |
+| `emis_session_bootstrap.md` | Start-here summary, current focus и task-driven reading order                                                          |
+| `emis_working_contract.md`  | Короткие рабочие правила для EMIS development                                                                          |
+| `emis_known_exceptions.md`  | Live architecture exceptions / waivers, если baseline ещё не закрыт                                                    |
 
 ### Target state
 
-| Документ | Что описывает |
-|---|---|
+| Документ                         | Что описывает                                                               |
+| -------------------------------- | --------------------------------------------------------------------------- |
 | `emis_monorepo_target_layout.md` | Future migration policy, remaining structural moves, alias removal timeline |
 
 ### Historical / analysis
 
-| Документ | Что описывает |
-|---|---|
+| Документ                      | Что описывает                                                                                                            |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | `current-project-analysis.md` | Анализ проекта (март 2026, до package-era). Полезен как historical context, но не source of truth по текущей архитектуре |
 
 ## 7. Reading order

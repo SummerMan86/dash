@@ -1,6 +1,10 @@
 import type { PoolClient } from 'pg';
 
-import type { EmisCountry, EmisObjectType, EmisSource } from '@dashboard-builder/emis-contracts/emis-dictionary';
+import type {
+	EmisCountry,
+	EmisObjectType,
+	EmisSource
+} from '@dashboard-builder/emis-contracts/emis-dictionary';
 
 import { getDb } from '../../infra/db';
 

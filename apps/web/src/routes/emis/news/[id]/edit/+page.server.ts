@@ -109,11 +109,7 @@ export const actions: Actions = {
 		}
 
 		try {
-			await deleteNewsObjectLinkService(
-				id,
-				objectId,
-				assertWriteContext(request, 'manual-ui')
-			);
+			await deleteNewsObjectLinkService(id, objectId, assertWriteContext(request, 'manual-ui'));
 		} catch (errorValue) {
 			return actionFailure(errorValue, { objectId }, 'deleteLink');
 		}
