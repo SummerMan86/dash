@@ -195,3 +195,8 @@ export function isAdminRoute(pathname: string): boolean {
 	return pathname.startsWith('/emis/admin/') || pathname === '/emis/admin';
 }
 
+/** Dictionary API routes — writes require admin role (docs/emis_access_model.md:31). */
+export function isDictionaryApiRoute(pathname: string): boolean {
+	return pathname.startsWith('/api/emis/dictionaries/');
+}
+

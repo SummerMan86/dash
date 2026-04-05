@@ -9,10 +9,22 @@ import {
 	isSecureCookie
 } from '$lib/server/emis/infra/auth';
 
+/**
+ * Validate redirect parameter to prevent open redirect attacks.
+ * Only allows relative paths starting with '/' (not protocol-relative '//').
+ * Falls back to '/emis' for invalid values.
+ */
+function sanitizeRedirect(raw: string | null): string {
+	if (raw && raw.startsWith('/') && !raw.startsWith('//')) {
+		return raw;
+	}
+	return '/emis';
+}
+
 export const load: PageServerLoad = async ({ locals, url }) => {
 	// If already authenticated, redirect to emis home
 	if (locals.emisSession) {
-		const redirectTo = url.searchParams.get('redirect') || '/emis';
+		const redirectTo = sanitizeRedirect(url.searchParams.get('redirect'));
 		throw redirect(303, redirectTo);
 	}
 
@@ -59,7 +71,7 @@ export const actions: Actions = {
 			maxAge: SESSION_COOKIE_MAX_AGE
 		});
 
-		const redirectTo = url.searchParams.get('redirect') || '/emis';
+		const redirectTo = sanitizeRedirect(url.searchParams.get('redirect'));
 		throw redirect(303, redirectTo);
 	}
 };
