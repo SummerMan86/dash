@@ -719,7 +719,10 @@ const checks = [
 	),
 
 	// Dictionary admin page
-	pageCheck('/emis/admin/dictionaries', 'Dictionaries')
+	pageCheck('/emis/admin/dictionaries', 'Dictionaries'),
+
+	// --- Auth pages (always accessible regardless of EMIS_AUTH_MODE) ---
+	pageCheck('/emis/login', 'EMIS')
 ];
 
 async function runChecks(baseUrl) {
