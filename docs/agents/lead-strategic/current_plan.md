@@ -1,128 +1,150 @@
-# Plan: EMIS Phase 3 — Tech Debt Cleanup and Final Stabilization
+# Plan: EMIS Phase 4 — MVE Deferrals Implementation
 
 ## Цель
 
-Закрыть все carry-forward tech debt после MVE closeout и post-MVE (P1/P2).
-Результат: чистый baseline без known exceptions, waivers и drift.
+Реализовать три явных deferral из MVE acceptance audit (NW-5):
+1. Soft-delete UI для объектов и новостей
+2. Admin CRUD для справочников (countries, object_types, sources)
+3. Базовая auth/access control
+
+Результат: EMIS переходит из "accepted with explicit deferrals" в "accepted, no deferrals".
 
 ## Контекст
 
 - MVE accepted with explicit deferrals (NW-5, 2026-04-05)
-- Post-MVE feature waves P1 (vessel track) и P2 (offline maps) завершены
-- Baseline green, 0 live exceptions
-- Carry-forward items задокументированы в `docs/agents/lead-tactical/memory.md`
+- Post-MVE features P1/P2 done
+- Phase 3 tech debt cleanup done — baseline green, zero carry-forward
+- Branch: `feature/emis-phase4-mve-deferrals` (от `feature/emis-phase3-tech-debt-cleanup`)
+- Current access model: trusted internal network, `assertWriteContext()` enforces actor identity
+- Dictionaries: seed-managed, 3 tables (`countries`, `object_types`, `sources`)
+- Soft-delete: API DELETE endpoints exist for objects and news, no UI buttons anywhere
 
 ## Scope
 
-Только tech debt и stabilization. Никаких новых фич и product expansion.
+Только закрытие MVE deferrals. Никаких новых фич, product expansion или BI работы.
 
 ## Slices
 
-### TD-1: Decompose `+page.svelte` (799 → target < 650)
-
-- status: **completed** (2026-04-05, 799 -> 639 lines)
-- file: `apps/web/src/routes/emis/+page.svelte` (799 lines)
-- architecture-reviewer WARNING from P1 review: exceeds 700-line threshold
-- approach:
-  - extract bbox/viewport-aware catalog logic into a route-local helper (e.g. `emisPageCatalog.ts`)
-  - extract vessel-mode derived state (`vesselFlyToTarget`, vessel selection helpers) into a route-local helper (e.g. `emisPageVesselMode.ts`)
-  - unify debounce patterns: replace raw `setTimeout` with `useDebouncedLoader` or a consistent pattern
+### DF-1: Soft-delete UI buttons for objects and news
+- status: ready for handoff
+- scope:
+  - Add delete button to object detail page (`/emis/objects/[id]`)
+  - Add delete button to news detail page (`/emis/news/[id]`)
+  - Confirmation dialog before delete (prevent accidental clicks)
+  - After successful delete — redirect to catalog
+  - Show toast/feedback on success
+- technical approach:
+  - Object detail: `apps/web/src/routes/emis/objects/[id]/+page.svelte` — add button that calls `DELETE /api/emis/objects/:id`
+  - News detail: `apps/web/src/routes/emis/news/[id]/+page.svelte` — add button that calls `DELETE /api/emis/news/:id`
+  - API endpoints already exist and work (verified by `emis:write-smoke`)
+  - Use existing `assertWriteContext()` flow — no auth changes needed
 - constraints:
-  - route-local files only (`apps/web/src/routes/emis/`)
-  - no new packages or cross-boundary changes
-  - preserve all existing behavior and smoke coverage
+  - UI only — no API changes
+  - Use existing UI components from `@dashboard-builder/platform-ui` (Button, dialog if available)
+  - Maintain consistent UX with edit pages
 - done when:
-  - `+page.svelte` < 650 lines
-  - all 6 canonical checks green
-  - architecture-reviewer passes without warnings
+  - Both detail pages have working delete buttons
+  - Confirmation dialog shown before delete
+  - `pnpm check`, `pnpm build` green
+  - Manual smoke: delete object/news via UI, verify soft-delete in catalog
 
-### TD-2: Remove MIGRATION re-export shims
-
-- status: **completed** (2026-04-05, 72 shims removed, -3280 lines)
-- scope: dead re-export shims in `entities/`, `shared/`, `widgets/` directories
-  - these are `export { X } from '@dashboard-builder/...'` files left from the ST-1..ST-10 package extraction
-  - they are no longer imported by any active code (verify before deletion)
-- approach:
-  - grep for each shim's import path across the codebase
-  - if zero imports found → delete the shim file
-  - if imports found → update import to point directly at the package, then delete the shim
-  - update any local `AGENTS.md` or `index.ts` barrels that reference deleted shims
+### DF-2: Admin CRUD for dictionaries
+- status: ready for handoff
+- depends on: none (independent of DF-1)
+- scope:
+  - Admin pages for managing 3 dictionary tables: `countries`, `object_types`, `sources`
+  - CRUD: list, create, edit (no delete — dictionaries are reference data)
+  - Route: `/emis/admin/dictionaries` (or similar)
+  - API: new endpoints `GET/POST/PATCH /api/emis/dictionaries/{table}`
+- technical approach:
+  - Read current seed files to understand dictionary schema:
+    - `db/seeds/001_countries.sql`
+    - `db/seeds/002_object_types.sql`
+    - `db/seeds/003_sources.sql`
+  - Server: add dictionary query/mutation modules in `packages/emis-server/src/modules/dictionaries/`
+  - Contracts: add dictionary types in `packages/emis-contracts/src/emis-dictionary/`
+  - Routes: add API routes in `apps/web/src/routes/api/emis/dictionaries/`
+  - UI: add admin pages in `apps/web/src/routes/emis/admin/dictionaries/`
+  - Wire `assertWriteContext()` for write operations
 - constraints:
-  - do NOT touch package code (`packages/*`)
-  - do NOT touch route handlers or server code unless they import a shim
-  - verify with `pnpm check` + `pnpm build` after each batch of deletions
+  - Dictionary tables already exist in `emis` schema — no schema changes
+  - Seeds remain as bootstrap mechanism — admin CRUD supplements, not replaces seeds
+  - No admin role enforcement yet (DF-3 handles access control)
+  - Follow existing EMIS API conventions from `RUNTIME_CONTRACT.md`
 - done when:
-  - zero MIGRATION re-export shims remain in `entities/`, `shared/`, `widgets/`
-  - all 6 canonical checks green
+  - All 3 dictionaries manageable via UI
+  - API endpoints work with proper audit trail
+  - `pnpm check`, `pnpm build`, `pnpm lint:boundaries` green
+  - Smoke coverage for dictionary CRUD
 
-### TD-3: Fix stock-alerts layer-boundary violation
-
-- status: **completed** (2026-04-05, lint:boundaries zero violations)
-- scope: `stock-alerts` module imports from `routes` layer (pre-existing violation)
-- approach:
-  - identify the specific import(s) crossing the boundary
-  - relocate shared code to the correct layer, or re-route the import
+### DF-3: Basic auth and access control
+- status: ready for handoff
+- depends on: DF-2 (admin pages exist to protect)
+- scope:
+  - Session-based authentication (simple login flow)
+  - Role resolver: map session → role (`viewer`, `editor`, `admin`)
+  - Protect write endpoints: only `editor` and `admin` can write
+  - Protect admin pages: only `admin` can access `/emis/admin/*`
+  - Update `assertWriteContext()` to derive actor from session instead of headers
+- technical approach:
+  - Read `docs/emis_access_model.md` section 5 "When auth is introduced post-MVE" for guidance
+  - Auth mechanism: SvelteKit hooks + server-side sessions (cookie-based)
+  - Simple approach: hardcoded user list in env/config for MVE+ (no external identity provider)
+  - Or: basic username/password with bcrypt hashes in DB
+  - Decision on mechanism should be made in a contract-first slice before implementation
+  - Update `docs/emis_access_model.md` to reflect new enforcement
 - constraints:
-  - this is NOT an EMIS module — be careful with non-EMIS code
-  - minimal change, no refactoring beyond what's needed to fix the violation
+  - Keep it simple — no SSO, OAuth, external IdP
+  - Must be backward-compatible with existing trusted network mode (toggle via env)
+  - `assertWriteContext()` should be extended, not replaced (per access model guidance)
+  - Session management must not break existing smoke tests
+- sub-slices:
+  - **DF-3.1** — Auth contract freeze (docs only): decide mechanism, session shape, role mapping
+  - **DF-3.2** — Implement auth middleware + login page
+  - **DF-3.3** — Wire role enforcement into write policy and admin routes
+  - **DF-3.4** — Update smoke/verification for auth flows
 - done when:
-  - `pnpm lint:boundaries` reports zero violations (currently pre-existing violations masked)
-  - `pnpm check` + `pnpm build` green
-
-### TD-4: Fix Prettier drift
-
-- status: **completed** (2026-04-05, 90 files formatted; 32 re-drifted from subsequent TD-1/TD-2/TD-3 commits)
-- scope: `pnpm lint` currently fails due to Prettier formatting drift across the codebase
-- approach:
-  - run `pnpm lint --fix` or `prettier --write` on affected files
-  - review the diff to ensure no semantic changes
-  - if the diff is massive (>50 files), split into logical batches
-- constraints:
-  - formatting only — no code changes
-  - do NOT change `.prettierrc` or eslint config unless there's a config conflict causing the drift
-- done when:
-  - `pnpm lint` passes clean
-  - all 6 canonical checks green
-
-### TD-5: Register `+page.svelte` exception closure and final baseline
-
-- status: **completed** (2026-04-05, baseline Green / closed, zero carry-forward)
-- scope: governance closure
-- approach:
-  - if TD-1 brings `+page.svelte` under 700 lines, confirm no exception needed
-  - if still above 700, register in `docs/emis_known_exceptions.md` with owner and target
-  - run full baseline: all 6 canonical checks
-  - update `docs/emis_session_bootstrap.md` with final stabilization status
-  - update this plan with completion status
-  - update backlog `docs/emis_next_tasks_2026_03_22.md`
-- done when:
-  - zero carry-forward tech debt items remain
-  - baseline verdict: Green / closed
-  - docs reflect final stabilized state
+  - Login page works
+  - Unauthenticated users can only read
+  - Write endpoints require editor+ role
+  - Admin pages require admin role
+  - Existing smoke tests pass (with auth bypass or test credentials)
+  - `docs/emis_access_model.md` updated to reflect enforcement
 
 ## Execution Order
 
 ```
-TD-1 (page decomp) ──→ TD-5 (governance closure)
-TD-2 (shims cleanup) ─┘
-TD-3 (stock-alerts) ──┘
-TD-4 (prettier) ──────┘
+DF-1 (delete UI) ────────────────────→ DF-5 (governance)
+DF-2 (admin CRUD) → DF-3 (auth) ────→ DF-5
 ```
 
-TD-1 through TD-4 can run in parallel. TD-5 runs after all others complete.
+- DF-1 and DF-2 are independent, can run in parallel
+- DF-3 depends on DF-2 (admin pages must exist before protecting them)
+- DF-5 (governance closure) runs after all others
+
+### DF-5: Governance closure and final baseline
+- status: depends on DF-1, DF-2, DF-3
+- scope:
+  - Full baseline verification (all 6 canonical checks)
+  - Update MVE acceptance audit — remove all explicit deferrals
+  - Update `docs/emis_access_model.md` — reflect enforcement status
+  - Update `docs/emis_mve_product_contract.md` if needed
+  - Update `docs/emis_session_bootstrap.md`
+  - Update backlog
+  - Final verdict: `accepted` (no deferrals)
+- done when:
+  - Zero MVE deferrals remain
+  - Baseline green
+  - Docs consistent
 
 ## Recommended Handoff To Lead-Tactical
 
-Start with TD-1 (highest architectural impact) and TD-2 (largest dead code surface).
-TD-3 and TD-4 are independent and can be parallelized.
-TD-5 is the final governance gate.
+1. Start DF-1 (smallest, independent, quick win) and DF-2 (largest surface area) in parallel.
+2. After DF-2 completes, start DF-3 (depends on admin pages).
+3. After all complete, run DF-5 governance closure.
 
-## Post-Stabilization
+## Risk Notes
 
-After TD-5, the codebase is ready for the next product planning cycle.
-Potential directions (not in scope for this plan):
-
-- Auth/RBAC implementation
-- Admin UI for dictionaries
-- News ingestion from external sources
-- BI dashboard expansion
+- DF-3 (auth) is the most complex slice. Contract-first approach (DF-3.1) is critical.
+- DF-3 changes how smoke tests authenticate — plan for test credentials.
+- DF-2 introduces new API surface — ensure it follows existing conventions strictly.
