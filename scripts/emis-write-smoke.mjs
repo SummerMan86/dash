@@ -19,6 +19,11 @@
 
 import 'dotenv/config';
 
+// AUTH-7: default auth mode is now 'session'. Write-smoke runs without auth.
+if (!process.env.EMIS_AUTH_MODE) {
+	process.env.EMIS_AUTH_MODE = 'none';
+}
+
 import net from 'node:net';
 import { spawn } from 'node:child_process';
 

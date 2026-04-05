@@ -3,8 +3,8 @@
  *
  * Provides cookie-based session authentication for EMIS routes.
  * Controlled by `EMIS_AUTH_MODE` env var:
- *   - 'none' (default): no auth, backward-compatible with MVE
- *   - 'session': cookie-based sessions, login required for protected routes
+ *   - 'session' (default since AUTH-7): cookie-based sessions, login required for protected routes
+ *   - 'none': no auth, for dev/smoke (explicit opt-out via EMIS_AUTH_MODE=none)
  *
  * User store (AUTH-3):
  *   - Primary: DB table `emis.users` via emis-server user repository + bcrypt
@@ -53,10 +53,48 @@ type EmisUserConfig = {
 // Auth mode
 // ---------------------------------------------------------------------------
 
+/**
+ * Determine EMIS auth mode.
+ *
+ * Default is 'session' (AUTH-7). Opt out with EMIS_AUTH_MODE=none.
+ *
+ * Safety net: if mode resolves to 'session' but there are no configured users
+ * (no DB users, no EMIS_USERS env, no EMIS_ADMIN_PASSWORD), log a warning
+ * and fall back to 'none' to avoid locking everyone out.
+ */
 export function getAuthMode(): 'none' | 'session' {
 	const mode = process.env.EMIS_AUTH_MODE;
-	if (mode === 'session') return 'session';
-	return 'none';
+	if (mode === 'none') return 'none';
+
+	// Default is 'session'. Check safety net.
+	if (!_safetyNetChecked) {
+		_safetyNetChecked = true;
+		const hasEnvUsers = (process.env.EMIS_USERS?.trim() ?? '').length > 0;
+		const hasAdminPassword = (process.env.EMIS_ADMIN_PASSWORD?.trim() ?? '').length > 0;
+		// DB users check is async and cached separately — at startup the cache
+		// is empty, so we can only check synchronous env signals. The async
+		// isSessionAuthReadyAsync() handles the full check at request time.
+		if (!hasEnvUsers && !hasAdminPassword && _dbUsersAvailable !== true) {
+			console.warn(
+				'[emis:auth] EMIS_AUTH_MODE defaults to "session", but no user source is configured ' +
+					'(no DB users detected, no EMIS_USERS env, no EMIS_ADMIN_PASSWORD). ' +
+					'Falling back to auth mode "none". Set EMIS_AUTH_MODE=session explicitly once users are configured.'
+			);
+			return 'none';
+		}
+	}
+
+	return 'session';
+}
+
+let _safetyNetChecked = false;
+
+/**
+ * Reset the safety-net check flag. Useful for tests or after user creation
+ * so that subsequent getAuthMode() calls re-evaluate.
+ */
+export function resetAuthModeCheck(): void {
+	_safetyNetChecked = false;
 }
 
 export function isAuthEnabled(): boolean {

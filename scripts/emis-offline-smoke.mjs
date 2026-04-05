@@ -21,6 +21,11 @@
 
 import 'dotenv/config';
 
+// AUTH-7: default auth mode is now 'session'. Offline-smoke runs without auth.
+if (!process.env.EMIS_AUTH_MODE) {
+	process.env.EMIS_AUTH_MODE = 'none';
+}
+
 import { access, readdir, readFile } from 'node:fs/promises';
 import net from 'node:net';
 import path from 'node:path';
