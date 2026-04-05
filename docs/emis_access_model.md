@@ -150,7 +150,143 @@ The return type is identical (`EmisWriteContext`), so downstream service/reposit
 - **Architecture-steward decision (2026-04-04): approve placement.** 403 response construction = HTTP transport glue → app layer. Peer of `infra/http.ts`. No exception needed.
 - Invariants: no SQL in `writePolicy.ts`; policy config (env var) is app-level deployment concern, not package business logic.
 
-## 5. Actor vs Role Clarification
+## 5. Session-Based Auth Contract (DF-3)
+
+**Status:** design frozen in DF-3.1 (2026-04-04). Implementation: DF-3.2 through DF-3.4.
+
+### Auth mode toggle
+
+Auth behavior is controlled by `EMIS_AUTH_MODE` env var:
+
+| Value     | When                              | Behavior                                                                                   |
+| --------- | --------------------------------- | ------------------------------------------------------------------------------------------ |
+| `none`    | Dev/local default, smoke tests    | No session required. Actor resolved from headers (current MVE behavior). No login redirect. |
+| `session` | Production / when auth is desired | Cookie-based sessions. Unauthenticated requests to protected routes redirect to login.      |
+
+If `EMIS_AUTH_MODE` is not set, defaults to `none` (backward-compatible with existing dev workflow and smoke tests).
+
+### Session shape
+
+```typescript
+type EmisSession = {
+  userId: string;       // unique user identifier (e.g. "admin", "editor1")
+  username: string;     // display name
+  role: EmisRole;       // 'viewer' | 'editor' | 'admin'
+  createdAt: number;    // Unix timestamp (ms) when session was created
+};
+
+type EmisRole = 'viewer' | 'editor' | 'admin';
+```
+
+### Cookie contract
+
+| Property   | Value                                             |
+| ---------- | ------------------------------------------------- |
+| Name       | `emis_session`                                    |
+| Content    | Opaque session ID (random UUID)                   |
+| Path       | `/`                                               |
+| HttpOnly   | `true`                                            |
+| SameSite   | `Lax`                                             |
+| Secure     | `true` in production, `false` in dev              |
+| Max-Age    | 86400 (24 hours)                                  |
+
+### Session store
+
+In-memory `Map<sessionId, EmisSession>` on the server side.
+
+Rationale: simple, no DB dependency, sufficient for MVE+ with a single server instance. Sessions are lost on server restart (users must re-login). This is acceptable for the internal deployment model.
+
+### User store
+
+Hardcoded user list in env via `EMIS_USERS` env var.
+
+Format: JSON array of user objects:
+
+```
+EMIS_USERS='[{"id":"admin","username":"Admin","password":"admin123","role":"admin"},{"id":"editor1","username":"Editor","password":"edit123","role":"editor"},{"id":"viewer1","username":"Viewer","password":"view123","role":"viewer"}]'
+```
+
+Rationale: no DB table needed, simple to configure per environment, easy to change credentials. Password comparison is plaintext (internal trusted network, not internet-facing). If stronger security is needed later, bcrypt hashes can replace plaintext passwords.
+
+Fallback: if `EMIS_USERS` is not set and `EMIS_AUTH_MODE=session`, the app logs a warning and refuses to start auth (falls back to `none` behavior).
+
+### Login page
+
+| Route          | Method | Purpose                                         |
+| -------------- | ------ | ----------------------------------------------- |
+| `/emis/login`  | GET    | Render login form                               |
+| `/emis/login`  | POST   | Authenticate credentials, set cookie, redirect  |
+| `/emis/logout` | POST   | Clear session cookie, redirect to login         |
+
+Login form fields: `username`, `password`.
+
+On success: redirect to `/emis` (or to the originally requested URL if available).
+On failure: re-render login page with error message.
+
+### Session resolution middleware
+
+SvelteKit `handle` hook in `hooks.server.ts`:
+
+1. Read `emis_session` cookie from request.
+2. Look up session in the in-memory store.
+3. If valid: attach session to `event.locals.emisSession`.
+4. If `EMIS_AUTH_MODE=session` and no valid session:
+   - For `/emis/login` and `/emis/logout`: allow through (no redirect loop).
+   - For `/api/emis/*` endpoints: return 401 `{ error, code: 'UNAUTHORIZED' }`.
+   - For `/emis/*` pages: redirect to `/emis/login?redirect={originalPath}`.
+   - For non-EMIS routes (`/dashboard/*`, etc.): allow through (not protected).
+
+### Role enforcement rules
+
+| Route pattern       | Required role | Enforcement point                                    |
+| ------------------- | ------------- | ---------------------------------------------------- |
+| `GET /api/emis/*`   | `viewer+`     | Hook middleware (session required when auth=session)  |
+| `POST/PATCH/DELETE /api/emis/*` | `editor+` | `assertWriteContext()` (extended) |
+| `/emis/admin/*`     | `admin`       | Hook middleware                                       |
+| `/emis/*` (pages)   | `viewer+`     | Hook middleware (session required when auth=session)  |
+
+Role hierarchy: `admin` > `editor` > `viewer`.
+
+### Integration with assertWriteContext()
+
+`assertWriteContext()` is extended (not replaced) to support session-based actor resolution:
+
+1. When `EMIS_AUTH_MODE=session`: extract `actorId` and `role` from `event.locals.emisSession`.
+   - If no session: throw `EmisError(401, 'UNAUTHORIZED', ...)`.
+   - If session role is `viewer`: throw `EmisError(403, 'WRITE_NOT_ALLOWED', 'Insufficient role for write operations')`.
+   - Otherwise: use `session.userId` as `actorId`.
+2. When `EMIS_AUTH_MODE=none` (default): current header-based behavior unchanged.
+
+The function signature changes to accept an optional `locals` parameter:
+
+```typescript
+export function assertWriteContext(
+  request: Request,
+  source: EmisWriteSource,
+  locals?: App.Locals
+): EmisWriteContext;
+```
+
+### Smoke test compatibility
+
+Default `EMIS_AUTH_MODE=none` means existing smoke tests (`pnpm emis:smoke`, `pnpm emis:write-smoke`) continue to work unchanged. No auth bypass tokens or test credentials needed for smoke runs in dev mode.
+
+When testing auth flows specifically, set `EMIS_AUTH_MODE=session` and `EMIS_USERS` env var.
+
+### App.Locals type extension
+
+```typescript
+// app.d.ts
+declare global {
+  namespace App {
+    interface Locals {
+      emisSession?: EmisSession | null;
+    }
+  }
+}
+```
+
+## 6. Actor vs Role Clarification
 
 | Term      | What it is                                                   | MVE status                         |
 | --------- | ------------------------------------------------------------ | ---------------------------------- |
@@ -163,11 +299,11 @@ When auth is introduced post-MVE:
 - `role` should be resolved from a session/token, not assumed.
 - The write-policy helper should be extended, not replaced.
 
-## 6. One-Paragraph Summary
+## 7. One-Paragraph Summary
 
 EMIS MVE runs in a trusted internal network where all users can read freely. Write operations require actor identification via the `x-emis-actor-id` or `x-actor-id` header. All write entry points (API routes and form actions) call `assertWriteContext()` from `apps/web/src/lib/server/emis/infra/writePolicy.ts`, which wraps `resolveEmisWriteContext()` with policy enforcement: in production-shaped (strict) mode (`EMIS_WRITE_POLICY=strict`), missing actor identity results in a 403 `WRITE_NOT_ALLOWED` rejection; in dev/local (permissive) mode (default), a source-based default actor is used for convenience. Full authentication, sessions, and RBAC are explicitly deferred beyond MVE.
 
-## 7. Related Documents
+## 8. Related Documents
 
 - Runtime/API conventions: `apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
 - Working rules: `docs/emis_working_contract.md`
