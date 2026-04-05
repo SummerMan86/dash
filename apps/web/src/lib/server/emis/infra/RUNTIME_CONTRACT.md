@@ -254,6 +254,8 @@ All write operations (POST/PATCH/DELETE) produce an append-only `emis.audit_log`
 | `news_item`        | `create`, `update`, `delete` |
 | `news_object_link` | `attach`, `update`, `detach` |
 
+**Dictionary writes are exempt from audit_log.** Dictionary tables (`countries`, `object_types`, `sources`) are reference data managed via admin CRUD. Their write endpoints call `assertWriteContext()` for authorization enforcement (role check), but the returned `EmisWriteContext` is not passed to dictionary services and no `audit_log` rows are produced. Rationale: the `audit_log` CHECK constraint limits `entity_type` to `object`, `news_item`, `news_object_link`; dictionary changes are low-frequency reference data updates, not operational domain events. If dictionary audit becomes required, extend the CHECK constraint and add `EmisWriteContext` to dictionary service signatures.
+
 ### audit_log schema
 
 ```sql

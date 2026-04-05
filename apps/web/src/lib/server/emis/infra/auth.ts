@@ -195,7 +195,3 @@ export function isAdminRoute(pathname: string): boolean {
 	return pathname.startsWith('/emis/admin/') || pathname === '/emis/admin';
 }
 
-/** Admin API routes (dictionary writes go through assertWriteContext, so only page protection here). */
-export function isAdminApiRoute(pathname: string): boolean {
-	return pathname.startsWith('/api/emis/dictionaries/');
-}
