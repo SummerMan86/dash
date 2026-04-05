@@ -13,6 +13,12 @@
 | `2026-03-23` | `live delta`        | Для strategy dashboards опубликован app-facing wrapper layer `mart_strategy.slobi_*` в live DB через `db/pending_changes.sql`; локальный app runtime читает эти views как Postgres-backed datasets, при том что полный Strategy/BSC DWH source of truth по-прежнему живет во внешнем `agent_pack`. | `db/pending_changes.sql`, `src/lib/server/providers/postgresProvider.ts`, `src/lib/server/datasets/definitions/strategyMart.ts` |
 | `2026-03-23` | `view optimization` | `mart_strategy.slobi_entity_overview` переведен на легкий entity-grain wrapper поверх `strategy_entity_binding_bridge`, `bsc_gap_fact` и `bsc_performance_pivot`, чтобы убрать тяжелую client-side переагрегацию и ускорить `/dashboard/strategy/overview`.                                        | `db/pending_changes.sql`, `src/routes/dashboard/strategy/overview/+page.svelte`                                                 |
 
+## Post-Baseline Changes
+
+| Дата         | Тип            | Изменение                                                                                                                                                                                                         | Источник                                                              |
+| ------------ | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `2026-04-04` | `schema change` | AUTH-2: добавлены таблицы `emis.users` (id, username, password_hash, role, created_at, updated_at) и `emis.sessions` (id, user_id, role, created_at, expires_at) для production auth. Индексы: `idx_sessions_expires_at`, `idx_sessions_user_id`. FK: `sessions.user_id → users.id ON DELETE CASCADE`. Seed: `db/seeds/004_admin_user.sql`. | `db/current_schema.sql`, `docs/emis_access_model.md` section 5 (AUTH-2) |
+
 ## Rule
 
 - Добавлять запись сюда только если меняется DDL или published SQL contract.

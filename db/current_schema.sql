@@ -217,6 +217,76 @@ CREATE TABLE emis.sources (
 
 
 --
+-- Name: users; Type: TABLE; Schema: emis; Owner: -
+--
+
+CREATE TABLE emis.users (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    username text NOT NULL,
+    password_hash text NOT NULL,
+    role text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_emis_users_role CHECK ((role = ANY (ARRAY['viewer'::text, 'editor'::text, 'admin'::text])))
+);
+
+
+--
+-- Name: TABLE users; Type: COMMENT; Schema: emis; Owner: -
+--
+
+COMMENT ON TABLE emis.users IS 'EMIS user accounts for session-based auth';
+
+
+--
+-- Name: COLUMN users.password_hash; Type: COMMENT; Schema: emis; Owner: -
+--
+
+COMMENT ON COLUMN emis.users.password_hash IS 'bcrypt hash, cost factor 12+';
+
+
+--
+-- Name: COLUMN users.role; Type: COMMENT; Schema: emis; Owner: -
+--
+
+COMMENT ON COLUMN emis.users.role IS 'viewer | editor | admin';
+
+
+--
+-- Name: sessions; Type: TABLE; Schema: emis; Owner: -
+--
+
+CREATE TABLE emis.sessions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    role text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    expires_at timestamp with time zone NOT NULL
+);
+
+
+--
+-- Name: TABLE sessions; Type: COMMENT; Schema: emis; Owner: -
+--
+
+COMMENT ON TABLE emis.sessions IS 'EMIS auth sessions, DB-backed for persistence across restarts';
+
+
+--
+-- Name: COLUMN sessions.role; Type: COMMENT; Schema: emis; Owner: -
+--
+
+COMMENT ON COLUMN emis.sessions.role IS 'Denormalized from users.role at session creation time';
+
+
+--
+-- Name: COLUMN sessions.expires_at; Type: COMMENT; Schema: emis; Owner: -
+--
+
+COMMENT ON COLUMN emis.sessions.expires_at IS 'Session expiry; default TTL 24h, configurable via EMIS_SESSION_TTL_HOURS';
+
+
+--
 -- Name: vw_news_flat; Type: VIEW; Schema: emis; Owner: -
 --
 
@@ -911,6 +981,30 @@ ALTER TABLE ONLY emis.sources
 
 
 --
+-- Name: users users_pkey; Type: CONSTRAINT; Schema: emis; Owner: -
+--
+
+ALTER TABLE ONLY emis.users
+    ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: users uq_users_username; Type: CONSTRAINT; Schema: emis; Owner: -
+--
+
+ALTER TABLE ONLY emis.users
+    ADD CONSTRAINT uq_users_username UNIQUE (username);
+
+
+--
+-- Name: sessions sessions_pkey; Type: CONSTRAINT; Schema: emis; Owner: -
+--
+
+ALTER TABLE ONLY emis.sessions
+    ADD CONSTRAINT sessions_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: vsl_load_batch vsl_load_batch_pkey; Type: CONSTRAINT; Schema: stg_emis; Owner: -
 --
 
@@ -1065,6 +1159,20 @@ CREATE UNIQUE INDEX ux_emis_objects_external_id_active ON emis.objects USING btr
 
 
 --
+-- Name: idx_sessions_expires_at; Type: INDEX; Schema: emis; Owner: -
+--
+
+CREATE INDEX idx_sessions_expires_at ON emis.sessions USING btree (expires_at);
+
+
+--
+-- Name: idx_sessions_user_id; Type: INDEX; Schema: emis; Owner: -
+--
+
+CREATE INDEX idx_sessions_user_id ON emis.sessions USING btree (user_id);
+
+
+--
 -- Name: vsl_position_raw_ix_fetched_at; Type: INDEX; Schema: stg_emis; Owner: -
 --
 
@@ -1187,6 +1295,14 @@ ALTER TABLE ONLY emis.objects
 
 ALTER TABLE ONLY emis.objects
     ADD CONSTRAINT objects_object_type_id_fkey FOREIGN KEY (object_type_id) REFERENCES emis.object_types(id);
+
+
+--
+-- Name: sessions sessions_user_id_fkey; Type: FK CONSTRAINT; Schema: emis; Owner: -
+--
+
+ALTER TABLE ONLY emis.sessions
+    ADD CONSTRAINT sessions_user_id_fkey FOREIGN KEY (user_id) REFERENCES emis.users(id) ON DELETE CASCADE;
 
 
 --

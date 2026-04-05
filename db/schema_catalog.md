@@ -41,6 +41,8 @@ Write-side и reusable operational contracts для EMIS.
 - `emis.news_items`
 - `emis.news_object_links`
 - `emis.audit_log`
+- `emis.users` — user accounts for session-based auth (AUTH-2)
+- `emis.sessions` — persistent auth sessions (AUTH-2)
 
 Operational views:
 
