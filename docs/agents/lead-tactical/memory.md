@@ -158,6 +158,30 @@ Code implementation of frozen NW-1 design. Backlog mapping: M1.3, M1.4, M1.5.
 - Updated docs: `RUNTIME_CONTRACT.md` and `emis_access_model.md` — removed "NW-2 target"/"not yet implemented" markers
 - Verification: `pnpm check` 0 errors, `pnpm build` success, `pnpm lint:boundaries` no violations
 
+### NW-4: Health/Readiness and API Error Logging Hardening (DONE, 2026-04-05)
+
+Observability package for EMIS operational routes. Backlog mapping: M3.1, M3.2, M3.3, M3.4.
+
+- Created `apps/web/src/routes/api/emis/readyz/+server.ts`:
+  - DB-backed runtime readiness: DATABASE_URL, PG connectivity, required schemas (`emis`, `stg_emis`, `mart_emis`, `mart`), published views (6 views)
+  - Published-view identifiers validated at module load via regex guard
+  - Returns `200 { status: 'ready', checks, durationMs }` or `503 { status: 'not_ready', checks, failures, durationMs }`
+- Enhanced `handleEmisRoute()` in `$lib/server/emis/infra/http.ts`:
+  - Request correlation: accepts `x-request-id` from incoming headers (truncated to 128 chars), generates UUID if missing, returns in all responses
+  - Structured error logging: JSON log entry on every 4xx/5xx with `service`, `level`, `requestId`, `method`, `path`, `status`, `code`, `durationMs`, optional `actorId` and `message`
+  - `jsonEmisError()` now accepts optional `headers` param for correlation
+  - Correlation headers constructed only in error path (success path sets header directly on response)
+- Added 4 smoke checks to `scripts/emis-smoke.mjs`:
+  - `api:readyz` — shape validation for both 200 and 503
+  - `contract:request-id:generated` — server generates x-request-id when not sent
+  - `contract:request-id:echo` — server echoes back client-sent x-request-id
+  - `contract:error-correlation` — error responses include x-request-id
+- Updated docs:
+  - `RUNTIME_CONTRACT.md` — added request correlation, structured error logging, health/readiness sections
+  - `docs/emis_observability_contract.md` — upgraded from target to implemented status, added response shape examples
+  - `current_plan.md` — NW-4 marked completed, next steps updated to NW-5 only
+- Verification: `pnpm check` green, `pnpm build` green, `pnpm lint:boundaries` green, `pnpm emis:smoke` green
+
 ## Заметки для следующей сессии
 
 - H-1..H-5 all done — wave H is complete
@@ -166,7 +190,8 @@ Code implementation of frozen NW-1 design. Backlog mapping: M1.3, M1.4, M1.5.
 - NW-1 done — access model frozen, write-policy helper contract designed
 - NW-2 done — `assertWriteContext()` implemented, all write entry points wired, negative smoke added
 - NW-3 done — dictionaries frozen as seed-managed for MVE, admin CRUD deferred beyond MVE
-- Next: NW-4 (health/readiness and API error logging hardening) — observability package (M3.1-M3.4)
+- NW-4 done — `/api/emis/readyz` + request correlation + structured error logging in `handleEmisRoute()`
+- Next: NW-5 (acceptance/sign-off package, M4.1-M4.3)
 - Pre-existing carry-forward (all deferred, none blocking):
   - stock-alerts->routes layer-boundary violation
   - remaining MIGRATION re-export shims in `entities/`, `shared/`, `widgets/` — code removal, not docs scope

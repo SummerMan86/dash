@@ -303,6 +303,96 @@ const checks = [
 		assert(data?.service === 'emis', 'health.service must be "emis"');
 		assert(data?.status === 'snapshot-ready', 'health.status must be snapshot-ready');
 	}),
+
+	// --- Readiness endpoint (DB-backed) ---
+	{
+		kind: 'json',
+		name: 'api:readyz',
+		run: async (baseUrl) => {
+			const { response, data } = await fetchJson(baseUrl, '/api/emis/readyz');
+			// Accept both 200 (ready) and 503 (not_ready) as valid responses — the
+			// endpoint itself works. We validate the shape either way.
+			assert(
+				response.status === 200 || response.status === 503,
+				`readyz returned unexpected status ${response.status}`
+			);
+			assert(
+				data?.status === 'ready' || data?.status === 'not_ready',
+				`readyz.status must be "ready" or "not_ready", got "${data?.status}"`
+			);
+			assert(
+				data?.checks !== null && typeof data?.checks === 'object',
+				'readyz.checks must be an object'
+			);
+			assert(typeof data?.durationMs === 'number', 'readyz.durationMs must be a number');
+			if (data?.status === 'not_ready') {
+				assert(Array.isArray(data?.failures), 'readyz.failures must be an array when not_ready');
+			}
+			if (response.status === 200) {
+				assert(data?.status === 'ready', 'readyz: 200 must mean status=ready');
+				// When DB is reachable, verify some known checks are present
+				assert(data.checks['database_url']?.ok === true, 'readyz: database_url check must pass');
+				assert(
+					data.checks['pg_connectivity']?.ok === true,
+					'readyz: pg_connectivity check must pass'
+				);
+			}
+			return { httpStatus: response.status, readyzStatus: data.status };
+		}
+	},
+
+	// --- Request correlation: x-request-id propagation ---
+	{
+		kind: 'json',
+		name: 'contract:request-id:generated',
+		run: async (baseUrl) => {
+			// Request without x-request-id — server should generate one and return it.
+			// Only test EMIS operational endpoints (health does not go through handleEmisRoute).
+			const { response } = await fetchJson(baseUrl, '/api/emis/objects?limit=1');
+			const id = response.headers.get('x-request-id');
+			assert(typeof id === 'string' && id.length > 0, 'EMIS route must return x-request-id');
+			return { requestId: id };
+		}
+	},
+	{
+		kind: 'json',
+		name: 'contract:request-id:echo',
+		run: async (baseUrl) => {
+			// Request WITH x-request-id — server should echo it back
+			const sentId = 'smoke-test-' + Date.now().toString(36);
+			const { response } = await fetchJson(baseUrl, '/api/emis/objects?limit=1', {
+				headers: makeHeaders({ 'x-request-id': sentId })
+			});
+			const returnedId = response.headers.get('x-request-id');
+			assert(
+				returnedId === sentId,
+				`x-request-id should be echoed back. Sent "${sentId}", got "${returnedId}"`
+			);
+			return { sentId, returnedId };
+		}
+	},
+
+	// --- Error logging path: verify error responses include x-request-id ---
+	{
+		kind: 'error',
+		name: 'contract:error-correlation',
+		run: async (baseUrl) => {
+			const sentId = 'smoke-error-' + Date.now().toString(36);
+			const { response, data } = await fetchJson(baseUrl, '/api/emis/objects?limit=abc', {
+				headers: makeHeaders({ 'x-request-id': sentId })
+			});
+			assert(response.status === 400, `expected 400, got ${response.status}`);
+			assert(typeof data?.error === 'string', 'error response must have error string');
+			assert(typeof data?.code === 'string', 'error response must have code string');
+			const returnedId = response.headers.get('x-request-id');
+			assert(
+				returnedId === sentId,
+				`error response should echo x-request-id. Sent "${sentId}", got "${returnedId}"`
+			);
+			return { status: response.status, code: data.code, requestId: returnedId };
+		}
+	},
+
 	jsonCheck('api:ship-routes:vessels', '/api/emis/ship-routes/vessels?limit=5', (data) => {
 		const rows = assertArray(data?.rows, 'ship-route vessels rows');
 		if (rows.length > 0) {

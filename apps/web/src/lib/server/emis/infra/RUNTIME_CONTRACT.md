@@ -45,6 +45,22 @@ This section is the FE/BE agreement on how EMIS APIs are designed.
 
 - All errors are `{ error, code }` (see “Error shape” below).
 - Error logging/correlation rules live in `docs/emis_observability_contract.md`.
+- `handleEmisRoute()` provides request correlation (`x-request-id`) and structured error logging (see below).
+
+### Request correlation
+
+All EMIS operational routes wrapped with `handleEmisRoute()`:
+- Accept `x-request-id` from incoming request headers
+- Generate a UUID if the header is missing
+- Return `x-request-id` in response headers (on both success and error)
+
+### Structured error logging
+
+On any error (4xx/5xx), `handleEmisRoute()` emits a JSON structured log:
+- `service: 'emis'`, `level`, `requestId`, `method`, `path`, `status`, `code`, `durationMs`
+- `actorId` included when present (tracing only, not auth)
+- `message` included when available
+- Request bodies, PII, and large GeoJSON payloads are NOT logged
 
 ## List endpoints
 
@@ -259,6 +275,29 @@ Table is append-only: UPDATE/DELETE blocked by trigger.
 
 Return `{ rows: [...] }` without meta (no pagination, no sort; full snapshot payloads).
 
+## Health and readiness endpoints
+
+### `GET /api/emis/health`
+
+Snapshot/repo readiness. No DB. Checks file presence (`db/current_schema.sql`, seeds, etc.).
+Returns `{ service: 'emis', status: 'snapshot-ready', db: {...}, docs: {...} }`.
+
+### `GET /api/emis/readyz`
+
+**Status:** implemented (NW-4).
+
+DB-backed runtime readiness. Checks:
+1. `DATABASE_URL` is set
+2. PostgreSQL connectivity
+3. Required schemas: `emis`, `stg_emis`, `mart_emis`, `mart`
+4. Published views: `mart.emis_news_flat`, `mart.emis_objects_dim`, `mart.emis_object_news_facts`, `mart.emis_ship_route_vessels`, `mart_emis.ship_route_points`, `mart_emis.ship_route_segments`
+
+Returns:
+- `200 { status: 'ready', checks: {...}, durationMs }` when all pass
+- `503 { status: 'not_ready', checks: {...}, failures: [...], durationMs }` when any fail
+
+Route file: `apps/web/src/routes/api/emis/readyz/+server.ts`.
+
 ## Infrastructure helpers
 
 ### Package-level (framework-agnostic) — `packages/emis-server/src/infra/http.ts`
@@ -281,7 +320,7 @@ Return `{ rows: [...] }` without meta (no pagination, no sort; full snapshot pay
 | -------------------------- | ------------------------------------- |
 | `jsonEmisList()`           | Standard `{rows, meta}` response      |
 | `jsonEmisError()`          | Standard `{error, code}` response     |
-| `handleEmisRoute()`        | Error boundary wrapper                |
+| `handleEmisRoute()`        | Error boundary + request correlation + structured error logging |
 
 ### App-layer write policy — `apps/web/src/lib/server/emis/infra/writePolicy.ts`
 

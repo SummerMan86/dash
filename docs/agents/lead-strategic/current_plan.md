@@ -575,7 +575,7 @@ Status:
 - active docs stop implying unfinished admin CRUD pages — seed-managed dictionaries and deferred admin role are stated explicitly
 
 ### NW-4: Health/readiness and API error logging hardening
-- status: ready for handoff
+- status: **completed** on `2026-04-05`
 - backlog mapping:
   - `M3.1`
   - `M3.2`
@@ -592,6 +592,25 @@ Status:
 - why fourth:
   - once write policy is explicit and enforced, the next production-shaped gap is observability and readiness truth
   - this is still MVE closeout, not feature expansion
+- completed outcome:
+  - `/api/emis/readyz` now provides DB-backed runtime readiness with structured checks and `200 ready` / `503 not_ready` contract
+  - `handleEmisRoute()` now provides request correlation (`x-request-id`) and structured error logging for EMIS operational routes
+  - smoke coverage now includes:
+    - `api:readyz`
+    - `contract:request-id:generated`
+    - `contract:request-id:echo`
+    - `contract:error-correlation`
+  - review fixes applied:
+    - DB-facing responses now use opaque error strings while real DB errors stay server-side
+    - published-view identifiers are validated at module load
+    - incoming `x-request-id` is truncated to 128 chars
+    - correlation headers are constructed only in the error path
+    - dead smoke fetch was removed
+  - verification:
+    - `pnpm check` — green
+    - `pnpm build` — green
+    - `pnpm lint:boundaries` — green
+    - `pnpm emis:smoke` — green
 
 #### NW-4 Acceptance Checklist
 - `/api/emis/health` distinguishes service readiness from mere route liveness
@@ -636,5 +655,4 @@ Why this order:
 
 Continue the current wave in this order:
 
-1. `NW-4` — observability package (`M3.1-M3.4`)
-2. `NW-5` — acceptance/sign-off package (`M4.1-M4.3`)
+1. `NW-5` — acceptance/sign-off package (`M4.1-M4.3`)
