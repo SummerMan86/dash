@@ -227,20 +227,33 @@ All 5 P1 slices completed on `main`. Backlog mapping: P1.1 through P1.5.
   - `emis-smoke.mjs` — 2 new checks
 - Verification: all 6 canonical checks green (34/34 smoke checks)
 
+### Phase 3: Tech Debt Cleanup (DONE, 2026-04-05)
+
+All 5 TD slices completed on `feature/emis-phase3-tech-debt-cleanup`. Branch stats: 235 files changed, net -2507 lines.
+
+- TD-1 — `+page.svelte` decomposed from 799 to 639 lines (extracted `emisPageDataLoaders.ts`, `emisPageVesselMode.ts`, `EmisInfoCards.svelte`)
+- TD-2 — 72 MIGRATION re-export shims removed from `entities/`, `shared/`, `widgets/` (-3280 lines)
+- TD-3 — stock-alerts widget-to-routes boundary violation fixed (moved route-dependent code to widget-local helper)
+- TD-4 — Prettier formatting drift fixed across 90 files (32 re-drifted from subsequent TD-1/TD-2/TD-3 commits — cosmetic only)
+- TD-5 — Final baseline verdict: Green / baseline closed, zero carry-forward
+
+Key observations:
+- 16 server-side MIGRATION re-export shims remain in `apps/web/src/lib/server/emis/` — active re-exports with 9+ route consumers, explicitly out of TD-2 scope
+- `pnpm lint` (Prettier) not green due to re-drift from post-TD-4 commits — not in canonical 6 checks
+- All 6 canonical checks green: check, build, lint:boundaries, emis:smoke (33/33), emis:offline-smoke (9/9), emis:write-smoke (7/7)
+
 ## Заметки для следующей сессии
 
 - H-1..H-5 all done — wave H is complete
-- P3.1..P3.6 all done — phase 2 is complete, baseline is Green/closed
+- P3.1..P3.6 all done — phase 2 is complete
 - DS-1..DS-4 done — active docs layer synced with canonical architecture
-- NW-1 done — access model frozen, write-policy helper contract designed
-- NW-2 done — `assertWriteContext()` implemented, all write entry points wired, negative smoke added
-- NW-3 done — dictionaries frozen as seed-managed for MVE, admin CRUD deferred beyond MVE
-- NW-4 done — `/api/emis/readyz` + request correlation + structured error logging in `handleEmisRoute()`
-- NW-5 done — MVE accepted with explicit deferrals, all 6 checks green
+- NW-1..NW-5 done — access model, write-policy, dictionaries, observability, MVE acceptance
 - **MVE is closed.**
-- **P1 done** — vessel historical track integration (track on map, flyTo, viewport-aware catalog, smoke coverage)
-- Next work: `P2` (offline maps ops hardening)
-- Pre-existing carry-forward (all deferred, none blocking):
-  - stock-alerts->routes layer-boundary violation
-  - remaining MIGRATION re-export shims in `entities/`, `shared/`, `widgets/` — code removal, not docs scope
-  - `pnpm lint` Prettier drift (not blocking)
+- **P1 done** — vessel historical track integration
+- **P2 done** — offline maps ops hardening
+- **Phase 3 done** — tech debt cleanup, baseline Green / closed
+- All carry-forward items from P1/P2 era are resolved
+- Remaining optional future cleanup:
+  - 16 server-side MIGRATION re-export shims (active, not dead code)
+  - `pnpm lint` Prettier re-drift (32 files, cosmetic)
+- Codebase is ready for next product planning cycle

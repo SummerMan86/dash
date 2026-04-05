@@ -25,8 +25,9 @@ Current default order:
 2. ~~`M4` — MVE acceptance audit and sign-off~~ **completed** (`2026-04-05`, NW-5)
 3. ~~`P1` — vessel historical track~~ **completed** (`2026-04-04`)
 4. ~~`P2` — offline maps ops hardening~~ **completed** (`2026-04-05`)
+5. ~~`Phase 3` — tech debt cleanup (TD-1..TD-5)~~ **completed** (`2026-04-05`)
 
-All current backlog items are completed. Next priorities to be defined.
+All current backlog items are completed. Baseline Green / closed. Next priorities to be defined.
 
 ## MVE Closeout
 

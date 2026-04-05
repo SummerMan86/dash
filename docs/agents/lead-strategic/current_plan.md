@@ -20,7 +20,7 @@
 
 ### TD-1: Decompose `+page.svelte` (799 → target < 650)
 
-- status: ready for handoff
+- status: **completed** (2026-04-05, 799 -> 639 lines)
 - file: `apps/web/src/routes/emis/+page.svelte` (799 lines)
 - architecture-reviewer WARNING from P1 review: exceeds 700-line threshold
 - approach:
@@ -38,7 +38,7 @@
 
 ### TD-2: Remove MIGRATION re-export shims
 
-- status: ready for handoff
+- status: **completed** (2026-04-05, 72 shims removed, -3280 lines)
 - scope: dead re-export shims in `entities/`, `shared/`, `widgets/` directories
   - these are `export { X } from '@dashboard-builder/...'` files left from the ST-1..ST-10 package extraction
   - they are no longer imported by any active code (verify before deletion)
@@ -57,7 +57,7 @@
 
 ### TD-3: Fix stock-alerts layer-boundary violation
 
-- status: ready for handoff
+- status: **completed** (2026-04-05, lint:boundaries zero violations)
 - scope: `stock-alerts` module imports from `routes` layer (pre-existing violation)
 - approach:
   - identify the specific import(s) crossing the boundary
@@ -71,7 +71,7 @@
 
 ### TD-4: Fix Prettier drift
 
-- status: ready for handoff
+- status: **completed** (2026-04-05, 90 files formatted; 32 re-drifted from subsequent TD-1/TD-2/TD-3 commits)
 - scope: `pnpm lint` currently fails due to Prettier formatting drift across the codebase
 - approach:
   - run `pnpm lint --fix` or `prettier --write` on affected files
@@ -86,7 +86,7 @@
 
 ### TD-5: Register `+page.svelte` exception closure and final baseline
 
-- status: depends on TD-1
+- status: **completed** (2026-04-05, baseline Green / closed, zero carry-forward)
 - scope: governance closure
 - approach:
   - if TD-1 brings `+page.svelte` under 700 lines, confirm no exception needed

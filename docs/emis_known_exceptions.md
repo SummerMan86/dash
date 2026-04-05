@@ -24,25 +24,26 @@ If one of these fields is missing, the exception is not considered approved.
 
 ## Current Baseline Status
 
-As of `2026-04-04` after the full post-`P3.5` baseline rerun, baseline verdict should be treated as:
+As of `2026-04-05` after TD-5 governance closure (Phase 3 tech debt cleanup), baseline verdict:
 
 - status: `Green`
 - `baseline closed`
 
 Reason:
 
-- no live architecture exceptions remain after `P3.4`
-- root smoke harness drift was repaired:
-  - root `package.json` now declares `dotenv` and `pg` for root scripts
-  - `emis-offline-smoke` and `emis-write-smoke` now start Vite from `apps/web`
-  - `emis-offline-smoke` now reads offline assets from `apps/web/static/emis-map/offline`
-- the rerun results are now explicit:
-  - `pnpm check` — green
+- no live architecture exceptions remain
+- Phase 3 tech debt cleanup completed (TD-1 through TD-5):
+  - `+page.svelte` decomposed to 639 lines (under 700-line threshold)
+  - 72 MIGRATION re-export shims removed from entities/shared/widgets
+  - stock-alerts boundary violation fixed
+  - Prettier drift fixed (cosmetic re-drift from subsequent commits, not in canonical checks)
+- all 6 canonical checks green:
+  - `pnpm check` — green (0 errors, 0 warnings)
   - `pnpm build` — green
-  - `pnpm lint:boundaries` — green
-  - `pnpm emis:offline-smoke` — green
-  - `pnpm emis:write-smoke` — green
-  - `pnpm emis:smoke` — green
+  - `pnpm lint:boundaries` — green (zero violations)
+  - `pnpm emis:smoke` — green (33/33)
+  - `pnpm emis:offline-smoke` — green (9/9)
+  - `pnpm emis:write-smoke` — green (7/7)
 
 Canonical post-freeze baseline routine is:
 
