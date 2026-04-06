@@ -157,7 +157,7 @@
     - Current password field
     - New password + confirm
     - Success feedback
-  - Password requirements: minimum 8 characters (configurable)
+  - Password requirements: minimum 8 characters (fixed contract)
 - constraints:
   - Любой authenticated user может менять свой пароль
   - Admin может reset пароль другого user через AUTH-5
@@ -183,6 +183,7 @@
       - Login with invalid credentials → fail
       - Access protected route without session → 401/redirect
       - Access admin route as editor → 403
+      - Admin user CRUD via `/api/emis/admin/users`
       - Change password flow
   - Обновить `.env.example` с auth-related переменными
 - done when:
@@ -195,7 +196,7 @@
 
 - status: **completed** (2026-04-05)
 - scope:
-  - Full baseline: all 6 canonical checks + auth smoke
+  - Full baseline: all 8 checks, including auth smoke and Prettier
   - Update docs:
     - `docs/emis_access_model.md` — reflect production auth
     - `docs/emis_session_bootstrap.md`

@@ -3,7 +3,6 @@ name: ui-reviewer
 description: Quick UI smoke-check after frontend changes — page loads, console errors, basic rendering. Use for routine tasks. Requires Chrome extension.
 tools: Read, Grep, Glob, Bash, navigate_page, take_screenshot, take_snapshot, click, evaluate_script, get_console_logs
 model: sonnet
-memory: project
 ---
 
 You are a UI reviewer for a SvelteKit application. You use browser automation (Chrome extension) to verify that frontend changes render correctly.
@@ -21,11 +20,11 @@ Role instructions and escalation rules: `docs/agents/ui-reviewer/instructions.md
 
 Key routes to check based on changed files:
 
-- `src/routes/dashboard/+page.svelte` → `http://localhost:5173/dashboard`
-- `src/routes/dashboard/wildberries/*` → `http://localhost:5173/dashboard/wildberries/...`
-- `src/routes/emis/*` → `http://localhost:5173/emis`
-- `src/lib/shared/ui/*` → check any page that uses the changed component
-- `src/lib/widgets/*` → check the page that hosts the widget
+- `apps/web/src/routes/dashboard/+page.svelte` → `http://localhost:5173/dashboard`
+- `apps/web/src/routes/dashboard/wildberries/*` → `http://localhost:5173/dashboard/wildberries/...`
+- `apps/web/src/routes/emis/*` → `http://localhost:5173/emis`
+- `apps/web/src/lib/shared/ui/*` → check any page that uses the changed component
+- `apps/web/src/lib/widgets/*` → check the page that hosts the widget
 
 ## What to check
 

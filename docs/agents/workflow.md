@@ -1,360 +1,322 @@
 # Agent Workflow
 
-Единый документ по процессу работы агентной команды.
+Core process для работы агентной команды.
+
+`workflow.md` теперь держит только lifecycle и ownership процесса.
+Поддерживающие протоколы вынесены в отдельные canonical docs:
+
+- `review-gate.md` — review model, strategic acceptance/reframe loop, governance passes
+- `recovery.md` — failure-path и recovery protocols
+- `invariants.md` — общие project invariants
+- `git-protocol.md` — branches, worktrees, integration choreography
+- `memory-protocol.md` — ownership и timing для `memory.md`
+- `usage-telemetry.md` — append-only usage history и optimization analytics contract
 
 ## 1. Модель работы
 
-```
+### 1.1. Интегрированная модель (primary, с codex-plugin-cc)
+
+```text
 Пользователь
     │
     ├─ ставит задачу
     ▼
-GPT-5.4 (lead-strategic)
+Claude Opus (lead-tactical, tactical-orchestrator)
     │
-    ├─ уточняет требования
-    ├─ декомпозирует задачу
-    ├─ пишет план в docs/agents/lead-strategic/current_plan.md
-    ├─ если change cross-layer / waiver-sensitive, сверяется с architecture-steward
-    ├─ при stabilization wave сверяется с baseline-governor
-    │
-    ▼
-Пользователь: "выполняй план" (одна команда)
+    ├─ /codex:rescue --write "создай/обнови план"
+    ├─ исполняет plan loop: workers, review, report
+    ├─ /codex:rescue --resume "strategic review report"
+    ├─ post-slice reframe и strategic acceptance loop по выбранному operating mode
     │
     ▼
-Claude Opus (lead-tactical, tmux #0)
-    │
-    ├─ читает current_plan.md
-    ├─ раздаёт задачи workers
-    ├──▶ Claude Worker (tmux #1) — задача A
-    ├──▶ Claude Worker (tmux #2) — задача B (если нужно)
-    │
-    ├─ принимает результаты workers
-    ├─ запускает Review Gate (субагенты-ревьюеры)
-    ├─ пишет report в docs/agents/lead-tactical/last_report.md
-    │
-    ▼
-Пользователь: передаёт report → GPT-5.4
-    │
-    ▼
-GPT-5.4: ревью, принимает/отклоняет, ставит следующую задачу
+Пользователь: подтверждает merge / эскалации
 ```
+
+**Маппинг ролей:**
+
+| Роль workflow | Реализация | Основная ответственность |
+| --- | --- | --- |
+| `lead-strategic` | Codex / GPT-5.4 | canonical owner `current_plan.md`, strategic acceptance |
+| `strategic-reviewer` | bounded pass внутри `lead-strategic` thread | strategic acceptance/reframe safety net по `plan/report/diff` |
+| `lead-tactical` | Claude Opus | execution flow, worker dispatch, Review Gate, report |
+| `worker` | Claude teammate | реализация одного slice |
+| `*-reviewer` | fresh Claude subagent | diff review по своей зоне |
+
+**Правило `--write`:**
+
+- если `lead-strategic` должен записать `current_plan.md`, `memory.md` или governance artifact, нужен `--write`;
+- без `--write` Codex читает и анализирует, но не фиксирует canonical state.
+
+**Thread continuity (`--resume` / `--fresh`):**
+
+| Флаг | Поведение |
+| --- | --- |
+| `--resume` | продолжить последний Codex thread в этом repo |
+| `--fresh` | начать новый thread |
+| без флага | tooling спрашивает, продолжать thread или открыть новый |
+
+**Когда `resume`, когда `fresh`:**
+
+- `resume` — iterative review/fix/re-review cycle;
+- `resume` — follow-up к уже открытому plan/report thread;
+- `fresh` — новая задача или новый plan owner context;
+- `fresh` — governance-heavy pass, если текущий thread уже загрязнён.
+
+**Ограничения интеграции:**
+
+1. `--resume` экономит токены внутри одного thread, но не заменяет durable `memory.md`.
+2. Codex не видит navigation docs автоматически; нужные файлы нужно явно включать в task или prompt.
+3. Пользователь остаётся decision owner для merge, scope changes и CRITICAL escalations.
+4. Долгие Codex-задачи можно запускать в background, но execution ownership остаётся у `lead-tactical`.
+
+### 1.2. Ручная модель (fallback, deprecated)
+
+> **Deprecated.** Используется только если Codex CLI полностью недоступен. Если Codex временно недоступен — используй `recovery.md`, RP-3.
+
+Пользователь ставит задачу GPT-5.4 в отдельном чате, GPT-5.4 пишет `current_plan.md`, Claude исполняет план, пользователь передаёт `last_report.md` обратно в GPT-5.4 вручную. Все роли и артефакты те же, меняется только transport: вместо Codex plugin — ручной relay через пользователя.
 
 ### Ключевые принципы
 
-- **GPT-5.4 — стратег.** Планирует, декомпозирует, принимает результаты. Не пишет код.
-- **Strategic-reviewer — не второй lead.** Это optional sidecar для bounded second opinion; final verdict всё равно остаётся за `lead-strategic`.
-- **Architecture-steward — не второй strategic lead.** Это governance/design role для canonical architecture docs, placement decisions и architecture waivers/exceptions. Чаще всего его исполняет тот же GPT-5.4 оператор, что и `lead-strategic`, но в узком bounded pass.
-- **Baseline-governor — не ещё один lead.** Это governance-role для stabilization waves: держит `baseline closed | not closed`, known exceptions и merge/block policy.
-- **Claude Opus — тактик.** Управляет исполнением по плану. Не принимает архитектурных решений самостоятельно — эскалирует к GPT-5.4 / `architecture-steward` через пользователя.
-- **Claude Workers — исполнители.** Одна задача = один worker. Фокус на качество, не на скорость.
-- **Качество > параллелизм.** На первом этапе один worker за раз. Параллелизм — позже.
-- **Пользователь — relay.** Передаёт plan и report между GPT-5.4 и Claude. Минимум два действия на цикл задачи.
+- `lead-strategic` — canonical owner плана, а не кодовой реализации.
+- initial plan — рабочая гипотеза; после каждого принятого slice он уточняется по реальному состоянию repo.
+- `lead-tactical` — owner execution flow, но не semantic owner плана.
+- `worker` реализует slice в заданном scope и сдаёт truthful handoff с evidence.
+- `reviewer` — fresh pass без persistent review memory.
+- Качество важнее параллелизма; параллелизм нужен только для независимых bounded slices.
+- Пользователь — approver, а не manual relay.
+
+### Протокол оркестрации (`lead-tactical`)
+
+`lead-tactical` совмещает исполнение и orchestration. Отдельной top-level роли `orchestrator` нет.
+
+**Когда делегировать Codex / GPT-5.4:**
+
+- создание или обновление `current_plan.md`;
+- strategic acceptance review;
+- bounded strategic acceptance/reframe pass;
+- semantic reframe через `Plan Change Request`;
+- governance decision, если change упирается в placement, waiver или baseline state.
+
+**Когда делать самому:**
+
+- координация execution flow;
+- быстрые локальные фиксы;
+- self-checks и интеграционные проверки;
+- сборка report;
+- обновление tactical memory и strategic backfill при необходимости.
+
+**Когда делегировать worker'у:**
+
+- slice нетривиальный, unfamiliar или multi-file;
+- plan iterative и требует свежего контекста на каждый slice;
+- нужен bounded parallelism по независимым ownership slices.
 
 ### Гибридная модель: teammates + subagents
 
-Проект использует две технологии Claude Code параллельно:
+| Роль | Технология | Почему |
+| --- | --- | --- |
+| `worker` | Agent Teams / teammate | полный проектный контекст и session continuity |
+| `reviewer` | fresh subagent | дешёвый и воспроизводимый bounded review по diff |
 
-| Роль          | Технология                                     | Почему                                                                           |
-| ------------- | ---------------------------------------------- | -------------------------------------------------------------------------------- |
-| **Workers**   | **Agent Teams** (teammates в tmux)             | Полный контекст проекта, видят CLAUDE.md/AGENTS.md, персистентны в рамках сессии |
-| **Reviewers** | **Subagents** (Agent tool, session-persistent) | Дешёвые (Sonnet), получают только diff, reuse через SendMessage                  |
+Workers как teammates (default):
 
-**Workers как teammates:**
+- видят `AGENTS.md`, локальные docs и репозиторий целиком;
+- работают в том же checkout и integration branch, что и `lead-tactical`; коммитят только в рамках assigned scope;
+- общаются с `lead-tactical` через SendMessage;
+- не ведут отдельный durable `memory.md`.
 
-- Каждый worker — полноценный Claude Code инстанс в своём tmux-pane
-- Видит весь проект: CLAUDE.md, AGENTS.md, локальные docs модулей
-- Общается с lead-tactical через SendMessage
-- Пользователь может зайти в pane worker'а напрямую
-- Переживает несколько задач в рамках сессии (не надо пересоздавать)
+Эскалация worker в subagent:
 
-**Reviewers как subagents (session-persistent):**
+Если нужна файловая изоляция, worker создаётся как subagent через Agent tool с `isolation: "worktree"`. Получает отдельный worktree и `agent/worker/<slug>` branch. Trigger criteria: `docs/agents/git-protocol.md` §4.
 
-- Спавнятся lead-tactical через Agent tool при первом review в сессии
-- Получают diff + список файлов — больше им не нужно
-- **Живут всю сессию** — переиспользуются через SendMessage для последующих задач
-- Первый spawn ~30 сек (загрузка контекста), последующие review ~5 сек (только diff)
-- Дёшево: Sonnet с минимальным контекстом
-- При новой сессии — spawn заново
+Reviewers как fresh subagents:
+
+- стартуют заново на каждый review pass;
+- получают только diff, changed files и review scope;
+- не накапливают межзадачный review state.
 
 ## 2. Цикл задачи
 
-### 2.1. Планирование (GPT-5.4)
+Два режима: `batch` для простых задач и `iterative` для задач с частым slice-by-slice review.
 
-1. Получает задачу от пользователя
-2. Читает `docs/agents/lead-strategic/memory.md` для контекста
-3. Уточняет требования, если нужно
-4. Если change затрагивает package/app ownership, operational vs BI split, новый exception или waiver, сначала получает bounded verdict у `architecture-steward`
-5. Создаёт план: `docs/agents/lead-strategic/current_plan.md`
-6. План включает: цель, подзадачи, scope, ограничения, ожидаемый результат
+### 2.1. Выбор режима
 
-### 2.2. Исполнение (Claude Opus + Workers)
+| Критерий | Batch | Iterative |
+| --- | --- | --- |
+| Подзадачи независимы | да | нет |
+| Реализация может поменять следующий slice | нет | да |
+| Количество slices | 1-3 | 4+ |
+| Архитектурный риск | низкий | средний-высокий |
+| Новый домен / unfamiliar code | нет | да |
 
-1. Lead-tactical читает `current_plan.md`
-2. Для каждой подзадачи: либо выполняет сам, либо ставит worker'у
-3. Worker выполняет задачу, прогоняет self-checks, сдаёт результат lead-tactical
-4. Lead-tactical проверяет результат, запускает Review Gate
-5. Исправляет non-critical findings
-6. Формирует report: `docs/agents/lead-tactical/last_report.md`
+**Default heuristic для `lead-tactical`:**
 
-### 2.3. Приёмка (GPT-5.4)
+Выбирай `iterative`, если верно хотя бы одно:
 
-1. Пользователь передаёт report GPT-5.4
-2. GPT-5.4 ревьюит: соответствие плану, архитектура, качество
-3. При необходимости GPT-5.4 запускает `strategic-reviewer` на узком контексте:
-   - `docs/agents/lead-strategic/current_plan.md`
-   - `docs/agents/lead-tactical/last_report.md`
-   - интегрированный diff
-   - 2-4 релевантных canonical docs
-4. Результат: принято / замечания / переделка
-5. Если slice принят, GPT-5.4 быстро перепроверяет следующий planned slice и при необходимости уточняет `current_plan.md`
-6. Если принято — пользователь подтверждает merge
+- план уже распался на `4+` slices;
+- один slice трогает `6+` файлов;
+- change включает schema files или DB contract;
+- change пересекает больше одного контура или package/app boundary;
+- acceptance следующего slice зависит от результата текущего;
+- это unfamiliar code для текущего tactical context.
 
-### 2.4. Architecture governance loop (`architecture-steward`)
+Выбирай `batch`, если одновременно верно всё ниже:
 
-Используется, когда change затрагивает active architecture contract, placement rules, cross-layer boundaries, exceptions или waivers.
+- `1-3` slices;
+- каждый slice остаётся в одной зоне ownership;
+- нет schema changes;
+- не ожидается новый exception / waiver;
+- не ожидается `Plan Change Request` после первого выполненного slice.
 
-1. Читает:
-   - `docs/agents/lead-strategic/current_plan.md`
-   - релевантные canonical architecture docs
-   - `docs/emis_known_exceptions.md`, если change касается exceptions/waivers
-   - diff / touch points / short handoff, если change уже реализован
-2. Проверяет:
-   - packages ли остаются canonical reusable homes
-   - остаётся ли `apps/web` app leaf / transport-orchestration layer
-   - не смешиваются ли `EMIS operational` и `EMIS BI/read-side`
-   - не расширяется ли существующий exception/waiver молча
-3. Выносит bounded decision:
-   - `approve placement`
-   - `approve with exception`
-   - `request reshape`
-   - `needs strategic escalation`
-4. Если выдан exception/waiver, требует owner + expiry + removal condition и отражение в `docs/emis_known_exceptions.md`
-5. Возвращает decision `lead-strategic` / `lead-tactical`; product planning и final slice acceptance остаются не у него.
+Если сигналы смешанные, побеждает `iterative`.
 
-### 2.5. Stabilization governance loop (`baseline-governor`)
+### 2.2. Планирование (`lead-strategic`)
 
-Используется только когда активная wave помечена как stabilization / baseline-control.
+**Интегрированная модель:**
 
-1. Читает:
-   - `docs/agents/lead-strategic/current_plan.md`
-   - `docs/agents/lead-strategic/memory.md`
-   - `docs/emis_known_exceptions.md`, если файл уже существует
-   - последний tactical report, если есть
-2. Фиксирует baseline status:
-   - `Red` — baseline not closed, разрешены только stabilization slices
-   - `Yellow` — baseline partially controlled, разрешены только bounded low-risk slices
-   - `Green` — baseline closed, обычная разработка открыта
-3. Проверяет:
-   - green ли canonical checks
-   - нет ли doc/code contradiction по active boundaries
-   - у каждого live exception есть ли owner, expiry и явный governance owner
-   - использован ли для EMIS post-freeze wave один и тот же canonical baseline routine
-     - `pnpm check`
-     - `pnpm build`
-     - `pnpm lint:boundaries`
-     - `pnpm emis:smoke`
-     - `pnpm emis:offline-smoke`
-     - `pnpm emis:write-smoke` when write-side relevant
-   - если какой-то check в текущем slice не прогоняли, verdict должен сказать `not run`, а не молча наследовать старый green
-4. Выносит verdict:
-   - `baseline not closed`
-   - `baseline conditionally open`
-   - `baseline closed`
-5. Если verdict не green-level, новые large feature slices не должны стартовать.
+1. `lead-tactical` получает задачу от пользователя.
+2. Поднимает strategic loop через `/codex:rescue --fresh --write`.
+3. `lead-strategic` создаёт или обновляет `current_plan.md`.
+4. Пользователь подтверждает план, если задача нетривиальна или меняет scope.
 
-Для текущей EMIS post-freeze phase 2 truthful default is now green:
+**Fallback (deprecated):** пользователь передаёт задачу в отдельный GPT-чат, `lead-strategic` пишет `current_plan.md` вручную.
 
-- `EXC-ARCH-002` is closed in `P3.2`; `pnpm lint:boundaries` is no longer red because of `fetchDataset.ts`
-- `EXC-ARCH-004` is closed in `P3.4`
-- `P3.5` closed the dataset/runtime blocker
-- the full canonical routine was rerun on `2026-04-04`:
-  - `pnpm check` — green
-  - `pnpm build` — green
-  - `pnpm lint:boundaries` — green
-  - `pnpm emis:offline-smoke` — green
-  - `pnpm emis:write-smoke` — green
-  - `pnpm emis:smoke` — green
-- baseline is therefore green and closed
+Bootstrap hints (`--low-risk`, legacy `--simple`) не создают sanctioned exception:
 
-## 3. Коммуникация между агентами
+- они только подсказывают ожидаемый risk profile для initial triage;
+- не убирают `lead-strategic` как canonical owner `current_plan.md`;
+- не отменяют final strategic acceptance;
+- максимум позволяют батчить cadence до `integration/final stage`, если это допускает выбранный operating mode.
 
-### Файловый протокол
+### 2.3. Ownership плана
 
-Агенты общаются через файлы в `docs/agents/`:
+- `lead-strategic` — canonical owner `docs/agents/lead-strategic/current_plan.md`;
+- `lead-tactical` — owner execution flow, но не semantic owner плана;
+- если нужен reframe, `lead-tactical` оформляет `Plan Change Request`;
+- следующий dependent slice не стартует, пока новый plan state не зафиксирован.
 
-| Файл                             | Кто пишет                                                 | Кто читает                      |
-| -------------------------------- | --------------------------------------------------------- | ------------------------------- |
-| `lead-strategic/current_plan.md` | GPT-5.4                                                   | Claude lead-tactical            |
-| `lead-tactical/last_report.md`   | Claude lead-tactical                                      | GPT-5.4 (через пользователя)    |
-| `emis_known_exceptions.md`       | architecture-steward / baseline-governor / lead-strategic | все роли по необходимости       |
-| `{role}/memory.md`               | Каждый агент — свою                                       | Тот же агент в следующей сессии |
+### 2.4. Strategic operating mode
 
-### Tmux-сессии (Agent Teams)
+`lead-strategic` выбирает operating mode в начале wave и фиксирует его в canonical plan/report context.
+После любого post-slice reframe mode можно оставить без изменений или переключить, но только с коротким rationale.
 
-```
-┌──────────────────────────────────────────────────┐
-│ tmux                                             │
-│                                                  │
-│ pane #0: Claude Opus (lead-tactical)             │
-│   ├─ читает plan, управляет workers              │
-│   ├─ spawn subagents для review (дешёво)         │
-│   └─ SendMessage к teammates-workers             │
-│                                                  │
-│ pane #1: Claude Worker A (teammate)              │
-│   └─ полный контекст, видит CLAUDE.md, docs/     │
-│                                                  │
-│ pane #2: Claude Worker B (teammate, если нужен)  │
-│   └─ тоже полный контекст                        │
-│                                                  │
-└──────────────────────────────────────────────────┘
-```
+Три canonical mode:
 
-Навигация между panes: `Shift+Down` / `Shift+Up`.
+- `high-risk iterative / unstable wave` — per-slice strategic-reviewer pass по умолчанию;
+- `ordinary iterative` — post-slice reframe обязателен всегда, но отдельный strategic-reviewer pass идёт только по risk signals;
+- `batch / low-risk` — acceptance и reframe можно батчить до integration/final stage.
 
-Workers-teammates общаются с lead-tactical через `SendMessage` (Claude Code native).
-Пользователь может зайти в любой pane и общаться с worker'ом напрямую.
+`high-risk iterative / unstable wave` используй, если есть хотя бы один сигнал:
 
-## 4. Review Gate
+- cross-layer work или package/app boundary touch;
+- schema/runtime-contract-sensitive change;
+- stabilization wave или unfamiliar code;
+- частые findings, которые меняют sequencing;
+- реальный diff уже хотя бы раз заметно разошёлся с initial plan.
 
-После завершения реализации lead-tactical запускает ревьюеров:
+В этом mode bounded `strategic-reviewer` pass по умолчанию запускай на `gpt-5.4-mini` как дешёвый cross-model recheck после Sonnet-based review.
 
-```
-git diff main..feature/branch
-    │
-    ├─► architecture-reviewer  (Sonnet)  — package/app boundaries, contour split, complexity
-    ├─► security-reviewer      (Sonnet)  — SQL injection, XSS, secrets
-    ├─► docs-reviewer          (Sonnet)  — docs sync, contracts, schema
-    └─► code-reviewer          (Sonnet)    — naming, conventions, quality
-    │
-    ├─► ui-reviewer (если фронтенд) — smoke test через Chrome
-    │
-    ▼
-Агрегация findings → fix non-critical → report
-```
+`ordinary iterative` используй, если задача всё ещё slice-dependent, но:
 
-### Severity
+- следующий slice можно reframe'ить локально без полного strategic pass;
+- reviewer verdicts в целом стабильны;
+- boundaries и core acceptance пока не дрейфуют.
 
-- `CRITICAL` — блокирует merge. Исправить обязательно.
-- `WARNING` — исправить до merge, если lead не обосновал исключение.
-- `INFO` — заметка, не блокер.
+`batch / low-risk` используй, если:
 
-### Когда НЕ запускать Review Gate
+- slices независимы или почти независимы;
+- post-slice reframe не меняет plan semantics;
+- strategic loop нужен в основном на integration/final acceptance.
 
-- Задача была только чтение/анализ
-- Пользователь явно попросил пропустить
-- Изменения только в markdown (запустить только docs-reviewer)
+Risk signals для slice-level strategic-reviewer pass: canonical list в `review-gate.md` §2.1.
 
-Если docs-only change меняет active architecture contract, adds/removes exception или оформляет complexity waiver, нужен хотя бы bounded pass от `architecture-steward`, даже если полный Review Gate не запускается.
+### 2.5. Batch-исполнение
 
-## 4a. Optional Strategic Sidecar Review
+1. `lead-tactical` читает `current_plan.md`.
+2. Выполняет подзадачи сам или через worker'ов.
+3. Запускает Review Gate, если он нужен по `review-gate.md`.
+4. Выбирает формат report и пишет `last_report.md`.
+5. Запускает strategic acceptance review.
+6. После acceptance пользователь подтверждает merge.
 
-Это не часть обязательного Review Gate.
-`strategic-reviewer` используется `lead-strategic`, когда нужен второй проход без раздувания основного контекста.
+### 2.6. Iterative-исполнение
 
-Когда использовать:
+1. `worker` получает handoff на один slice.
+2. Реализует slice, прогоняет self-check и slice review.
+3. Фиксит локальные non-critical findings.
+4. Возвращает `lead-tactical` summary, checks evidence и review disposition/results.
+5. `lead-tactical` передаёт slice result в strategic loop.
+6. `lead-strategic` делает post-slice reframe следующего slice и, в зависимости от current operating mode, запускает bounded `strategic-reviewer` pass или ограничивается direct strategic acceptance. По умолчанию bounded pass идёт через `gpt-5.4-mini`; на `gpt-5.4` эскалируй только для design/boundary/contract-sensitive ambiguity.
+7. Вердикт:
+   - `ACCEPT` — запускается следующий slice;
+   - `ACCEPT WITH ADJUSTMENTS` — оформляется `Plan Change Request`, затем обновлённый slice flow;
+   - `REJECT` — findings возвращаются в execution loop. При 3+ rejection cycles действует `recovery.md` RP-5.
+8. После всех slices `lead-tactical` запускает integration Review Gate, если он нужен, затем final strategic review.
 
-- большой `last_report.md`, который нужно быстро проверить на scope drift
-- спорный diff, где нужно отдельно проверить plan-vs-implementation fit
-- новая сессия, где нужно быстро восстановить strategic verdict по уже сделанной работе
+Детали slice review, integration review, governance passes и strategic acceptance/reframe pass лежат в `review-gate.md`.
 
-Чего не делает:
+### 2.7. Формат report
 
-- не пишет код
-- не общается с `lead-tactical` напрямую
-- не заменяет финальную приёмку `lead-strategic`
+`lead-tactical` выбирает один из canonical report types:
 
-Минимальный вход:
+- `full` — multi-slice, cross-layer, risky implementation;
+- `lightweight` — trivial local fix, docs-only, one-slice batch;
+- `governance-closeout` — verification/docs/baseline closure без нового product implementation.
 
-- `current_plan.md`
-- `last_report.md`
-- diff или список changed files
-- только релевантные canonical docs
+Правила:
 
-### Reframe policy after acceptance
+- формат определяется risk profile, а не количеством файлов;
+- если review не запускался, report обязан содержать truthful `review disposition + rationale`;
+- durable governance decisions живут в отдельном artifact только когда должны пережить текущий `last_report.md`.
 
-После каждого принятого slice `lead-strategic` делает короткий reframe следующего slice:
+Шаблоны report и handoff: `docs/agents/templates.md`.
 
-- сверяет plan vs новое состояние репозитория
-- правит локальные формулировки/acceptance/tactical assumptions прямо в `current_plan.md`, если этого достаточно
-- подключает `strategic-reviewer` только для спорных переходов или тонких architectural dependencies
-- не открывает новый чат только ради routine next-slice clarification, пока идёт та же wave
+### 2.8. Cost-aware defaults
 
-## 4b. Architecture Governance
+Cost-awareness калибрует cadence strategic loop, а не отменяет high-yield review discipline.
 
-### Когда подключать `architecture-steward`
+Правила по умолчанию:
 
-- появляется новый package vs `apps/web` placement question
-- change пересекает `platform/shared`, `EMIS operational` и `EMIS BI/read-side`
-- нужен новый architecture exception или complexity waiver
-- docs-only change переписывает active ownership / boundary rules
+- не требуй отдельный strategic pass на trivial slice, если slice review green и post-slice reframe не меняет plan semantics;
+- если несколько slices подряд не меняют plan, boundaries и acceptance logic, `lead-tactical` может предложить снизить cadence, а `lead-strategic` — переключить operating mode;
+- если per-slice strategic pass регулярно находит important issues или меняет next-slice plan, это high-yield cadence, и его не нужно "оптимизировать away";
+- если passes становятся low-yield, cadence нужно снижать или явно объяснять, почему выбранный mode остаётся оправданным.
+- default cost-saving path для cross-model recheck: сначала `gpt-5.4-mini`, а не full `gpt-5.4`.
 
-### Что проверяет `architecture-steward`
+Признаки low-yield / cost creep:
 
-- packages как canonical reusable homes
-- `apps/web` как app leaf / transport-orchestration layer
-- separation `EMIS operational` vs `EMIS BI/read-side`
-- owner + expiry + removal condition для новых exceptions/waivers
+- repeated `accept-ready` без новых strategic findings;
+- unchanged next-slice plan across several slices;
+- stable reviewer verdicts without new risk classes;
+- trivial slices consuming the same strategic cadence as risky slices.
 
-### Чего он не делает
+### 2.9. Приёмка
 
-- не пишет product plan вместо `lead-strategic`
-- не заменяет diff-level review `architecture-reviewer`
-- не выносит baseline status вместо `baseline-governor`
-- не становится вторым `lead-tactical`
+**Интегрированная модель:**
 
-### Полномочия в active architecture mode
+1. `lead-tactical` запускает `/codex:rescue --resume`.
+2. `lead-strategic` сверяет report, plan fit, scope, architecture и review discipline.
+3. Делает post-slice or final reframe и запускает bounded `strategic-reviewer` pass, если этого требует current operating mode или risk signals.
+4. Выносит `ACCEPT`, `ACCEPT WITH NOTES` или `REJECT`.
+5. Пользователь подтверждает merge.
 
-- может approve/reject placement до реализации или по итогам diff review
-- может требовать doc updates и явный exception id перед merge
-- может разрешить временный complexity waiver только с owner + expiry
-- не должен переоткрывать frozen topology decisions без нового runtime/ops pressure
+**Fallback (deprecated):** пользователь передаёт report в GPT-чат, `lead-strategic` делает acceptance review вручную.
 
-## 4c. Baseline Governance
+### 2.10. Эскалация
 
-### Когда подключать `baseline-governor`
+`lead-tactical` эскалирует к пользователю, когда:
 
-- активная wave называется stabilization / baseline-control
-- baseline checks не все green
-- есть известные exceptions, которые нужно удерживать под контролем
-- команда спорит, можно ли уже пускать large feature work
+- найден `CRITICAL`;
+- нужен scope или priority change;
+- change вводит новый контракт, schema change или cross-module decision;
+- нужен новый exception / waiver;
+- reviewer'ы расходятся;
+- baseline state спорный, а команда хочет открыть следующую large wave;
+- решение не покрыто документацией.
 
-### Что проверяет `baseline-governor`
+Формат эскалации:
 
-- baseline status (`Red | Yellow | Green`)
-- набор canonical checks и их truthful status
-- consistency между docs, ownership rules и реальным active code
-- registry known exceptions
-- соблюдение merge policy в stabilization mode
-
-### Чего он не делает
-
-- не декомпозирует product work вместо `lead-strategic`
-- не пишет код
-- не заменяет Review Gate
-- не становится вторым `lead-tactical`
-
-### Полномочия в stabilization mode
-
-- может пометить baseline как `not closed`
-- может блокировать запуск новых large feature slices
-- может требовать owner + expiry для exception перед продолжением work
-- не должен переоткрывать frozen topology decisions без нового runtime/ops pressure
-
-## 5. Эскалация
-
-### Lead-tactical эскалирует к пользователю когда:
-
-- Ревьюер нашёл `CRITICAL`
-- Задача требует изменения scope или приоритета
-- Новый контракт, схема БД или cross-module изменение
-- Нужен новый exception / waiver или спорный package home
-- Ревьюеры расходятся во мнениях
-- Решение не покрыто документацией
-- baseline status спорный, а команда хочет открыть новую feature wave
-
-### Формат эскалации
-
-```
+```md
 ## Эскалация
 Причина: <почему нужно решение>
 Контекст: <что произошло>
@@ -364,161 +326,48 @@ git diff main..feature/branch
 Рекомендация: вариант <N>, потому что <причина>
 ```
 
-## 6. Инварианты проекта
+Failure-path после эскалации описан в `docs/agents/recovery.md`.
 
-Эти правила обязательны для всех агентов. Нарушение = CRITICAL.
+## 3. Коммуникация и артефакты
 
-### Архитектура (layers and boundaries)
+### Файловый протокол
 
-- `entities` НЕ импортируют из `features`, `widgets`, `routes`
-- `features` НЕ импортируют из `widgets`, `routes`
-- `shared` НЕ импортирует из `entities`, `features`, `widgets`, `routes`
-- `$lib/server/*` НЕ импортируется из client-side кода
-- Используем path aliases: `$lib`, `$shared`, `$entities`, `$features`, `$widgets`
+| Файл | Кто пишет | Кто читает |
+| --- | --- | --- |
+| `lead-strategic/current_plan.md` | `lead-strategic` | `lead-tactical`, workers по need-to-know |
+| `lead-tactical/last_report.md` | `lead-tactical` | `lead-strategic`, пользователь |
+| `lead-strategic/memory.md` | `lead-strategic` | следующий strategic thread |
+| `lead-tactical/memory.md` | `lead-tactical` | следующий tactical session |
+| `runtime/agents/usage-log.ndjson` | `lead-tactical` | локальная optimization analytics / future DB import |
+| `emis_known_exceptions.md` | `lead-strategic` governance loop | все роли по необходимости |
 
-`shared/entities/features/widgets` здесь — app-local layering discipline, а не название repo-wide architecture.
+Правила хранения:
 
-### EMIS boundaries
+- `last_report.md` — всегда текущий canonical execution report;
+- `runtime/agents/usage-log.ndjson` — append-only local usage history; не заменяет report или memory;
+- отдельного worker-memory файла нет;
+- durable governance trail оформляется отдельным artifact только при изменении долгоживущего решения.
 
-- packages — canonical reusable homes:
-  - `packages/emis-contracts/*` — reusable contracts, DTO, Zod schemas
-  - `packages/emis-server/src/*` — reusable server infra, queries, services, repositories
-  - `packages/emis-ui/*` — reusable map/status UI
-- `apps/web` — app leaf:
-  - `apps/web/src/routes/api/emis/*` — thin HTTP transport, без SQL и бизнес-логики
-  - `apps/web/src/routes/emis/*` — workspace/UI orchestration
-  - `apps/web/src/routes/dashboard/emis/*` — BI/read-side routes
-  - `apps/web/src/lib/server/emis/infra/http.ts`, `apps/web/src/lib/features/emis-manual-entry/*`, `apps/web/src/lib/widgets/emis-drawer/*` — app-local composition
-- compatibility shims under `apps/web/src/lib/entities/emis-*`, `apps/web/src/lib/server/emis/*`, `apps/web/src/lib/widgets/emis-*` не считаются новым canonical home
-- `packages/emis-server/src/modules/*/service.ts` — без HTTP-логики (Request/Response)
-- SQL живёт в `packages/emis-server/*`, не в route files
-- operational flows не пушим в dataset/IR abstraction
-- BI/read-side идёт через published read-model + dataset path; `/dashboard/emis/*` не становится backdoor в operational SQL
+### Tmux-сессии / Agent Teams
 
-### Data invariants
-
-- Identity выражена в DB constraints / partial unique indexes
-- Soft delete единообразен: `deleted_at IS NULL` в базовых queries
-- Audit trail + actor attribution — обязательны для write-side
-- FK behavior и vocabularies — задокументированы явно
-- `isSafeIdent()` в postgresProvider — не обходить
-
-### Schema changes
-
-- Обновлять `db/current_schema.sql` + `db/applied_changes.md`
-- Runtime changes → обновлять `RUNTIME_CONTRACT.md`
-- Новые active slices → добавлять local `AGENTS.md`
-
-### Complexity guardrails
-
-- 500-700 строк: warning, обсудить декомпозицию
-- 700-900 строк: обязательная дискуссия в review и явное объяснение, если файл продолжает расти
-- 900+ строк: декомпозиция по умолчанию; временный waiver возможен только через `architecture-steward`
-- long-lived waiver должен быть отражён в report и в `docs/emis_known_exceptions.md`
-
-### Stabilization state model
-
-- `Red`
-  - baseline not closed
-  - разрешены только baseline repair, docs sync, guardrails, bounded refactor
-- `Yellow`
-  - основной baseline уже под контролем, но ещё есть managed exceptions
-  - разрешены только low-risk bounded slices без расширения architectural surface
-- `Green`
-  - baseline closed
-  - открыт обычный feature workflow
-
-Для перехода между состояниями нужен явный verdict `baseline-governor` или эквивалентный strategic accept.
-
-### Технологии
-
-- Svelte 5 runes для нового EMIS UI
-- TypeScript strict
-- PostgreSQL + PostGIS
-- SvelteKit 2
-
-## 7. Git-правила
-
-### Ветки
-
-В проекте два типа feature-веток с разным назначением:
-
-- `main` — integration baseline
-- `feature/<topic>` — **integration branch** (владелец: lead-tactical). Сюда мержатся результаты workers. Review Gate запускается на `git diff main..feature/<topic>`.
-- `agent/worker/<task-slug>` — **worker branch** (владелец: конкретный worker). Worker коммитит сюда, потом lead-tactical мержит в integration branch.
-
-Если worker один и задача простая — можно работать напрямую в integration branch без отдельной worker branch.
-
-### Коммиты
-
-- Checkpoint после каждого законченного этапа
-- Осмысленные commit messages на английском
-- Не коммитить `.env`, credentials, scratch files
-
-### Worktrees
-
-- Один worktree = один agent
-- Не переиспользовать чужой worktree
-- Не смешивать две задачи в одной ветке
-- Основной checkout — workspace lead-tactical, не worker'а
-
-### Branch integration и Review Gate
-
-Порядок интеграции worker-веток перед review:
-
-```
-1. Worker реализует в worker branch: agent/worker/<slug>
-2. Worker коммитит, сдаёт handoff lead-tactical
-3. Lead-tactical мержит worker branch в integration branch:
-   git merge agent/worker/<slug> --no-ff
-4. Если несколько workers — мерж каждого в integration branch
-5. ТОЛЬКО ПОСЛЕ интеграции: Review Gate на git diff main..feature/<topic>
+```text
+pane #0  lead-tactical
+pane #1  worker A
+pane #2  worker B (если нужен)
 ```
 
-**Правило:** Review Gate всегда запускается на integration branch (`git diff main..feature/<topic>`), не на worker branch. Это гарантирует, что ревьюеры видят полный интегрированный diff.
+- `lead-tactical` держит orchestration context и запускает reviewers как fresh subagents;
+- worker-teammates разделяют checkout и integration branch с `lead-tactical`;
+- worker-teammates общаются с `lead-tactical` через SendMessage;
+- пользователь может зайти в pane worker'а напрямую.
 
-Если worker один и задача простая — может работать напрямую в integration branch без отдельной worker branch.
+### Canonical supporting docs
 
-### Merge policy during stabilization waves
-
-- не смешивать structural cleanup и product feature в одном slice
-- новый exception нельзя вводить без owner и expiry
-- новый architecture exception или long-lived complexity waiver требует decision от `architecture-steward` и записи в registry до merge
-- рост oversized files требует extraction или явного waiver в report
-- baseline-governor может заблокировать merge large feature slice, если baseline status остаётся `Red`
-
-## 8. Memory-протокол
-
-### Когда писать в memory.md
-
-Каждый агент обновляет свой `docs/agents/{role}/memory.md`:
-
-- **После каждого завершённого этапа** (подзадача, review gate, merge)
-- **Перед завершением сессии**
-- **Превентивно** — если контекст разговора растёт и auto-compact может случиться
-
-Не жди конца сессии — пиши memory инкрементально. Auto-compact может произойти в любой момент.
-
-### Что писать
-
-- Текущий статус: что сделано, что в процессе, что осталось
-- Активная ветка и base branch
-- Принятые решения (которых нет в git log)
-- Проблемы и workarounds
-- Что важно для следующего шага
-
-### Формат
-
-Свободный markdown, но кратко и по делу. Не дублировать то, что видно из `git log`.
-
-### Восстановление после auto-compact
-
-После auto-compact Claude теряет детальный контекст, но CLAUDE.md перечитывается автоматически. В нём есть секция "Восстановление после auto-compact", которая направляет агента:
-
-1. Определить свою роль из сжатого контекста
-2. Прочитать `memory.md` — персистентная память
-3. Прочитать `instructions.md` — вводные роли
-4. Прочитать `current_plan.md` — текущий план
-5. Продолжить работу
-
-Поэтому **критически важно** держать `memory.md` актуальным — это единственный мост через auto-compact.
+- `docs/agents/review-gate.md` — Review Gate, strategic acceptance/reframe loop, governance passes
+- `docs/agents/recovery.md` — failure-path и recovery protocols
+- `docs/agents/invariants.md` — repo и EMIS invariants
+- `docs/agents/git-protocol.md` — branch/worktree discipline
+- `docs/agents/memory-protocol.md` — кто и когда пишет `memory.md`
+- `docs/agents/usage-telemetry.md` — durable usage log и usefulness rubric
+- `docs/agents/roles.md` — role map и role ownership
+- `docs/agents/templates.md` — templates для plan, task, handoff, report, governance verdicts

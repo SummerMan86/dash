@@ -1,157 +1,136 @@
 # User Guide — Работа с командой агентов
 
-Практические инструкции для пользователя. Копипаст-готовые промпты для типовых задач.
+Практический runbook для пользователя.
 
-## Быстрый старт
+По умолчанию используйте **integrated orchestration path**: вы ставите задачу `lead-tactical`, он сам тянет Codex/GPT-5.4, workers и reviewers по workflow.
+
+## 5-Minute Overview
+
+Агентная команда работает в три слоя:
+
+```text
+┌─────────────────────────────────────────────────────────┐
+│  GPT-5.4 (lead-strategic)                               │
+│  Планирует, декомпозирует, принимает результат.         │
+│  Не пишет код. Владеет current_plan.md.                 │
+├─────────────────────────────────────────────────────────┤
+│  Claude Opus (lead-tactical)                            │
+│  Исполняет план: раздаёт задачи, запускает review,      │
+│  собирает report. Владеет execution flow.               │
+├──────────────────┬──────────────────────────────────────┤
+│  Worker (Claude)  │  Reviewers (Claude, fresh subagent) │
+│  Реализует slice  │  Проверяют diff по своей зоне       │
+│  в заданном scope │  (security, architecture, code, UI) │
+└──────────────────┴──────────────────────────────────────┘
+```
+
+**Как это работает на практике:**
+
+1. Ты ставишь задачу `lead-tactical` (Claude Opus).
+2. Он сам поднимает GPT-5.4 через Codex plugin для планирования.
+3. GPT-5.4 пишет план, ты его подтверждаешь (или нет).
+4. `lead-tactical` создаёт worker'ов (teammates в tmux), которые реализуют план по частям (slices).
+5. После каждого slice worker запускает review (fresh subagents: security, architecture, code, docs, UI).
+6. После каждого принятого slice `lead-strategic` делает post-slice reframe; в risky waves он может запускать strategic-reviewer на каждом slice, в обычных — только по risk signals.
+7. В конце `lead-tactical` запускает integration review на полный diff и собирает report.
+8. GPT-5.4 принимает или отклоняет результат.
+9. Ты подтверждаешь merge.
+
+**Ключевые понятия:**
+
+- **Slice** — одна подзадача плана с чётким scope и acceptance criteria.
+- **Review Gate** — набор автоматических review passes (security, architecture, code, docs, UI).
+- **Post-slice reframe** — обязательная сверка следующего slice с реальным результатом текущего.
+- **Handoff** — формальная сдача результата от worker'а к `lead-tactical`.
+- **Escalation** — когда агент не может принять решение сам и обращается к тебе.
+
+Ты участвуешь только в трёх точках: **план** (approve), **эскалации** (decide), **merge** (confirm). Всё остальное автономно.
+
+## 30-Second Quickstart
+
+Не хочешь разбираться в ролях и tmux — просто запусти:
+
+```bash
+# Полный цикл (план через Codex/GPT-5.4, workers, review gate):
+./scripts/emis-task.sh "добавить фильтр по дате в /emis/map"
+
+# С явным scope:
+./scripts/emis-task.sh "bcrypt migration" --scope "packages/emis-server/src/modules/users/"
+
+# Локальная low-risk задача: только risk hint, без bypass strategic ownership
+./scripts/emis-task.sh "fix typo in login page" --low-risk
+```
+
+Скрипт сам запустит tmux (если не запущен), сформирует промпт и откроет Claude в режиме lead-tactical. Флаг `--low-risk` только подсказывает ожидаемый operating mode: canonical workflow, plan ownership и final acceptance всё равно остаются у `lead-strategic`. Legacy alias `--simple` допустим только для backward compatibility и больше не должен читаться как "без strategic loop".
+
+## Быстрый старт (manual)
 
 ### Что нужно
 
-| Компонент                   | Где           | Как запустить                                                                      |
-| --------------------------- | ------------- | ---------------------------------------------------------------------------------- |
-| GPT-5.4 (lead-strategic)    | ChatGPT / API | Новый чат, вставить `docs/agents/lead-strategic/instructions.md` как system prompt |
-| Claude Opus (lead-tactical) | tmux pane #0  | `tmux` → `claude`                                                                  |
-| Claude Worker (teammate)    | tmux pane #1+ | Lead создаёт через Agent Teams, или вручную                                        |
+| Компонент                   | Где                          | Как использовать                                                                |
+| --------------------------- | ---------------------------- | ------------------------------------------------------------------------------- |
+| GPT-5.4 (`lead-strategic`)  | Codex plugin                 | Вызывается из `lead-tactical` через Codex                                       |
+| Claude Opus (`lead-tactical`) | tmux pane #0               | `tmux` → `claude`                                                               |
+| Claude Worker (teammate)    | tmux pane #1+                | Lead создаёт через Agent Teams, или вручную                                     |
 
 ### Предусловия
 
-1. Agent Teams включён (один раз):
+1. Agent Teams включён:
 
    ```json
    // ~/.claude.json
    { "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" } }
    ```
 
-2. GPT-5.4 настроен: скопируй `docs/agents/lead-strategic/instructions.md` как
-   - Custom Instructions (ChatGPT), или
-   - System prompt (API), или
-   - Первое сообщение в чате
+2. Codex plugin настроен (`/codex:setup` для проверки).
 
-### Короткие шаблоны старта
+## Primary Path
 
-**Для новой нетривиальной задачи → GPT-5.4:**
+Пиши сразу `lead-tactical`:
 
-```
-Задача: <что сделать>
+```text
+Новая задача: <что сделать>
 Контекст: <зачем>
 Scope: <что затрагивает>
 Ограничения: <что нельзя трогать>
+Работай по docs/agents/workflow.md как tactical-orchestrator.
 ```
 
-Для новой большой задачи по умолчанию считай, что работа идёт в отдельной `feature/<topic>` ветке от `main`.
-Детали branch setup, workers и `agent/worker/<slug>` организует lead-tactical по workflow.
+Что произойдёт дальше:
 
-**Потом → Claude lead-tactical:**
+- Claude сам поднимет план через Codex/GPT-5.4, если задача нетривиальна
+- сам создаст workers / reviewers
+- вернётся к тебе только с plan approval, эскалациями и merge decision
 
-```
-Выполняй план из docs/agents/lead-strategic/current_plan.md
-```
+Для простой локальной задачи обычно достаточно:
 
-Если хочешь сказать это явно:
-
-```
-Новая задача. Создай отдельную feature-ветку от main, составь и выполни план.
-Если задача делится, создай workers и используй worker branches по workflow.
-```
-
-**Для простой локальной задачи → сразу Claude:**
-
-```
+```text
 Исправь <проблема>. Файл/зона: <путь>.
-Если нужно — создай worker. После этого запусти Review Gate.
+Сначала классифицируй задачу по docs/agents/workflow.md. Даже для low-risk fix plan ownership и final acceptance остаются у lead-strategic.
+Если нужно — создай worker. Если review нужен по workflow, запусти его. Иначе верни lightweight report с причиной skip.
 ```
 
----
+## Fallback Path (deprecated)
 
-## Типовые сценарии
+> Используй только если Codex CLI полностью недоступен. Если Codex временно недоступен посреди работы — используй recovery protocol RP-3 из `docs/agents/recovery.md`.
 
-### A. Новая задача (полный цикл)
+Поставь задачу GPT-5.4 в отдельном чате → он напишет `current_plan.md` → скажи Claude `Выполняй план из docs/agents/lead-strategic/current_plan.md` → передай `last_report.md` обратно в GPT-5.4.
 
-**Шаг 1 → GPT-5.4:**
+## Частые сценарии
 
-```
-Задача: <описание>
-Контекст: <зачем это нужно>
-Scope: <какие части системы затрагивает>
-Ограничения: <что нельзя трогать, сроки>
-```
+### Продолжить работу
 
-GPT-5.4 выдаст план. Проверь его, попроси уточнить если нужно.
-Для новой большой задачи отдельную `feature/<topic>` ветку создаёт lead-tactical, если ты явно не задал другое.
+Claude:
 
-**Шаг 2 → Claude (tmux #0):**
-
-```
-Прочитай план задачи: docs/agents/lead-strategic/current_plan.md
-Выполни его по инструкциям из docs/agents/lead-tactical/instructions.md
-```
-
-Или короче, если Claude уже знает процесс:
-
-```
-Выполняй план из docs/agents/lead-strategic/current_plan.md
-```
-
-**Шаг 3 → подожди, Claude работает.** Он:
-
-- сам раздаст задачи workers (если нужно)
-- сам запустит Review Gate
-- сам напишет report в `docs/agents/lead-tactical/last_report.md`
-
-**Шаг 4 → GPT-5.4:**
-
-```
-Вот report от Claude: <скопировать содержимое last_report.md>
-```
-
-GPT-5.4 выдаст: принято / замечания / переделка.
-
-**Шаг 5 → если принято:**
-
-```
-Мерж подтверждён. Мержи в main.
-```
-
----
-
-### B. Простая задача (без GPT-5.4)
-
-Для мелких задач (баг, стиль, typo) GPT-5.4 не нужен. Напрямую Claude:
-
-```
-Исправь <описание проблемы>. Файл: <путь>
-```
-
-Claude сам классифицирует, выполнит, запустит review.
-
----
-
-### C. Продолжение работы (новая сессия)
-
-Если предыдущая сессия закончилась с незаконченной работой:
-
-**Claude (tmux #0):**
-
-```
+```text
 Продолжи работу. Прочитай:
 - docs/agents/lead-tactical/memory.md
 - docs/agents/lead-strategic/current_plan.md
 ```
 
-**GPT-5.4 (новый чат):**
+### После auto-compact
 
-```
-Прочитай мой memory: <скопировать docs/agents/lead-strategic/memory.md>
-Текущий план: <скопировать current_plan.md>
-Статус: <что было сделано, что осталось>
-```
-
----
-
-### D. После auto-compact Claude
-
-Если Claude потерял контекст (ответы стали generic, не помнит что делал):
-
-```
+```text
 Ты — lead-tactical. Восстановись:
 1. Прочитай docs/agents/lead-tactical/memory.md
 2. Прочитай docs/agents/lead-tactical/instructions.md
@@ -159,203 +138,157 @@ Claude сам классифицирует, выполнит, запустит r
 Продолжи работу.
 ```
 
----
+### Эскалация от Claude
 
-### E. Эскалация от Claude
+В integrated path Claude сам пробросит эскалацию через Codex. Ты увидишь её в tmux. Выбери вариант и ответь:
 
-Если Claude эскалирует решение тебе — передай GPT-5.4:
-
-```
-Claude эскалирует: <скопировать текст эскалации>
-Контекст: <что сейчас делается>
-```
-
-GPT-5.4 принимает решение → ты передаёшь Claude:
-
-```
+```text
 Решение по эскалации: <вариант N>. Продолжай.
 ```
 
----
+### Запуск Review Gate вручную
 
-### F. Запуск Review Gate вручную
-
-Если хочешь запустить ревью отдельно:
-
-```
+```text
 Запусти Review Gate по текущим изменениям
 ```
 
-Или только часть:
+Или точечно:
 
-```
+```text
 Проверь только безопасность
 Только architecture review
 Запусти code review
-Проверь качество реализации
-```
-
-UI (нужен dev server):
-
-```
 Проверь UI на /emis
 Глубокий UI-ревью новой страницы
 ```
 
-### F2. Strategic sidecar review
+### Strategic Review Pass
 
-Если не хочешь открывать новый GPT-диалог на каждую подзадачу, можно использовать optional `strategic-reviewer` как узкий второй проход.
+Если нужен bounded strategic acceptance/reframe pass без нового strategic чата:
 
-Что ему давать:
+- дай `current_plan.md`
+- дай `last_report.md`
+- дай текущий operating mode
+- дай reviewer verdicts или risk signal, если нужен cross-model recheck после green review
+- дай diff или changed files
+- дай 2-4 canonical docs по теме
 
-- `docs/agents/lead-strategic/current_plan.md`
-- `docs/agents/lead-tactical/last_report.md`
-- diff или список changed files
-- 2-4 canonical docs по теме
+Пример:
 
-Что просить:
-
-```
-Сделай strategic sidecar review.
+```text
+Сделай strategic review pass.
 Проверь:
 - соответствует ли результат плану
 - есть ли scope drift
 - все ли acceptance items закрыты
+- есть ли likely bug/regression, который могли не поднять Sonnet reviewers
+- меняется ли план следующего slice
+- нужно ли менять operating mode
 - нужен ли strategic decision или можно принимать
 ```
 
-Когда это лучше нового чата:
+Практическое правило:
 
-- идёт одна и та же wave, но задач несколько
-- нужен second opinion без полного re-bootstrap
-- основной `lead-strategic` контекст уже хороший и терять его не хочется
+- в `high-risk iterative / unstable wave` per-slice strategic review нормален;
+- в `ordinary iterative` post-slice reframe обязателен всегда, а отдельный strategic-reviewer pass нужен только по risk signals;
+- в `batch / low-risk` strategic review обычно достаточно на integration/final acceptance;
+- если нужен дешёвый cross-model second look после Sonnet review, по умолчанию используй `gpt-5.4-mini`, а не full `gpt-5.4`;
+- operating mode выбирает `lead-strategic` в начале wave и может сменить его после любого post-slice reframe с короткой причиной.
 
-Когда лучше новый чат:
+Новый чат лучше, когда началась новая wave или нужен clean reset.
 
-- началась новая wave
-- слишком много старого контекста и нужен clean reset
-- ключевые решения уже перенесены в `memory.md`, `current_plan.md`, `last_report.md`
+## Usage History
 
----
+Если хочешь потом понять, какие агенты реально приносили пользу, смотри:
 
-### G. Создание worker-teammate
+- `docs/agents/lead-tactical/last_report.md` — текущий human-readable report
+- `runtime/agents/usage-log.ndjson` — append-only local history по task/slice usage
 
-**Вариант 1 — попросить lead-tactical создать:**
+В usage log отдельно фиксируется:
 
-```
+- кто запускался
+- зачем запускался
+- был ли полезен или избыточен
+- где orchestration можно упростить
+
+Локальная БД для этого не нужна в v1; import в Postgres можно добавить позже.
+
+## Workers
+
+Попросить `lead-tactical` создать worker:
+
+```text
 Создай worker-teammate для задачи: <описание>
 ```
 
-Lead сам создаст teammate в новом tmux-pane, передаст задачу.
+> По умолчанию worker-teammate работает напрямую в integration branch, без отдельной worker branch.
+> `Worker branch: agent/worker/<slug>` нужен только при subagent+worktree mode (trigger criteria: `docs/agents/git-protocol.md` §4).
 
-**Вариант 2 — создать Agent Team целиком:**
+Если Agent Teams не работает, worker можно поднять вручную:
 
-```
-Создай agent team:
-- worker на Opus — реализация <описание задачи>
-```
-
-**Вариант 3 — вручную (если Agent Teams не работает):**
-
-1. Создай tmux-окно: `Ctrl+B, C`
-2. Запусти: `claude`
-3. Дай задачу:
-
-```
+```text
 Ты — worker. Прочитай docs/agents/worker/instructions.md
 Задача: <описание>
 Scope: <файлы>
-Integration branch: feature/<topic> (lead-tactical смержит твой результат сюда)
-Worker branch: agent/worker/<slug> (коммить сюда)
+Integration branch: feature/<topic>
+Worker branch: agent/worker/<slug> (только subagent mode)
 Не трогать: <что за пределами scope>
 ```
 
-### H. Прямое общение с worker
+С worker-teammate можно общаться напрямую в tmux pane:
 
-Ты можешь зайти в tmux-pane worker'а (`Shift+Down/Up`) и общаться напрямую:
-
-```
+```text
 Покажи что ты сделал
 Объясни почему ты выбрал этот подход
 Переделай <конкретный файл> — <что не так>
 ```
 
-Worker видит весь проект (это teammate, не subagent), поэтому может отвечать с полным контекстом.
+Reviewer-subagent под каждый review-pass создаётся отдельно; напрямую с ним обычно не общаются.
 
----
+## Tmux
 
-## Шпаргалка tmux
+| Действие                   | Клавиша       |
+| -------------------------- | ------------- |
+| Новое окно                 | `Ctrl+B, C`   |
+| Следующее окно             | `Ctrl+B, N`   |
+| Предыдущее окно            | `Ctrl+B, P`   |
+| Список окон                | `Ctrl+B, W`   |
+| Отсоединиться              | `Ctrl+B, D`   |
+| Вернуться                  | `tmux attach` |
+| Следующий pane teammate    | `Shift+Down`  |
+| Предыдущий pane teammate   | `Shift+Up`    |
 
-### Базовые команды
-
-| Действие        | Клавиша       |
-| --------------- | ------------- |
-| Новое окно      | `Ctrl+B, C`   |
-| Следующее окно  | `Ctrl+B, N`   |
-| Предыдущее окно | `Ctrl+B, P`   |
-| Список окон     | `Ctrl+B, W`   |
-| Отсоединиться   | `Ctrl+B, D`   |
-| Вернуться       | `tmux attach` |
-
-### Agent Teams в tmux
-
-| Действие                   | Клавиша                 |
-| -------------------------- | ----------------------- |
-| Следующий pane (teammate)  | `Shift+Down`            |
-| Предыдущий pane (teammate) | `Shift+Up`              |
-| Список всех teammates      | Видно в tmux status bar |
-
----
-
-## Чеклист перед мержем
+## Перед Merge
 
 - [ ] Все подзадачи плана выполнены
-- [ ] Review Gate пройден (нет CRITICAL)
-- [ ] WARNING исправлены или обоснованы
-- [ ] GPT-5.4 принял report (если был задействован)
-- [ ] Ветка up-to-date с main
+- [ ] Review Gate пройден или truthfully skipped/not applicable
+- [ ] `WARNING` исправлены или обоснованы
+- [ ] GPT-5.4 / Codex принял report, если strategic loop был задействован
+- [ ] Ветка актуальна относительно `main`
 - [ ] Коммиты чистые и осмысленные
 
----
+## Recovery
 
-## FAQ
+Если выполнение пошло не по happy path, не пытайся чинить процесс устно. Проси `lead-tactical` явно идти по recovery protocol из `docs/agents/recovery.md`.
 
-**Q: Когда нужен GPT-5.4, а когда хватит Claude?**
+Короткие формулировки:
 
-- GPT-5.4: новая фича, архитектурное решение, cross-module change
-- Только Claude: баг, стиль, рефакторинг в одном модуле, typo
+```text
+Сработай по Recovery Protocol для rejected slice с applied DB change.
+```
 
-**Q: Сколько workers запускать?**
+```text
+Сработай по Recovery Protocol для divergence integration branch с main.
+```
 
-- На первом этапе — один teammate-worker. Параллелизм добавим позже.
+```text
+Сработай по Recovery Protocol: Codex/GPT недоступен посреди iterative цикла.
+```
 
-**Q: Worker — teammate или subagent?**
+## Короткие ответы
 
-- **Worker = teammate** (Agent Teams, tmux-pane). Полный контекст проекта, видит все docs.
-- **Reviewer = subagent** (Agent tool, session-persistent). Дешёвый (Sonnet), получает только diff, reuse через SendMessage.
-
-**Q: Что если Claude завис / не отвечает?**
-
-- Проверь tmux-pane (`Shift+Down/Up` или `Ctrl+B, W`)
-- Если completion прервался: нажми Enter, скажи "продолжай"
-- Если совсем завис: `Ctrl+C`, потом "продолжи работу, прочитай memory.md"
-
-**Q: Что если GPT-5.4 и Claude расходятся во мнении?**
-
-- GPT-5.4 — стратегический lead, его решение приоритетнее
-- Если Claude обоснованно несогласен (security, инварианты) — ты решаешь
-
-**Q: Как обновить memory агента вручную?**
-
-- Просто отредактируй `docs/agents/{role}/memory.md` — это обычный markdown
-
-**Q: Могу ли я общаться с worker напрямую?**
-
-- Да, зайди в его tmux-pane (`Shift+Down`). Он teammate с полным контекстом.
-- С subagent-reviewer — напрямую нет. Он session-persistent в рамках текущей сессии и переиспользуется lead-tactical через `SendMessage`, но не живёт как отдельный tmux-teammate для ручного диалога.
-
-**Q: Agent Teams не работает?**
-
-- Проверь `~/.claude.json`: `{ "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" } }`
-- Нужен tmux (не просто terminal tabs)
-- Fallback: создай worker вручную (сценарий G, вариант 3)
+- GPT-5.4 нужен для новой фичи, архитектурного решения, cross-module change.
+- Только Claude обычно хватает для локального бага, стилистики, небольшого рефакторинга.
+- `worker = teammate` (default, shared checkout); subagent+worktree когда нужна файловая изоляция. `reviewer = fresh subagent`.
+- Если Claude завис: проверь tmux pane, затем `Enter` и `продолжай`; если нужно, `Ctrl+C` и восстановление через `memory.md`.
+- Если GPT-5.4 и Claude расходятся, стратегический приоритет у GPT-5.4, но финальное решение остаётся за пользователем.

@@ -102,13 +102,19 @@ Repo-wide architecture contract живёт в [architecture.md](./architecture.m
 
 | Документ                                      | Владеет                                      | Source of truth для                                                      |
 | --------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------ |
-| `agents/workflow.md`                          | agent workflow и инварианты                  | процесс GPT-5.4 → Claude → review, правила, коммуникация                 |
+| `agents/workflow.md`                          | core agent lifecycle                         | процесс GPT-5.4 → Claude, plan ownership, execution loop, escalation     |
+| `agents/review-gate.md`                       | review и governance model                    | slice/integration review, strategic acceptance/reframe pass, architecture/baseline pass  |
+| `agents/recovery.md`                          | failure-path protocol                        | recovery rules для rejected slices, branch divergence и tooling outage   |
+| `agents/invariants.md`                        | project invariants                           | architecture/data/schema/complexity guardrails                           |
+| `agents/git-protocol.md`                      | branch и worktree protocol                   | ветки, worktrees, merge choreography, checkpoints                        |
+| `agents/memory-protocol.md`                   | memory ownership                             | кто и когда пишет `memory.md`, auto-compact recovery                     |
+| `agents/usage-telemetry.md`                   | agent usage telemetry                        | durable usage history, usefulness rubric, file-first telemetry contract  |
 | `agents/roles.md`                             | agent role map                               | все роли, dispatch names, кто что делает                                 |
 | `agents/templates.md`                         | agent communication templates                | план, задача, handoff, report, review request/result                     |
 | `agents/lead-strategic/instructions.md`       | GPT-5.4 lead instructions                    | как планировать, декомпозировать, принимать результаты                   |
-| `agents/architecture-steward/instructions.md` | GPT-5.4 architecture governance instructions | как держать architecture docs, placement decisions и waivers             |
-| `agents/baseline-governor/instructions.md`    | GPT-5.4 baseline governance instructions     | как держать baseline status, known exceptions и stabilization verdict    |
-| `agents/strategic-reviewer/instructions.md`   | GPT-5.4 sidecar review instructions          | как делать bounded strategic second opinion без нового full-context чата |
+| `agents/architecture-steward/instructions.md` | `lead-strategic` architecture-pass checklist | как делать architecture governance pass: placement decisions и waivers   |
+| `agents/baseline-governor/instructions.md`    | `lead-strategic` baseline-pass checklist     | как делать baseline pass: baseline status, known exceptions, verdict     |
+| `agents/strategic-reviewer/instructions.md`   | strategic-reviewer instructions              | как делать bounded strategic acceptance/reframe pass и cheap cross-model second look |
 | `agents/lead-tactical/instructions.md`        | Claude Opus tactical lead instructions       | как управлять workers, review gate, report                               |
 | `agents/worker/instructions.md`               | Claude worker instructions                   | как выполнять задачи, self-check, handoff                                |
 | `agents/*-reviewer/instructions.md`           | reviewer role instructions                   | checks, output format, scope для каждого ревьюера                        |
@@ -157,7 +163,13 @@ Repo-wide architecture contract живёт в [architecture.md](./architecture.m
 - `emis_offline_maps_ops.md` - если работа про offline maps или PMTiles
 - `emis_next_tasks_2026_03_22.md` - если нужен backlog
 - `archive/emis/emis_implementation_reference_v1.md` - если нужен historical rollout context или retained implementation rationale
-- `agents/workflow.md` - если нужен agent workflow, процесс, инварианты
+- `agents/workflow.md` - если нужен core agent lifecycle
+- `agents/review-gate.md` - если нужен Review Gate, strategic acceptance/reframe pass или governance pass
+- `agents/recovery.md` - если выполнение ушло с happy path
+- `agents/invariants.md` - если нужны project invariants и guardrails
+- `agents/git-protocol.md` - если нужны branches, worktrees и merge choreography
+- `agents/memory-protocol.md` - если нужно понять ownership `memory.md`
+- `agents/usage-telemetry.md` - если нужен durable usage log, usefulness rubric или telemetry storage contract
 - `agents/roles.md` - если нужны роли агентов
 - `agents/templates.md` - если нужны шаблоны коммуникации между агентами
 - `../packages/emis-contracts/AGENTS.md` - если change касается contracts, DTO, Zod schemas

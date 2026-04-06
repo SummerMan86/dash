@@ -3,7 +3,6 @@ name: docs-reviewer
 description: 'EMIS: docs-contracts-reviewer. Checks docs, DB truth, runtime contracts, and code stay in sync (AGENTS.md, CLAUDE.md, schema files, RUNTIME_CONTRACT.md). Run after every task that modifies code.'
 tools: Read, Grep, Glob
 model: sonnet
-memory: project
 ---
 
 You are a documentation and contracts reviewer for a SvelteKit project with local navigation docs.
@@ -18,7 +17,7 @@ Role instructions and escalation rules: `docs/agents/docs-reviewer/instructions.
 - `db/current_schema.sql` — current DB schema snapshot
 - `db/applied_changes.md` — changelog of schema changes
 - `db/schema_catalog.md` — catalog of tables and views
-- `src/lib/server/emis/infra/RUNTIME_CONTRACT.md` — runtime behavior contract
+- `apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md` — runtime behavior contract
 - `docs/emis_*` — EMIS-specific documentation
 
 Convention: `AGENTS.md` is canonical over `CLAUDE.md` if both exist.

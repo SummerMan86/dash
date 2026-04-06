@@ -1,3 +1,24 @@
+-- Live delta for EMIS auth hardening audit contract.
+--
+-- Rationale:
+-- - admin user CRUD now writes to `emis.audit_log`
+-- - the runtime uses `entity_type = 'user_account'` for those rows
+-- - older live databases still have a CHECK constraint that only allows
+--   `object`, `news_item`, and `news_object_link`
+--
+-- Apply this delta before deploying the AUTH-5 audit fix to an existing DB.
+
+ALTER TABLE emis.audit_log
+	DROP CONSTRAINT IF EXISTS chk_emis_audit_log_entity_type;
+
+ALTER TABLE emis.audit_log
+	ADD CONSTRAINT chk_emis_audit_log_entity_type
+	CHECK (
+		entity_type = ANY (
+			ARRAY['object'::text, 'news_item'::text, 'news_object_link'::text, 'user_account'::text]
+		)
+	);
+
 -- Live delta for published Strategy dashboard wrappers.
 --
 -- Rationale:

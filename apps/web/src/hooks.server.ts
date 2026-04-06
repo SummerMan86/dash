@@ -18,7 +18,6 @@ import {
 	isDictionaryApiRoute,
 	isEmisApiRoute,
 	isEmisPageRoute,
-	isSessionAuthReady,
 	isSessionAuthReadyAsync,
 	startSessionCleanup,
 	SESSION_COOKIE_NAME
@@ -136,7 +135,9 @@ export const handle: Handle = async ({ event, resolve }) => {
 	}
 
 	// ---- Auth enforcement (only when EMIS_AUTH_MODE=session and users configured) ----
-	if (isSessionAuthReady()) {
+	const sessionAuthReady = await isSessionAuthReadyAsync();
+	if (sessionAuthReady) {
+		startSessionCleanup();
 		const session = event.locals.emisSession;
 
 		// Skip auth checks for login/logout routes (prevent redirect loop)

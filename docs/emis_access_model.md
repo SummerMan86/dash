@@ -2,31 +2,32 @@
 
 Canonical reference for EMIS operating model, role semantics and write-policy contract.
 
-This document is the single source of truth for who can write what in EMIS. It is intentionally minimal for MVE and does not introduce a full auth/RBAC system.
+This document is the single source of truth for who can write what in EMIS. Since Phase 5, it describes the production auth model that is now implemented: session-based authentication by default, role-based access control, admin-only routes, and the write-policy contract used in `EMIS_AUTH_MODE=none`.
 
 ## 1. Operating Model
 
-EMIS MVE operates in a **trusted internal network** contour.
+EMIS operates in two supported access modes:
 
-What this means concretely:
+- `EMIS_AUTH_MODE=session` is the production default. EMIS routes require cookie-based sessions, users come from `emis.users` (with `EMIS_USERS` as a transition fallback), and `/emis/login` is the entry point for authentication.
+- `EMIS_AUTH_MODE=none` is an explicit dev/smoke mode. It keeps the trusted-network behavior where reads are open and writes are governed only by the write-policy helper from section 4.
+
+The deployment contour is still a trusted internal network:
 
 - The application is deployed on an internal server (currently a VPS accessible only to the team).
 - There is no public internet exposure of write endpoints.
-- There is no authentication middleware, session management, or login flow.
-- Every user who can reach the application is implicitly trusted to read all data.
-- Write access is governed by the write-policy helper (see section 4), not by user sessions.
 
-This is an **explicit, accepted limitation of MVE**, not a gap waiting to be silently filled.
+In `session` mode, authentication and RBAC are enforced at runtime.
+In `none` mode, every reachable user is implicitly trusted to read all data, and write access is governed by the write-policy helper (see section 4).
 
 ## 2. Role Semantics
 
-Roles describe **authorization intent**, not runtime enforcement. MVE does not have a role resolver or session-to-role mapping. The roles below define what the system considers valid behavior for each class of user.
+Roles are runtime-enforced in `EMIS_AUTH_MODE=session` and describe authorization intent in `EMIS_AUTH_MODE=none`.
 
 ### `viewer`
 
 - Read-only access to all EMIS data: catalogs, detail views, search, map, BI dashboards.
 - Cannot perform any write operations.
-- In MVE: every user is implicitly a viewer.
+- In `none` mode: every reachable user is effectively a viewer for reads.
 
 ### `editor`
 
@@ -35,19 +36,21 @@ Roles describe **authorization intent**, not runtime enforcement. MVE does not h
   - `news` (create, update, soft-delete)
   - `links` (attach, update, detach)
 - Cannot manage dictionaries or perform admin-only operations.
-- In MVE: any user who provides a valid actor identity via the write-policy helper is implicitly an editor.
+- In `session` mode: enforced via hooks + `assertWriteContext()`.
+- In `none` mode: any caller who passes write-policy checks is effectively treated as editor-capable.
 
 ### `admin`
 
 - All `editor` capabilities, plus:
-  - dictionary management (if dictionaries leave seed-managed mode)
-  - restore/undelete flows (if introduced)
-  - ops/maintenance endpoints (if introduced)
-- In MVE: **deferred**. No admin-only operations exist yet. Dictionary management is seed-managed.
+  - dictionary management
+  - admin user management at `/emis/admin/users`
+  - admin-only EMIS pages and API routes
+- In `session` mode: enforced via hooks middleware.
+- In `none` mode: there is no runtime admin session concept; this mode is for dev/smoke only.
 
 ## 3. What Is Enforced Now vs Deferred
 
-### Enforced in MVE (current state)
+### Enforced in both modes
 
 | Mechanism           | Where                                                                    | What it does                                                                               |
 | ------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
@@ -56,32 +59,33 @@ Roles describe **authorization intent**, not runtime enforcement. MVE does not h
 | DB-level invariants | Partial unique indexes, FK constraints, append-only audit trigger        | Prevents data corruption regardless of application-level checks                            |
 | Deployment contour  | Trusted internal network                                                 | No public internet exposure of the application                                             |
 
-### Implemented (NW-2, 2026-04-04)
+### Enforced in `EMIS_AUTH_MODE=none`
 
 | Mechanism           | Where                                                                         | What it does                                                                                     |
 | ------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | Write-policy helper | `assertWriteContext()` in `apps/web/src/lib/server/emis/infra/writePolicy.ts` | Validates that write context is present and actor is identified; rejects with 403 in strict mode |
 
-### Implemented (DF-3, 2026-04-05)
+### Enforced in `EMIS_AUTH_MODE=session`
 
-| Mechanism                        | Where                                                                     | What it does                                                                                            |
-| -------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Session-based authentication     | `apps/web/src/lib/server/emis/infra/auth.ts` + `hooks.server.ts`          | Cookie-based sessions; login/logout flow at `/emis/login`; env-configured users via `EMIS_USERS`        |
-| Role-based access control (RBAC) | `hooks.server.ts` middleware + `assertWriteContext()` in `writePolicy.ts` | Session role enforcement: viewer (read), editor (write), admin (admin pages + write)                    |
-| Admin route protection           | `hooks.server.ts` middleware                                              | `/emis/admin/*` pages require admin role; unauthenticated users redirected to login                     |
-| Admin CRUD for dictionaries      | `/api/emis/dictionaries/*` + `/emis/admin/dictionaries`                   | Full CRUD UI for countries, object_types, sources; write endpoints require editor+ role via writePolicy |
+| Mechanism                        | Where                                                                     | What it does                                                                                                                           |
+| -------------------------------- | ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Session-based authentication     | `apps/web/src/lib/server/emis/infra/auth.ts` + `hooks.server.ts`          | Cookie-based sessions; login/logout flow at `/emis/login`; DB users primary, `EMIS_USERS` fallback, `EMIS_ADMIN_PASSWORD` bootstrap |
+| Role-based access control (RBAC) | `hooks.server.ts` middleware + `assertWriteContext()` in `writePolicy.ts` | Session role enforcement: viewer (read), editor (write), admin (admin pages + write)                                                   |
+| Admin route protection           | `hooks.server.ts` middleware                                              | `/emis/admin/*` pages require admin role; unauthenticated users redirected to login                                                    |
+| Admin CRUD for dictionaries      | `/api/emis/dictionaries/*` + `/emis/admin/dictionaries`                   | Full CRUD UI for countries, object_types, sources; write endpoints require admin role                                                  |
+| Admin CRUD for users             | `/api/emis/admin/users/*` + `/emis/admin/users`                           | Full CRUD UI for users; create/update/delete are audited and require admin role                                                        |
 
 ### No remaining deferrals
 
-All mechanisms previously listed as "deferred beyond MVE" have been implemented in DF-3 (session-based auth) or resolved through the operating model:
+All mechanisms previously listed as "deferred beyond MVE" have been implemented or explicitly constrained to `EMIS_AUTH_MODE=none` dev/smoke behavior:
 
 | Mechanism                                  | Status                                                                                             |
 | ------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| Authentication (SSO, API keys, basic auth) | Implemented as session-based auth (DF-3). Toggle: `EMIS_AUTH_MODE=session`. Default: `none`.       |
-| Session management                         | Implemented: cookie-based sessions, in-memory store, 24h TTL. See section 5.                       |
+| Authentication (SSO, API keys, basic auth) | Implemented as session-based auth. Toggle: `EMIS_AUTH_MODE=session`. Default: `session`.           |
+| Session management                         | Implemented: cookie-based sessions with DB persistence and in-memory fallback. See section 5.      |
 | Role-based access control (RBAC)           | Implemented: viewer/editor/admin with role hierarchy. Enforced in hooks + writePolicy.             |
 | Per-entity permission model                | Not implemented (not required). All editors can write all entities.                                |
-| Admin role enforcement                     | Implemented: `/emis/admin/*` pages require admin role. Dictionary API writes require editor+ role. |
+| Admin role enforcement                     | Implemented: `/emis/admin/*` pages and `/api/emis/admin/*` routes require admin role.              |
 
 ## 4. Write-Policy Helper Contract
 
@@ -179,7 +183,7 @@ Auth behavior is controlled by `EMIS_AUTH_MODE` env var:
 
 **Default change (AUTH-7):** if `EMIS_AUTH_MODE` is not set, defaults to **`session`** (previously `none`). Dev workflows and smoke scripts must explicitly set `EMIS_AUTH_MODE=none` if auth is not desired. This is a **breaking change** from DF-3.
 
-Safety net: if `EMIS_AUTH_MODE` is not set AND there are no DB users AND no `EMIS_USERS` env AND no `EMIS_ADMIN_PASSWORD` env, the system falls back to `none` with a startup warning.
+Safety net: if session auth resolves but there is still no usable user source (no DB users, no `EMIS_USERS`, and no successful `EMIS_ADMIN_PASSWORD` bootstrap), requests fall back to `none`-mode behavior with a warning so the deployment is not hard-locked.
 
 ### Session shape
 
@@ -265,7 +269,7 @@ For fresh deployments without any users in the DB:
    - username: `admin`
    - password: bcrypt hash of `EMIS_ADMIN_PASSWORD` value
    - role: `admin`
-   - This happens once at startup; subsequent startups skip if admin already exists.
+   - This happens during startup warm-up or on the first request that needs auth readiness; subsequent requests skip once a DB user exists.
 
 ### Admin user management (AUTH-5)
 
@@ -285,7 +289,7 @@ Constraints:
 - Admin cannot delete their own account.
 - `password_hash` is never returned in API responses.
 - Password field in create/update is optional on PATCH (omit to keep current password).
-- All mutations go through `assertWriteContext()` + admin role enforcement.
+- All mutations go through `assertWriteContext()` + admin role enforcement + `audit_log`.
 
 ### Change password (AUTH-6)
 
@@ -307,7 +311,7 @@ Request body:
 Behavior:
 
 1. Verify `currentPassword` against stored bcrypt hash.
-2. Validate `newPassword`: minimum 8 characters (configurable via `EMIS_MIN_PASSWORD_LENGTH`, default 8).
+2. Validate `newPassword`: minimum 8 characters (fixed contract).
 3. Hash `newPassword` with bcrypt, update `emis.users.password_hash`.
 4. **Invalidate all other sessions** for this user (DELETE from `emis.sessions` WHERE `user_id` = current user AND `id` != current session).
 5. Return 200 on success.
@@ -446,10 +450,9 @@ COMMENT ON COLUMN emis.sessions.expires_at IS 'Session expiry; default TTL 24h, 
 | -------------------------- | ------------ | ------------------------------------------------------------- |
 | `EMIS_AUTH_MODE`           | `session`    | Auth mode: `none` (dev/smoke) or `session` (default)          |
 | `EMIS_USERS`               | (none)       | Legacy env-based user list (JSON array). Transition fallback. |
-| `EMIS_ADMIN_PASSWORD`      | (none)       | Auto-create admin on first start if DB users table is empty   |
+| `EMIS_ADMIN_PASSWORD`      | (none)       | Auto-create admin during startup warm-up or first auth request if DB users table is empty |
 | `EMIS_BCRYPT_ROUNDS`       | `12`         | bcrypt cost factor (10..14)                                   |
 | `EMIS_SESSION_TTL_HOURS`   | `24`         | Session time-to-live in hours                                 |
-| `EMIS_MIN_PASSWORD_LENGTH` | `8`          | Minimum password length for change-password endpoint          |
 | `EMIS_WRITE_POLICY`        | `permissive` | Write-policy strictness (see section 4)                       |
 
 ### Migration plan (AUTH-2 through AUTH-7)

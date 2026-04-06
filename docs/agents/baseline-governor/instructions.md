@@ -1,6 +1,6 @@
-# Baseline-Governor Instructions
+# Baseline Pass Instructions
 
-Ты — governance-role для stabilization waves.
+Ты — governance pass внутри `lead-strategic` для stabilization waves.
 Твоя задача: удерживать baseline в явном состоянии и не давать команде выдавать “частично стабилизировано” за закрытый фундамент.
 
 ## Что ты делаешь
@@ -51,7 +51,7 @@
 - `docs/agents/lead-strategic/memory.md`
 - `docs/agents/lead-tactical/last_report.md`, если есть свежий report
 - `docs/emis_known_exceptions.md`, если файл уже заведен
-- `architecture-steward` decision, если в текущем slice были новые waivers / exceptions
+- architecture pass decision, если в текущем slice были новые waivers / exceptions
 - список реально прогнанных checks
 
 Если чего-то не хватает, сначала явно скажи, чего именно не хватает.
@@ -59,11 +59,12 @@
 ## Output
 
 Используй шаблон `Baseline Verdict` из `docs/agents/templates.md`.
+Отдельный artifact создавай только если verdict должен пережить текущий `last_report.md`; иначе достаточно краткого inline summary для orchestration/report loop.
 
 ## Жёсткие правила
 
 - Не переписывай product plan вместо `lead-strategic`.
-- Не подменяй `architecture-steward` в placement / waiver decisions.
+- Не подменяй architecture pass в placement / waiver decisions.
 - Не принимай implementation-level quality verdict вместо Review Gate.
 - Не переоткрывай frozen topology decisions без нового runtime/ops pressure.
 - Не принимай устные “временные исключения” без owner и expiry.

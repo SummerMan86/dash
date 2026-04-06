@@ -9,8 +9,9 @@
  *   2. Login with invalid credentials -> re-render login (no redirect, form error)
  *   3. Access protected API without session -> 401
  *   4. Access admin API as non-admin (editor) -> 403
- *   5. Access protected API with session -> 200
- *   6. Change password flow (valid + invalid)
+ *   5. Admin user CRUD via /api/emis/admin/users (create, update, delete)
+ *   6. Access protected API with session -> 200
+ *   7. Change password flow (valid + invalid)
  *
  * Requirements:
  *   - DATABASE_URL pointing to a Postgres with emis.users table
@@ -59,6 +60,11 @@ const EDITOR_USER = {
 	username: `smoke-editor-${RUN_ID}`,
 	password: `SmokeEditor!${RUN_ID}`,
 	role: 'editor'
+};
+const MANAGED_USER = {
+	username: `smoke-managed-${RUN_ID}`,
+	password: `SmokeManaged!${RUN_ID}`,
+	role: 'viewer'
 };
 
 // ---------------------------------------------------------------------------
@@ -475,7 +481,122 @@ const checks = [
 		}
 	},
 
-	// 7. Access protected API with valid session -> 200
+	// 7. Admin CRUD: create user -> 201
+	{
+		name: 'auth:admin-users:create',
+		kind: 'auth',
+		run: async (baseUrl, ctx) => {
+			assert(ctx.adminSession, 'prerequisite: admin session not available');
+			const { response, data } = await fetchJson(baseUrl, '/api/emis/admin/users', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify(MANAGED_USER),
+				sessionCookie: ctx.adminSession
+			});
+			assert(response.status === 201, `expected 201, got ${response.status}`);
+			assert(data?.id, 'created user response must include id');
+			assert(
+				data?.username === MANAGED_USER.username,
+				`expected created username ${MANAGED_USER.username}, got ${data?.username}`
+			);
+			assert(data?.role === MANAGED_USER.role, `expected role ${MANAGED_USER.role}, got ${data?.role}`);
+			ctx.managedUserId = data.id;
+			createdUserIds.push(data.id);
+			return { status: response.status, userId: data.id };
+		}
+	},
+
+	// 8. Admin CRUD: update user -> 200 and new password works
+	{
+		name: 'auth:admin-users:update',
+		kind: 'auth',
+		run: async (baseUrl, ctx) => {
+			assert(ctx.adminSession, 'prerequisite: admin session not available');
+			assert(ctx.managedUserId, 'prerequisite: managed user id not available');
+			const updatedPassword = `SmokeManagedUpdated!${RUN_ID}`;
+			const { response, data } = await fetchJson(
+				baseUrl,
+				`/api/emis/admin/users/${ctx.managedUserId}`,
+				{
+					method: 'PATCH',
+					headers: { 'content-type': 'application/json' },
+					body: JSON.stringify({
+						role: 'editor',
+						password: updatedPassword
+					}),
+					sessionCookie: ctx.adminSession
+				}
+			);
+			assert(response.status === 200, `expected 200, got ${response.status}`);
+			assert(data?.role === 'editor', `expected updated role editor, got ${data?.role}`);
+
+			const {
+				response: loginResp,
+				cookies,
+				body: loginBody
+			} = await withTimeout(
+				async (signal) => doLogin(baseUrl, MANAGED_USER.username, updatedPassword, signal),
+				REQUEST_TIMEOUT_MS,
+				'login after admin user update'
+			);
+			const isRawRedirect = loginResp.status === 303 || loginResp.status === 302;
+			const isEnvelopeRedirect =
+				loginResp.status === 200 && loginBody?.type === 'redirect' && loginBody?.status === 303;
+			assert(
+				isRawRedirect || isEnvelopeRedirect,
+				`login after admin update: expected redirect, got HTTP ${loginResp.status}`
+			);
+			assert(
+				cookies.get('emis_session'),
+				'updated managed user must receive a session cookie after login'
+			);
+
+			ctx.managedUserPassword = updatedPassword;
+			return { status: response.status, loginAfterUpdateOk: true };
+		}
+	},
+
+	// 9. Admin CRUD: delete user -> 200 and login stops working
+	{
+		name: 'auth:admin-users:delete',
+		kind: 'auth',
+		run: async (baseUrl, ctx) => {
+			assert(ctx.adminSession, 'prerequisite: admin session not available');
+			assert(ctx.managedUserId, 'prerequisite: managed user id not available');
+			const { response, data } = await fetchJson(
+				baseUrl,
+				`/api/emis/admin/users/${ctx.managedUserId}`,
+				{
+					method: 'DELETE',
+					sessionCookie: ctx.adminSession
+				}
+			);
+			assert(response.status === 200, `expected 200, got ${response.status}`);
+			assert(data?.ok === true, 'delete response must have ok: true');
+
+			const { response: loginResp, cookies, body: loginBody } = await withTimeout(
+				async (signal) =>
+					doLogin(baseUrl, MANAGED_USER.username, ctx.managedUserPassword ?? MANAGED_USER.password, signal),
+				REQUEST_TIMEOUT_MS,
+				'login after admin user delete'
+			);
+			const isFailure =
+				loginResp.status === 200 &&
+				loginBody?.type === 'failure' &&
+				(loginBody?.status === 400 || loginBody?.status === 401);
+			assert(isFailure, `expected failed login after delete, got HTTP ${loginResp.status}`);
+			assert(
+				!cookies.get('emis_session'),
+				'deleted managed user must not receive a session cookie after login'
+			);
+
+			const createdIndex = createdUserIds.indexOf(ctx.managedUserId);
+			if (createdIndex !== -1) createdUserIds.splice(createdIndex, 1);
+			return { status: response.status, loginAfterDeleteBlocked: true };
+		}
+	},
+
+	// 10. Access protected API with valid session -> 200
 	{
 		name: 'auth:api:with-session-200',
 		kind: 'auth',
@@ -490,7 +611,7 @@ const checks = [
 		}
 	},
 
-	// 8. Change password with wrong current password -> 403
+	// 11. Change password with wrong current password -> 403
 	{
 		name: 'auth:change-password:wrong-current',
 		kind: 'auth',
@@ -514,7 +635,7 @@ const checks = [
 		}
 	},
 
-	// 9. Change password with valid credentials -> 200
+	// 12. Change password with valid credentials -> 200
 	{
 		name: 'auth:change-password:valid',
 		kind: 'auth',
@@ -557,7 +678,7 @@ const checks = [
 		}
 	},
 
-	// 10. EMIS page route without session -> redirect to login
+	// 13. EMIS page route without session -> redirect to login
 	{
 		name: 'auth:page:redirect-to-login',
 		kind: 'auth',

@@ -28,9 +28,9 @@
   - the core EMIS architecture is viable
   - the main problem is not topology, but doc truthfulness, mixed current-vs-target descriptions and weak governance/enforcement coupling
 - Final governance shape for the current wave:
-  - `architecture-steward` owns canonical architecture docs, placement decisions, architecture waivers/exceptions and pre-approval for cross-layer changes
+  - `lead-strategic` runs an `architecture pass` for canonical architecture docs, placement decisions, architecture waivers/exceptions and pre-approval for cross-layer changes
   - `architecture-reviewer` remains a bounded diff reviewer, not a second strategic lead
-  - `baseline-governor` validates baseline status and registry truthfulness, but does not own placement decisions
+  - `lead-strategic` runs a `baseline pass` for baseline status and registry truthfulness, but placement decisions stay in the architecture pass
 
 ## Контекст текущей работы
 
@@ -96,13 +96,14 @@
   - `docs/emis_known_exceptions.md`
 - Если задача не structural — можно работать на feature-уровне без нового plan.
 - Strategic workflow updated and tested in this session:
-  - optional `strategic-reviewer` sidecar is now a documented canonical role
+  - `strategic-reviewer` is a documented bounded strategic acceptance/reframe pass inside `lead-strategic`
   - default sidecar model policy:
     - `gpt-5.4-mini`
     - `reasoning_effort=medium`
     - escalate to `gpt-5.4` / `high` only for design-sensitive or cross-module acceptance
   - after each accepted slice, do a short reframe of the next slice before execution
-  - use `strategic-reviewer` for disputed transitions, not for every routine next-slice clarification
+  - `lead-strategic` selects operating mode at wave start and can switch it after any post-slice reframe with rationale
+  - per-slice `strategic-reviewer` is normal in unstable/high-yield waves; ordinary iterative work can keep the pass at risk-triggered or final-only cadence
 
 ## Текущий active wave
 
@@ -250,4 +251,4 @@
     - root EMIS smoke commands must be runnable
     - `lint:boundaries` must stay green while gaining package-aware coverage
     - active ownership docs must match code
-    - baseline-governor workflow must be documented
+    - baseline pass workflow must be documented

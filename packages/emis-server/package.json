@@ -25,6 +25,7 @@
 		"./modules/ship-routes/queries": "./src/modules/ship-routes/queries.ts",
 		"./modules/sessions/repository": "./src/modules/sessions/repository.ts",
 		"./modules/users/repository": "./src/modules/users/repository.ts",
+		"./modules/users/service": "./src/modules/users/service.ts",
 		"./modules/users/password": "./src/modules/users/password.ts"
 	},
 	"dependencies": {

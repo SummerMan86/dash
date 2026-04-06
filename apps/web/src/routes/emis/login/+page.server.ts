@@ -3,9 +3,9 @@ import type { Actions, PageServerLoad } from './$types';
 import {
 	authenticateUser,
 	createSession,
+	getSessionCookieMaxAge,
 	isSessionAuthReadyAsync,
 	SESSION_COOKIE_NAME,
-	SESSION_COOKIE_MAX_AGE,
 	isSecureCookie
 } from '$lib/server/emis/infra/auth';
 
@@ -68,7 +68,7 @@ export const actions: Actions = {
 			httpOnly: true,
 			sameSite: 'lax',
 			secure: isSecureCookie(),
-			maxAge: SESSION_COOKIE_MAX_AGE
+			maxAge: getSessionCookieMaxAge()
 		});
 
 		const redirectTo = sanitizeRedirect(url.searchParams.get('redirect'));

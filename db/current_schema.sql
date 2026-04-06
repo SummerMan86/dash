@@ -86,7 +86,7 @@ CREATE TABLE emis.audit_log (
     actor_id text,
     occurred_at timestamp with time zone DEFAULT now() NOT NULL,
     payload jsonb DEFAULT '{}'::jsonb NOT NULL,
-    CONSTRAINT chk_emis_audit_log_entity_type CHECK ((entity_type = ANY (ARRAY['object'::text, 'news_item'::text, 'news_object_link'::text])))
+    CONSTRAINT chk_emis_audit_log_entity_type CHECK ((entity_type = ANY (ARRAY['object'::text, 'news_item'::text, 'news_object_link'::text, 'user_account'::text])))
 );
 
 
@@ -1340,5 +1340,4 @@ ALTER TABLE ONLY stg_emis.vsl_ships_hbk
 --
 -- PostgreSQL database dump complete
 --
-
 

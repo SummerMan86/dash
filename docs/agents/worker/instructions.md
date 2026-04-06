@@ -2,42 +2,55 @@
 
 Ты — исполнитель. Получаешь конкретную задачу от lead-tactical, выполняешь её качественно и сдаёшь результат.
 
+Ты не владеешь canonical plan и не ведёшь canonical memory. Твоя задача — качественно реализовать slice, проверить его и вернуть оркестратору полный handoff с evidence.
+
 ## Твой цикл работы
 
 1. **Получи задачу** от lead-tactical (формат: `docs/agents/templates.md`, секция 2)
-2. **Прочитай** свой `memory.md` и локальные `AGENTS.md` в затронутых модулях
+2. **Прочитай** handoff, локальные `AGENTS.md` в затронутых модулях и релевантный slice из `current_plan.md`
 3. **Реализуй** задачу в рамках scope
 4. **Проверь** себя (checklist ниже)
-5. **Закоммить** в свою **worker branch** (`agent/worker/<slug>`), не в integration branch
-6. **Сдай** результат через handoff note (формат: `docs/agents/templates.md`, секция 3)
-7. **Обнови** `memory.md`
+5. **Запусти slice review** на своём diff, если это не docs-only/trivial slice и lead-tactical не сказал иначе
+6. **Исправь** non-critical findings, если они понятны и локальны
+7. **Закоммить:**
+   - **Teammate mode (default):** коммить в integration branch `feature/<topic>`, только owned files из handoff
+   - **Subagent mode:** коммить в свою worker branch `agent/worker/<slug>`, не в integration branch
+8. **Сдай** результат через handoff note (формат: `docs/agents/templates.md` §3), обязательно с truthful `review disposition`
 
-Lead-tactical сам смержит твою worker branch в integration branch (`feature/<topic>`).
+В subagent mode lead-tactical сам смержит твою worker branch в integration branch.
 
-## Branch And Worktree Discipline
+## Worker-Specific Discipline
 
-Это worker-side summary, не canonical source of truth.
-Canonical protocol: `docs/agents/workflow.md`, секция 7; orchestration-side checklist: `docs/agents/lead-tactical/instructions.md`, секция `Worktree Bootstrap Checklist`.
+Canonical git/worktree protocol: `docs/agents/git-protocol.md`.
+Canonical review model: `docs/agents/review-gate.md`.
+Canonical invariants: `docs/agents/invariants.md`.
+
+### Teammate mode (default)
+
+- Работай напрямую в integration branch `feature/<topic>`.
+- Коммить только в рамках assigned scope (owned files из handoff).
+- Не трогай файлы вне owned files.
+- Если обнаружил, что твои изменения конфликтуют с другим scope — эскалируй к lead-tactical.
+
+### Subagent mode (isolated)
 
 - Работай только в своём `agent/worker/<slug>` branch.
-- Не коммить в integration branch `feature/<topic>`, если lead-tactical явно не сказал работать напрямую там.
+- Не коммить в integration branch.
 - Не переиспользуй чужой worktree.
+- Lead-tactical сам смержит твою ветку после handoff.
+
+### Общие правила (оба режима)
+
 - Если base branch или base commit не указан явно, эскалируй к lead-tactical до начала реализации.
 - Если видишь, что твой scope конфликтует с другим worker ownership slice, не импровизируй, а сразу эскалируй.
 
 ## Self-check перед сдачей
 
-- [ ] TypeScript: нет ошибок в затронутых файлах
-- [ ] Код в правильном слое / package home
-- [ ] SQL не в routes
-- [ ] Server-only код не импортируется с клиента
-- [ ] Svelte 5 runes для нового UI
-- [ ] Файлы < 700 строк
+- [ ] Прогнаны все проверки, которые указал lead-tactical в handoff
 - [ ] Не вышел за scope задачи
-- [ ] Нет hardcoded secrets
+- [ ] Нет hardcoded secrets и очевидных security regressions
 - [ ] Нет лишних абстракций "на будущее"
-- [ ] `isSafeIdent()` не обходится
-- [ ] Schema changes → обновлён `db/current_schema.sql` + `db/applied_changes.md`
+- [ ] Инварианты из `docs/agents/invariants.md` не нарушены
 
 ## Правила
 
@@ -69,14 +82,16 @@ Canonical protocol: `docs/agents/workflow.md`, секция 7; orchestration-sid
 
 ## Memory
 
-- Один worker → пиши в `docs/agents/worker/memory.md`
-- Параллельные workers → каждый пишет в свой `docs/agents/worker/memory-{a|b|...}.md`
-- Не перезаписывай чужую memory — создай свою
+- Отдельного `docs/agents/worker/memory.md` нет
+- Всё важное возвращай в handoff: summary, review disposition/findings, checks evidence, риски
+- Если твой teammate reuse в рамках сессии разрешён, полагайся только на локальный session context, а не на отдельный memory-файл
 
 ## Ключевые документы
 
-- `docs/agents/workflow.md` — общий процесс, секция 6 (инварианты)
-- `docs/agents/templates.md` — шаблоны
-- `docs/agents/worker/memory.md` — общая worker memory (или memory-{id}.md при параллелизме)
-- Локальные `AGENTS.md` в затронутых модулях
-- `docs/emis_session_bootstrap.md` — состояние проекта
+Читай только то, что нужно для реализации slice. Orchestration lifecycle, governance passes и strategic review — ответственность lead-tactical, не твоя.
+
+- `docs/agents/invariants.md` — project guardrails (обязательно)
+- `docs/agents/git-protocol.md` §1-3 — ветки, коммиты, worktrees (обязательно)
+- `docs/agents/templates.md` §3 — формат Worker Handoff (обязательно)
+- Локальные `AGENTS.md` в затронутых модулях (обязательно)
+- `docs/emis_session_bootstrap.md` — состояние проекта (по необходимости)

@@ -23,9 +23,9 @@ Canonical docs:
 ## Жизненный цикл
 
 ```
-Первый review в сессии:  Agent spawn (загружают контекст)   ~30 сек
-Следующие review:        SendMessage (только diff)          ~5 сек
-Новая сессия:            spawn заново
+Каждый review pass:      Agent spawn (только diff + файлы)
+Следующий review:        новый spawn, снова с чистого листа
+Новая сессия:            то же правило
 ```
 
 Ревьюеры **read-only** — не редактируют файлы.
@@ -40,7 +40,6 @@ name: имя-агента
 description: Когда запускать этого агента.
 tools: Read, Grep, Glob
 model: sonnet
-memory: project
 ---
 
 Ты — [роль] для проекта на SvelteKit + TypeScript.
@@ -53,7 +52,7 @@ Role instructions and escalation rules: `docs/agents/{name}/instructions.md`.
 Создай:
 
 - `docs/agents/{name}/instructions.md`
-- `docs/agents/{name}/memory.md`
+- `docs/agents/{name}/memory.md` только если у роли действительно есть durable memory
 
 В `instructions.md` используй canonical review contract из `docs/agents/templates.md`, секция 6 `Review Result`.
 
@@ -65,7 +64,7 @@ Role instructions and escalation rules: `docs/agents/{name}/instructions.md`.
 | `description` | когда использовать          | для dispatch                      |
 | `tools`       | `Read, Grep, Glob`          | для ревьюеров — read-only         |
 | `model`       | `sonnet` / `opus` / `haiku` | стоимость vs качество             |
-| `memory`      | `project`                   | накапливает знания между сессиями |
+| `memory`      | omitted by default          | для reviewer-pass не использовать persistent memory |
 
 ## Chrome и UI-reviewer
 

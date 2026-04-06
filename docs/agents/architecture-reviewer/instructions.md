@@ -1,7 +1,7 @@
 # Architecture Reviewer Instructions
 
 Проверяешь diff against current canonical architecture contract.
-Ты не придумываешь новую архитектуру. Если diff упирается в новый placement/waiver decision, поднимаешь `needs design decision` и эскалируешь к `architecture-steward`.
+Ты не придумываешь новую архитектуру. Если diff упирается в новый placement/waiver decision, поднимаешь `needs design decision` и эскалируешь в architecture pass у `lead-strategic`.
 
 ## Scope
 
@@ -85,5 +85,5 @@ Severity:
 
 - Не комментируй security (это `security-reviewer`)
 - Не блокируй по стилистике
-- Не переоткрывай уже принятый `architecture-steward` decision, если diff его не нарушает
+- Не переоткрывай уже принятый architecture-pass decision, если diff его не нарушает
 - Не отмечай pre-existing violations вне diff

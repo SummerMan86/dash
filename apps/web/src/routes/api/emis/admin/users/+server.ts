@@ -13,13 +13,8 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 
 import { createUserSchema } from '@dashboard-builder/emis-contracts/emis-user';
-import { hashPassword } from '@dashboard-builder/emis-server/modules/users/password';
-import {
-	listUsers,
-	createUser,
-	usernameExists
-} from '@dashboard-builder/emis-server/modules/users/repository';
-import { EmisError } from '@dashboard-builder/emis-server/infra/errors';
+import { listUsers } from '@dashboard-builder/emis-server/modules/users/repository';
+import { createManagedUserService } from '@dashboard-builder/emis-server/modules/users/service';
 import { handleEmisRoute, parseJsonBody } from '$lib/server/emis/infra/http';
 import { assertWriteContext } from '$lib/server/emis/infra/writePolicy';
 import { invalidateDbUsersCache } from '$lib/server/emis/infra/auth';
@@ -30,24 +25,10 @@ export const GET: RequestHandler = handleEmisRoute(async () => {
 }, 'Failed to list EMIS users');
 
 export const POST: RequestHandler = handleEmisRoute(async ({ request, locals }) => {
-	assertWriteContext(request, 'api', locals);
+	const context = assertWriteContext(request, 'api', locals);
 
 	const body = await parseJsonBody(request, createUserSchema);
-
-	// Check username uniqueness
-	const exists = await usernameExists(body.username);
-	if (exists) {
-		throw new EmisError(409, 'USERNAME_TAKEN', `Username "${body.username}" is already taken`);
-	}
-
-	// Hash password before storing
-	const passwordHash = await hashPassword(body.password);
-
-	const created = await createUser({
-		username: body.username,
-		passwordHash,
-		role: body.role
-	});
+	const created = await createManagedUserService(body, context);
 
 	// Invalidate cached DB users flag so auth picks up the new user
 	invalidateDbUsersCache();

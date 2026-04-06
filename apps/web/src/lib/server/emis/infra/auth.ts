@@ -24,10 +24,14 @@ import { randomUUID } from 'node:crypto';
 
 import * as sessionRepo from '@dashboard-builder/emis-server/modules/sessions/repository';
 import {
+	createUser,
 	getUserWithHash,
 	hasDbUsers
 } from '@dashboard-builder/emis-server/modules/users/repository';
-import { verifyPassword } from '@dashboard-builder/emis-server/modules/users/password';
+import {
+	hashPassword,
+	verifyPassword
+} from '@dashboard-builder/emis-server/modules/users/password';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -49,6 +53,22 @@ type EmisUserConfig = {
 	role: EmisRole;
 };
 
+function getBootstrapAdminPassword(): string | null {
+	const value = process.env.EMIS_ADMIN_PASSWORD?.trim();
+	return value ? value : null;
+}
+
+let _noUserSourceWarningShown = false;
+
+function warnNoUserSourceConfigured(): void {
+	if (_noUserSourceWarningShown) return;
+	_noUserSourceWarningShown = true;
+	console.warn(
+		'[emis:auth] Session auth is not ready: no DB users, no EMIS_USERS env, and no ' +
+			'EMIS_ADMIN_PASSWORD bootstrap password. Falling back to auth mode "none" until a user source is configured.'
+	);
+}
+
 // ---------------------------------------------------------------------------
 // Auth mode
 // ---------------------------------------------------------------------------
@@ -59,8 +79,8 @@ type EmisUserConfig = {
  * Default is 'session' (AUTH-7). Opt out with EMIS_AUTH_MODE=none.
  *
  * Safety net: if mode resolves to 'session' but there are no configured users
- * (no DB users, no EMIS_USERS env, no EMIS_ADMIN_PASSWORD), log a warning
- * and fall back to 'none' to avoid locking everyone out.
+ * (no DB users, no EMIS_USERS env, no EMIS_ADMIN_PASSWORD), warn and fall
+ * back to 'none' to avoid locking everyone out.
  */
 export function getAuthMode(): 'none' | 'session' {
 	const mode = process.env.EMIS_AUTH_MODE;
@@ -71,16 +91,12 @@ export function getAuthMode(): 'none' | 'session' {
 	if (!_safetyNetChecked) {
 		_safetyNetChecked = true;
 		const hasEnvUsers = (process.env.EMIS_USERS?.trim() ?? '').length > 0;
-		const hasAdminPassword = (process.env.EMIS_ADMIN_PASSWORD?.trim() ?? '').length > 0;
-		// DB users check is async and cached separately — at startup the cache
-		// is empty, so we can only check synchronous env signals. The async
-		// isSessionAuthReadyAsync() handles the full check at request time.
-		if (!hasEnvUsers && !hasAdminPassword && _dbUsersAvailable !== true) {
-			console.warn(
-				'[emis:auth] EMIS_AUTH_MODE defaults to "session", but no user source is configured ' +
-					'(no DB users detected, no EMIS_USERS env, no EMIS_ADMIN_PASSWORD). ' +
-					'Falling back to auth mode "none". Set EMIS_AUTH_MODE=session explicitly once users are configured.'
-			);
+		const hasAdminPassword = getBootstrapAdminPassword() !== null;
+		// DB users check is async and cached separately. Use === false (not
+		// !== true) so that null (not checked yet) defaults to 'session' and
+		// lets isSessionAuthReadyAsync() do the real async DB probe.
+		if (!hasEnvUsers && !hasAdminPassword && _dbUsersAvailable === false) {
+			warnNoUserSourceConfigured();
 			return 'none';
 		}
 	}
@@ -96,6 +112,7 @@ let _safetyNetChecked = false;
  */
 export function resetAuthModeCheck(): void {
 	_safetyNetChecked = false;
+	_noUserSourceWarningShown = false;
 }
 
 export function isAuthEnabled(): boolean {
@@ -214,13 +231,65 @@ export function invalidateDbUsersCache(): void {
 	_dbUsersAvailable = null;
 }
 
+let _bootstrapAdminPromise: Promise<boolean> | null = null;
+
+async function bootstrapAdminUserIfNeeded(): Promise<boolean> {
+	const adminPassword = getBootstrapAdminPassword();
+	if (!adminPassword) return false;
+	if (getEnvUsers().length > 0) return false;
+	if (_dbUsersAvailable === true) return false;
+	if (_bootstrapAdminPromise) return _bootstrapAdminPromise;
+
+	_bootstrapAdminPromise = (async () => {
+		try {
+			const dbHasUsers = await hasDbUsers();
+			_dbUsersAvailable = dbHasUsers;
+			if (dbHasUsers) return false;
+
+			const passwordHash = await hashPassword(adminPassword);
+			await createUser({
+				username: 'admin',
+				passwordHash,
+				role: 'admin'
+			});
+
+			_dbUsersAvailable = true;
+			resetAuthModeCheck();
+			console.warn(
+				'[emis:auth] Bootstrapped initial EMIS admin user "admin" from EMIS_ADMIN_PASSWORD.'
+			);
+			return true;
+		} catch (err) {
+			try {
+				const dbHasUsers = await hasDbUsers();
+				_dbUsersAvailable = dbHasUsers;
+				if (dbHasUsers) return false;
+			} catch {
+				// Ignore secondary probe failure and log the original bootstrap error below.
+			}
+
+			console.warn(
+				'[emis:auth] Failed to bootstrap initial EMIS admin user from EMIS_ADMIN_PASSWORD.',
+				err
+			);
+			return false;
+		} finally {
+			_bootstrapAdminPromise = null;
+		}
+	})();
+
+	return _bootstrapAdminPromise;
+}
+
 // ---------------------------------------------------------------------------
 // Session auth readiness
 // ---------------------------------------------------------------------------
 
 /**
  * Async check: can session auth work?
- * Auth mode is session AND (DB users exist OR env users configured).
+ * Auth mode is session AND one of the supported user sources is available:
+ * DB users, EMIS_USERS env fallback, or successful admin bootstrap from
+ * EMIS_ADMIN_PASSWORD.
  */
 export async function isSessionAuthReadyAsync(): Promise<boolean> {
 	if (!isAuthEnabled()) return false;
@@ -228,7 +297,13 @@ export async function isSessionAuthReadyAsync(): Promise<boolean> {
 	const dbReady = await getDbUsersAvailable();
 	if (dbReady) return true;
 
-	return getEnvUsers().length > 0;
+	if (getEnvUsers().length > 0) return true;
+
+	const bootstrapped = await bootstrapAdminUserIfNeeded();
+	if (bootstrapped) return true;
+
+	warnNoUserSourceConfigured();
+	return false;
 }
 
 /**
@@ -591,8 +666,6 @@ export function getSessionCookieMaxAge(): number {
 	return getSessionTtlHours() * 60 * 60; // seconds
 }
 
-export const SESSION_COOKIE_MAX_AGE = 86400; // 24 hours in seconds (legacy constant)
-
 export function isSecureCookie(): boolean {
 	return process.env.NODE_ENV === 'production';
 }
@@ -613,7 +686,8 @@ export function isEmisApiRoute(pathname: string): boolean {
 
 /** EMIS page routes that require auth when enabled. */
 export function isEmisPageRoute(pathname: string): boolean {
-	return pathname.startsWith('/emis/') || pathname === '/emis';
+	return pathname.startsWith('/emis/') || pathname === '/emis'
+		|| pathname.startsWith('/dashboard/emis/') || pathname === '/dashboard/emis';
 }
 
 /** Admin routes that require admin role. */

@@ -9,7 +9,7 @@ export type EmisWriteContext = {
 	source: EmisWriteSource;
 };
 
-export type EmisAuditEntityType = 'object' | 'news_item' | 'news_object_link';
+export type EmisAuditEntityType = 'object' | 'news_item' | 'news_object_link' | 'user_account';
 
 export type EmisAuditAction = 'create' | 'update' | 'delete' | 'attach' | 'detach' | 'upsert';
 

@@ -13,13 +13,11 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 
 import { updateUserSchema } from '@dashboard-builder/emis-contracts/emis-user';
-import { hashPassword } from '@dashboard-builder/emis-server/modules/users/password';
+import { getUserById } from '@dashboard-builder/emis-server/modules/users/repository';
 import {
-	getUserById,
-	updateUser,
-	deleteUser,
-	usernameExists
-} from '@dashboard-builder/emis-server/modules/users/repository';
+	deleteManagedUserService,
+	updateManagedUserService
+} from '@dashboard-builder/emis-server/modules/users/service';
 import { EmisError } from '@dashboard-builder/emis-server/infra/errors';
 import { requireUuid, handleEmisRoute, parseJsonBody } from '$lib/server/emis/infra/http';
 import { assertWriteContext } from '$lib/server/emis/infra/writePolicy';
@@ -27,36 +25,10 @@ import { invalidateDbUsersCache, deleteUserSessions } from '$lib/server/emis/inf
 
 export const PATCH: RequestHandler = handleEmisRoute(async ({ params, request, locals }) => {
 	const id = requireUuid(params.id, 'user id');
-	assertWriteContext(request, 'api', locals);
+	const context = assertWriteContext(request, 'api', locals);
 
 	const body = await parseJsonBody(request, updateUserSchema);
-
-	// Check that user exists
-	const existing = await getUserById(id);
-	if (!existing) {
-		throw new EmisError(404, 'USER_NOT_FOUND', `User ${id} not found`);
-	}
-
-	// Check username uniqueness if changing username
-	if (body.username && body.username !== existing.username) {
-		const taken = await usernameExists(body.username, id);
-		if (taken) {
-			throw new EmisError(409, 'USERNAME_TAKEN', `Username "${body.username}" is already taken`);
-		}
-	}
-
-	// Hash new password if provided
-	const patch: { username?: string; passwordHash?: string; role?: string } = {};
-	if (body.username !== undefined) patch.username = body.username;
-	if (body.role !== undefined) patch.role = body.role;
-	if (body.password !== undefined) {
-		patch.passwordHash = await hashPassword(body.password);
-	}
-
-	const updated = await updateUser(id, patch);
-	if (!updated) {
-		throw new EmisError(404, 'USER_NOT_FOUND', `User ${id} not found`);
-	}
+	const updated = await updateManagedUserService(id, body, context);
 
 	// Invalidate cached DB users flag
 	invalidateDbUsersCache();
@@ -71,7 +43,7 @@ export const PATCH: RequestHandler = handleEmisRoute(async ({ params, request, l
 
 export const DELETE: RequestHandler = handleEmisRoute(async ({ params, request, locals }) => {
 	const id = requireUuid(params.id, 'user id');
-	assertWriteContext(request, 'api', locals);
+	const context = assertWriteContext(request, 'api', locals);
 
 	// Admin cannot delete themselves
 	const session = locals.emisSession;
@@ -88,11 +60,7 @@ export const DELETE: RequestHandler = handleEmisRoute(async ({ params, request, 
 	// Delete all sessions for this user first
 	await deleteUserSessions(id);
 
-	// Delete the user
-	const deleted = await deleteUser(id);
-	if (!deleted) {
-		throw new EmisError(404, 'USER_NOT_FOUND', `User ${id} not found`);
-	}
+	await deleteManagedUserService(id, context);
 
 	// Invalidate cached DB users flag
 	invalidateDbUsersCache();

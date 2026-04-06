@@ -55,11 +55,15 @@
 Если задача выполняется через GPT-5.4 lead + Claude workers:
 
 1. [docs/agents/user-guide.md](./docs/agents/user-guide.md) — **для пользователя: промпты и сценарии**
-2. [docs/agents/workflow.md](./docs/agents/workflow.md) — процесс, инварианты, коммуникация
-3. [docs/agents/roles.md](./docs/agents/roles.md) — роли и ответственности
-4. [docs/agents/templates.md](./docs/agents/templates.md) — шаблоны
-5. `docs/agents/{role}/instructions.md` — вводные для конкретной роли
-6. `docs/agents/{role}/memory.md` — память роли между сессиями
+2. [docs/agents/workflow.md](./docs/agents/workflow.md) — core process и lifecycle
+3. [docs/agents/review-gate.md](./docs/agents/review-gate.md) — Review Gate, governance passes
+4. [docs/agents/invariants.md](./docs/agents/invariants.md) — project guardrails
+5. [docs/agents/git-protocol.md](./docs/agents/git-protocol.md) — branches, worktrees, checkpoints
+6. [docs/agents/memory-protocol.md](./docs/agents/memory-protocol.md) — memory ownership
+7. [docs/agents/roles.md](./docs/agents/roles.md) — роли и ответственности
+8. [docs/agents/templates.md](./docs/agents/templates.md) — шаблоны
+9. `docs/agents/{role}/instructions.md` — вводные для конкретной роли
+10. `docs/agents/lead-strategic/memory.md` и `docs/agents/lead-tactical/memory.md` — единственные canonical durable-memory files; worker'ы и reviewer'ы отдельную `memory.md` не ведут, см. `docs/agents/memory-protocol.md`
 
 EMIS-активный контур сейчас находится здесь:
 
@@ -189,7 +193,13 @@ Compatibility shims at old app paths (`apps/web/src/lib/entities/emis-*`, `apps/
 
 ## 8. Agent Workflow и Review Gate
 
-Полная модель работы агентов: [docs/agents/workflow.md](./docs/agents/workflow.md)
+Canonical core process: [docs/agents/workflow.md](./docs/agents/workflow.md)
+Canonical review/governance model: [docs/agents/review-gate.md](./docs/agents/review-gate.md)
+Canonical recovery/git/memory protocols:
+
+- [docs/agents/recovery.md](./docs/agents/recovery.md)
+- [docs/agents/git-protocol.md](./docs/agents/git-protocol.md)
+- [docs/agents/memory-protocol.md](./docs/agents/memory-protocol.md)
 
 ### Модель
 
@@ -206,29 +216,8 @@ GPT-5.4 (lead-strategic) → план → Claude Opus (lead-tactical) → worker
 
 - [docs/agents/roles.md](./docs/agents/roles.md) — таблица ролей
 - `docs/agents/{role}/instructions.md` — вводные для каждой роли
-- `docs/agents/{role}/memory.md` — персистентная память между сессиями
-- `strategic-reviewer` — optional GPT sidecar для bounded second opinion по `plan/report/diff`; не заменяет финальную приёмку `lead-strategic`
-
-### Review Gate
-
-После реализации lead-tactical запускает субагентов-ревьюеров параллельно.
-Определения субагентов: `.claude/agents/*.md`
-Детальные instructions: `docs/agents/{name}/instructions.md`
-
-| Ревьюер                 | Модель | Проверяет                                             |
-| ----------------------- | ------ | ----------------------------------------------------- |
-| `security-reviewer`     | Sonnet | SQL injection, XSS, secrets, SSRF                     |
-| `architecture-reviewer` | Sonnet | layer/import boundaries, server isolation, complexity |
-| `docs-reviewer`         | Sonnet | Docs, DB truth, runtime contracts sync                |
-| `code-reviewer`         | Sonnet | Naming, conventions, maintainability                  |
-| `ui-reviewer`           | Sonnet | Smoke test (только при frontend changes)              |
-| `ui-reviewer-deep`      | Opus   | Deep UX/a11y audit (по запросу)                       |
-
-### Когда НЕ запускать Review Gate
-
-- Задача была только чтение/анализ
-- Пользователь явно попросил пропустить
-- Изменения только в markdown (запустить только docs-reviewer)
+- `docs/agents/lead-strategic/memory.md` и `docs/agents/lead-tactical/memory.md` — canonical durable memory; worker'ы, reviewer'ы и `strategic-reviewer` отдельную `memory.md` не ведут
+- `strategic-reviewer` — optional GPT sidecar для bounded second opinion по `plan/report/diff`; живёт внутри `lead-strategic`, не заменяет финальную приёмку и не имеет отдельной памяти
 
 ### Шаблоны
 
@@ -236,7 +225,9 @@ GPT-5.4 (lead-strategic) → план → Claude Opus (lead-tactical) → worker
 
 ## 9. Git Checkpoints
 
-Для EMIS сохраняем рабочее правило:
+Canonical branch/worktree/checkpoint protocol: [docs/agents/git-protocol.md](./docs/agents/git-protocol.md)
+
+Для EMIS сохраняем минимальный ритм checkpoint-коммитов:
 
 - после каждого законченного смыслового этапа делать локальный git commit;
 - минимальный ритм checkpoint-коммитов:

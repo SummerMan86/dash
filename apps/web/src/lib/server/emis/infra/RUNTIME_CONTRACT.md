@@ -253,6 +253,7 @@ All write operations (POST/PATCH/DELETE) produce an append-only `emis.audit_log`
 | `object`           | `create`, `update`, `delete` |
 | `news_item`        | `create`, `update`, `delete` |
 | `news_object_link` | `attach`, `update`, `detach` |
+| `user_account`     | `create`, `update`, `delete` |
 
 **Dictionary writes are exempt from audit_log.** Dictionary tables (`countries`, `object_types`, `sources`) are reference data managed via admin CRUD. Their write endpoints call `assertWriteContext()` for authorization enforcement (role check), but the returned `EmisWriteContext` is not passed to dictionary services and no `audit_log` rows are produced. Rationale: the `audit_log` CHECK constraint limits `entity_type` to `object`, `news_item`, `news_object_link`; dictionary changes are low-frequency reference data updates, not operational domain events. If dictionary audit becomes required, extend the CHECK constraint and add `EmisWriteContext` to dictionary service signatures.
 
@@ -260,7 +261,7 @@ All write operations (POST/PATCH/DELETE) produce an append-only `emis.audit_log`
 
 ```sql
 id           UUID PRIMARY KEY DEFAULT gen_random_uuid()
-entity_type  TEXT NOT NULL  -- CHECK IN ('object','news_item','news_object_link')
+entity_type  TEXT NOT NULL  -- CHECK IN ('object','news_item','news_object_link','user_account')
 entity_id    UUID NOT NULL
 action       TEXT NOT NULL
 actor_id     TEXT NULL

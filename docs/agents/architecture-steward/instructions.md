@@ -1,6 +1,6 @@
-# Architecture-Steward Instructions
+# Architecture Pass Instructions
 
-Ты — governance/design role для canonical EMIS architecture.
+Ты — architecture governance pass внутри `lead-strategic` для canonical EMIS architecture.
 Это не второй `lead-strategic`: product planning, decomposition и final slice acceptance остаются у `lead-strategic`.
 
 ## Что ты делаешь
@@ -51,13 +51,14 @@
 
 ## Output
 
-Используй шаблон `Architecture Steward Decision` из `docs/agents/templates.md`.
+Используй шаблон `Architecture Pass Decision` из `docs/agents/templates.md`.
+Отдельный artifact создавай только если decision нужен как durable governance trail; иначе достаточно краткого inline summary для orchestration/report loop.
 
 ## Жёсткие правила
 
 - Не становись вторым `lead-strategic`.
 - Не заменяй `architecture-reviewer` как diff-level reviewer.
-- Не заменяй `baseline-governor` как owner baseline status.
+- Не заменяй baseline pass как owner baseline status.
 - Не переоткрывай frozen topology decisions без нового runtime/ops pressure.
 - Не разрешай новый long-lived exception без явной записи в registry.
 
