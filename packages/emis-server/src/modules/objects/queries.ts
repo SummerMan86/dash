@@ -3,6 +3,7 @@ import type { PoolClient } from 'pg';
 import type {
 	EmisObjectDetail,
 	EmisObjectRelatedNews,
+	EmisObjectSourceRef,
 	EmisObjectSummary,
 	ListEmisObjectsInput
 } from '@dashboard-builder/emis-contracts/emis-object';
@@ -52,6 +53,8 @@ export async function listObjectsQuery(
 			o.region,
 			o.status,
 			o.geom IS NOT NULL AS has_geometry,
+			REPLACE(ST_GeometryType(o.geom), 'ST_', '') AS geometry_type,
+			o.source_origin,
 			o.updated_at
 		 FROM emis.objects o
 		 JOIN emis.object_types ot
@@ -73,6 +76,8 @@ export async function listObjectsQuery(
 		region: row.region,
 		status: row.status,
 		hasGeometry: row.has_geometry,
+		geometryType: row.geometry_type ?? null,
+		sourceOrigin: row.source_origin,
 		updatedAt: row.updated_at.toISOString()
 	}));
 }
@@ -95,6 +100,8 @@ export async function getObjectDetailQuery(
 			o.description,
 			o.attributes,
 			ST_AsGeoJSON(o.geom)::json AS geometry,
+			REPLACE(ST_GeometryType(o.geom), 'ST_', '') AS geometry_type,
+			o.source_origin,
 			o.source_note,
 			o.created_at,
 			o.updated_at,
@@ -111,6 +118,14 @@ export async function getObjectDetailQuery(
 
 	if ((objectResult.rowCount ?? 0) === 0) return null;
 	const row = objectResult.rows[0];
+
+	const sourceRefsResult = await db.query(
+		`SELECT source_code, source_ref, is_primary
+		 FROM emis.object_source_refs
+		 WHERE object_id = $1
+		 ORDER BY is_primary DESC, created_at ASC`,
+		[id]
+	);
 
 	const relatedNewsResult = await db.query(
 		`SELECT
@@ -165,6 +180,13 @@ export async function getObjectDetailQuery(
 		description: row.description,
 		attributes: row.attributes ?? {},
 		geometry: row.geometry,
+		geometryType: row.geometry_type,
+		sourceOrigin: row.source_origin,
+		sourceRefs: sourceRefsResult.rows.map((ref) => ({
+			sourceCode: ref.source_code,
+			sourceRef: ref.source_ref,
+			isPrimary: ref.is_primary
+		})),
 		sourceNote: row.source_note,
 		createdAt: row.created_at.toISOString(),
 		updatedAt: row.updated_at.toISOString(),

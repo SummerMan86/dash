@@ -385,3 +385,97 @@ UI page: `/emis/admin/users`.
 ### Canonical reference
 
 Full auth contract: `docs/emis_access_model.md` section 5.
+
+## Ingestion namespace (Wave 1) — frozen contract
+
+**Status:** implemented (ING-1 through ING-9, 2026-04-06).
+
+Wave 1 adds a generic external-object ingestion contour with active adapters for `osm` and `gem` only. `wikimapia` is explicitly deferred until a separate source-validation/legal-ops pass.
+
+### Truth boundaries
+
+- `stg_emis` — raw truth for external-object ingestion (staging, import runs, candidates, matches)
+- `emis.objects` — curated operational truth for `/api/emis/objects` and `/emis/objects/[id]`
+- `mart.*` and `mart_emis.*` — BI truth; must not read directly from `stg_emis`
+
+Curated object surfaces (`/api/emis/objects`, `/emis/objects/[id]`) remain canonical and are not broken by staging concerns.
+
+### Execution model
+
+Wave 1 does not introduce a separate background runtime, queue, or scheduler. Ingestion runs inside the current modular-monolith app runtime, triggered by admin action through the API.
+
+### Frozen API endpoints
+
+| Route                                           | Method | Purpose                      | Access   |
+| ----------------------------------------------- | ------ | ---------------------------- | -------- |
+| `/api/emis/ingestion/trigger`                   | POST   | Start an ingestion run       | Admin    |
+| `/api/emis/ingestion/batches`                   | GET    | List import batches          | Viewer+  |
+| `/api/emis/ingestion/batches/:id`               | GET    | Batch detail                 | Viewer+  |
+| `/api/emis/ingestion/batches/:id/objects`        | GET    | Imported objects in a batch  | Viewer+  |
+| `/api/emis/ingestion/conflicts`                 | GET    | List unresolved conflicts    | Viewer+  |
+| `/api/emis/ingestion/conflicts/:id/resolve`     | POST   | Resolve a conflict           | Admin    |
+
+Naming convention: `trigger / batches / conflicts`, not `runs / candidates`.
+
+### Frozen DB table names
+
+| Table                           | Schema     | Purpose                                       |
+| ------------------------------- | ---------- | --------------------------------------------- |
+| `obj_import_run`                | `stg_emis` | One ingestion batch/run with status, counters  |
+| `obj_import_candidate`          | `stg_emis` | Raw imported candidate as staging row          |
+| `obj_candidate_match`           | `stg_emis` | Candidate-to-curated-object match suggestions  |
+| `object_source_refs`            | `emis`     | Source-scoped identity bridge for curated objects |
+
+`emis.objects.external_id` remains as a compatibility field only. Canonical multi-source identity lives in `emis.object_source_refs` with `(source_code, source_ref)` uniqueness enforced in DB.
+
+### Resolution outcomes
+
+| Outcome                            | Action                                                 |
+| ----------------------------------- | ------------------------------------------------------ |
+| `unique`                            | Publish as new curated object                          |
+| `duplicate_with_clear_winner`       | Update existing curated object, refresh source ref     |
+| `possible_duplicate_low_confidence` | Hold in staging, no publish                            |
+| `invalid_or_unmapped`               | Hold in staging with review/error status               |
+
+Low-confidence duplicates and invalid/unmapped candidates never auto-publish into `emis.objects`.
+
+### Source-priority policy
+
+Wave 1 uses object-level winner semantics (no field-level merge heuristics).
+
+| Source wins by default for                       |
+| ------------------------------------------------ |
+| `gem`: `power_plant`, `coal_mine`, `gas_pipeline`, `oil_pipeline` |
+| `osm`: `port`, `terminal`, `storage`, `substation`               |
+
+If policy does not produce a clear winner, the candidate stays unresolved in staging.
+
+### Geometry contract
+
+Imported objects support full geometry end-to-end: `Point`, `LineString`, `Polygon`, `MultiPoint`, `MultiLineString`, `MultiPolygon`.
+
+- `emis.objects` remains `geometry(Geometry,4326)` with derived centroid
+- Manual create/edit may stay point-first
+- **Non-point guard:** manual edit entry points must not corrupt imported non-point geometry. Current lat/lon forms must be explicitly guarded for objects with non-point geometry.
+
+### Ingestion UI scope
+
+- `/emis/objects` — import/review mode with filters by source, status, geometry type, mapped/unmapped
+- `/emis/objects/imported/[id]` — candidate detail: raw payload, match candidates, winner rule, resolve actions
+- `/emis/objects/[id]` — stays curated operational detail only (no staging data)
+
+### Ingestion error codes
+
+| Code                         | Status | When                                            |
+| ---------------------------- | ------ | ----------------------------------------------- |
+| `BATCH_NOT_FOUND`            | 404    | Import run/batch not found                      |
+| `CANDIDATE_NOT_FOUND`        | 404    | Import candidate not found                      |
+| `CANDIDATE_ALREADY_RESOLVED` | 409    | Candidate already published or rejected         |
+| `CANDIDATE_NOT_PUBLISHABLE`  | 400    | Candidate missing mapped object type for publish |
+
+All ingestion endpoints follow the standard `{ error, code }` shape.
+
+### Canonical reference
+
+Full ingestion design: `docs/plans/emis_external_object_ingestion.md`.
+Strategic plan: `docs/agents/lead-strategic/current_plan.md`.

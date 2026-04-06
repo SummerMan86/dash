@@ -85,6 +85,8 @@ Repo-wide architecture contract живёт в [architecture.md](./architecture.m
 | `emis_review_gate.md`            | EMIS review gate                 | lifecycle review, mandatory approve cases, approve checklist                                |
 | `emis_offline_maps_ops.md`       | offline maps ops-runbook         | эксплуатация MapTiler/PMTiles и production caveats                                          |
 | `emis_next_tasks_2026_03_22.md`  | backlog                          | remaining tasks и polish stack                                                              |
+| `plans/emis_external_object_ingestion.md`                    | ingestion wave 1 detailed design | canonical API namespace, DB model, resolution policy, geometry contract, execution slices    |
+| `plans/emis_external_object_ingestion_lead_tactical_handoff.md` | ingestion wave 1 tactical handoff | execution-ready handoff для lead-tactical: scope, sequencing, risk notes                  |
 
 ### Archive
 

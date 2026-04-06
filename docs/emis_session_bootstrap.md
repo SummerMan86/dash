@@ -122,6 +122,13 @@ All acceptance criteria from section 7 are met. All explicit deferrals have been
   - AUTH-7: Default auth mode switched to `session`, auth-smoke added
   - AUTH-8: Governance closure — all checks green, baseline closed
 
+### Post-MVE active wave
+
+- `Wave 1` — External Object Ingestion (completed, 2026-04-06)
+  - ING-1 through ING-9: generic ingestion contour for OSM + GEM sources
+  - Canonical plan: `docs/agents/lead-strategic/current_plan.md`
+  - Detailed design: `docs/plans/emis_external_object_ingestion.md`
+
 Live backlog: [docs/emis_next_tasks_2026_03_22.md](./emis_next_tasks_2026_03_22.md).
 
 ## 7. Read Next

@@ -15,6 +15,7 @@ EMIS entity types, Zod validation schemas и shared DTO.
 | `./emis-link`       | news-object link types, attach/update schemas           |
 | `./emis-ship-route` | vessel/point/segment types, list query schemas          |
 | `./emis-map`        | map config/feature/query types, bbox/filter schemas     |
+| `./emis-ingestion`  | ingestion run/candidate/match types, trigger/resolve/list schemas |
 
 ## Внутренние зависимости
 

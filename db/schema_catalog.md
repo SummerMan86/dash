@@ -43,6 +43,7 @@ Write-side и reusable operational contracts для EMIS.
 - `emis.audit_log`
 - `emis.users` — user accounts for session-based auth (AUTH-2)
 - `emis.sessions` — persistent auth sessions (AUTH-2)
+- `emis.object_source_refs` — source-scoped identity bridge for curated objects (ING-2)
 
 Operational views:
 
@@ -52,7 +53,7 @@ Operational views:
 
 ### `stg_emis`
 
-Landing / staging слой для судового ingestion-контура.
+Landing / staging слой для ingestion-контуров (судовой + external object ingestion).
 
 Основные объекты:
 
@@ -61,6 +62,9 @@ Landing / staging слой для судового ingestion-контура.
 - `stg_emis.vsl_scraper_run_log`
 - `stg_emis.vsl_ships_hbk`
 - `stg_emis.vsl_position_latest`
+- `stg_emis.obj_import_run` — ingestion batch/run tracking (ING-2)
+- `stg_emis.obj_import_candidate` — raw imported candidates (ING-2)
+- `stg_emis.obj_candidate_match` — candidate-to-curated match suggestions (ING-2)
 
 ### `mart_emis`
 

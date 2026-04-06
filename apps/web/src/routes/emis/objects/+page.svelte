@@ -76,6 +76,7 @@
 				<a class="underline underline-offset-4" href="/emis">/emis workspace</a>
 				<a class="underline underline-offset-4" href="/emis/news">/emis/news</a>
 				<a class="underline underline-offset-4" href="/emis/objects/new">new object</a>
+				<a class="underline underline-offset-4" href="/api/emis/ingestion/conflicts">import review (API)</a>
 			</div>
 			<div class="space-y-2">
 				<div class="type-caption tracking-[0.24em] text-muted-foreground uppercase">EMIS</div>

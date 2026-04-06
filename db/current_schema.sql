@@ -273,6 +273,28 @@ COMMENT ON TABLE emis.sessions IS 'EMIS auth sessions, DB-backed for persistence
 
 
 --
+-- Name: object_source_refs; Type: TABLE; Schema: emis; Owner: -
+--
+
+CREATE TABLE emis.object_source_refs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    object_id uuid NOT NULL,
+    source_code text NOT NULL,
+    source_ref text NOT NULL,
+    is_primary boolean DEFAULT false NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: TABLE object_source_refs; Type: COMMENT; Schema: emis; Owner: -
+--
+
+COMMENT ON TABLE emis.object_source_refs IS 'Source-scoped identity bridge for curated objects. (source_code, source_ref) is unique.';
+
+
+--
 -- Name: COLUMN sessions.role; Type: COMMENT; Schema: emis; Owner: -
 --
 
@@ -494,6 +516,92 @@ CREATE TABLE stg_emis.vsl_ships_hbk (
     draught numeric(10,3),
     home_port text
 );
+
+
+--
+-- Name: obj_import_run; Type: TABLE; Schema: stg_emis; Owner: -
+--
+
+CREATE TABLE stg_emis.obj_import_run (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    source_code text NOT NULL,
+    params jsonb DEFAULT '{}'::jsonb NOT NULL,
+    status text DEFAULT 'started'::text NOT NULL,
+    started_at timestamp with time zone DEFAULT now() NOT NULL,
+    finished_at timestamp with time zone,
+    cnt_fetched integer DEFAULT 0 NOT NULL,
+    cnt_candidates integer DEFAULT 0 NOT NULL,
+    cnt_published integer DEFAULT 0 NOT NULL,
+    cnt_held integer DEFAULT 0 NOT NULL,
+    cnt_errors integer DEFAULT 0 NOT NULL,
+    actor_id text,
+    error_summary jsonb DEFAULT '{}'::jsonb NOT NULL,
+    CONSTRAINT chk_obj_import_run_status CHECK ((status = ANY (ARRAY['started'::text, 'fetching'::text, 'matching'::text, 'completed'::text, 'failed'::text])))
+);
+
+
+--
+-- Name: TABLE obj_import_run; Type: COMMENT; Schema: stg_emis; Owner: -
+--
+
+COMMENT ON TABLE stg_emis.obj_import_run IS 'One ingestion batch/run. Tracks source, params, status, counters, actor, timings and error summary.';
+
+
+--
+-- Name: obj_import_candidate; Type: TABLE; Schema: stg_emis; Owner: -
+--
+
+CREATE TABLE stg_emis.obj_import_candidate (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    run_id uuid NOT NULL,
+    source_code text NOT NULL,
+    source_ref text NOT NULL,
+    raw_payload jsonb NOT NULL,
+    name text,
+    name_en text,
+    object_type_code text,
+    country_code character(2),
+    mapped_object_type_id uuid,
+    geom public.geometry(Geometry,4326),
+    centroid public.geometry(Point,4326),
+    status text DEFAULT 'pending'::text NOT NULL,
+    resolution text,
+    promoted_object_id uuid,
+    reviewed_at timestamp with time zone,
+    reviewed_by text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_obj_import_candidate_status CHECK ((status = ANY (ARRAY['pending'::text, 'matched'::text, 'published'::text, 'held'::text, 'rejected'::text, 'error'::text]))),
+    CONSTRAINT chk_obj_import_candidate_resolution CHECK ((resolution IS NULL OR resolution = ANY (ARRAY['unique'::text, 'duplicate_with_clear_winner'::text, 'possible_duplicate_low_confidence'::text, 'invalid_or_unmapped'::text])))
+);
+
+
+--
+-- Name: TABLE obj_import_candidate; Type: COMMENT; Schema: stg_emis; Owner: -
+--
+
+COMMENT ON TABLE stg_emis.obj_import_candidate IS 'Raw imported candidate as normalized reviewable staging row.';
+
+
+--
+-- Name: obj_candidate_match; Type: TABLE; Schema: stg_emis; Owner: -
+--
+
+CREATE TABLE stg_emis.obj_candidate_match (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    candidate_id uuid NOT NULL,
+    matched_object_id uuid NOT NULL,
+    score numeric(5,4),
+    match_kind text NOT NULL,
+    match_details jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: TABLE obj_candidate_match; Type: COMMENT; Schema: stg_emis; Owner: -
+--
+
+COMMENT ON TABLE stg_emis.obj_candidate_match IS 'Candidate-to-curated-object match suggestions and evidence.';
 
 
 --
@@ -1005,6 +1113,46 @@ ALTER TABLE ONLY emis.sessions
 
 
 --
+-- Name: object_source_refs object_source_refs_pkey; Type: CONSTRAINT; Schema: emis; Owner: -
+--
+
+ALTER TABLE ONLY emis.object_source_refs
+    ADD CONSTRAINT object_source_refs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: object_source_refs uq_object_source_refs_source_identity; Type: CONSTRAINT; Schema: emis; Owner: -
+--
+
+ALTER TABLE ONLY emis.object_source_refs
+    ADD CONSTRAINT uq_object_source_refs_source_identity UNIQUE (source_code, source_ref);
+
+
+--
+-- Name: obj_import_run obj_import_run_pkey; Type: CONSTRAINT; Schema: stg_emis; Owner: -
+--
+
+ALTER TABLE ONLY stg_emis.obj_import_run
+    ADD CONSTRAINT obj_import_run_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: obj_import_candidate obj_import_candidate_pkey; Type: CONSTRAINT; Schema: stg_emis; Owner: -
+--
+
+ALTER TABLE ONLY stg_emis.obj_import_candidate
+    ADD CONSTRAINT obj_import_candidate_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: obj_candidate_match obj_candidate_match_pkey; Type: CONSTRAINT; Schema: stg_emis; Owner: -
+--
+
+ALTER TABLE ONLY stg_emis.obj_candidate_match
+    ADD CONSTRAINT obj_candidate_match_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: vsl_load_batch vsl_load_batch_pkey; Type: CONSTRAINT; Schema: stg_emis; Owner: -
 --
 
@@ -1173,6 +1321,83 @@ CREATE INDEX idx_sessions_user_id ON emis.sessions USING btree (user_id);
 
 
 --
+-- Name: idx_object_source_refs_object_id; Type: INDEX; Schema: emis; Owner: -
+--
+
+CREATE INDEX idx_object_source_refs_object_id ON emis.object_source_refs USING btree (object_id);
+
+
+--
+-- Name: idx_object_source_refs_source_code; Type: INDEX; Schema: emis; Owner: -
+--
+
+CREATE INDEX idx_object_source_refs_source_code ON emis.object_source_refs USING btree (source_code);
+
+
+--
+-- Name: idx_obj_import_run_source_code; Type: INDEX; Schema: stg_emis; Owner: -
+--
+
+CREATE INDEX idx_obj_import_run_source_code ON stg_emis.obj_import_run USING btree (source_code);
+
+
+--
+-- Name: idx_obj_import_run_status; Type: INDEX; Schema: stg_emis; Owner: -
+--
+
+CREATE INDEX idx_obj_import_run_status ON stg_emis.obj_import_run USING btree (status);
+
+
+--
+-- Name: idx_obj_import_run_started_at; Type: INDEX; Schema: stg_emis; Owner: -
+--
+
+CREATE INDEX idx_obj_import_run_started_at ON stg_emis.obj_import_run USING btree (started_at DESC);
+
+
+--
+-- Name: idx_obj_import_candidate_run_id; Type: INDEX; Schema: stg_emis; Owner: -
+--
+
+CREATE INDEX idx_obj_import_candidate_run_id ON stg_emis.obj_import_candidate USING btree (run_id);
+
+
+--
+-- Name: idx_obj_import_candidate_status; Type: INDEX; Schema: stg_emis; Owner: -
+--
+
+CREATE INDEX idx_obj_import_candidate_status ON stg_emis.obj_import_candidate USING btree (status);
+
+
+--
+-- Name: idx_obj_import_candidate_source_ref; Type: INDEX; Schema: stg_emis; Owner: -
+--
+
+CREATE INDEX idx_obj_import_candidate_source_ref ON stg_emis.obj_import_candidate USING btree (source_code, source_ref);
+
+
+--
+-- Name: idx_obj_import_candidate_geom_gist; Type: INDEX; Schema: stg_emis; Owner: -
+--
+
+CREATE INDEX idx_obj_import_candidate_geom_gist ON stg_emis.obj_import_candidate USING gist (geom);
+
+
+--
+-- Name: idx_obj_candidate_match_candidate_id; Type: INDEX; Schema: stg_emis; Owner: -
+--
+
+CREATE INDEX idx_obj_candidate_match_candidate_id ON stg_emis.obj_candidate_match USING btree (candidate_id);
+
+
+--
+-- Name: idx_obj_candidate_match_matched_object_id; Type: INDEX; Schema: stg_emis; Owner: -
+--
+
+CREATE INDEX idx_obj_candidate_match_matched_object_id ON stg_emis.obj_candidate_match USING btree (matched_object_id);
+
+
+--
 -- Name: vsl_position_raw_ix_fetched_at; Type: INDEX; Schema: stg_emis; Owner: -
 --
 
@@ -1335,6 +1560,70 @@ ALTER TABLE ONLY stg_emis.vsl_scraper_run_log
 
 ALTER TABLE ONLY stg_emis.vsl_ships_hbk
     ADD CONSTRAINT vsl_ships_hbk_last_load_batch_id_fkey FOREIGN KEY (last_load_batch_id) REFERENCES stg_emis.vsl_load_batch(load_batch_id);
+
+
+--
+-- Name: object_source_refs object_source_refs_object_id_fkey; Type: FK CONSTRAINT; Schema: emis; Owner: -
+--
+
+ALTER TABLE ONLY emis.object_source_refs
+    ADD CONSTRAINT object_source_refs_object_id_fkey FOREIGN KEY (object_id) REFERENCES emis.objects(id) ON DELETE CASCADE;
+
+
+--
+-- Name: object_source_refs object_source_refs_source_code_fkey; Type: FK CONSTRAINT; Schema: emis; Owner: -
+--
+
+ALTER TABLE ONLY emis.object_source_refs
+    ADD CONSTRAINT object_source_refs_source_code_fkey FOREIGN KEY (source_code) REFERENCES emis.sources(code);
+
+
+--
+-- Name: obj_import_candidate obj_import_candidate_run_id_fkey; Type: FK CONSTRAINT; Schema: stg_emis; Owner: -
+--
+
+ALTER TABLE ONLY stg_emis.obj_import_run
+    ADD CONSTRAINT obj_import_run_source_code_fkey FOREIGN KEY (source_code) REFERENCES emis.sources(code);
+
+
+--
+-- Name: obj_import_candidate obj_import_candidate_run_id_fkey; Type: FK CONSTRAINT; Schema: stg_emis; Owner: -
+--
+
+ALTER TABLE ONLY stg_emis.obj_import_candidate
+    ADD CONSTRAINT obj_import_candidate_run_id_fkey FOREIGN KEY (run_id) REFERENCES stg_emis.obj_import_run(id);
+
+
+--
+-- Name: obj_import_candidate obj_import_candidate_mapped_type_fkey; Type: FK CONSTRAINT; Schema: stg_emis; Owner: -
+--
+
+ALTER TABLE ONLY stg_emis.obj_import_candidate
+    ADD CONSTRAINT obj_import_candidate_source_code_fkey FOREIGN KEY (source_code) REFERENCES emis.sources(code);
+
+
+--
+-- Name: obj_import_candidate obj_import_candidate_mapped_type_fkey; Type: FK CONSTRAINT; Schema: stg_emis; Owner: -
+--
+
+ALTER TABLE ONLY stg_emis.obj_import_candidate
+    ADD CONSTRAINT obj_import_candidate_mapped_type_fkey FOREIGN KEY (mapped_object_type_id) REFERENCES emis.object_types(id);
+
+
+--
+-- Name: obj_candidate_match obj_candidate_match_candidate_id_fkey; Type: FK CONSTRAINT; Schema: stg_emis; Owner: -
+--
+
+ALTER TABLE ONLY stg_emis.obj_candidate_match
+    ADD CONSTRAINT obj_candidate_match_candidate_id_fkey FOREIGN KEY (candidate_id) REFERENCES stg_emis.obj_import_candidate(id);
+
+
+--
+-- Name: obj_candidate_match obj_candidate_match_matched_object_id_fkey; Type: FK CONSTRAINT; Schema: stg_emis; Owner: -
+--
+
+ALTER TABLE ONLY stg_emis.obj_candidate_match
+    ADD CONSTRAINT obj_candidate_match_matched_object_id_fkey FOREIGN KEY (matched_object_id) REFERENCES emis.objects(id);
 
 
 --

@@ -19,6 +19,144 @@ ALTER TABLE emis.audit_log
 		)
 	);
 
+-- ============================================================
+-- Live delta for ING-2: External Object Ingestion DB Foundation
+-- Apply to existing DBs before deploying ingestion wave 1.
+-- ============================================================
+
+-- 1. emis.object_source_refs — source-scoped identity bridge for curated objects
+
+CREATE TABLE IF NOT EXISTS emis.object_source_refs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    object_id uuid NOT NULL,
+    source_code text NOT NULL,
+    source_ref text NOT NULL,
+    is_primary boolean DEFAULT false NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+COMMENT ON TABLE emis.object_source_refs IS 'Source-scoped identity bridge for curated objects. (source_code, source_ref) is unique.';
+
+ALTER TABLE ONLY emis.object_source_refs DROP CONSTRAINT IF EXISTS object_source_refs_pkey;
+ALTER TABLE ONLY emis.object_source_refs ADD CONSTRAINT object_source_refs_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY emis.object_source_refs DROP CONSTRAINT IF EXISTS uq_object_source_refs_source_identity;
+ALTER TABLE ONLY emis.object_source_refs ADD CONSTRAINT uq_object_source_refs_source_identity UNIQUE (source_code, source_ref);
+
+CREATE INDEX IF NOT EXISTS idx_object_source_refs_object_id ON emis.object_source_refs USING btree (object_id);
+CREATE INDEX IF NOT EXISTS idx_object_source_refs_source_code ON emis.object_source_refs USING btree (source_code);
+
+ALTER TABLE ONLY emis.object_source_refs DROP CONSTRAINT IF EXISTS object_source_refs_object_id_fkey;
+ALTER TABLE ONLY emis.object_source_refs ADD CONSTRAINT object_source_refs_object_id_fkey FOREIGN KEY (object_id) REFERENCES emis.objects(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY emis.object_source_refs DROP CONSTRAINT IF EXISTS object_source_refs_source_code_fkey;
+ALTER TABLE ONLY emis.object_source_refs ADD CONSTRAINT object_source_refs_source_code_fkey FOREIGN KEY (source_code) REFERENCES emis.sources(code);
+
+-- 2. stg_emis.obj_import_run — one ingestion batch/run
+
+CREATE TABLE IF NOT EXISTS stg_emis.obj_import_run (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    source_code text NOT NULL,
+    params jsonb DEFAULT '{}'::jsonb NOT NULL,
+    status text DEFAULT 'started'::text NOT NULL,
+    started_at timestamp with time zone DEFAULT now() NOT NULL,
+    finished_at timestamp with time zone,
+    cnt_fetched integer DEFAULT 0 NOT NULL,
+    cnt_candidates integer DEFAULT 0 NOT NULL,
+    cnt_published integer DEFAULT 0 NOT NULL,
+    cnt_held integer DEFAULT 0 NOT NULL,
+    cnt_errors integer DEFAULT 0 NOT NULL,
+    actor_id text,
+    error_summary jsonb DEFAULT '{}'::jsonb NOT NULL,
+    CONSTRAINT chk_obj_import_run_status CHECK ((status = ANY (ARRAY['started'::text, 'fetching'::text, 'matching'::text, 'completed'::text, 'failed'::text])))
+);
+
+COMMENT ON TABLE stg_emis.obj_import_run IS 'One ingestion batch/run. Tracks source, params, status, counters, actor, timings and error summary.';
+
+ALTER TABLE ONLY stg_emis.obj_import_run DROP CONSTRAINT IF EXISTS obj_import_run_pkey;
+ALTER TABLE ONLY stg_emis.obj_import_run ADD CONSTRAINT obj_import_run_pkey PRIMARY KEY (id);
+
+CREATE INDEX IF NOT EXISTS idx_obj_import_run_source_code ON stg_emis.obj_import_run USING btree (source_code);
+CREATE INDEX IF NOT EXISTS idx_obj_import_run_status ON stg_emis.obj_import_run USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_obj_import_run_started_at ON stg_emis.obj_import_run USING btree (started_at DESC);
+
+ALTER TABLE ONLY stg_emis.obj_import_run DROP CONSTRAINT IF EXISTS obj_import_run_source_code_fkey;
+ALTER TABLE ONLY stg_emis.obj_import_run ADD CONSTRAINT obj_import_run_source_code_fkey FOREIGN KEY (source_code) REFERENCES emis.sources(code);
+
+-- 3. stg_emis.obj_import_candidate — raw imported candidate
+
+CREATE TABLE IF NOT EXISTS stg_emis.obj_import_candidate (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    run_id uuid NOT NULL,
+    source_code text NOT NULL,
+    source_ref text NOT NULL,
+    raw_payload jsonb NOT NULL,
+    name text,
+    name_en text,
+    object_type_code text,
+    country_code character(2),
+    mapped_object_type_id uuid,
+    geom public.geometry(Geometry,4326),
+    centroid public.geometry(Point,4326),
+    status text DEFAULT 'pending'::text NOT NULL,
+    resolution text,
+    promoted_object_id uuid,
+    reviewed_at timestamp with time zone,
+    reviewed_by text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_obj_import_candidate_status CHECK ((status = ANY (ARRAY['pending'::text, 'matched'::text, 'published'::text, 'held'::text, 'rejected'::text, 'error'::text]))),
+    CONSTRAINT chk_obj_import_candidate_resolution CHECK ((resolution IS NULL OR resolution = ANY (ARRAY['unique'::text, 'duplicate_with_clear_winner'::text, 'possible_duplicate_low_confidence'::text, 'invalid_or_unmapped'::text])))
+);
+
+COMMENT ON TABLE stg_emis.obj_import_candidate IS 'Raw imported candidate as normalized reviewable staging row.';
+
+ALTER TABLE ONLY stg_emis.obj_import_candidate DROP CONSTRAINT IF EXISTS obj_import_candidate_pkey;
+ALTER TABLE ONLY stg_emis.obj_import_candidate ADD CONSTRAINT obj_import_candidate_pkey PRIMARY KEY (id);
+
+CREATE INDEX IF NOT EXISTS idx_obj_import_candidate_run_id ON stg_emis.obj_import_candidate USING btree (run_id);
+CREATE INDEX IF NOT EXISTS idx_obj_import_candidate_status ON stg_emis.obj_import_candidate USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_obj_import_candidate_source_ref ON stg_emis.obj_import_candidate USING btree (source_code, source_ref);
+CREATE INDEX IF NOT EXISTS idx_obj_import_candidate_geom_gist ON stg_emis.obj_import_candidate USING gist (geom);
+
+ALTER TABLE ONLY stg_emis.obj_import_candidate DROP CONSTRAINT IF EXISTS obj_import_candidate_run_id_fkey;
+ALTER TABLE ONLY stg_emis.obj_import_candidate ADD CONSTRAINT obj_import_candidate_run_id_fkey FOREIGN KEY (run_id) REFERENCES stg_emis.obj_import_run(id);
+
+ALTER TABLE ONLY stg_emis.obj_import_candidate DROP CONSTRAINT IF EXISTS obj_import_candidate_source_code_fkey;
+ALTER TABLE ONLY stg_emis.obj_import_candidate ADD CONSTRAINT obj_import_candidate_source_code_fkey FOREIGN KEY (source_code) REFERENCES emis.sources(code);
+
+ALTER TABLE ONLY stg_emis.obj_import_candidate DROP CONSTRAINT IF EXISTS obj_import_candidate_mapped_type_fkey;
+ALTER TABLE ONLY stg_emis.obj_import_candidate ADD CONSTRAINT obj_import_candidate_mapped_type_fkey FOREIGN KEY (mapped_object_type_id) REFERENCES emis.object_types(id);
+
+-- 4. stg_emis.obj_candidate_match — match suggestions
+
+CREATE TABLE IF NOT EXISTS stg_emis.obj_candidate_match (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    candidate_id uuid NOT NULL,
+    matched_object_id uuid NOT NULL,
+    score numeric(5,4),
+    match_kind text NOT NULL,
+    match_details jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+COMMENT ON TABLE stg_emis.obj_candidate_match IS 'Candidate-to-curated-object match suggestions and evidence.';
+
+ALTER TABLE ONLY stg_emis.obj_candidate_match DROP CONSTRAINT IF EXISTS obj_candidate_match_pkey;
+ALTER TABLE ONLY stg_emis.obj_candidate_match ADD CONSTRAINT obj_candidate_match_pkey PRIMARY KEY (id);
+
+CREATE INDEX IF NOT EXISTS idx_obj_candidate_match_candidate_id ON stg_emis.obj_candidate_match USING btree (candidate_id);
+CREATE INDEX IF NOT EXISTS idx_obj_candidate_match_matched_object_id ON stg_emis.obj_candidate_match USING btree (matched_object_id);
+
+ALTER TABLE ONLY stg_emis.obj_candidate_match DROP CONSTRAINT IF EXISTS obj_candidate_match_candidate_id_fkey;
+ALTER TABLE ONLY stg_emis.obj_candidate_match ADD CONSTRAINT obj_candidate_match_candidate_id_fkey FOREIGN KEY (candidate_id) REFERENCES stg_emis.obj_import_candidate(id);
+
+ALTER TABLE ONLY stg_emis.obj_candidate_match DROP CONSTRAINT IF EXISTS obj_candidate_match_matched_object_id_fkey;
+ALTER TABLE ONLY stg_emis.obj_candidate_match ADD CONSTRAINT obj_candidate_match_matched_object_id_fkey FOREIGN KEY (matched_object_id) REFERENCES emis.objects(id);
+
+-- End of ING-2 delta
+-- ============================================================
+
 -- Live delta for published Strategy dashboard wrappers.
 --
 -- Rationale:

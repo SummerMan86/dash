@@ -58,6 +58,7 @@
 					cancelHref={`/emis/objects/${data.object.id}`}
 					fieldErrors={form?.fieldErrors ?? {}}
 					formError={form?.formError ?? null}
+					geometryEditable={data.geometryEditable}
 				/>
 			</CardContent>
 		</Card>

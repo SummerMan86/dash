@@ -21,6 +21,8 @@ src/
     dictionaries/   repository (read-only reference data)
     map/            queries (GeoJSON feature collections)
     ship-routes/    queries (vessel/point/segment)
+    ingestion/      service, matchEngine, queries, repository
+      adapters/     types, osmAdapter, gemAdapter, registry
 ```
 
 ## Паттерн модуля

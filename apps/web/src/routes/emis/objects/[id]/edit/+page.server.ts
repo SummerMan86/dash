@@ -1,7 +1,10 @@
 import { error, redirect, type Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
-import { createEmisObjectSchema } from '@dashboard-builder/emis-contracts/emis-object';
+import {
+	createEmisObjectSchema,
+	updateEmisObjectSchema
+} from '@dashboard-builder/emis-contracts/emis-object';
 import { assertWriteContext } from '$lib/server/emis/infra/writePolicy';
 import { getObjectDetailQuery } from '$lib/server/emis/modules/objects/queries';
 import { updateObjectService } from '$lib/server/emis/modules/objects/service';
@@ -12,6 +15,7 @@ import {
 	loadObjectEditorDictionaries,
 	objectDetailToFormValues,
 	parseObjectForm,
+	parseObjectFormWithoutGeometry,
 	readObjectFormValues
 } from '../../../manual-entry.server';
 
@@ -27,9 +31,12 @@ export const load: PageServerLoad = async ({ params }) => {
 	]);
 	if (!object) throw error(404, 'Object not found');
 
+	const geometryEditable = object.geometryType === 'Point';
+
 	return {
 		...dictionaries,
 		object,
+		geometryEditable,
 		initialValues: objectDetailToFormValues(object)
 	};
 };
@@ -39,18 +46,34 @@ export const actions: Actions = {
 		const id = params.id;
 		if (!id || !UUID_RE.test(id)) throw error(404, 'Object not found');
 
+		const existing = await getObjectDetailQuery(id);
+		if (!existing) throw error(404, 'Object not found');
+
+		const isPointGeometry = existing.geometryType === 'Point';
+
 		const formData = await request.formData();
 		const values = readObjectFormValues(formData);
 
 		let updated;
 		try {
-			ensureObjectFormRequired(values);
-			const payload = createEmisObjectSchema.parse(parseObjectForm(values));
-			updated = await updateObjectService(
-				id,
-				payload,
-				assertWriteContext(request, 'manual-ui', locals)
-			);
+			if (isPointGeometry) {
+				ensureObjectFormRequired(values);
+				const payload = createEmisObjectSchema.parse(parseObjectForm(values));
+				updated = await updateObjectService(
+					id,
+					payload,
+					assertWriteContext(request, 'manual-ui', locals)
+				);
+			} else {
+				const payload = updateEmisObjectSchema.parse(
+					parseObjectFormWithoutGeometry(values)
+				);
+				updated = await updateObjectService(
+					id,
+					payload,
+					assertWriteContext(request, 'manual-ui', locals)
+				);
+			}
 		} catch (errorValue) {
 			return actionFailure(errorValue, values);
 		}
