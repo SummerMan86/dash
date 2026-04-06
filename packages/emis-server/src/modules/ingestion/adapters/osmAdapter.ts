@@ -7,13 +7,50 @@ import type { NormalizedCandidate, SourceAdapter } from './types';
  * Isolated from transport/fetch so mapping rules are easy to review and extend.
  */
 const OSM_TYPE_MAP: Record<string, string> = {
+	// Maritime
 	port: 'port',
+	harbour: 'port',
 	terminal: 'terminal',
-	storage: 'storage',
+	lng_terminal: 'lng_terminal',
+	shipyard: 'shipyard',
+	lighthouse: 'lighthouse',
+	dock: 'dock',
+	// Power
 	substation: 'substation',
 	power_plant: 'power_plant',
-	refinery: 'refinery'
+	plant: 'power_plant',
+	nuclear: 'nuclear_plant',
+	// Oil & Gas
+	refinery: 'refinery',
+	storage_tank: 'storage',
+	storage: 'storage',
+	petroleum_well: 'petroleum_well',
+	pipeline: 'gas_pipeline',
+	// Mining
+	mine: 'mine',
+	quarry: 'mine'
 };
+
+/** Source-specific tag → type mappings for compound tags. */
+const OSM_COMPOUND_RULES: Array<{
+	check: (tags: Record<string, string>) => boolean;
+	code: string;
+}> = [
+	{ check: (t) => t['generator:source'] === 'wind', code: 'wind_farm' },
+	{ check: (t) => t['generator:source'] === 'solar', code: 'solar_farm' },
+	{ check: (t) => t['plant:source'] === 'nuclear', code: 'nuclear_plant' },
+	{ check: (t) => t['plant:source'] === 'wind', code: 'wind_farm' },
+	{ check: (t) => t['plant:source'] === 'solar', code: 'solar_farm' },
+	{ check: (t) => t['resource'] === 'coal', code: 'coal_mine' },
+	{
+		check: (t) => t['man_made'] === 'pipeline' && t['substance'] === 'oil',
+		code: 'oil_pipeline'
+	},
+	{
+		check: (t) => t['man_made'] === 'pipeline' && t['substance'] === 'gas',
+		code: 'gas_pipeline'
+	}
+];
 
 /**
  * Map an OSM Overpass element geometry to an EmisGeometry.
@@ -58,12 +95,27 @@ function mapOsmGeometry(element: Record<string, unknown>): EmisGeometry | null {
 }
 
 /** Tag keys checked in priority order — first match wins. */
-const OSM_TAG_KEYS = ['power', 'man_made', 'industrial', 'landuse', 'amenity', 'harbour'] as const;
+const OSM_TAG_KEYS = [
+	'power',
+	'man_made',
+	'industrial',
+	'landuse',
+	'amenity',
+	'harbour',
+	'waterway'
+] as const;
 
 function inferObjectTypeCode(tags: Record<string, string>): string | null {
+	// 1. Compound rules first (multi-tag combinations)
+	for (const rule of OSM_COMPOUND_RULES) {
+		if (rule.check(tags)) return rule.code;
+	}
+	// 2. Simple tag-value lookup
 	for (const key of OSM_TAG_KEYS) {
 		const value = tags[key];
-		if (value && value in OSM_TYPE_MAP) return OSM_TYPE_MAP[value];
+		if (!value) continue;
+		if (value === 'yes' && key in OSM_TYPE_MAP) return OSM_TYPE_MAP[key];
+		if (value in OSM_TYPE_MAP) return OSM_TYPE_MAP[value];
 	}
 	return null;
 }

@@ -9,7 +9,15 @@ VALUES
 	('77777777-7777-7777-7777-777777777777', 'oil_pipeline', 'Нефтепровод', 'linestring', 'pipeline'),
 	('88888888-8888-8888-8888-888888888888', 'terminal', 'Терминал', 'mixed', 'warehouse'),
 	('99999999-9999-9999-9999-999999999999', 'storage', 'Хранилище', 'mixed', 'database'),
-	('aabbccdd-aabb-ccdd-aabb-ccddaabbccdd', 'substation', 'Подстанция', 'mixed', 'bolt')
+	('aabbccdd-aabb-ccdd-aabb-ccddaabbccdd', 'substation', 'Подстанция', 'mixed', 'bolt'),
+	('b1b1b1b1-b1b1-b1b1-b1b1-b1b1b1b1b1b1', 'wind_farm', 'Ветряная ферма', 'mixed', 'wind'),
+	('b2b2b2b2-b2b2-b2b2-b2b2-b2b2b2b2b2b2', 'solar_farm', 'Солнечная ферма', 'mixed', 'sun'),
+	('b3b3b3b3-b3b3-b3b3-b3b3-b3b3b3b3b3b3', 'nuclear_plant', 'АЭС', 'point', 'atom'),
+	('b4b4b4b4-b4b4-b4b4-b4b4-b4b4b4b4b4b4', 'petroleum_well', 'Нефтяная скважина', 'point', 'droplet'),
+	('b5b5b5b5-b5b5-b5b5-b5b5-b5b5b5b5b5b5', 'shipyard', 'Верфь', 'mixed', 'ship'),
+	('b6b6b6b6-b6b6-b6b6-b6b6-b6b6b6b6b6b6', 'lighthouse', 'Маяк', 'point', 'lighthouse'),
+	('b7b7b7b7-b7b7-b7b7-b7b7-b7b7b7b7b7b7', 'dock', 'Док', 'mixed', 'anchor'),
+	('b8b8b8b8-b8b8-b8b8-b8b8-b8b8b8b8b8b8', 'mine', 'Шахта', 'mixed', 'pickaxe')
 ON CONFLICT (code) DO UPDATE
 SET
 	name = EXCLUDED.name,
