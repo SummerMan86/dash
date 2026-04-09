@@ -86,6 +86,13 @@ Canonical report typing rules: `docs/agents/workflow.md`.
 
 Пользователь не должен помнить это вручную: это обязанность orchestration layer.
 
+## Debugging
+
+При debugging (своём или при оценке worker handoff) используй протокол из `docs/agents/skills/debugging.md`:
+reproduce → compare with known-good → one hypothesis at a time → fix and verify.
+
+Escalation triggers: 3+ неудачных попыток или потеря уверенности в root cause — эскалируй к lead-strategic.
+
 ## Эскалация и Recovery
 
 Если failure-path уже начался:

@@ -84,6 +84,13 @@ Fabricated или contradictory evidence — `CRITICAL` finding при review.
 - Не трогай файлы вне своего scope
 - Не пропускай self-check
 
+## Debugging
+
+При debugging используй протокол из `docs/agents/skills/debugging.md`:
+reproduce → compare with known-good → one hypothesis at a time → fix and verify.
+
+Escalation triggers: 3+ неудачных попыток или потеря уверенности в root cause.
+
 ## Эскалация
 
 Эскалируй к lead-tactical (через SendMessage или handoff) когда:

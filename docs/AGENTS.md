@@ -120,6 +120,7 @@ Repo-wide architecture contract живёт в [architecture.md](./architecture.m
 | `agents/lead-tactical/instructions.md`        | Claude Opus tactical lead instructions       | как управлять workers, review gate, report                               |
 | `agents/worker/instructions.md`               | Claude worker instructions                   | как выполнять задачи, self-check, handoff                                |
 | `agents/*-reviewer/instructions.md`           | reviewer role instructions                   | checks, output format, scope для каждого ревьюера                        |
+| `agents/skills/debugging.md`                  | debugging playbook                           | reproduce, compare, hypothesize, fix, escalation triggers                |
 
 ### Active
 
