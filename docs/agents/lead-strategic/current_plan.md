@@ -66,6 +66,20 @@
 - Не удалять EMIS-specific правила без явного нового canonical home в overlay docs
 - Предпочитать overlay indirection и additive docs над массовыми rename/move, если rename не даёт явной пользы
 
+## Per-slice integrity checklist
+
+После каждого slice worker и reviewer проверяют:
+
+1. **Принципы не потеряны**: core lifecycle (plan → execute → review → accept), role ownership (strategic/tactical/worker/reviewers), Review Gate (slice + integration), governance passes (architecture/baseline) — всё на месте и не размыто
+2. **Сложность не выросла**: количество обязательных файлов для старта работы не увеличилось; новый overlay — это дополнение, а не ещё один обязательный шаг
+3. **Навигация из AGENTS.md**: каждый новый или перемещённый doc имеет строку в `docs/AGENTS.md`; читатель может найти любой doc за один шаг из doc map
+4. **Нет broken references**: все ссылки из изменённых docs ведут на существующие файлы; grep `invariants.md`, `emis_session_bootstrap`, `emis_known_exceptions` и т.д. не выдаёт dangling links
+5. **EMIS не сломан**: текущий EMIS workflow можно пройти по overlay path так же, как раньше — по прямым ссылкам; EMIS-specific rules не потеряны и не задублированы
+6. **Нет запутанности**: generic doc не содержит domain-specific правил (кроме явных `example:` блоков); overlay не содержит generic workflow rules
+7. **Backward compatibility**: формат plan/handoff/report/review request не сломан; старые артефакты (reports, plans) остаются валидными
+
+Если любой пункт нарушен — это `WARNING` при review, и slice не принимается без fix.
+
 ## Ожидаемый результат
 
 - `docs/agents/*` описывают generic agent workflow, применимый к любому домену в этом repo
