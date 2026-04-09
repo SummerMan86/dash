@@ -121,6 +121,7 @@ Repo-wide architecture contract живёт в [architecture.md](./architecture.m
 | `agents/worker/instructions.md`               | Claude worker instructions                   | как выполнять задачи, self-check, handoff                                |
 | `agents/*-reviewer/instructions.md`           | reviewer role instructions                   | checks, output format, scope для каждого ревьюера                        |
 | `agents/skills/debugging.md`                  | debugging playbook                           | reproduce, compare, hypothesize, fix, escalation triggers                |
+| `agents/skills/testing-strategy.md`           | three-mode testing strategy                  | test-first, prototype-pin-refactor, verification-first, per-slice fields |
 
 ### Active
 

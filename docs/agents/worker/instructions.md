@@ -84,6 +84,16 @@ Fabricated или contradictory evidence — `CRITICAL` finding при review.
 - Не трогай файлы вне своего scope
 - Не пропускай self-check
 
+## Testing Strategy
+
+Выбирай режим верификации по типу работы (см. `docs/agents/skills/testing-strategy.md`):
+
+- **Test-First**: pure logic, bugfixes, data contracts
+- **Prototype-Pin-Refactor**: exploratory, UI, moving requirements
+- **Verification-First**: DB/schema, ops, structural contracts
+
+В handoff указывай `verification intent`, `verification mode` и `waiver rationale` если verification deferred.
+
 ## Debugging
 
 При debugging используй протокол из `docs/agents/skills/debugging.md`:

@@ -69,6 +69,8 @@ Optional:
 - depends on: — (или ST-N)
 - размер: S | M | L
 - acceptance: <done-when для slice>
+- verification intent: <что проверяем>
+- verification mode: `test-first` | `prototype-pin` | `verification-first`
 - заметки: <опционально>
 
 ### ST-2: <название>
@@ -77,6 +79,8 @@ Optional:
 - depends on: ST-1
 - размер: M
 - acceptance: <done-when для slice>
+- verification intent: <что проверяем>
+- verification mode: `test-first` | `prototype-pin` | `verification-first`
 - заметки: <опционально>
 
 ## Ограничения
@@ -89,6 +93,15 @@ Optional:
 - <что должно работать после выполнения>
 - <какие файлы/контракты появятся или изменятся>
 ```
+
+### Plan self-review checklist
+
+Before handing off the plan, verify:
+
+- [ ] Every slice has `acceptance` that is testable, not vague
+- [ ] Every non-trivial slice has `verification intent` and `verification mode`
+- [ ] If verification is deferred or waived, there is a `waiver rationale`
+- [ ] Plan stays at decision-level — no implementation walkthroughs
 
 ## 2. Задача worker'у (lead-tactical → worker)
 
@@ -185,6 +198,12 @@ Skip conditions:
 - <что реализовано>
 - ключевые файлы: <список>
 - placement notes: <только если решение неочевидно>
+
+## Verification
+
+- verification intent: <что проверялось>
+- verification mode: `test-first` | `prototype-pin` | `verification-first`
+- waiver rationale: <если verification deferred или skipped>
 
 ## Ветки
 
