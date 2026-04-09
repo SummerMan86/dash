@@ -124,4 +124,4 @@ Escalation triggers: 3+ неудачных попыток или потеря у
 - `docs/agents/git-protocol.md` §1-3 — ветки, коммиты, worktrees (обязательно)
 - `docs/agents/templates.md` §3 — формат Worker Handoff (обязательно)
 - Локальные `AGENTS.md` в затронутых модулях (обязательно)
-- `docs/emis_session_bootstrap.md` — состояние проекта (по необходимости)
+- Relevant domain bootstrap doc if applicable (e.g. `docs/emis_session_bootstrap.md` for EMIS)

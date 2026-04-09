@@ -54,6 +54,17 @@ Pick the mode that matches the nature of the work, not a blanket default. When i
 - If the behavior is still forming -> Prototype-Pin-Refactor
 - If the artifact is structural (schema, contract, docs) -> Verification-First
 
+## Test harness
+
+The repo has a Vitest-based test harness at the workspace root:
+
+- `pnpm test` — run all package-level tests (exit 0 even with no test files)
+- `pnpm test:watch` — watch mode for development
+- Test files: `packages/*/src/**/*.test.ts`
+- Config: `vitest.config.ts`
+
+For test-first slices, use `pnpm test` as the primary check command. Report it as fresh evidence in handoff.
+
 ## Pre-existing test utilities
 
 Some packages export test-only helpers (e.g. `clearRegistry()` in platform-filters). These are acceptable if:

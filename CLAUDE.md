@@ -17,7 +17,7 @@
 Если в сжатом контексте есть признаки, что ты работаешь как агент в команде (упоминания "lead-tactical", "worker", "план", "подзадача", "ST-N", "Review Gate", или файлы из `docs/agents/`):
 
 1. Определи свою роль из контекста (lead-tactical / worker / reviewer-\*)
-2. Прочитай `docs/agents/{role}/memory.md` — твоя персистентная память
+2. Если роль `lead-tactical` или `lead-strategic` — прочитай `docs/agents/{role}/memory.md` (только эти роли имеют durable memory)
 3. Прочитай `docs/agents/{role}/instructions.md` — твои вводные
 4. Прочитай `docs/agents/lead-strategic/current_plan.md` — текущий план
 5. Продолжи работу с того места, где остановился

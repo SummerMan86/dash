@@ -6,11 +6,11 @@
 
 - `AGENTS.md` (root)
 - `docs/AGENTS.md`
-- `docs/emis_*`
+- Domain-specific docs per overlay (e.g. `docs/emis_*` for EMIS)
 - `db/current_schema.sql`
 - `db/applied_changes.md`
 - `db/schema_catalog.md`
-- `apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
+- Runtime contracts per domain (e.g. `RUNTIME_CONTRACT.md` in relevant infra module)
 - Локальные `AGENTS.md` / `CLAUDE.md` в модулях
 
 Convention: `AGENTS.md` canonical над `CLAUDE.md` если оба есть.
