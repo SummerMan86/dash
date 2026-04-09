@@ -8,11 +8,73 @@ Canonical repo-wide architecture doc. Current-state only.
 
 ## 1. Architectural Principles
 
-Two foundational models define the system:
+### 1.1. Data Flow
 
-- **Server-side: Modular monolith.** One deployable process, but domain logic is isolated in reusable packages (`packages/*`). Packages own contracts, queries, services; the app (`apps/web`) is a thin transport/orchestration shell. Cross-domain imports go through explicit package boundaries, not internal module paths.
+- **Canonical paths are part of the architecture.** BI reads go `widget → fetchDataset → /api/datasets/:id → compileDataset → DatasetIr → Provider.execute`. EMIS operational flows go `route → emis-server module → parameterized SQL`. This separation exists so analytical reads and operational writes evolve independently. *In practice:* dashboard code must not call `emis-server/modules/*`; EMIS BI only consumes published read models/views.
 
-- **Client-side: FSD (Feature-Sliced Design) adapted for Svelte.** App-local code in `apps/web/src/lib/` follows a layered model: `shared → entities → features → widgets → routes`. Each layer can import only from layers below it. This is a UI organization convention, not a governing architecture model — the real reusable logic lives in `packages/*`.
+- **Transport is never the domain.** Routes may parse HTTP, validate input, derive server context, and shape responses — but SQL, PostGIS logic, and business rules live in packages or `src/lib/server/*`. *In practice:* SQL in route files and HTTP objects in services/repositories are forbidden.
+
+### 1.2. Boundary Discipline
+
+- **`packages/*` own reusable logic; `apps/web` is a leaf composition shell.** This keeps the deployable app thin and makes domain logic portable. *In practice:* nobody imports from `apps/web`; new reusable code goes into packages first.
+
+- **Boundaries are one-way and enforced, not advisory.** `platform-*` stays domain-agnostic, `emis-server` never imports UI, client layers never import server code, BI never crosses into EMIS operational internals. *In practice:* violating the ESLint boundary graph is an architectural error, not a style issue.
+
+### 1.3. Contract Model
+
+- **External communication happens through explicit contracts.** `DatasetQuery`/`DatasetResponse`, `FilterSpec`, Zod request/response schemas, and `RUNTIME_CONTRACT` are the surfaces teams code against. `DatasetIr` and provider ports stay server-internal. *In practice:* UI talks `DatasetQuery`, not IR or SQL.
+
+- **Contracts must be honest about capabilities.** A contract may only expose features that the execution path can actually honor. *In practice:* unsupported IR features, undocumented response shapes, and silent behavioral drift are treated as migration debt immediately.
+
+### 1.4. State Management
+
+- **Server is the source of truth for business data; client state drives interaction.** Client stores hold filters, view state, and request orchestration — not authoritative domain records. *In practice:* widgets derive data from fetch/load/API calls, not long-lived client-side copies.
+
+- **Client state is scoped explicitly and derived whenever possible.** The filter runtime models `shared`, `workspace`, and `owner` scopes. *In practice:* duplicated state blobs, hidden cross-page globals, and ad-hoc store coupling are forbidden.
+
+### 1.5. Extension Model
+
+- **Extend by adding registrations and bounded modules, not by poking holes through layers.** New datasets add definition modules and provider mappings; new domains follow the `contracts → server → ui → routes → read-model` pattern. *In practice:* "just add a special case in the route" is the wrong default.
+
+- **Composition is static, not plugin-driven at runtime.** The system is designed for build-time known modules and explicit registration because the runtime is a single constrained process. *In practice:* dynamic provider discovery and runtime plugin loading are out of bounds.
+
+### 1.6. Error & Resilience
+
+- **Failures must be explicit, typed, and correlatable.** All endpoints return stable `{ error, code }`, EMIS routes propagate `x-request-id`. *In practice:* thrown raw errors at the HTTP boundary are forbidden.
+
+- **Degradation is allowed only when documented and safe.** Missing schema, missing `DATABASE_URL`, auth fallback, scheduler disablement — each is an explicit mode. *In practice:* if a component cannot meet its contract, it returns a clear error, not guessed data.
+
+### 1.7. Security Model
+
+- **Auth and authorization are server gates, never client conventions.** Identity, role, and actor attribution come from session/cookies resolved on the server. *In practice:* every EMIS write path calls `assertWriteContext()` before mutation.
+
+- **Validation and SQL safety happen at ingress and execution boundaries.** Payloads parsed by Zod, SQL parameterized, identifiers allowlisted by `isSafeIdent()`. *In practice:* raw SQL fragments from request data are forbidden.
+
+### 1.8. Testing Philosophy
+
+- **Test the decision points, not just the screens.** Pure planners, compilers, registries, and contract parsers carry architectural behavior. *In practice:* `planFiltersForDataset`, dataset compilation, param parsing, and write-policy logic are covered before cosmetic component tests.
+
+- **Use smoke tests for cross-layer confidence.** Important failures are usually at boundaries: auth, schema readiness, read models, route contracts. *In practice:* boundary lint, type/build checks, and EMIS smoke suites are mandatory verification for architectural work.
+
+### 1.9. Deployment & Runtime
+
+- **Design for one deployable process on a small box.** The system runs as a single SvelteKit/Node app with one PostgreSQL pool and limited memory (~1 GB). *In practice:* avoid per-request heavy caches, uncontrolled background workers, and behaviors that assume microservice isolation.
+
+- **Runtime must stay deterministic and bootstrap-safe.** Long-lived services start in controlled places (`hooks.server.ts`), features must not depend on "eventually initialized" side effects. *In practice:* background schedulers, cleanup loops, and startup probes are single-entry and gracefully stoppable.
+
+### 1.10. Naming & Conventions
+
+- **Names reveal boundary and role.** Package names (`platform-*`, `emis-*`), module names (`queries.ts`, `repository.ts`, `service.ts`), route namespaces (`/api/emis/*`, `/dashboard/*`) show where logic belongs. *In practice:* new files fit the existing architectural vocabulary instead of inventing parallel structures.
+
+- **URL, JSON, and dataset naming are contracts, not preferences.** Operational APIs use kebab-case paths and camelCase payload names. Dataset rows mirror SQL/read-model names in snake_case. *In practice:* do not normalize one side into the other unless the contract says so.
+
+### Known Architectural Debt
+
+Three items violate these principles today and are tracked for migration (see `architecture_dashboard_bi_target.md`):
+
+1. Legacy filter merging in `fetchDataset.ts` — violates "contracts must be honest"
+2. Prefix-based provider selection in `/api/datasets/[id]/+server.ts` — violates "extend by registration"
+3. `SelectIr` exposes `groupBy`/`call()` that `postgresProvider` throws on — violates "honest capabilities"
 
 ## 2. System Topology
 
