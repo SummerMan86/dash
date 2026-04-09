@@ -17,6 +17,15 @@
 - verification intent: новый reader может понять всю архитектуру без чтения EMIS-specific docs
 - verification mode: `verification-first`
 
+#### S-1.5: Разделить architecture doc на foundation + verticals
+
+- scope: `docs/architecture.md` (→ repo foundation), `docs/architecture_dashboard_bi.md` (новый), `docs/architecture_emis.md` (новый), `docs/architecture_dashboard_builder.md` (→ compatibility wrapper), `AGENTS.md` (root), `docs/AGENTS.md`
+- depends on: S-1
+- размер: M
+- acceptance: `architecture.md` содержит repo-wide foundation (topology, package graph, import rules, shared DB/auth/deployment, decision table "куда дальше"); `architecture_dashboard_bi.md` содержит BI vertical (dataset IR, providers, filters, widgets, DWH, extension points); `architecture_emis.md` содержит EMIS vertical (operational paths, contracts, ingestion, PostGIS, auth); `architecture_dashboard_builder.md` → compatibility wrapper на три doc'а; навигация обновлена; каждый doc имеет Scope/Covers/Does not cover/Read next
+- verification intent: новый reader видит separation сразу; BI и EMIS описаны независимо; repo-wide rules не дублируются
+- verification mode: `verification-first`
+
 #### S-2: Docs sync against architecture canon
 
 - scope: `docs/emis_monorepo_target_layout.md`, `docs/emis_mve_product_contract.md`, `docs/emis_session_bootstrap.md`, strategy/external-ownership wording, другие active docs с drift'ами, missing package AGENTS.md (`platform-core`, `platform-filters`, `platform-ui`)
