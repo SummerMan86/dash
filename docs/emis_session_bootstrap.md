@@ -134,7 +134,7 @@ Live backlog: [docs/emis_next_tasks_2026_03_22.md](./emis_next_tasks_2026_03_22.
 ## 7. Read Next
 
 - Если нужны repo-wide boundaries и current EMIS placement truth:
-  [docs/architecture.md](./architecture.md)
+  [docs/architecture_dashboard_builder.md](./architecture_dashboard_builder.md)
 - Если нужна краткая рабочая decision discipline:
   [docs/emis_working_contract.md](./emis_working_contract.md)
 - Если задача про runtime/API behavior:

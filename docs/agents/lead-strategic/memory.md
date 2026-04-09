@@ -3,6 +3,21 @@
 Персистентная память GPT-5.4 lead между сессиями.
 Обновляется в конце каждой сессии.
 
+## Update 2026-04-09
+
+- Active wave switched to:
+  - `Dashboard-Builder Stabilization Before New Features`
+- Strategic operating mode for this wave:
+  - `ordinary iterative`
+- `S-1` accepted and committed:
+  - canonical repo-wide architecture doc now lives in `docs/architecture_dashboard_builder.md`
+  - `docs/architecture.md` is a compatibility wrapper, not the canonical source
+- `S-2` was approved with scope correction before tactical start:
+  - `db/AGENTS.md` already exists, so missing package AGENTS scope is only `platform-core`, `platform-filters`, `platform-ui`
+  - S-2 must include a short strategy/external-ownership wording pass, not only EMIS docs
+  - `docs/emis_monorepo_target_layout.md` stays active by default and should be updated, not archived, unless the worker finds a stronger reason during the doc pass
+  - primary known drift before execution: `docs/emis_mve_product_contract.md` still says auth default is `none`, while active contract after AUTH-7 is `session`
+
 ## Update 2026-04-06
 
 - Active wave switched to:

@@ -30,7 +30,7 @@ dashboard-builder/
 │   ├── platform-ui/                 # UI primitives, styles, design tokens
 │   ├── platform-datasets/           # Dataset contracts, IR, compilation, providers, fetchDataset
 │   ├── platform-filters/            # Filter contracts, store, planner, filter widgets
-│   ├── db/                          # DB connection, pooling, schema scripts, seeds
+│   ├── db/                          # DB connection pool factory (getPgPool)
 │   ├── emis-contracts/              # EMIS entity DTOs, Zod schemas
 │   ├── emis-server/                 # EMIS domain backend (infra + semantic modules)
 │   ├── emis-ui/                     # Reusable EMIS UI package (map, status bar; app-local drawer/manual-entry stay in apps/web)
@@ -60,7 +60,7 @@ dashboard-builder/
 | `apps/web/src/lib/server/providers/*`         | `packages/platform-datasets/` | postgresProvider, mockProvider, provider routing                                                 |
 | `apps/web/src/lib/entities/filter/*`          | `packages/platform-filters/`  | Filter contracts, store, createFilterStore, planner                                              |
 | `apps/web/src/lib/widgets/filters/*`          | `packages/platform-filters/`  | Filter UI widgets                                                                                |
-| `apps/web/src/lib/server/db/*`                | `packages/db/`                | DB connection, pooling, helpers                                                                  |
+| `apps/web/src/lib/server/db/*`                | `packages/db/`                | DB connection pool factory (`getPgPool`)                                                         |
 
 ### EMIS packages
 
@@ -124,7 +124,7 @@ The following empty placeholder directories were deleted in ST-8 and no longer e
   ├──────────────────────┤
   │ platform-ui          │  ← depends on platform-core
   │ platform-datasets    │  ← depends on platform-core, db
-  │ platform-filters     │  ← depends on platform-core, platform-ui
+  │ platform-filters     │  ← depends on platform-core, platform-ui, platform-datasets
   └──────────────────────┘
 ```
 
@@ -140,7 +140,7 @@ The following empty placeholder directories were deleted in ST-8 and no longer e
 | `platform-core`     | — (leaf foundation)                                                                          | everything else                                 |
 | `platform-ui`       | `platform-core`                                                                              | emis-_, bi-_, apps/\*, datasets, filters, db    |
 | `platform-datasets` | `platform-core`, `db`                                                                        | emis-_, bi-_, apps/\*, platform-ui              |
-| `platform-filters`  | `platform-core`, `platform-ui`; `platform-datasets` if `getFilterSnapshot` coupling survives | emis-_, bi-_, apps/\*                           |
+| `platform-filters`  | `platform-core`, `platform-ui`, `platform-datasets`                                          | emis-_, bi-_, apps/\*                           |
 | `db`                | — (leaf foundation)                                                                          | everything else                                 |
 | `emis-contracts`    | `platform-core` (types only)                                                                 | emis-server, emis-ui, bi-_, apps/_, platform-ui |
 | `emis-server`       | `emis-contracts`, `platform-core`, `platform-datasets`, `db`                                 | emis-ui, bi-_, apps/_                           |
@@ -185,7 +185,7 @@ $widgets  → apps/web/src/lib/widgets
 ### Rules during migration
 
 1. **Aliases сохраняются** до завершения extraction целевого package.
-2. Код, уже перемещённый в package, **не использует aliases**. Он импортирует через package name (e.g., `@project/platform-ui`).
+2. Код, уже перемещённый в package, **не использует aliases**. Он импортирует через package name (e.g., `@dashboard-builder/platform-ui`).
 3. Код в `apps/web/`, который ещё не перемещён, **продолжает использовать aliases**.
 4. **Нельзя** создавать новые aliases для промежуточных состояний.
 5. После полного extraction зоны соответствующий alias **удаляется** из `svelte.config.js`.

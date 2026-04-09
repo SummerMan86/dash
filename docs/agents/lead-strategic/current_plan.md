@@ -19,11 +19,11 @@
 
 #### S-2: Docs sync against architecture canon
 
-- scope: `docs/emis_monorepo_target_layout.md`, `docs/emis_mve_product_contract.md`, `docs/emis_session_bootstrap.md`, другие docs с drift'ами, missing package AGENTS.md (db, platform-core, platform-filters, platform-ui)
+- scope: `docs/emis_monorepo_target_layout.md`, `docs/emis_mve_product_contract.md`, `docs/emis_session_bootstrap.md`, strategy/external-ownership wording, другие active docs с drift'ами, missing package AGENTS.md (`platform-core`, `platform-filters`, `platform-ui`)
 - depends on: S-1
 - размер: M
-- acceptance: все docs согласованы с architecture_dashboard_builder.md; stale target-state docs обновлены или archived; 4 пакета получили AGENTS.md; strategy overlay и external ownership wording согласованы
-- verification intent: grep по ключевым терминам (package homes, contour names) не выдаёт contradictions между architecture doc и domain docs
+- acceptance: все docs согласованы с architecture_dashboard_builder.md; stale target-state docs обновлены или archived; 3 platform packages получили AGENTS.md; strategy overlay и external ownership wording согласованы
+- verification intent: targeted grep по ключевым терминам (package homes, contour names, auth defaults, external ownership wording) не выдаёт contradictions между architecture doc и active domain docs
 - verification mode: `verification-first`
 
 ### Phase 2: Verification Foundation
