@@ -26,6 +26,16 @@
 - verification intent: новый reader видит separation сразу; BI и EMIS описаны независимо; repo-wide rules не дублируются
 - verification mode: `verification-first`
 
+#### S-1.6: Target-state architecture для BI vertical
+
+- scope: `docs/architecture_dashboard_bi_target.md` (новый)
+- depends on: S-1.5
+- размер: M
+- acceptance: target-state doc фиксирует целевую BI архитектуру: pluggable provider registry (datasetId → compiler → backend kind → source metadata), единый filter contract (без legacy FilterState merge), IR capability policy (fetch-only read model vs analytical query layer — решение зафиксировано), extension path для Oracle/CubeJS. Doc отделён от current-state (`architecture_dashboard_bi.md`). Registered в AGENTS.md.
+- verification intent: target-state doc адресует все 3 critical findings из architecture critique; новый developer понимает, куда архитектура движется
+- verification mode: `verification-first`
+- заметки: это design doc, не implementation plan. Реализация — в Phase 3.5 (Architecture Improvements)
+
 #### S-2: Docs sync against architecture canon
 
 - scope: `docs/emis_monorepo_target_layout.md`, `docs/emis_mve_product_contract.md`, `docs/emis_session_bootstrap.md`, strategy/external-ownership wording, другие active docs с drift'ами, missing package AGENTS.md (`platform-core`, `platform-filters`, `platform-ui`)
