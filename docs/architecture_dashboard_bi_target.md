@@ -166,33 +166,117 @@ Two distinct modes with different IR requirements:
 
 ---
 
-## 5. Client-Side Integration
+## 5. Client-Side Architecture
 
-The target BI model is server-centric for data, but the client has a clear interaction model following FSD layering:
+### Core principle: route-first UI composition + package-first data execution
 
-- **`fetchDataset`** calls the package-owned orchestration endpoint (`POST /api/datasets/:id`). It sends `DatasetQuery` with planner-produced `serverParams`.
-- **Filter planner** (`planFiltersForDataset`) produces two outputs: `serverParams` (sent to server via `fetchDataset`) and `clientFilterFn` (applied client-side after fetch).
-- **Widget** receives `DatasetResponse` from `fetchDataset`, applies `clientFilterFn` if present, then renders.
-- **Filter state** lives in scoped stores (`shared` / `workspace` / `owner`), derived into effective filters via `$derived`. Widgets subscribe to derived stores, not raw filter state.
-- **FSD layering**: widgets consume features (filter planner, `fetchDataset`), features consume entities (dataset contracts, filter specs). No widget imports another widget's internals.
+Pages own UI composition and page-local state. Packages own dataset execution, filter planning, and provider orchestration. No dashboard framework, no generic DashboardService.
+
+### Page model: workspace → page → section
+
+```
+apps/web/src/routes/dashboard/<domain>/
+  +layout.svelte               # workspace chrome, nav
+  pages.ts                     # static page metadata for nav/admin
+  filters.ts                   # workspace-shared filter specs
+  <page>/
+    +page.svelte               # composition owner: filters + datasets + local state
+    +page.ts | +page.server.ts # bootstrap only (auth context, map config, static options)
+    filters.ts                 # owner-only filters (if page needs extra beyond workspace)
+    view-model.ts              # heavy reshaping (pure, testable, separate from component)
+    components/                # page-local presentational sections
+```
+
+### Data fetching
+
+- **Default for interactive BI**: client-side `fetchDataset()` + `useFilterWorkspace()`. Filter changes trigger re-fetch without full page navigation.
+- **SvelteKit `load()` / `+page.server.ts`**: used selectively for bootstrap-only concerns — auth-derived defaults, feature flags, map config, slow static option catalogs. NOT the main mechanism for live filter changes.
+- **SvelteKit form actions**: used for state mutations when needed (save filter preset, export request). Not for dataset reads.
+
+### Data flow
+
+```
+Filter stores (shared/workspace/owner)
+  → planFiltersForDataset(datasetId, effectiveFilters, ctx)
+  → FilterPlan { serverParams, clientFilterFn }
+  → fetchDataset(datasetId, { params: serverParams })
+  → POST /api/datasets/:id → executeDatasetQuery → Provider → DatasetResponse
+  → clientFilterFn applied client-side (if any)
+  → view-model.ts transforms rows → page sections render
+```
+
+### Filter architecture
+
+- **Workspace-level filter specs** in `<domain>/filters.ts` — shared across all pages in the domain (e.g. date range, department). Registered once per workspace.
+- **Page-level (owner) filters** in `<page>/filters.ts` — only when a page needs extra filters beyond workspace scope.
+- **Filter state survives navigation** within a workspace (query-string preservation). Navigating `/wildberries/office-day` → `/wildberries/product-analytics` keeps shared filter values.
+- **Scoped stores**: `shared` (rare, cross-workspace) → `workspace` (default) → `owner` (page-local). Derived via `$derived` into effective filters.
+
+### State management
+
+- **Dataset results**: page-local state or page-local `.svelte.ts` helper. NOT in global stores.
+- **View state** (sort, selected row, chart mode, tabs): page-local.
+- **If a page grows large**: extract `state.svelte.ts` with pure reactive state. Don't jump to global stores.
+- **Reshaping/aggregation**: extract to `view-model.ts` — pure functions, testable without components.
+
+### Component model
+
+- **Section components are presentational**: receive rows/view-models/chart options as props. Don't call `fetchDataset()` themselves.
+- **Shared visual primitives** stay in `platform-ui`: `Chart`, `DataTable`, `StatCard`, `MetricCard`, inputs, cards.
+- **Domain-specific composites** stay in workspace `components/` until they have 3+ consumers AND are domain-agnostic. Then migrate to `platform-ui`.
+
+### What this is NOT
+
+- Not strict FSD — `entities/` and `widgets/` are legacy shims, not target homes for new code
+- Not a dashboard framework — no page registry DSL, no widget config, no drag-and-drop grid as default
+- Not React patterns — no effect chains, no context providers for data, no HOC wrapping
+- Not global-store-first — page data lives with the page
 
 ---
 
-## 6. Migration Strategy (high-level)
+## 6. Developer Workflows (cookie-cutter)
+
+### Add a new dashboard page
+
+1. Create `apps/web/src/routes/dashboard/<domain>/<page>/+page.svelte`
+2. Reuse `<domain>/filters.ts` for workspace filters; add `<page>/filters.ts` only for owner-scope extras
+3. Add page entry to `<domain>/pages.ts` for nav/admin
+4. Extract heavy reshaping to `<page>/view-model.ts` (pure, testable)
+5. Add `+page.server.ts` only if bootstrap data needed (auth context, config)
+
+### Add a new dataset
+
+1. Add a registry entry in `packages/platform-datasets/src/server/definitions/<family>.ts`
+2. Each entry: `datasetId`, `compile`, `backendKind`, `sourceDescriptor`, `capabilityProfile`
+3. Export from family index
+4. Test compile behavior and provider execution
+5. Pages consume via `fetchDataset(datasetId, ...)` — no page changes needed
+
+### Add a new provider
+
+1. Implement `Provider.execute(ir, ctx) → DatasetResponse` in `packages/platform-datasets/src/server/providers/<kind>/`
+2. Register `backendKind` in provider map
+3. Add backend-specific `sourceDescriptor` type to the union
+4. Add integration test with a sample dataset
+5. Existing pages: zero changes (provider selected by registry, not by page)
+
+---
+
+## 7. Migration Strategy (high-level)
 
 Incremental path from current state to target, each step additive:
 
-1. **Introduce dataset registry alongside `compile.ts`** -- new `DatasetRegistry` module, existing datasets registered in it, `compile.ts` delegates to registry for registered datasets, falls back to current switch for unregistered ones.
-2. **Migrate dataset families one by one** -- move `paymentAnalytics`, `wildberriesOfficeDay`, `wildberriesProductPeriod`, `emisMart`, `strategyMart` into registry entries. Each migration is a standalone commit.
-3. **Move SQL mappings out of `postgresProvider`** -- `sourceDescriptor` lives in registry entries, `postgresProvider` receives it via the entry, not from its internal `DATASETS` record.
-4. **Change route handler to use `executeDatasetQuery`** -- replace prefix check and inline orchestration with a call to the package-owned entrypoint. Route handler becomes parse/context/delegate/map-errors only.
-5. **Remove legacy filter merge from `fetchDataset`** -- drop `getFilterSnapshot()` call, send only planner-produced params. Remove `DatasetQuery.filters` field entirely.
-6. **Narrow IR** -- remove `groupBy` and `call()` from `SelectIr` type. Hard removal, no capability gate.
-7. **Add first non-Postgres provider** -- Oracle or CubeJS, proving the registry + provider interface works end-to-end.
+1. **Introduce dataset registry alongside `compile.ts`** — new `DatasetRegistry` module, existing datasets registered. `compile.ts` delegates to registry, falls back to current switch for unregistered.
+2. **Migrate dataset families one by one** — paymentAnalytics, wildberriesOfficeDay, wildberriesProductPeriod, emisMart, strategyMart into registry entries. Each migration = standalone commit.
+3. **Move SQL mappings out of `postgresProvider`** — `sourceDescriptor` lives in registry entries. Provider receives metadata, doesn't own catalog.
+4. **Change route handler to use `executeDatasetQuery`** — replace prefix check and inline orchestration with package-owned entrypoint. Route = parse/context/delegate/map-errors.
+5. **Remove legacy filter merge from `fetchDataset`** — drop `getFilterSnapshot()`, send only planner-produced params. Remove `DatasetQuery.filters` field.
+6. **Narrow IR** — remove `groupBy` and `call()` from `SelectIr` type. Hard removal, no capability gate.
+7. **Add first non-Postgres provider** — Oracle or CubeJS, proving registry + provider interface end-to-end.
 
 ---
 
-## 7. Read Next
+## 8. Read Next
 
 - [architecture_dashboard_bi.md](./architecture_dashboard_bi.md) -- current state
 - [architecture.md](./architecture.md) -- repo-wide foundation
