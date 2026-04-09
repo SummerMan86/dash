@@ -3,13 +3,20 @@
 Проверяешь diff against current canonical architecture contract.
 Ты не придумываешь новую архитектуру. Если diff упирается в новый placement/waiver decision, поднимаешь `needs design decision` и эскалируешь в architecture pass у `lead-strategic`.
 
+## Required input
+
+Before reviewing, you must have:
+- repo-wide guardrails: `docs/agents/invariants.md`
+- relevant domain overlay (e.g. `docs/agents/invariants-emis.md`) — overlay's canonical homes, boundaries, execution-path rules
+- overlay's exceptions registry, if the overlay maintains one (e.g. `docs/emis_known_exceptions.md`)
+
 ## Scope
 
 - Изменённые файлы + их импорты (1 уровень вглубь)
 - Platform/layer boundaries, если diff их касается
-- Package vs `apps/web` ownership
+- Package vs app leaf ownership
 - Server-only isolation
-- Separation `EMIS operational` vs `EMIS BI/read-side`
+- Separation of operational vs BI/read-side paths where that split exists (e.g. EMIS operational vs EMIS BI/read-side)
 - Known exceptions / waivers, если diff их затрагивает
 - Complexity drift по размеру файлов
 
@@ -21,15 +28,10 @@
    - `shared` НЕ импортирует из `entities`, `features`, `widgets`, `routes`
 
 2. **Package vs app-leaf ownership:**
-   - reusable EMIS contracts, DTO, Zod schemas идут в `packages/emis-contracts/*`
-   - reusable server/query/service/repository logic идёт в `packages/emis-server/src/*`
-   - reusable map/status UI идёт в `packages/emis-ui/*`
-   - `apps/web` используется только как app leaf:
-     - `routes/api/emis/*` — HTTP transport
-     - `routes/emis/*` — workspace/orchestration
-     - `routes/dashboard/emis/*` — BI/read-side UI
-     - `lib/server/emis/infra/http.ts`, `features/emis-manual-entry/*`, `widgets/emis-drawer/*` — app-local composition
-   - compatibility shims under `apps/web/src/lib/entities/emis-*`, `apps/web/src/lib/server/emis/*`, `apps/web/src/lib/widgets/emis-*` не считаются новым home для свежего reusable кода
+   Overlay-owned canonical homes define where reusable code lives and what stays in the app leaf. Check the active domain overlay (e.g. `invariants-emis.md`) for the authoritative mapping of:
+   - reusable canonical packages (contracts, server logic, UI)
+   - app leaf roles (transport, orchestration, BI routes, app-local composition)
+   - compatibility shims that are NOT new homes for fresh reusable code
 
 3. **Server isolation:**
    - `$lib/server/*` НЕ импортируется из client-side кода
@@ -38,15 +40,15 @@
 4. **Execution-path boundaries:**
    - UI и client-side код НЕ содержат SQL
    - `routes/api/` handlers НЕ содержат SQL — делегируют в server modules
-   - `apps/web/src/routes/api/emis/*` — только HTTP transport, без SQL и бизнес-логики
-   - `packages/emis-server/src/modules/*/service.ts` — без HTTP-логики (`Request`/`Response`)
-   - `/dashboard/emis/*` не ходит напрямую в operational SQL, а использует BI/read-side path
-   - `/emis` workspace не превращается в dataset/IR layer
+   - overlay's API transport routes contain only HTTP transport, no SQL or business logic
+   - overlay's service modules contain no HTTP logic (`Request`/`Response`)
+   - BI/read-side routes do not reach into operational SQL directly; they use the published read-model path
+   - operational workspace does not leak into dataset/IR abstraction layer
 
 5. **Exceptions / waivers:**
    - новый exception или waiver не может появиться без owner + expiry + removal condition
    - существующий exception не должен расширяться молча за пределы задокументированного scope
-   - long-lived complexity waiver должен быть явно назван в report и, при необходимости, в `docs/emis_known_exceptions.md`
+   - long-lived complexity waiver должен быть явно назван в report и, при необходимости, в overlay's exceptions registry (e.g. `docs/emis_known_exceptions.md`)
 
 6. **Import aliases:**
    - `$lib`, `$shared`, `$entities`, `$features`, `$widgets` — не relative `../../` через boundaries

@@ -18,21 +18,22 @@
 
 ### 1. Checks
 
+Baseline checks = repo-wide core checks + overlay-specific routine/smokes.
+
+Repo-wide core checks (always apply):
 - `pnpm check`
 - `pnpm build`
 - `pnpm lint:boundaries`
-- `pnpm emis:smoke`
-- `pnpm emis:offline-smoke`
-- `pnpm emis:write-smoke` when write-side relevant
 
-Это canonical baseline routine для EMIS post-freeze phase 2.
+Overlay-specific checks come from the active domain overlay (e.g. for EMIS: `pnpm emis:smoke`, `pnpm emis:offline-smoke`, `pnpm emis:write-smoke` when write-side relevant).
+
 Если в текущем slice какой-то check не прогоняли, в verdict нужно писать `not run`.
 
 ### 2. Boundaries
 
 - active docs соответствуют active package-era ownership
 - нет известных forbidden imports, которые “разрешены по молчанию”
-- нет doc/code contradiction по active EMIS boundaries
+- нет doc/code contradiction по active overlay boundaries
 
 ### 3. Exceptions
 
@@ -43,14 +44,18 @@
   - expiry / target wave
   - removal condition
 
+Use the overlay registry when that overlay maintains one or has live exceptions (e.g. `docs/emis_known_exceptions.md`).
+
 ## Вход
 
 Минимально тебе дают:
 
+- repo-wide guardrails: `docs/agents/invariants.md`
+- relevant domain overlay or its reference path (e.g. `docs/agents/invariants-emis.md` for canonical homes and boundaries; domain-specific checks and baseline routine may live in the overlay itself or in referenced docs like `docs/emis_known_exceptions.md`)
+- overlay's exceptions registry, if the overlay maintains one (e.g. `docs/emis_known_exceptions.md`)
 - `docs/agents/lead-strategic/current_plan.md`
 - `docs/agents/lead-strategic/memory.md`
 - `docs/agents/lead-tactical/last_report.md`, если есть свежий report
-- `docs/emis_known_exceptions.md`, если файл уже заведен
 - architecture pass decision, если в текущем slice были новые waivers / exceptions
 - список реально прогнанных checks
 
@@ -70,7 +75,7 @@
 - Не принимай устные “временные исключения” без owner и expiry.
 - Если baseline фактически red, говори `baseline not closed`, даже если в остальном прогресс хороший.
 - Пока существенные live exceptions остаются открытыми, green verdict по умолчанию недопустим.
-- Даже если live exceptions уже закрыты, `Green` всё равно недопустим без полного прогона canonical routine end-to-end.
+- Даже если live exceptions уже закрыты, `Green` всё равно недопустим без полного прогона baseline checks (repo-wide core + overlay-specific routine) end-to-end.
 
 ## Когда статус можно считать Green
 
@@ -78,7 +83,7 @@
 
 - canonical checks green или явно justified not-required
 - active docs match active boundaries
-- known exceptions registry существует
+- known exceptions registry существует, если overlay поддерживает его, или явно подтверждено, что live exceptions отсутствуют
 - live exceptions либо закрыты, либо сведены к управляемому минимуму и не ломают baseline truthfulness
 - команда может открыть новую large feature wave без скрытого foundation risk
 
