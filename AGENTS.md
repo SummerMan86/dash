@@ -22,12 +22,13 @@
 Стартовая дорожка:
 
 1. `README.md`
-2. `docs/architecture_dashboard_builder.md` (canonical architecture doc)
-3. локальный `AGENTS.md` в нужной папке
-4. `docs/current-project-analysis.md`, если нужен historical context до package-era
-5. локальный `CLAUDE.md`, если рядом нет `AGENTS.md`
+2. `docs/architecture.md` (canonical repo-wide foundation doc)
+3. `docs/architecture_dashboard_bi.md` (BI vertical: dataset IR, providers, filters, DWH)
+4. локальный `AGENTS.md` в нужной папке
+5. `docs/current-project-analysis.md`, если нужен historical context до package-era
+6. локальный `CLAUDE.md`, если рядом нет `AGENTS.md`
 
-> `docs/architecture.md` is a compatibility wrapper that points to the canonical doc.
+> `docs/architecture_dashboard_builder.md` is now a compatibility wrapper pointing to the three split docs.
 
 Основные активные зоны:
 
@@ -46,11 +47,12 @@
 
 Стартовая дорожка:
 
-1. `docs/architecture_dashboard_builder.md` (canonical architecture doc; `docs/architecture.md` is a compatibility wrapper)
-2. `docs/emis_session_bootstrap.md`
-3. `docs/emis_working_contract.md`
-4. `docs/AGENTS.md` - полный каталог EMIS docs, ownership и reading order
-5. локальный `AGENTS.md` в `apps/web/src/lib/server/emis/`, `apps/web/src/routes/api/emis/`, `apps/web/src/routes/emis/` и соседних active зонах
+1. `docs/architecture.md` (canonical repo-wide foundation doc)
+2. `docs/architecture_emis.md` (EMIS vertical: operational paths, contracts, ingestion, PostGIS)
+3. `docs/emis_session_bootstrap.md`
+4. `docs/emis_working_contract.md`
+5. `docs/AGENTS.md` - полный каталог EMIS docs, ownership и reading order
+6. локальный `AGENTS.md` в `apps/web/src/lib/server/emis/`, `apps/web/src/routes/api/emis/`, `apps/web/src/routes/emis/` и соседних active зонах
 
 ### Agent workflow (работа в команде агентов)
 
@@ -87,8 +89,10 @@ EMIS-активный контур сейчас находится здесь:
 ## 3. Кто за что отвечает в навигации
 
 - `README.md` - что это за приложение, стек, быстрый старт, env и маршруты
-- `docs/architecture_dashboard_builder.md` - canonical repo-wide architecture doc
-- `docs/architecture.md` - compatibility wrapper pointing to the canonical doc
+- `docs/architecture.md` - canonical repo-wide foundation architecture doc
+- `docs/architecture_dashboard_bi.md` - BI vertical architecture (dataset IR, providers, filters, DWH)
+- `docs/architecture_emis.md` - EMIS vertical architecture (operational paths, contracts, ingestion, PostGIS)
+- `docs/architecture_dashboard_builder.md` - compatibility wrapper pointing to the three split docs
 - `AGENTS.md` в корне - выбрать контур, увидеть reading path и конвенцию навигационных файлов
 - `docs/AGENTS.md` - единственный полный каталог документации и reading order
 - локальные `AGENTS.md` / `CLAUDE.md` - правила и карта конкретной подсистемы
@@ -127,8 +131,10 @@ These paths no longer exist. Do not recreate them without explicit architectural
 
 Repo-wide architecture contract для этого состояния зафиксирован в:
 
-→ [docs/architecture_dashboard_builder.md](./docs/architecture_dashboard_builder.md) (canonical)
-→ [docs/architecture.md](./docs/architecture.md) (compatibility wrapper)
+→ [docs/architecture.md](./docs/architecture.md) (canonical repo-wide foundation)
+→ [docs/architecture_dashboard_bi.md](./docs/architecture_dashboard_bi.md) (BI vertical)
+→ [docs/architecture_emis.md](./docs/architecture_emis.md) (EMIS vertical)
+→ [docs/architecture_dashboard_builder.md](./docs/architecture_dashboard_builder.md) (compatibility wrapper)
 
 ### Target layout и migration rules
 
@@ -142,8 +148,9 @@ Canonical target layout для monorepo-style separation:
 
 Подробный repo-wide contract:
 
-→ [docs/architecture_dashboard_builder.md](./docs/architecture_dashboard_builder.md) (canonical)
-→ [docs/architecture.md](./docs/architecture.md) (compatibility wrapper)
+→ [docs/architecture.md](./docs/architecture.md) (canonical repo-wide foundation)
+→ [docs/architecture_dashboard_bi.md](./docs/architecture_dashboard_bi.md) (BI vertical)
+→ [docs/architecture_emis.md](./docs/architecture_emis.md) (EMIS vertical)
 
 ### Non-EMIS BI read-side
 
@@ -161,7 +168,7 @@ Canonical target layout для monorepo-style separation:
 
 ### EMIS architecture rules
 
-Для EMIS действуют repo-wide package/app boundaries, два канонических execution path и current EMIS package/app placement из `docs/architecture.md`:
+Для EMIS действуют repo-wide package/app boundaries (see `docs/architecture.md`), два канонических execution path (`docs/architecture_dashboard_bi.md`, `docs/architecture_emis.md`) и current EMIS package/app placement:
 
 - `packages/emis-contracts/` - контракты, DTO, базовые доменные типы, Zod schemas
 - `packages/emis-server/src/infra/*` - server infrastructure

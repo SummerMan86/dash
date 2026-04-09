@@ -1,8 +1,10 @@
 # Docs Navigation
 
 Этот файл - единственный полный каталог документации в репозитории.
-Canonical repo-wide architecture doc: [architecture_dashboard_builder.md](./architecture_dashboard_builder.md).
-Compatibility wrapper (old links): [architecture.md](./architecture.md).
+Canonical repo-wide foundation: [architecture.md](./architecture.md).
+BI vertical: [architecture_dashboard_bi.md](./architecture_dashboard_bi.md).
+EMIS vertical: [architecture_emis.md](./architecture_emis.md).
+Compatibility wrapper (old links): [architecture_dashboard_builder.md](./architecture_dashboard_builder.md).
 Модульная навигация и contour entry points: корневой [AGENTS.md](../AGENTS.md).
 `README.md` отвечает только за quick start и описание приложения.
 
@@ -31,8 +33,10 @@ Compatibility wrapper (old links): [architecture.md](./architecture.md).
 
 | Документ                                                                           | Владеет                                      | Source of truth для                                                             |
 | ---------------------------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------- |
-| `architecture_dashboard_builder.md`                                                | canonical repo-wide architecture doc         | topology, package map, execution paths, dependency rules, contract surfaces, deployment, verification |
-| `architecture.md`                                                                  | compatibility wrapper                        | short summary + pointer to canonical doc; kept so existing links work            |
+| `architecture.md`                                                                  | canonical repo-wide foundation               | topology, package map, import rules, deployment, shared infrastructure            |
+| `architecture_dashboard_bi.md`                                                     | BI vertical architecture                     | dataset IR path, providers, filters, DWH integrations, extension points           |
+| `architecture_emis.md`                                                             | EMIS vertical architecture                   | operational paths, contracts, ingestion, PostGIS, auth                             |
+| `architecture_dashboard_builder.md`                                                | compatibility wrapper                        | points to the three split docs above; kept so existing links work                 |
 | `../apps/web/src/routes/dashboard/wildberries/dwh_for_wildberries_requirements.md` | Wildberries DWH contract                     | полный контракт с DWH: витрины, колонки, фильтры, алерты, требования к качеству |
 | `strategy/bi_strategy.md`                                                          | local dashboard-builder BI strategy contract | как переложить Power BI strategy/BSC постановку в MVE-архитектуру               |
 | `../apps/web/src/routes/dashboard/strategy/AGENTS.md`                              | strategy route development contract          | current pages, grain rules, filter contract и rollout path                      |
@@ -66,8 +70,9 @@ Compatibility wrapper (old links): [architecture.md](./architecture.md).
 
 | Документ                                                    | Владеет                                    | Source of truth для                                                                                           |
 | ----------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| `architecture_dashboard_builder.md`                         | canonical repo-wide architecture doc       | topology, package map, execution paths, dependency rules, contract surfaces, deployment, verification |
-| `architecture.md`                                           | compatibility wrapper                      | short summary + pointer to canonical doc; kept so existing links work |
+| `architecture.md`                                           | canonical repo-wide foundation             | topology, package map, import rules, deployment, shared infrastructure |
+| `architecture_emis.md`                                      | EMIS vertical architecture                 | operational paths, contracts, ingestion, PostGIS, auth |
+| `architecture_dashboard_builder.md`                         | compatibility wrapper                      | points to the three split docs; kept so existing links work |
 | `emis_session_bootstrap.md`                                 | текущее состояние и start-here entry point | где EMIS находится сейчас, что в фокусе и что читать дальше по типу задачи                                    |
 | `emis_working_contract.md`                                  | short EMIS working rules                   | decision path, non-negotiables, review triggers, DoD                                                          |
 | `emis_access_model.md`                                      | EMIS access model                          | viewer/editor/admin, write guardrails и где enforce                                                           |
@@ -153,15 +158,16 @@ Compatibility wrapper (old links): [architecture.md](./architecture.md).
 ### Для platform / dashboard-builder
 
 1. `README.md`
-2. `architecture_dashboard_builder.md` (canonical; `architecture.md` is a compatibility wrapper)
-3. `../db/schema_catalog.md`
-4. если задача про Wildberries DWH - `../apps/web/src/routes/dashboard/wildberries/dwh_for_wildberries_requirements.md`
-5. если задача про strategy dashboards - `strategy/bi_strategy.md`
-6. если задача про strategy dashboards - `../apps/web/src/routes/dashboard/strategy/AGENTS.md`
-7. если задача про strategy datasets/runtime - `../apps/web/src/lib/server/datasets/AGENTS.md`
-8. если нужен historical context до package-era - `current-project-analysis.md`
-9. при необходимости - `/home/orl/Shl/КА/MS BI/bsc_model/agent_pack/docs/imported/dashboard-builder/4. strategy_entity_bsc_mart_pilot_verification_2026_03_21.md`
-10. при необходимости - `archive/strategy-v1/strategy_session_bootstrap.md`
+2. `architecture.md` (canonical repo-wide foundation)
+3. `architecture_dashboard_bi.md` (BI vertical)
+4. `../db/schema_catalog.md`
+5. если задача про Wildberries DWH - `../apps/web/src/routes/dashboard/wildberries/dwh_for_wildberries_requirements.md`
+6. если задача про strategy dashboards - `strategy/bi_strategy.md`
+7. если задача про strategy dashboards - `../apps/web/src/routes/dashboard/strategy/AGENTS.md`
+8. если задача про strategy datasets/runtime - `../apps/web/src/lib/server/datasets/AGENTS.md`
+9. если нужен historical context до package-era - `current-project-analysis.md`
+10. при необходимости - `/home/orl/Shl/КА/MS BI/bsc_model/agent_pack/docs/imported/dashboard-builder/4. strategy_entity_bsc_mart_pilot_verification_2026_03_21.md`
+11. при необходимости - `archive/strategy-v1/strategy_session_bootstrap.md`
 
 ### Для ops / deploy
 
@@ -169,11 +175,12 @@ Compatibility wrapper (old links): [architecture.md](./architecture.md).
 
 ### Для EMIS
 
-1. `architecture_dashboard_builder.md` (canonical; `architecture.md` is a compatibility wrapper)
-2. `emis_session_bootstrap.md`
-3. `emis_working_contract.md`
-4. `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
-5. `emis_mve_product_contract.md` — если нужен product scope
+1. `architecture.md` (canonical repo-wide foundation)
+2. `architecture_emis.md` (EMIS vertical)
+3. `emis_session_bootstrap.md`
+4. `emis_working_contract.md`
+5. `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
+6. `emis_mve_product_contract.md` — если нужен product scope
 
 Опционально по задаче:
 
@@ -208,7 +215,9 @@ Compatibility wrapper (old links): [architecture.md](./architecture.md).
 ## 5. Правило ownership
 
 - Этот файл владеет полным каталогом документации.
-- `architecture_dashboard_builder.md` владеет canonical repo-wide architecture doc.
-- `architecture.md` -- compatibility wrapper, points to canonical doc.
+- `architecture.md` владеет canonical repo-wide foundation architecture.
+- `architecture_dashboard_bi.md` владеет BI vertical architecture.
+- `architecture_emis.md` владеет EMIS vertical architecture.
+- `architecture_dashboard_builder.md` -- compatibility wrapper, points to the three split docs.
 - Корневой `AGENTS.md` владеет развилкой по контурам и navigation entry points.
 - `README.md` не должен дублировать doc map; он только отправляет сюда.
