@@ -144,7 +144,8 @@ Optional:
 ## Evidence
 
 - верни, какие проверки реально запускались, где и с каким итогом
-- если ожидаемая проверка не запускалась, напиши `not run` и причину
+- каждый check должен иметь состояние: `fresh` (прогнан после финального diff) или `not run + reason`
+- evidence без состояния не принимается (см. `review-gate.md` §1.6)
 
 ## Формат сдачи
 
@@ -200,7 +201,7 @@ Skip conditions:
 
 ## Checks Evidence
 
-- <команда>: <green|red|not run> — <где запускалось / краткая причина>
+- <команда>: <green|red> `fresh` | `not run` — <reason>
 
 ## Review Disposition
 
@@ -317,10 +318,10 @@ Optional:
 
 ## Checks Evidence
 
-- `pnpm check`: <green|red|not run> — <where / reason>
-- `pnpm build`: <green|red|not run> — <where / reason>
-- `pnpm lint:boundaries`: <green|red|not run> — <where / reason>
-- other: <command/result> | `none`
+- `pnpm check`: <green|red> `fresh` | `not run` — <reason>
+- `pnpm build`: <green|red> `fresh` | `not run` — <reason>
+- `pnpm lint:boundaries`: <green|red> `fresh` | `not run` — <reason>
+- other: <command/result> `fresh` | `none`
 
 ## Ветки
 
@@ -495,10 +496,10 @@ Optional:
 
 ## Checks Evidence
 
-- `pnpm check`: <green|red|not run> — <where / reason>
-- `pnpm build`: <green|red|not run> — <where / reason>
-- `pnpm lint:boundaries`: <green|red|not run> — <where / reason>
-- other: <command/result> | `none`
+- `pnpm check`: <green|red> `fresh` | `not run` — <reason>
+- `pnpm build`: <green|red> `fresh` | `not run` — <reason>
+- `pnpm lint:boundaries`: <green|red> `fresh` | `not run` — <reason>
+- other: <command/result> `fresh` | `none`
 
 ## Fixes During Verification
 

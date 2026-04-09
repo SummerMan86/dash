@@ -94,6 +94,17 @@ Canonical report typing rules: `docs/agents/workflow.md`.
 - используй `docs/agents/recovery.md`;
 - сначала фиксируй truthful state в report/memory, потом восстанавливай execution flow.
 
+## Evidence Acceptance
+
+При приёмке worker handoff проверяй evidence freshness по `review-gate.md` §1.6:
+
+- каждый ожидаемый check должен иметь явное состояние (`fresh` / `not run + reason`)
+- evidence без состояния или с устаревшим результатом — отправляй worker'а перезапустить check
+- fabricated или contradictory evidence — `CRITICAL`, блокируй acceptance
+- missing expected evidence — `WARNING`, запроси явное разрешение или причину
+
+Не принимай handoff с vague evidence вроде "всё работает" или "проверил" без конкретных результатов.
+
 ## Быстрая проверка перед commit / report
 
 Canonical invariants: `docs/agents/invariants.md`.

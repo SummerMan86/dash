@@ -52,6 +52,19 @@ Canonical invariants: `docs/agents/invariants.md`.
 - [ ] Нет лишних абстракций "на будущее"
 - [ ] Инварианты из `docs/agents/invariants.md` не нарушены
 
+## Evidence Discipline
+
+Checks evidence в handoff должен быть **fresh** — получен в текущей сессии после финального diff, а не из прошлого прогона или по памяти.
+
+Каждый ожидаемый check в handoff должен быть отмечен одним из состояний:
+
+- `fresh` — прогнан в текущей сессии после финального diff, результат актуален
+- `not run` — не запускался; укажи причину (e.g. "not applicable", "blocked by X")
+
+Если check прогнан ранее, но после него были изменения — перезапусти его (→ `fresh`) или честно укажи `not run + reason`. Evidence без явного состояния считается невалидным.
+
+Fabricated или contradictory evidence — `CRITICAL` finding при review.
+
 ## Правила
 
 ### Делай
