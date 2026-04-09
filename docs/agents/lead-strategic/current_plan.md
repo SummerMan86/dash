@@ -75,22 +75,22 @@
 - verification intent: provider execution не сломан; existing tests pass
 - verification mode: `test-first`
 
-#### S-23: Switch route handler to registry-based provider selection
+#### S-23: Switch route handler to executeDatasetQuery
 
-- scope: `apps/web/src/routes/api/datasets/[id]/+server.ts`
+- scope: `apps/web/src/routes/api/datasets/[id]/+server.ts`, `packages/platform-datasets/src/server/executeDatasetQuery.ts` (новый)
 - depends on: S-22
-- размер: S
-- acceptance: prefix-based `isPostgresDataset()` заменён на `registry.get(id).backendKind`; route handler тонкий: lookup → compile → validate → execute
-- verification intent: all dataset requests routed correctly
+- размер: M
+- acceptance: route handler = parse HTTP + validate + derive context + call `executeDatasetQuery(datasetId, query, ctx)` + map typed errors to HTTP. Вся orchestration (registry lookup, capability validation, provider selection) в package-owned `executeDatasetQuery`. Typed error contract: DATASET_NOT_FOUND, UNSUPPORTED_BACKEND, CAPABILITY_MISMATCH.
+- verification intent: all dataset requests routed correctly through package entrypoint; route handler is thin shell
 - verification mode: `test-first`
 
-#### S-24: Unify filter contract, remove legacy merge
+#### S-24: Unify filter contract, migrate BI routes to planner-only path
 
-- scope: `apps/web/src/lib/shared/api/fetchDataset.ts`, `packages/platform-filters/src/model/types.ts`
+- scope: `apps/web/src/lib/shared/api/fetchDataset.ts`, `packages/platform-filters/src/model/types.ts`, active BI route folders (`dashboard/strategy/`, `dashboard/wildberries/`)
 - depends on: S-23
 - размер: L
-- acceptance: `getFilterSnapshot()` legacy merge убран из fetchDataset; `DatasetQuery.params` — единственный canonical input; `DatasetQuery.filters` deprecated; compilers получают clean typed params
-- verification intent: filter flow end-to-end через planner-only path; no legacy state в canonical path
+- acceptance: `getFilterSnapshot()` legacy merge убран из fetchDataset; `DatasetQuery.params` — единственный canonical input; `DatasetQuery.filters` removed; active BI routes мигрированы на planner-only path; workspace-shared filter specs вынесены в `<domain>/filters.ts` где filters действительно shared across pages
+- verification intent: filter flow end-to-end через planner-only path; no legacy state; workspace filters survive navigation within domain
 - verification mode: `test-first`
 
 #### S-25: Narrow IR — remove groupBy/call from SelectIr
