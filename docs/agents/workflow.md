@@ -339,7 +339,7 @@ Failure-path после эскалации описан в `docs/agents/recovery
 | `lead-strategic/memory.md` | `lead-strategic` | следующий strategic thread |
 | `lead-tactical/memory.md` | `lead-tactical` | следующий tactical session |
 | `runtime/agents/usage-log.ndjson` | `lead-tactical` | локальная optimization analytics / future DB import |
-| `emis_known_exceptions.md` | `lead-strategic` governance loop | все роли по необходимости |
+| domain-specific exceptions registry (e.g. `emis_known_exceptions.md` per overlay) | `lead-strategic` governance loop | все роли по необходимости |
 
 Правила хранения:
 

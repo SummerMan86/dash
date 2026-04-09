@@ -120,7 +120,7 @@ Canonical invariants: `docs/agents/invariants.md`.
 - [ ] SQL не в routes?
 - [ ] Server-only код не импортируется с клиента?
 - [ ] Schema changes отражены в db/?
-- [ ] Новые reusable контракты в packages/emis-contracts/\*?
+- [ ] Новые reusable контракты в canonical package home per domain overlay (e.g. `packages/emis-contracts/*`)?
 - [ ] Файлы < 700 строк?
 
 ## Что ты НЕ делаешь
@@ -143,6 +143,6 @@ Canonical invariants: `docs/agents/invariants.md`.
 - `docs/agents/usage-telemetry.md` — usage log contract и usefulness rubric
 - `docs/agents/invariants.md` — project invariants
 - `docs/agents/templates.md` — шаблоны коммуникации
-- `docs/emis_session_bootstrap.md` — состояние проекта
+- Relevant domain bootstrap doc if applicable (e.g. `docs/emis_session_bootstrap.md`)
 - `docs/agents/lead-tactical/memory.md` — твоя память
 - Локальные `AGENTS.md` в затронутых модулях
