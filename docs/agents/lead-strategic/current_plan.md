@@ -1,88 +1,73 @@
-# Plan: Generalize Agent Workflow for Multi-Domain Use
+# Plan: Dashboard-Builder Stabilization Before New Features
 
 ## Цель
 
-Сделать `docs/agents/*` domain-agnostic для работы не только с EMIS, но и с Oracle, CubeJS и будущими контурами, вынеся domain-specific rules в overlays и сохранив текущий workflow полностью рабочим для EMIS. Operating mode для этой wave: `ordinary iterative` — низкий риск, docs-only, но с поэтапным reframe из-за плотных ссылок между canonical docs.
+Закрыть baseline на текущем main, устранить critical tech debt и довести test coverage до уровня, при котором новые фичи (Oracle, CubeJS, расширенный BI) можно строить безопасно. Operating mode: `ordinary iterative`.
 
-## Подзадачи
+## Backlog
 
-### ST-1: Вынести domain-specific invariants в overlays
+### P0 — Blockers / Must fix before new features
 
-- scope: `docs/agents/invariants.md`, новые overlay docs для active domains (`docs/agents/invariants-emis.md`, при необходимости `docs/agents/invariants-platform.md`), `docs/AGENTS.md`
-- depends on: —
-- размер: M
-- acceptance: `docs/agents/invariants.md` содержит только generic workflow/repo guardrails и правило подключения overlays; EMIS-specific package/path/BI rules вынесены в явный overlay; у каждого перенесённого правила остаётся ровно один canonical home; навигация до EMIS overlay доступна из generic doc за один шаг
-- verification intent: проверить, что generic invariants можно применять к новому домену без правки core doc, а EMIS rules не теряются и остаются discoverable
-- verification mode: `verification-first`
-- заметки: делать extraction additively; сначала завести overlay, потом чистить core doc
+| # | Задача | Размер | Описание |
+|---|---|---|---|
+| **S-1** | Re-close baseline on current main | M | Прогнать canonical checks (check, build, lint:boundaries, test) и зафиксировать fresh baseline verdict. Последний green pass — 2026-04-05, после merge'а не перепроверялся. |
+| **S-2** | CI gate for architecture health | M | Добавить GitHub Actions workflow: pnpm check + build + lint:boundaries + test на PR и push to main. Сейчас всё ручное — любой regression тихий. |
+| **S-3** | Make packages independently verifiable | M | Добавить per-package typecheck (tsconfig.json в каждом package). Сейчас только apps/web/tsconfig.json — пакеты не проверяются как first-class единицы. |
+| **S-4** | Deepen tests: platform-datasets | L | Расширить за routing tests: dataset definition coverage, provider execution (postgresProvider — core BI runtime, largest untested hotspot). |
+| **S-5** | Deepen tests: platform-filters runtime | L | Тесты для store.svelte.ts, serialization.ts, registry, workspace scoping, URL sync. Сейчас только planner — реальный risk в state migration и runtime. |
+| **S-6** | Remove legacy filter bridge from fetchDataset | L | Убрать merge getFilterSnapshot() legacy state в planner-driven flow. Пока два filter contract живут вместе — ambiguous cache, request, URL semantics для каждого нового dataset page. |
+| **S-7** | Align IR with provider capabilities | M | Либо реализовать call()/groupBy в providers, либо сузить IR contract. Сейчас модель разрешает то, что провайдер бросает. Блокирует Oracle/Cube позже. |
 
-### ST-2: Обобщить core workflow и role instructions
+### P1 — Should fix during stabilization
 
-- scope: `docs/agents/workflow.md`, `docs/agents/lead-strategic/instructions.md`, `docs/agents/lead-tactical/instructions.md`, `docs/agents/roles.md`
-- depends on: ST-1
-- размер: M
-- acceptance: lifecycle, ownership, operating modes и report loop не меняются; role docs больше не требуют EMIS docs как default context для любой задачи; generic instructions ссылаются на relevant domain overlay / local `AGENTS.md` / contour bootstrap вместо hardcoded EMIS bootstrap
-- verification intent: проверить, что `lead-strategic` и `lead-tactical` могут отработать одну и ту же процедуру для EMIS, Oracle или CubeJS без скрытых EMIS-only предпосылок
-- verification mode: `verification-first`
-- заметки: оставить все механизмы без semantic rewrite; менять только default framing и ссылки
+| # | Задача | Размер | Описание |
+|---|---|---|---|
+| **S-8** | Tests: EMIS contracts + auth logic | L | Unit tests для emis-contracts Zod schemas, password hashing, auth-mode fallback, ingestion match resolution. Zero coverage на high-value contract surface. |
+| **S-9** | Tests: platform-core/format.ts | S | 10+ pure formatting functions (formatNumber, formatCurrency, formatPercent, formatDate и др.) без тестов. |
+| **S-10** | Delete legacy dataset definition copies | M | Убрать legacy copies в apps/web/src/lib/server/datasets/definitions/* или конвертировать в re-exports. Ложный second source of truth. |
+| **S-11** | Finish EMIS shim burn-down | M | Убрать 16 `// MIGRATION` re-export файлов в apps/web/src/lib/server/emis/*. Blurry ownership, замедляет review. |
+| **S-12** | Sync architecture docs with codebase | M | emis_monorepo_target_layout.md: fetchDataset ownership. emis_mve_product_contract.md: auth defaults. Два конкретных drift'а. |
+| **S-13** | Add missing package AGENTS.md | S | db, platform-core, platform-filters, platform-ui — 4 пакета без navigation docs. |
+| **S-14** | Alerts deployment contract | M | Решить: alerts остаётся app-local manual schema или входит в snapshot-first DB contract. Сейчас тихо отключается если schema не applied. |
+| **S-15** | Drain db/pending_changes.sql | M | Подтвердить, что все live environments имеют AUTH audit + ING-2 + strategy deltas. Задокументировать deployment rule. |
 
-### ST-3: Обобщить шаблоны и review/governance interfaces
+### P2 — Fix during next relevant work
 
-- scope: `docs/agents/templates.md`, `docs/agents/review-gate.md`, `docs/agents/git-protocol.md`
-- depends on: ST-1, ST-2
-- размер: M
-- acceptance: templates больше не хардкодят `server/emis` и EMIS-only contour labels; architecture/review placeholders становятся domain-neutral или явно marked as examples; EMIS-specific checkpoint rhythm в git protocol заменён на generic/example framing; форма plan/handoff/report остаётся backward-compatible
-- verification intent: проверить, что canonical templates можно заполнить без переписывания под новый домен, а текущие EMIS waves по-прежнему проходят по тем же шаблонам
-- verification mode: `verification-first`
-- заметки: не менять section structure и обязательные поля шаблонов
+| # | Задача | Размер | Описание |
+|---|---|---|---|
+| **S-16** | Reduce cross-package coupling | S | JsonValue в platform-filters → platform-core. Consolidate dataset-runtime ownership. |
+| **S-17** | Clean dead artifacts from source trees | S | apps/web/src/Examples/ (orphan PNG), experimental routes (demo, test, edit-dnd-demo) — formalize или remove. |
 
-### ST-4: Вычистить governance helper docs от EMIS-default assumptions
+## Recommended Execution Order
 
-- scope: `docs/agents/architecture-steward/instructions.md`, `docs/agents/baseline-governor/instructions.md`, `docs/agents/architecture-reviewer/instructions.md`, связанные ссылки на exceptions registry / baseline routine в touched docs
-- depends on: ST-1, ST-2, ST-3
-- размер: M
-- acceptance: governance/helper docs больше не навязывают EMIS package homes, EMIS-only baseline checks и `docs/emis_known_exceptions.md` как universal default; generic wording опирается на overlay-owned boundaries, baseline routine и exceptions registry; EMIS-specific governance checks остаются доступными через EMIS overlay/reference path
-- verification intent: проверить, что architecture pass, baseline pass и architecture-reviewer могут корректно оценивать любой домен при поданном overlay context, не ломая текущий EMIS governance trail
-- verification mode: `verification-first`
-- заметки: если глобальный rename registry создаёт лишний blast radius, rename не делать; достаточно перевести core docs на overlay indirection и оставить `docs/emis_known_exceptions.md` как EMIS-specific artifact
+**Phase 1 — Baseline closure (S-1, S-2, S-3):**
+Прогнать checks, поставить CI gate, сделать пакеты verifiable. Foundation для всего остального.
 
-### ST-5: Финальный navigation и consistency pass
+**Phase 2 — Test coverage critical path (S-4, S-5, S-9):**
+Покрыть core runtime: datasets, filters, format utilities. Без этого новые фичи — blind.
 
-- scope: `docs/AGENTS.md` и все изменённые docs из ST-1..ST-4
-- depends on: ST-1, ST-2, ST-3, ST-4
-- размер: S
-- acceptance: doc map явно разделяет generic agent model и domain overlays; все ссылки консистентны; EMIS remains first-class supported overlay; добавление будущего `invariants-oracle.md` или `invariants-cubejs.md` не требует нового переписывания core workflow docs
-- verification intent: проверить, что новый читатель может пройти маршрут "generic workflow -> relevant domain overlay" без неоднозначности и broken references
-- verification mode: `verification-first`
-- заметки: это doc consistency slice, без расширения scope в code/runtime
+**Phase 3 — Contract cleanup (S-6, S-7, S-10, S-11):**
+Убрать legacy bridge, выровнять IR, удалить дублирование. Расчистить путь для Oracle/Cube.
+
+**Phase 4 — EMIS stabilization (S-8, S-14, S-15):**
+Тесты EMIS contracts, alerts contract, drain pending migrations.
+
+**Phase 5 — Docs and polish (S-12, S-13, S-16, S-17):**
+Sync docs, navigation, cleanup.
 
 ## Ограничения
 
-- Это только docs/process refactor; code, packages, routes, runtime contracts и execution paths не меняются
-- Не ломать действующий agent workflow для EMIS во время и после refactor
-- Держать refactor минимальным: extraction и genericization ссылок, а не переписывание всей системы документации
-- Не трогать already-clean docs: `docs/agents/skills/debugging.md`, `docs/agents/skills/testing-strategy.md`, `docs/agents/memory-protocol.md`
-- Не менять canonical ownership артефактов: `current_plan.md`, `last_report.md`, `memory.md`, report types, role names, operating modes
-- Не удалять EMIS-specific правила без явного нового canonical home в overlay docs
-- Предпочитать overlay indirection и additive docs над массовыми rename/move, если rename не даёт явной пользы
-
-## Per-slice integrity checklist
-
-После каждого slice worker и reviewer проверяют:
-
-1. **Принципы не потеряны**: core lifecycle (plan → execute → review → accept), role ownership (strategic/tactical/worker/reviewers), Review Gate (slice + integration), governance passes (architecture/baseline) — всё на месте и не размыто
-2. **Сложность не выросла**: количество обязательных файлов для старта работы не увеличилось; новый overlay — это дополнение, а не ещё один обязательный шаг
-3. **Навигация из AGENTS.md**: каждый новый или перемещённый doc имеет строку в `docs/AGENTS.md`; читатель может найти любой doc за один шаг из doc map
-4. **Нет broken references**: все ссылки из изменённых docs ведут на существующие файлы; grep `invariants.md`, `emis_session_bootstrap`, `emis_known_exceptions` и т.д. не выдаёт dangling links
-5. **EMIS не сломан**: текущий EMIS workflow можно пройти по overlay path так же, как раньше — по прямым ссылкам; EMIS-specific rules не потеряны и не задублированы
-6. **Нет запутанности**: generic doc не содержит domain-specific правил (кроме явных `example:` блоков); overlay не содержит generic workflow rules
-7. **Backward compatibility**: формат plan/handoff/report/review request не сломан; старые артефакты (reports, plans) остаются валидными
-
-Если любой пункт нарушен — это `WARNING` при review, и slice не принимается без fix.
+- Не начинать новые фичи до завершения Phase 1
+- Не менять public API пакетов без test coverage на затронутые контракты
+- Не удалять legacy bridge (S-6) до наличия test coverage на filter runtime (S-5)
+- CI gate (S-2) не должен блокировать текущую разработку на этапе внедрения — сначала reporting mode, потом blocking
 
 ## Ожидаемый результат
 
-- `docs/agents/*` описывают generic agent workflow, применимый к любому домену в этом repo
-- Domain-specific rules живут в отдельных overlays, начиная с EMIS, и подключаются из generic docs без hardcoded default domain
-- EMIS workflow остаётся полностью рабочим и discoverable через explicit overlay path
-- Для Oracle, CubeJS и будущих контуров появляется понятный extension path: добавить overlay docs, не переписывая core workflow
+- Fresh baseline verdict на main
+- CI автоматически ловит regressions
+- Пакеты — independent verifiable units
+- Core runtime (datasets, filters, formatting) покрыт тестами
+- Legacy dual-contract убран, IR честно отражает capabilities
+- EMIS contracts и auth под тестами
+- Путь для Oracle/CubeJS расчищен
