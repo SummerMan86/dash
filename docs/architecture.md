@@ -6,7 +6,15 @@ Canonical repo-wide architecture doc. Current-state only.
 - Covers: system topology, package map, import rules, deployment, shared infrastructure
 - Does not cover: BI-specific execution paths (see architecture_dashboard_bi.md), EMIS-specific operational paths (see architecture_emis.md)
 
-## 1. System Topology
+## 1. Architectural Principles
+
+Two foundational models define the system:
+
+- **Server-side: Modular monolith.** One deployable process, but domain logic is isolated in reusable packages (`packages/*`). Packages own contracts, queries, services; the app (`apps/web`) is a thin transport/orchestration shell. Cross-domain imports go through explicit package boundaries, not internal module paths.
+
+- **Client-side: FSD (Feature-Sliced Design) adapted for Svelte.** App-local code in `apps/web/src/lib/` follows a layered model: `shared → entities → features → widgets → routes`. Each layer can import only from layers below it. This is a UI organization convention, not a governing architecture model — the real reusable logic lives in `packages/*`.
+
+## 2. System Topology
 
 Single-deployable SvelteKit 2 application built as a pnpm workspace monorepo.
 
@@ -158,7 +166,7 @@ Memory budget: ~590 MB used (OS + PG + Docker + Node + nginx), ~410 MB free + 51
 | `docs/architecture.md` (this file) | Repo-wide foundation architecture |
 | `docs/architecture_dashboard_bi.md` | BI vertical architecture |
 | `docs/architecture_emis.md` | EMIS vertical architecture |
-| `docs/architecture_dashboard_builder.md` | Compatibility wrapper, points to the three docs above |
+| `docs/architecture_dashboard_bi_target.md` | BI target-state architecture |
 | `docs/emis_session_bootstrap.md` | EMIS current state and reading order |
 | `docs/emis_working_contract.md` | EMIS working rules and decision discipline |
 | `db/schema_catalog.md` | App DB schema catalog |

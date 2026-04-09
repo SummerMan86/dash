@@ -4,7 +4,7 @@
 Canonical repo-wide foundation: [architecture.md](./architecture.md).
 BI vertical: [architecture_dashboard_bi.md](./architecture_dashboard_bi.md).
 EMIS vertical: [architecture_emis.md](./architecture_emis.md).
-Compatibility wrapper (old links): [architecture_dashboard_builder.md](./architecture_dashboard_builder.md).
+BI target-state: [architecture_dashboard_bi_target.md](./architecture_dashboard_bi_target.md).
 Модульная навигация и contour entry points: корневой [AGENTS.md](../AGENTS.md).
 `README.md` отвечает только за quick start и описание приложения.
 
@@ -37,7 +37,6 @@ Compatibility wrapper (old links): [architecture_dashboard_builder.md](./archite
 | `architecture_dashboard_bi.md`                                                     | BI vertical architecture                     | dataset IR path, providers, filters, DWH integrations, extension points           |
 | `architecture_dashboard_bi_target.md`                                              | BI vertical target-state architecture        | target provider model, filter contract, IR capability policy, Oracle/CubeJS path  |
 | `architecture_emis.md`                                                             | EMIS vertical architecture                   | operational paths, contracts, ingestion, PostGIS, auth                             |
-| `architecture_dashboard_builder.md`                                                | compatibility wrapper                        | points to the three split docs above; kept so existing links work                 |
 | `../apps/web/src/routes/dashboard/wildberries/dwh_for_wildberries_requirements.md` | Wildberries DWH contract                     | полный контракт с DWH: витрины, колонки, фильтры, алерты, требования к качеству |
 | `strategy/bi_strategy.md`                                                          | local dashboard-builder BI strategy contract | как переложить Power BI strategy/BSC постановку в MVE-архитектуру               |
 | `../apps/web/src/routes/dashboard/strategy/AGENTS.md`                              | strategy route development contract          | current pages, grain rules, filter contract и rollout path                      |
@@ -73,7 +72,6 @@ Compatibility wrapper (old links): [architecture_dashboard_builder.md](./archite
 | ----------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
 | `architecture.md`                                           | canonical repo-wide foundation             | topology, package map, import rules, deployment, shared infrastructure |
 | `architecture_emis.md`                                      | EMIS vertical architecture                 | operational paths, contracts, ingestion, PostGIS, auth |
-| `architecture_dashboard_builder.md`                         | compatibility wrapper                      | points to the three split docs; kept so existing links work |
 | `emis_session_bootstrap.md`                                 | текущее состояние и start-here entry point | где EMIS находится сейчас, что в фокусе и что читать дальше по типу задачи                                    |
 | `emis_working_contract.md`                                  | short EMIS working rules                   | decision path, non-negotiables, review triggers, DoD                                                          |
 | `emis_access_model.md`                                      | EMIS access model                          | viewer/editor/admin, write guardrails и где enforce                                                           |
@@ -220,6 +218,6 @@ Compatibility wrapper (old links): [architecture_dashboard_builder.md](./archite
 - `architecture.md` владеет canonical repo-wide foundation architecture.
 - `architecture_dashboard_bi.md` владеет BI vertical architecture.
 - `architecture_emis.md` владеет EMIS vertical architecture.
-- `architecture_dashboard_builder.md` -- compatibility wrapper, points to the three split docs.
+- `architecture_dashboard_bi_target.md` владеет BI target-state architecture.
 - Корневой `AGENTS.md` владеет развилкой по контурам и navigation entry points.
 - `README.md` не должен дублировать doc map; он только отправляет сюда.
