@@ -2,72 +2,180 @@
 
 ## Цель
 
-Закрыть baseline на текущем main, устранить critical tech debt и довести test coverage до уровня, при котором новые фичи (Oracle, CubeJS, расширенный BI) можно строить безопасно. Operating mode: `ordinary iterative`.
+Создать canonical architecture doc для всего dashboard-builder, привести документацию в соответствие, затем закрыть baseline, довести test coverage и расчистить tech debt. Порядок: docs → verification → tests → cleanup. Operating mode: `ordinary iterative`.
 
-## Backlog
+## Подзадачи
 
-### P0 — Blockers / Must fix before new features
+### Phase 1: Architecture Canon
 
-| # | Задача | Размер | Описание |
-|---|---|---|---|
-| **S-1** | Re-close baseline on current main | M | Прогнать canonical checks (check, build, lint:boundaries, test) и зафиксировать fresh baseline verdict. Последний green pass — 2026-04-05, после merge'а не перепроверялся. |
-| **S-2** | CI gate for architecture health | M | Добавить GitHub Actions workflow: pnpm check + build + lint:boundaries + test на PR и push to main. Сейчас всё ручное — любой regression тихий. |
-| **S-3** | Make packages independently verifiable | M | Добавить per-package typecheck (tsconfig.json в каждом package). Сейчас только apps/web/tsconfig.json — пакеты не проверяются как first-class единицы. |
-| **S-4** | Deepen tests: platform-datasets | L | Расширить за routing tests: dataset definition coverage, provider execution (postgresProvider — core BI runtime, largest untested hotspot). |
-| **S-5** | Deepen tests: platform-filters runtime | L | Тесты для store.svelte.ts, serialization.ts, registry, workspace scoping, URL sync. Сейчас только planner — реальный risk в state migration и runtime. |
-| **S-6** | Remove legacy filter bridge from fetchDataset | L | Убрать merge getFilterSnapshot() legacy state в planner-driven flow. Пока два filter contract живут вместе — ambiguous cache, request, URL semantics для каждого нового dataset page. |
-| **S-7** | Align IR with provider capabilities | M | Либо реализовать call()/groupBy в providers, либо сузить IR contract. Сейчас модель разрешает то, что провайдер бросает. Блокирует Oracle/Cube позже. |
+#### S-1: Создать architecture_dashboard_builder.md
 
-### P1 — Should fix during stabilization
+- scope: `docs/architecture_dashboard_builder.md` (новый), `docs/architecture.md` (→ wrapper), `AGENTS.md` (root), `docs/AGENTS.md`
+- depends on: —
+- размер: L
+- acceptance: новый doc покрывает: system topology, full package/app map, domain contours (platform/shared, BI, EMIS operational, strategy, Wildberries, alerts), canonical execution paths (BI dataset, EMIS operational, alert/ops), data/storage ownership, import/dependency rules, client/server contract surfaces, extension points для Oracle/CubeJS, deployment model, documentation taxonomy, verification hooks. `architecture.md` → compatibility wrapper. Navigation в AGENTS.md обновлена.
+- verification intent: новый reader может понять всю архитектуру без чтения EMIS-specific docs
+- verification mode: `verification-first`
 
-| # | Задача | Размер | Описание |
-|---|---|---|---|
-| **S-8** | Tests: EMIS contracts + auth logic | L | Unit tests для emis-contracts Zod schemas, password hashing, auth-mode fallback, ingestion match resolution. Zero coverage на high-value contract surface. |
-| **S-9** | Tests: platform-core/format.ts | S | 10+ pure formatting functions (formatNumber, formatCurrency, formatPercent, formatDate и др.) без тестов. |
-| **S-10** | Delete legacy dataset definition copies | M | Убрать legacy copies в apps/web/src/lib/server/datasets/definitions/* или конвертировать в re-exports. Ложный second source of truth. |
-| **S-11** | Finish EMIS shim burn-down | M | Убрать 16 `// MIGRATION` re-export файлов в apps/web/src/lib/server/emis/*. Blurry ownership, замедляет review. |
-| **S-12** | Sync architecture docs with codebase | M | emis_monorepo_target_layout.md: fetchDataset ownership. emis_mve_product_contract.md: auth defaults. Два конкретных drift'а. |
-| **S-13** | Add missing package AGENTS.md | S | db, platform-core, platform-filters, platform-ui — 4 пакета без navigation docs. |
-| **S-14** | Alerts deployment contract | M | Решить: alerts остаётся app-local manual schema или входит в snapshot-first DB contract. Сейчас тихо отключается если schema не applied. |
-| **S-15** | Drain db/pending_changes.sql | M | Подтвердить, что все live environments имеют AUTH audit + ING-2 + strategy deltas. Задокументировать deployment rule. |
+#### S-2: Docs sync against architecture canon
 
-### P2 — Fix during next relevant work
+- scope: `docs/emis_monorepo_target_layout.md`, `docs/emis_mve_product_contract.md`, `docs/emis_session_bootstrap.md`, другие docs с drift'ами, missing package AGENTS.md (db, platform-core, platform-filters, platform-ui)
+- depends on: S-1
+- размер: M
+- acceptance: все docs согласованы с architecture_dashboard_builder.md; stale target-state docs обновлены или archived; 4 пакета получили AGENTS.md; strategy overlay и external ownership wording согласованы
+- verification intent: grep по ключевым терминам (package homes, contour names) не выдаёт contradictions между architecture doc и domain docs
+- verification mode: `verification-first`
 
-| # | Задача | Размер | Описание |
-|---|---|---|---|
-| **S-16** | Reduce cross-package coupling | S | JsonValue в platform-filters → platform-core. Consolidate dataset-runtime ownership. |
-| **S-17** | Clean dead artifacts from source trees | S | apps/web/src/Examples/ (orphan PNG), experimental routes (demo, test, edit-dnd-demo) — formalize или remove. |
+### Phase 2: Verification Foundation
 
-## Recommended Execution Order
+#### S-3: Re-close baseline on current main
 
-**Phase 1 — Baseline closure (S-1, S-2, S-3):**
-Прогнать checks, поставить CI gate, сделать пакеты verifiable. Foundation для всего остального.
+- scope: canonical checks (pnpm check, build, lint:boundaries, test)
+- depends on: S-1
+- размер: S
+- acceptance: fresh baseline verdict зафиксирован; все checks green или justified not-run
+- verification intent: прогнать все checks и зафиксировать результат
+- verification mode: `test-first`
 
-**Phase 2 — Test coverage critical path (S-4, S-5, S-9):**
-Покрыть core runtime: datasets, filters, format utilities. Без этого новые фичи — blind.
+#### S-4: CI gate for architecture health
 
-**Phase 3 — Contract cleanup (S-6, S-7, S-10, S-11):**
-Убрать legacy bridge, выровнять IR, удалить дублирование. Расчистить путь для Oracle/Cube.
+- scope: `.github/workflows/` (новый), `package.json` scripts
+- depends on: S-3
+- размер: M
+- acceptance: GitHub Actions workflow: check + build + lint:boundaries + test на PR и push to main. Сначала reporting mode, потом blocking.
+- verification intent: PR без green checks виден как failed
+- verification mode: `test-first`
 
-**Phase 4 — EMIS stabilization (S-8, S-14, S-15):**
-Тесты EMIS contracts, alerts contract, drain pending migrations.
+#### S-5: Make packages independently verifiable
 
-**Phase 5 — Docs and polish (S-12, S-13, S-16, S-17):**
-Sync docs, navigation, cleanup.
+- scope: `packages/*/tsconfig.json` (новые), root build scripts
+- depends on: S-3
+- размер: M
+- acceptance: каждый package имеет tsconfig.json; per-package typecheck проходит; пакеты проверяются как first-class единицы
+- verification intent: `pnpm -r --filter ./packages/* exec tsc --noEmit` green
+- verification mode: `test-first`
+
+### Phase 3: Test Coverage
+
+#### S-6: Deepen tests: platform-datasets
+
+- scope: `packages/platform-datasets/src/**/*.test.ts`
+- depends on: S-5
+- размер: L
+- acceptance: dataset definition coverage, provider execution tests (postgresProvider — core BI runtime). Покрытие routing + definitions + provider layer.
+- verification intent: core BI execution path покрыт тестами
+- verification mode: `test-first`
+
+#### S-7: Deepen tests: platform-filters runtime
+
+- scope: `packages/platform-filters/src/**/*.test.ts`
+- depends on: S-5
+- размер: L
+- acceptance: тесты для store, serialization, registry, workspace scoping, URL sync. State migration и runtime behavior покрыты.
+- verification intent: filter runtime покрыт тестами
+- verification mode: `test-first`
+
+#### S-8: Tests: platform-core/format.ts
+
+- scope: `packages/platform-core/src/**/*.test.ts`
+- depends on: S-5
+- размер: S
+- acceptance: 10+ pure formatting functions покрыты тестами
+- verification intent: все formatting edge cases (null, 0, negative, locale) под тестами
+- verification mode: `test-first`
+
+#### S-9: Tests: EMIS contracts + auth logic
+
+- scope: `packages/emis-contracts/src/**/*.test.ts`, `packages/emis-server/src/**/*.test.ts`
+- depends on: S-5
+- размер: L
+- acceptance: Zod schemas, password hashing, auth-mode fallback, ingestion match resolution под тестами
+- verification intent: high-value contract surfaces и auth logic покрыты
+- verification mode: `test-first`
+
+### Phase 4: Contract & Code Cleanup
+
+#### S-10: Remove legacy filter bridge from fetchDataset
+
+- scope: `apps/web/src/lib/shared/api/fetchDataset.ts`
+- depends on: S-7
+- размер: L
+- acceptance: getFilterSnapshot() legacy merge убран; один canonical filter contract; cache/request/URL semantics однозначны
+- verification intent: filter flow end-to-end работает через planner-only path
+- verification mode: `test-first`
+
+#### S-11: Align IR with provider capabilities
+
+- scope: `packages/platform-datasets/src/model/ir.ts`, providers
+- depends on: S-6
+- размер: M
+- acceptance: call()/groupBy либо реализованы, либо IR contract сужен. Провайдер не бросает на advertised capabilities.
+- verification intent: IR contract честно отражает то, что providers execute
+- verification mode: `test-first`
+
+#### S-12: Delete legacy dataset definition copies
+
+- scope: `apps/web/src/lib/server/datasets/definitions/*`
+- depends on: S-6
+- размер: M
+- acceptance: legacy copies удалены или конвертированы в re-exports; один source of truth
+- verification intent: нет двух определений одного dataset
+- verification mode: `verification-first`
+
+#### S-13: Finish EMIS shim burn-down
+
+- scope: `apps/web/src/lib/server/emis/*` (migration re-exports)
+- depends on: S-9
+- размер: M
+- acceptance: 16 `// MIGRATION` re-export файлов удалены; consumers переключены на package imports
+- verification intent: build green после удаления shims
+- verification mode: `test-first`
+
+#### S-14: Alerts deployment contract + drain pending migrations
+
+- scope: `db/pending_changes.sql`, alerts schema, deployment docs
+- depends on: S-1
+- размер: M
+- acceptance: все live environments имеют AUTH audit + ING-2 + strategy deltas; alerts contract задокументирован; pending_changes.sql drained
+- verification intent: deployment state truthful и задокументирован
+- verification mode: `verification-first`
+
+### Phase 5: Polish
+
+#### S-15: Reduce cross-package coupling
+
+- scope: `packages/platform-filters/`, `packages/platform-core/`
+- depends on: S-7
+- размер: S
+- acceptance: JsonValue → platform-core; dataset-runtime ownership consolidated
+- verification intent: package graph cleaner
+- verification mode: `verification-first`
+
+#### S-16: Clean dead artifacts
+
+- scope: `apps/web/src/Examples/`, experimental routes
+- depends on: —
+- размер: S
+- acceptance: orphan files removed; experimental routes formalized или removed
+- verification intent: no dead code in source tree
+- verification mode: `verification-first`
 
 ## Ограничения
 
-- Не начинать новые фичи до завершения Phase 1
+- Не начинать новые фичи до завершения Phase 1 + Phase 2
+- Architecture doc (S-1) замораживает терминологию — все последующие docs/tests/cleanup следуют ей
 - Не менять public API пакетов без test coverage на затронутые контракты
-- Не удалять legacy bridge (S-6) до наличия test coverage на filter runtime (S-5)
-- CI gate (S-2) не должен блокировать текущую разработку на этапе внедрения — сначала reporting mode, потом blocking
+- Не удалять legacy filter bridge (S-10) до test coverage на filter runtime (S-7)
+- CI gate (S-4) — сначала reporting mode, потом blocking
+- Docs-first: тесты и cleanup закрепляют задокументированную архитектуру, а не фиксируют текущие assumptions
 
 ## Ожидаемый результат
 
-- Fresh baseline verdict на main
-- CI автоматически ловит regressions
+- Canonical architecture doc для всего dashboard-builder
+- Все docs согласованы с architecture canon
+- Fresh baseline verdict + CI gate
 - Пакеты — independent verifiable units
 - Core runtime (datasets, filters, formatting) покрыт тестами
-- Legacy dual-contract убран, IR честно отражает capabilities
 - EMIS contracts и auth под тестами
+- Legacy dual-contract убран, IR честно отражает capabilities
 - Путь для Oracle/CubeJS расчищен
