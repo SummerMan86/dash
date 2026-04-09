@@ -22,10 +22,12 @@
 Стартовая дорожка:
 
 1. `README.md`
-2. `docs/architecture.md`
+2. `docs/architecture_dashboard_builder.md` (canonical architecture doc)
 3. локальный `AGENTS.md` в нужной папке
 4. `docs/current-project-analysis.md`, если нужен historical context до package-era
 5. локальный `CLAUDE.md`, если рядом нет `AGENTS.md`
+
+> `docs/architecture.md` is a compatibility wrapper that points to the canonical doc.
 
 Основные активные зоны:
 
@@ -44,7 +46,7 @@
 
 Стартовая дорожка:
 
-1. `docs/architecture.md`
+1. `docs/architecture_dashboard_builder.md` (canonical architecture doc; `docs/architecture.md` is a compatibility wrapper)
 2. `docs/emis_session_bootstrap.md`
 3. `docs/emis_working_contract.md`
 4. `docs/AGENTS.md` - полный каталог EMIS docs, ownership и reading order
@@ -85,7 +87,8 @@ EMIS-активный контур сейчас находится здесь:
 ## 3. Кто за что отвечает в навигации
 
 - `README.md` - что это за приложение, стек, быстрый старт, env и маршруты
-- `docs/architecture.md` - canonical repo-wide architecture contract
+- `docs/architecture_dashboard_builder.md` - canonical repo-wide architecture doc
+- `docs/architecture.md` - compatibility wrapper pointing to the canonical doc
 - `AGENTS.md` в корне - выбрать контур, увидеть reading path и конвенцию навигационных файлов
 - `docs/AGENTS.md` - единственный полный каталог документации и reading order
 - локальные `AGENTS.md` / `CLAUDE.md` - правила и карта конкретной подсистемы
@@ -124,7 +127,8 @@ These paths no longer exist. Do not recreate them without explicit architectural
 
 Repo-wide architecture contract для этого состояния зафиксирован в:
 
-→ [docs/architecture.md](./docs/architecture.md)
+→ [docs/architecture_dashboard_builder.md](./docs/architecture_dashboard_builder.md) (canonical)
+→ [docs/architecture.md](./docs/architecture.md) (compatibility wrapper)
 
 ### Target layout и migration rules
 
@@ -138,7 +142,8 @@ Canonical target layout для monorepo-style separation:
 
 Подробный repo-wide contract:
 
-→ [docs/architecture.md](./docs/architecture.md)
+→ [docs/architecture_dashboard_builder.md](./docs/architecture_dashboard_builder.md) (canonical)
+→ [docs/architecture.md](./docs/architecture.md) (compatibility wrapper)
 
 ### Non-EMIS BI read-side
 

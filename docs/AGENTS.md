@@ -1,7 +1,10 @@
 # Docs Navigation
 
 Этот файл - единственный полный каталог документации в репозитории.
-Repo-wide architecture contract живёт в [architecture.md](./architecture.md), модульная навигация и contour entry points - в корневом [AGENTS.md](../AGENTS.md), а `README.md` отвечает только за quick start и описание приложения.
+Canonical repo-wide architecture doc: [architecture_dashboard_builder.md](./architecture_dashboard_builder.md).
+Compatibility wrapper (old links): [architecture.md](./architecture.md).
+Модульная навигация и contour entry points: корневой [AGENTS.md](../AGENTS.md).
+`README.md` отвечает только за quick start и описание приложения.
 
 ## 1. Что здесь каталогизируется
 
@@ -28,7 +31,8 @@ Repo-wide architecture contract живёт в [architecture.md](./architecture.m
 
 | Документ                                                                           | Владеет                                      | Source of truth для                                                             |
 | ---------------------------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------- |
-| `architecture.md`                                                                  | repo-wide architecture contract              | topology, ownership, execution paths, package/app boundaries и import rules     |
+| `architecture_dashboard_builder.md`                                                | canonical repo-wide architecture doc         | topology, package map, execution paths, dependency rules, contract surfaces, deployment, verification |
+| `architecture.md`                                                                  | compatibility wrapper                        | short summary + pointer to canonical doc; kept so existing links work            |
 | `../apps/web/src/routes/dashboard/wildberries/dwh_for_wildberries_requirements.md` | Wildberries DWH contract                     | полный контракт с DWH: витрины, колонки, фильтры, алерты, требования к качеству |
 | `strategy/bi_strategy.md`                                                          | local dashboard-builder BI strategy contract | как переложить Power BI strategy/BSC постановку в MVE-архитектуру               |
 | `../apps/web/src/routes/dashboard/strategy/AGENTS.md`                              | strategy route development contract          | current pages, grain rules, filter contract и rollout path                      |
@@ -62,7 +66,8 @@ Repo-wide architecture contract живёт в [architecture.md](./architecture.m
 
 | Документ                                                    | Владеет                                    | Source of truth для                                                                                           |
 | ----------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| `architecture.md`                                           | repo-wide architecture contract            | topology, ownership, execution paths, import rules, repo-wide boundaries и current EMIS package/app placement |
+| `architecture_dashboard_builder.md`                         | canonical repo-wide architecture doc       | topology, package map, execution paths, dependency rules, contract surfaces, deployment, verification |
+| `architecture.md`                                           | compatibility wrapper                      | short summary + pointer to canonical doc; kept so existing links work |
 | `emis_session_bootstrap.md`                                 | текущее состояние и start-here entry point | где EMIS находится сейчас, что в фокусе и что читать дальше по типу задачи                                    |
 | `emis_working_contract.md`                                  | short EMIS working rules                   | decision path, non-negotiables, review triggers, DoD                                                          |
 | `emis_access_model.md`                                      | EMIS access model                          | viewer/editor/admin, write guardrails и где enforce                                                           |
@@ -148,7 +153,7 @@ Repo-wide architecture contract живёт в [architecture.md](./architecture.m
 ### Для platform / dashboard-builder
 
 1. `README.md`
-2. `architecture.md`
+2. `architecture_dashboard_builder.md` (canonical; `architecture.md` is a compatibility wrapper)
 3. `../db/schema_catalog.md`
 4. если задача про Wildberries DWH - `../apps/web/src/routes/dashboard/wildberries/dwh_for_wildberries_requirements.md`
 5. если задача про strategy dashboards - `strategy/bi_strategy.md`
@@ -164,7 +169,7 @@ Repo-wide architecture contract живёт в [architecture.md](./architecture.m
 
 ### Для EMIS
 
-1. `architecture.md`
+1. `architecture_dashboard_builder.md` (canonical; `architecture.md` is a compatibility wrapper)
 2. `emis_session_bootstrap.md`
 3. `emis_working_contract.md`
 4. `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
@@ -203,6 +208,7 @@ Repo-wide architecture contract живёт в [architecture.md](./architecture.m
 ## 5. Правило ownership
 
 - Этот файл владеет полным каталогом документации.
-- `architecture.md` владеет repo-wide architecture contract.
+- `architecture_dashboard_builder.md` владеет canonical repo-wide architecture doc.
+- `architecture.md` -- compatibility wrapper, points to canonical doc.
 - Корневой `AGENTS.md` владеет развилкой по контурам и navigation entry points.
 - `README.md` не должен дублировать doc map; он только отправляет сюда.
