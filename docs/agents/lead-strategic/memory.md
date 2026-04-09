@@ -3,6 +3,32 @@
 Персистентная память GPT-5.4 lead между сессиями.
 Обновляется в конце каждой сессии.
 
+## Update 2026-04-06
+
+- Active wave switched to:
+  - `EMIS External Object Ingestion, Wave 1`
+- Strategic operating mode for this wave:
+  - `high-risk iterative / unstable wave`
+- Canonical scope for the new wave:
+  - generic ingestion contour
+  - active sources only `osm` and `gem`
+  - `stg_emis` as raw truth
+  - `emis.objects` as curated operational truth
+  - `mart.emis_objects_dim` still built only from curated objects
+- Frozen wave decisions:
+  - `wikimapia` is explicitly deferred to a later source-validation/legal-ops wave
+  - canonical multi-source identity moves to `emis.object_source_refs`
+  - `emis.objects.external_id` remains compatibility-only
+  - full geometry support is included in wave 1 for imported objects
+  - current manual object editor may remain point-first, but non-point imported objects must be protected from geometry corruption
+  - no separate background runtime, scheduler, or queue is introduced in wave 1
+- Execution-ready docs prepared in this session:
+  - `docs/plans/emis_external_object_ingestion.md`
+  - `docs/agents/lead-strategic/current_plan.md`
+- First tactical opening order for the new wave:
+  - `ING-1` -> `ING-2` -> `ING-3`
+  - only then `ING-4` / `ING-5` and downstream slices
+
 ## Принятые решения
 
 - EMIS уже считаем отдельным доменным контуром, а не просто частью "dashboard-builder demo".
@@ -17,7 +43,7 @@
   - `docs/emis_working_contract.md`
 - Strategic plan for the current active wave lives in:
   - `docs/agents/lead-strategic/current_plan.md`
-  - topic: `EMIS Phase 2 Baseline Truthfulness And Boundary Enforcement`
+  - topic: `EMIS External Object Ingestion, Wave 1`
 - Closed freeze-wave plan is archived in:
   - `docs/archive/agents/lead_strategic_current_plan_2026_04_04_architecture_stabilization_and_governance_freeze.md`
 - Legacy docs cleanup should be treated as a separate explicit slice after topology/read-order stabilization, not as ad hoc deletion during feature work.
@@ -73,24 +99,11 @@
   - `docs/archive/agents/lead_strategic_current_plan_2026_04_03_post_split_hardening.md`
 - Closed freeze-wave plan is archived:
   - `docs/archive/agents/lead_strategic_current_plan_2026_04_04_architecture_stabilization_and_governance_freeze.md`
-- Current active wave is phase 2:
-  - `EMIS Phase 2 Baseline Truthfulness And Boundary Enforcement`
-  - `P3.1` completed as docs-only slice on `2026-04-04`
-  - `P3.2` completed on `2026-04-04`
-  - `P3.3` completed on `2026-04-04`
-  - `P3.4` completed on `2026-04-04`
-  - `P3.5` completed on `2026-04-04`
-  - `P3.6` completed on `2026-04-04`
-  - full canonical baseline routine is now green
-  - phase 2 exit criteria are met
-  - ordinary bounded feature work is open again; architecture-line follow-up is repo-wide doc sync only if still needed
-  - repo-wide doc sync follow-up (`DS-1` through `DS-4`) is completed on `2026-04-04` as a docs-only bounded package
-  - `NW-1` and `NW-2` are closed
-  - `NW-3` is accepted after post-cleanup doc recheck on `2026-04-05`
-  - next strategic-tactical opening order is now:
-    - `NW-4` — readiness and API error logging
-    - `NW-5` — MVE acceptance audit and sign-off
-    - only after that: `P1`, then `P2`
+- Historical note:
+  - `EMIS Phase 2 Baseline Truthfulness And Boundary Enforcement` is closed
+  - phase-2 baseline and post-MVE follow-up remain green
+  - ordinary bounded feature work reopened after that closure
+  - the current active wave is now `EMIS External Object Ingestion, Wave 1`
 - Previous baseline/enforcement-first sequencing (`S0..S8`) is not cancelled, but deferred to phase 2 after architecture docs freeze.
 - New canonical exception registry:
   - `docs/emis_known_exceptions.md`
@@ -107,102 +120,37 @@
 
 ## Текущий active wave
 
-- Эта wave не переоткрывает `ST-1..ST-10`, `H-1..H-5` или freeze-wave `A0-A5`.
+- Эта wave не переоткрывает `ST-1..ST-10`, `H-1..H-5`, phase-2 baseline repair, `NW-1..NW-5` или Phase 3-5 закрытые slices.
 - Wave name:
-  - `EMIS Phase 2 Baseline Truthfulness And Boundary Enforcement`
+  - `EMIS External Object Ingestion, Wave 1`
 - Why now:
-  - freeze-wave closed and archived
-  - baseline routine/verdict must be truthful before more code hardening
-  - no live architecture exceptions remain after `P3.4`
-- `P3.1` completed on `2026-04-04`:
-  - archived the closed `A0-A5` plan
-  - replaced `current_plan.md` with the phase-2 plan
-  - documented one canonical post-freeze baseline routine:
-    - `pnpm check`
-    - `pnpm build`
-    - `pnpm lint:boundaries`
-    - `pnpm emis:smoke`
-    - `pnpm emis:offline-smoke`
-    - `pnpm emis:write-smoke` when write-side relevant
-  - aligned docs on one truthful verdict:
-    - status: `Red`
-    - verdict: `baseline not closed`
-  - made `P3.2` the next default slice
-- `P3.2` completed on `2026-04-04`:
-  - `apps/web/src/lib/shared/api/fetchDataset.ts` now imports contracts directly from workspace packages
-  - redundant `cacheKeyQuery` was removed
-  - `pnpm lint:boundaries` and `pnpm check` were rerun successfully
-  - `EXC-ARCH-002` was removed from live exceptions
-- `P3.3` completed on `2026-04-04`:
-  - `eslint.config.js` now covers package-era non-negotiables for all workspace packages
-  - `scripts/lint-boundaries.mjs` now scans `packages/*/src/` in addition to the app-local rails
-  - `pnpm lint:boundaries` stays green with package-aware coverage
-  - the slice stayed bounded and did not pull `stock-alerts -> routes` into the same pass
-- `P3.4` completed on `2026-04-04`:
-  - `packages/emis-ui/src/emis-map/EmisMap.svelte` was decomposed into `map-interactions.ts` and `map-bounds.ts`
-  - `EmisMap.svelte` dropped from `903` to `695` lines without route/app spillover
-  - `EXC-ARCH-004` is closed; no live architecture exceptions remain
-  - `pnpm check`, `pnpm lint:boundaries`, and `pnpm build` were rerun successfully
-- `P3.5` completed on `2026-04-04`:
-  - root smoke harness drift was repaired:
-    - root `package.json` now declares `dotenv` and `pg` for root scripts
-    - `scripts/emis-offline-smoke.mjs` and `scripts/emis-write-smoke.mjs` now start Vite from `apps/web`
-    - `scripts/emis-offline-smoke.mjs` now resolves assets from `apps/web/static/emis-map/offline`
-  - `P3.4` SSR fallout was repaired:
-    - `map-interactions.ts` and `map-bounds.ts` now use default runtime imports from `maplibre-gl`
-  - `apps/web/vite.config.ts` now keeps `@dashboard-builder/platform-datasets` and `@dashboard-builder/db` inside the Vite SSR transform path
-  - verified results:
-    - `pnpm check` — green
-    - `pnpm build` — green
-    - `pnpm lint:boundaries` — green
-    - `pnpm emis:offline-smoke` — green
-    - `pnpm emis:write-smoke` — green
-    - `pnpm emis:smoke` — green
-  - dataset/runtime blocker is closed:
-    - dataset error contracts now return expected `400/404`
-    - dataset payload checks now return `200`
-    - `/dashboard/emis*` pages now return `200`
-  - phase 2 exit criteria are met; baseline is now `Green / baseline closed`
-- Resume point for the next chat:
-  - branch / HEAD during the last accepted save:
-    - `main`
-    - `f695b33` — `docs: finalize EMIS governance model and A5 handoff`
-  - current working tree contains:
-    - archived freeze-wave plan
-    - new active phase-2 plan
-    - completed `P3.1` docs updates
-    - completed `P3.2` boundary fix and baseline-truth updates
-    - completed `P3.3` package-aware enforcement updates
-    - completed `P3.4` EMIS UI waiver closure
-    - completed full baseline rerun and closed the remaining dataset/runtime blocker
-    - completed `P3.6` bounded cleanup removing dead app-side dataset/db shims
-  - on `2026-04-05`, `NW-3` was rechecked against the post-cleanup active doc set and accepted
-  - small doc-truth fixes were applied to:
-    - `docs/agents/lead-strategic/current_plan.md`
-    - `docs/emis_next_tasks_2026_03_22.md`
-  - what was fixed:
-    - removed stale `screen #6` wording from the `NW-3` acceptance narrative
-    - removed stale "recommended next handoff = NW-3" wording
-    - removed closed `M1` items from the active backlog and made `M3.1` the truthful next default slice
-  - next chat should open `NW-4` unless the user explicitly reprioritizes; it should not rerun `P3.1`-`P3.6`, `DS-1`-`DS-4`, `NW-1`, `NW-2`, `NW-3`, `A5`, or the already-green baseline fixes
+  - baseline remains green after completed auth hardening and post-MVE closure
+  - EMIS is ready for ordinary feature work
+  - next expansion pressure is external-object ingestion from validated public sources
+- Current plan state:
+  - `docs/agents/lead-strategic/current_plan.md` now tracks the ingestion wave
+  - detailed design reference lives in `docs/plans/emis_external_object_ingestion.md`
 - Current planned slices:
-  - `P3.1` — completed
-  - `P3.2` — completed
-  - `P3.3` — completed
-  - `P3.4` — completed
-  - `P3.5` — completed
-  - `P3.6` — completed
-  - `NW-1` — completed
-  - `NW-2` — completed
-  - `NW-3` — completed and accepted after doc cleanup recheck
-  - `NW-4` — health/readiness and API error logging hardening
-  - `NW-5` — MVE acceptance audit and sign-off
+  - `ING-1` — contract freeze and execution alignment
+  - `ING-2` — DB foundation
+  - `ING-3` — geometry broadening and curated object contract upgrade
+  - `ING-4` — ingestion contracts and query/repository layer
+  - `ING-5` — source adapters and registry
+  - `ING-6` — resolution engine and curated publication
+  - `ING-7` — API transport
+  - `ING-8` — review UI
+  - `ING-9` — verification and governance closure
+- Resume point for the next chat:
+  - start with `ING-1`
+  - keep mode `high-risk iterative / unstable wave`
+  - do not reopen the deferred question about separate background ingestion runtime inside this wave
+  - do not reopen `wikimapia` in this wave
+  - enforce the non-point imported object guard in manual edit flow before tactical work reaches UI integration
 - Wave constraints:
   - topology remains frozen unless new runtime/ops pressure appears
-  - do not call baseline green while live blockers remain
-  - no broad code refactor before bounded blocker slices are handled
+  - no BI/read-side shortcut from staging
   - no new exception without owner and target wave / expiry
-  - do not mix phase-2 baseline work with unrelated feature expansion
+  - do not mix this ingestion wave with unrelated feature expansion
 
 ## Hardening wave status
 

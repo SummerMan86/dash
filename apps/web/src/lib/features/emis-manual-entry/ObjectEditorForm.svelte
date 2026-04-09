@@ -36,6 +36,7 @@
 		cancelHref: string;
 		fieldErrors?: FieldErrors;
 		formError?: string | null;
+		geometryEditable?: boolean;
 	}
 
 	const OBJECT_STATUS_OPTIONS = ['active', 'inactive', 'planned', 'archived'] as const;
@@ -48,7 +49,8 @@
 		pendingLabel = 'Saving...',
 		cancelHref,
 		fieldErrors = {},
-		formError = null
+		formError = null,
+		geometryEditable = true
 	}: Props = $props();
 
 	let submitting = $state(false);
@@ -147,31 +149,37 @@
 			<Input name="operatorName" value={values.operatorName} />
 		</label>
 
-		<label class="grid gap-1">
-			<span class="type-caption text-muted-foreground">Latitude</span>
-			<Input
-				name="latitude"
-				type="number"
-				step="any"
-				value={values.latitude}
-				required
-				class={fieldClass('latitude')}
-			/>
-			{#if err('latitude')}<span class="type-caption text-error">{err('latitude')}</span>{/if}
-		</label>
+		{#if geometryEditable}
+			<label class="grid gap-1">
+				<span class="type-caption text-muted-foreground">Latitude</span>
+				<Input
+					name="latitude"
+					type="number"
+					step="any"
+					value={values.latitude}
+					required
+					class={fieldClass('latitude')}
+				/>
+				{#if err('latitude')}<span class="type-caption text-error">{err('latitude')}</span>{/if}
+			</label>
 
-		<label class="grid gap-1">
-			<span class="type-caption text-muted-foreground">Longitude</span>
-			<Input
-				name="longitude"
-				type="number"
-				step="any"
-				value={values.longitude}
-				required
-				class={fieldClass('longitude')}
-			/>
-			{#if err('longitude')}<span class="type-caption text-error">{err('longitude')}</span>{/if}
-		</label>
+			<label class="grid gap-1">
+				<span class="type-caption text-muted-foreground">Longitude</span>
+				<Input
+					name="longitude"
+					type="number"
+					step="any"
+					value={values.longitude}
+					required
+					class={fieldClass('longitude')}
+				/>
+				{#if err('longitude')}<span class="type-caption text-error">{err('longitude')}</span>{/if}
+			</label>
+		{:else}
+			<div class="col-span-2 rounded-md border border-muted bg-muted/20 px-3 py-2">
+				<span class="type-caption text-muted-foreground">Geometry is non-point and cannot be edited through this form.</span>
+			</div>
+		{/if}
 	</div>
 
 	<label class="grid gap-1">

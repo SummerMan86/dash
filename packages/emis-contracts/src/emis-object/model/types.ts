@@ -1,6 +1,12 @@
-import type { EmisPointGeometry } from '../../emis-geo';
+import type { EmisGeometry, EmisGeometryType, EmisPointGeometry } from '../../emis-geo';
 
 export type EmisObjectStatus = 'active' | 'inactive' | 'planned' | 'archived';
+
+export type EmisObjectSourceRef = {
+	sourceCode: string;
+	sourceRef: string;
+	isPrimary: boolean;
+};
 
 export type EmisObjectSummary = {
 	id: string;
@@ -12,6 +18,8 @@ export type EmisObjectSummary = {
 	region: string | null;
 	status: string;
 	hasGeometry: boolean;
+	geometryType: EmisGeometryType | null;
+	sourceOrigin: string;
 	updatedAt: string;
 };
 
@@ -44,7 +52,10 @@ export type EmisObjectDetail = {
 	operatorName: string | null;
 	description: string | null;
 	attributes: Record<string, unknown>;
-	geometry: EmisPointGeometry;
+	geometry: EmisGeometry;
+	geometryType: EmisGeometryType;
+	sourceOrigin: string;
+	sourceRefs: EmisObjectSourceRef[];
 	sourceNote: string | null;
 	createdAt: string;
 	updatedAt: string;

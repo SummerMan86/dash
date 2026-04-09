@@ -11,7 +11,8 @@
 		"./emis-link": "./src/emis-link/index.ts",
 		"./emis-ship-route": "./src/emis-ship-route/index.ts",
 		"./emis-map": "./src/emis-map/index.ts",
-		"./emis-user": "./src/emis-user/index.ts"
+		"./emis-user": "./src/emis-user/index.ts",
+		"./emis-ingestion": "./src/emis-ingestion/index.ts"
 	},
 	"dependencies": {
 		"zod": "^3.23.8"

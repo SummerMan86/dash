@@ -192,8 +192,11 @@ export function objectDetailToFormValues(detail: {
 	description: string | null;
 	sourceNote: string | null;
 	attributes: Record<string, unknown>;
-	geometry: { coordinates: [number, number] };
+	geometry: { type: string; coordinates: unknown };
 }): ObjectFormValues {
+	const isPoint = detail.geometry.type === 'Point';
+	const coords = isPoint ? (detail.geometry.coordinates as [number, number]) : null;
+
 	return {
 		externalId: detail.externalId ?? '',
 		objectTypeId: detail.objectType.id,
@@ -205,8 +208,8 @@ export function objectDetailToFormValues(detail: {
 		operatorName: detail.operatorName ?? '',
 		description: detail.description ?? '',
 		sourceNote: detail.sourceNote ?? '',
-		latitude: String(detail.geometry.coordinates[1]),
-		longitude: String(detail.geometry.coordinates[0]),
+		latitude: coords ? String(coords[1]) : '',
+		longitude: coords ? String(coords[0]) : '',
 		attributesJson: JSON.stringify(detail.attributes, null, 2)
 	};
 }
@@ -310,6 +313,29 @@ export function parseObjectForm(values: ObjectFormValues): CreateEmisObjectInput
 			type: 'Point',
 			coordinates: [longitude, latitude]
 		},
+		sourceNote: values.sourceNote || null
+	};
+}
+
+/** Like parseObjectForm but omits geometry fields — safe for non-point object updates. */
+export function parseObjectFormWithoutGeometry(
+	values: ObjectFormValues
+): Omit<CreateEmisObjectInput, 'geometry'> {
+	if (!values.objectTypeId)
+		throw new FormParseError('Object type is required', 400, 'objectTypeId');
+	if (!values.name) throw new FormParseError('Name is required', 400, 'name');
+
+	return {
+		externalId: values.externalId || null,
+		objectTypeId: values.objectTypeId,
+		name: values.name,
+		nameEn: values.nameEn || null,
+		countryCode: values.countryCode || null,
+		region: values.region || null,
+		status: values.status as CreateEmisObjectInput['status'],
+		operatorName: values.operatorName || null,
+		description: values.description || null,
+		attributes: parseJsonRecord(values.attributesJson, 'Attributes', 'attributesJson'),
 		sourceNote: values.sourceNote || null
 	};
 }

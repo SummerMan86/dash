@@ -1,5 +1,6 @@
 export type {
 	EmisObjectStatus,
+	EmisObjectSourceRef,
 	EmisObjectSummary,
 	EmisObjectRelatedNews,
 	EmisObjectDetail,

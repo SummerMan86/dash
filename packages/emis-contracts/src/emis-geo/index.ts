@@ -1,2 +1,16 @@
-export type { EmisPointGeometry } from './model/types';
-export { pointGeometrySchema, type PointGeometryInput } from './model/schema';
+export type {
+	EmisPointGeometry,
+	EmisLineStringGeometry,
+	EmisPolygonGeometry,
+	EmisMultiPointGeometry,
+	EmisMultiLineStringGeometry,
+	EmisMultiPolygonGeometry,
+	EmisGeometry,
+	EmisGeometryType
+} from './model/types';
+export {
+	pointGeometrySchema,
+	geometrySchema,
+	type PointGeometryInput,
+	type GeometryInput
+} from './model/schema';
