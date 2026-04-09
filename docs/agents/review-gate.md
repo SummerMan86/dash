@@ -211,7 +211,7 @@ Governance passes не создают новых decision owners.
 
 - package/app placement decision;
 - новый exception или waiver;
-- пересечение контуров `platform/shared`, `EMIS operational`, `EMIS BI/read-side`;
+- пересечение контуров: `platform/shared` ↔ domain overlays, или `operational` ↔ `BI/read-side` внутри одного домена (e.g. EMIS operational vs EMIS BI/read-side);
 - docs-only rewrite active ownership rules.
 
 Timing:
@@ -223,7 +223,7 @@ Timing:
 
 - packages как canonical reusable homes;
 - `apps/web` как app leaf / transport-orchestration layer;
-- separation `EMIS operational` vs `EMIS BI/read-side`;
+- separation of domain `operational` vs `BI/read-side` paths where that split exists (e.g. EMIS operational vs EMIS BI/read-side);
 - owner + expiry + removal condition для exceptions/waivers.
 
 Не делает:

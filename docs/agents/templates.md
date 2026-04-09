@@ -132,7 +132,7 @@ Optional:
 ## Scope
 
 - файлы: <список>
-- слои: route UI | widgets | entities | server/emis | db/docs
+- слои: route UI | widgets | entities | server/<domain> | db/docs
 - НЕ трогать: <файлы/модули вне scope>
 
 ## Ветки
@@ -562,7 +562,7 @@ Diff (slice diff или git diff main..feature/<topic>):
 
 Architecture context:
 
-- contour: <platform/shared | EMIS operational | EMIS BI/read-side>
+- contour: <platform/shared | domain operational | domain BI/read-side> (e.g. EMIS operational, EMIS BI/read-side)
 - expected home: <packages/... | apps/web/...>
 - exceptions / waivers touched: <none | EXC-...>
 
@@ -720,9 +720,9 @@ Checks:
 - `pnpm check`: <green|red|not run>
 - `pnpm build`: <green|red|not run>
 - `pnpm lint:boundaries`: <green|red|not run>
-- `pnpm emis:smoke`: <green|red|not run>
-- `pnpm emis:offline-smoke`: <green|red|not run>
-- `pnpm emis:write-smoke`: <green|red|not required>
+- domain-specific smoke tests (per command, if any):
+  - `<command>`: <green|red|not run>
+  - or `not required` if domain has no smoke suite
 
 Known Exceptions:
 
@@ -764,7 +764,7 @@ Decision: approve placement | approve with exception | request reshape | needs s
 
 Context:
 
-- contour: <platform/shared | EMIS operational | EMIS BI/read-side>
+- contour: <platform/shared | domain operational | domain BI/read-side> (e.g. EMIS operational, EMIS BI/read-side)
 - reusable home: <packages/... | not applicable>
 - app-leaf touch points: <apps/web/... | none>
 
