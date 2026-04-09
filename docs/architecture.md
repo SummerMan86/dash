@@ -8,6 +8,14 @@ Canonical repo-wide architecture doc. Current-state only.
 
 ## 1. Architectural Principles
 
+Three models define the system at different levels:
+
+- **Repo/app level: Package-first modular SvelteKit architecture.** Reusable logic lives in `packages/*`. `apps/web` is a leaf composition shell — it owns routes, page composition, and server transport, but not domain logic or reusable contracts.
+
+- **App-local `src/lib` organization: FSD-inspired UI composition layers.** `shared → entities → features → widgets` provide a one-way dependency order for app-local UI code. This is an organizational convention, not the governing architecture — the real reusable logic lives in packages. The canonical FSD model is adapted: `entities/` is mostly empty (contracts moved to packages), `widgets/` is thin glue, routes own significant page/transport composition (SvelteKit-native, not pure FSD).
+
+- **Server pattern: BFF transport over package-owned services.** SvelteKit routes (`+server.ts`, `+page.server.ts`) are thin HTTP transport. Business logic, SQL, and domain rules live in `packages/emis-server`, `packages/platform-datasets`, etc. Routes parse HTTP, validate, delegate to package entrypoints, and map errors.
+
 ### 1.1. Data Flow
 
 - **Canonical paths are part of the architecture.** BI reads go `widget → fetchDataset → /api/datasets/:id → compileDataset → DatasetIr → Provider.execute`. EMIS operational flows go `route → emis-server module → parameterized SQL`. This separation exists so analytical reads and operational writes evolve independently. *In practice:* dashboard code must not call `emis-server/modules/*`; EMIS BI only consumes published read models/views.
@@ -183,24 +191,28 @@ See [architecture_dashboard_bi.md](./architecture_dashboard_bi.md) for the sched
 3. `emis-server` never imports from `emis-ui`.
 4. Nobody imports from `apps/web`.
 
-### App-local FSD-inspired layers
+### App-local UI layers (FSD-inspired, not strict FSD)
 
-Inside `apps/web/src/lib/`, unidirectional dependency order:
+Inside `apps/web/src/lib/`, unidirectional dependency order for UI composition:
 
 ```
 shared -> entities -> features -> widgets -> routes
 ```
 
-| Layer | Path | Alias | Contains |
-|---|---|---|---|
-| `shared` | `src/lib/shared/` | `$shared` | API facades (`fetchDataset`), UI kit re-exports, fixtures |
-| `entities` | `src/lib/entities/` | `$entities` | Contracts, types, re-exports from packages |
-| `features` | `src/lib/features/` | `$features` | User-facing features (dashboard-edit, emis-manual-entry) |
-| `widgets` | `src/lib/widgets/` | `$widgets` | Composite UI blocks (filters, emis-drawer, stock-alerts) |
-| `routes` | `src/routes/` | -- | Pages, API endpoints, layouts |
-| `server` | `src/lib/server/` | -- | BFF: datasets, providers, alerts, strategy. Server-only |
+| Layer | Path | Alias | Contains | Status |
+|---|---|---|---|---|
+| `shared` | `src/lib/shared/` | `$shared` | API facades (`fetchDataset`), UI kit re-exports, fixtures | Active, thin glue |
+| `entities` | `src/lib/entities/` | `$entities` | Re-exports from packages | Mostly empty — contracts live in packages |
+| `features` | `src/lib/features/` | `$features` | User-facing features (dashboard-edit, emis-manual-entry) | Active; `dashboard-edit` is the strongest FSD-like slice |
+| `widgets` | `src/lib/widgets/` | `$widgets` | Composite UI blocks (filters, emis-drawer, stock-alerts) | Thin glue; reusable widgets migrated to packages |
+| `routes` | `src/routes/` | -- | Pages, API endpoints, layouts | SvelteKit-native; routes own page/transport composition |
+| `server` | `src/lib/server/` | -- | BFF: datasets, providers, alerts, strategy | Server-only; never imported from client |
 
-`server/` is never imported from client code. Most `entities/` and `widgets/` files are MIGRATION re-export shims from packages.
+**How this differs from canonical FSD:**
+- Real reusable logic lives in `packages/*`, not in app-local layers
+- `entities/` and `widgets/` are mostly migration shims, not active business slices
+- Routes own significant composition logic (SvelteKit file-based routing is first-class architecture)
+- `server/` layer has no FSD equivalent — it's SvelteKit BFF, orthogonal to UI layers
 
 ## 5. Deployment Model
 
