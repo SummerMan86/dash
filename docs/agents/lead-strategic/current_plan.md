@@ -1,202 +1,88 @@
-# Plan: EMIS External Object Ingestion, Wave 1
+# Plan: Generalize Agent Workflow for Multi-Domain Use
 
 ## Цель
 
-Добавить в EMIS generic ingestion contour для внешних объектов с активными source adapters только для `osm` и `gem`, сохранив строгую границу между:
-
-- `stg_emis` как raw truth и run state
-- `emis.objects` как curated operational truth
-- `mart.emis_objects_dim` как BI/read-side truth поверх curated objects
-
-Результат wave:
-
-- внешние объекты можно подтягивать в staging, дедуплицировать, публиковать в curated слой и ревьюить через минимальный EMIS UI
-- low-confidence duplicates и invalid/unmapped cases не публикуются автоматически
-- imported objects поддерживают full geometry end-to-end
-
-## Operating Mode
-
-- `high-risk iterative / unstable wave`
-
-Почему:
-
-- меняется DB schema
-- меняются runtime contracts
-- расширяется object geometry contract
-- появляется новый server module + API namespace
-- добавляется review UI
-- порядок slices зависит от фактического результата предыдущих этапов
-
-## Canonical Decisions
-
-- active sources этой волны: `osm`, `gem`
-- `wikimapia` явно вне scope этой волны до отдельного source-validation/legal-ops pass
-- `emis.objects.external_id` остаётся только compatibility field
-- canonical multi-source identity живёт в `emis.object_source_refs`
-- source winner определяется type-based policy, без field-level merge heuristics в wave 1
-- full geometry входит в wave 1:
-  - `Point`
-  - `LineString`
-  - `Polygon`
-  - `Multi*` variants
-- manual create/edit может оставаться point-first, но non-point imported objects должны быть защищены от порчи текущим lat/lon flow
-- wave 1 не вводит отдельный background runtime, scheduler или queue; ingestion запускается из текущего app runtime по admin trigger
+Сделать `docs/agents/*` domain-agnostic для работы не только с EMIS, но и с Oracle, CubeJS и будущими контурами, вынеся domain-specific rules в overlays и сохранив текущий workflow полностью рабочим для EMIS. Operating mode для этой wave: `ordinary iterative` — низкий риск, docs-only, но с поэтапным reframe из-за плотных ссылок между canonical docs.
 
 ## Подзадачи
 
-### ING-1: Contract Freeze and Execution Alignment
+### ST-1: Вынести domain-specific invariants в overlays
 
-- scope:
-  - `docs/plans/emis_external_object_ingestion.md`
-  - `apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
-  - `docs/agents/lead-strategic/current_plan.md`
+- scope: `docs/agents/invariants.md`, новые overlay docs для active domains (`docs/agents/invariants-emis.md`, при необходимости `docs/agents/invariants-platform.md`), `docs/AGENTS.md`
 - depends on: —
+- размер: M
+- acceptance: `docs/agents/invariants.md` содержит только generic workflow/repo guardrails и правило подключения overlays; EMIS-specific package/path/BI rules вынесены в явный overlay; у каждого перенесённого правила остаётся ровно один canonical home; навигация до EMIS overlay доступна из generic doc за один шаг
+- verification intent: проверить, что generic invariants можно применять к новому домену без правки core doc, а EMIS rules не теряются и остаются discoverable
+- verification mode: `verification-first`
+- заметки: делать extraction additively; сначала завести overlay, потом чистить core doc
+
+### ST-2: Обобщить core workflow и role instructions
+
+- scope: `docs/agents/workflow.md`, `docs/agents/lead-strategic/instructions.md`, `docs/agents/lead-tactical/instructions.md`, `docs/agents/roles.md`
+- depends on: ST-1
+- размер: M
+- acceptance: lifecycle, ownership, operating modes и report loop не меняются; role docs больше не требуют EMIS docs как default context для любой задачи; generic instructions ссылаются на relevant domain overlay / local `AGENTS.md` / contour bootstrap вместо hardcoded EMIS bootstrap
+- verification intent: проверить, что `lead-strategic` и `lead-tactical` могут отработать одну и ту же процедуру для EMIS, Oracle или CubeJS без скрытых EMIS-only предпосылок
+- verification mode: `verification-first`
+- заметки: оставить все механизмы без semantic rewrite; менять только default framing и ссылки
+
+### ST-3: Обобщить шаблоны и review/governance interfaces
+
+- scope: `docs/agents/templates.md`, `docs/agents/review-gate.md`, `docs/agents/git-protocol.md`
+- depends on: ST-1, ST-2
+- размер: M
+- acceptance: templates больше не хардкодят `server/emis` и EMIS-only contour labels; architecture/review placeholders становятся domain-neutral или явно marked as examples; EMIS-specific checkpoint rhythm в git protocol заменён на generic/example framing; форма plan/handoff/report остаётся backward-compatible
+- verification intent: проверить, что canonical templates можно заполнить без переписывания под новый домен, а текущие EMIS waves по-прежнему проходят по тем же шаблонам
+- verification mode: `verification-first`
+- заметки: не менять section structure и обязательные поля шаблонов
+
+### ST-4: Вычистить governance helper docs от EMIS-default assumptions
+
+- scope: `docs/agents/architecture-steward/instructions.md`, `docs/agents/baseline-governor/instructions.md`, `docs/agents/architecture-reviewer/instructions.md`, связанные ссылки на exceptions registry / baseline routine в touched docs
+- depends on: ST-1, ST-2, ST-3
+- размер: M
+- acceptance: governance/helper docs больше не навязывают EMIS package homes, EMIS-only baseline checks и `docs/emis_known_exceptions.md` как universal default; generic wording опирается на overlay-owned boundaries, baseline routine и exceptions registry; EMIS-specific governance checks остаются доступными через EMIS overlay/reference path
+- verification intent: проверить, что architecture pass, baseline pass и architecture-reviewer могут корректно оценивать любой домен при поданном overlay context, не ломая текущий EMIS governance trail
+- verification mode: `verification-first`
+- заметки: если глобальный rename registry создаёт лишний blast radius, rename не делать; достаточно перевести core docs на overlay indirection и оставить `docs/emis_known_exceptions.md` как EMIS-specific artifact
+
+### ST-5: Финальный navigation и consistency pass
+
+- scope: `docs/AGENTS.md` и все изменённые docs из ST-1..ST-4
+- depends on: ST-1, ST-2, ST-3, ST-4
 - размер: S
-- acceptance:
-  - frozen API namespace: `trigger / batches / conflicts`
-  - frozen DB names: `obj_import_run`, `obj_import_candidate`, `obj_candidate_match`, `object_source_refs`
-  - frozen resolution outcomes and source-priority policy
-  - frozen rule for non-point imported objects in point-first manual edit flow
-
-### ING-2: DB Foundation
-
-- scope:
-  - `db/current_schema.sql`
-  - `db/pending_changes.sql`
-  - `db/applied_changes.md`
-  - `db/schema_catalog.md`
-  - reference seeds/dictionaries if needed
-- depends on: ING-1
-- размер: M
-- acceptance:
-  - staging tables and `emis.object_source_refs` exist
-  - DB uniqueness enforces source-scoped identity
-  - counters/status/error fields support batch tracking
-  - reference rows for active sources and missing object types are present truthfully
-
-### ING-3: Geometry Broadening and Curated Object Contract Upgrade
-
-- scope:
-  - `packages/emis-contracts/src/emis-geo/*`
-  - `packages/emis-contracts/src/emis-object/*`
-  - curated object queries/routes/UI that expose geometry
-- depends on: ING-1
-- размер: M
-- acceptance:
-  - `EmisObject*` contracts support full geometry safely
-  - object list/detail surfaces expose `geometryType`, `sourceOrigin`, and primary source-ref metadata where needed
-  - point, line, polygon, and relevant multi-geometries read correctly through API and UI
-  - non-point imported objects are not corruptible through current manual edit entry points
-
-### ING-4: Ingestion Contracts and Query/Repository Layer
-
-- scope:
-  - `packages/emis-contracts/src/emis-ingestion/*`
-  - `packages/emis-server/src/modules/ingestion/repository.ts`
-  - `packages/emis-server/src/modules/ingestion/queries.ts`
-- depends on: ING-2, ING-3
-- размер: M
-- acceptance:
-  - typed contracts exist for batches, imported candidates, matches, trigger/list/resolve inputs
-  - repository/query layer covers staging persistence and review reads
-  - package boundaries remain clean
-
-### ING-5: Source Adapters and Registry
-
-- scope:
-  - `packages/emis-server/src/modules/ingestion/adapters/*`
-- depends on: ING-4
-- размер: M
-- acceptance:
-  - generic adapter interface exists
-  - source registry/config is isolated from fetchers
-  - OSM and GEM normalize into one candidate contract
-  - mapping rules are isolated from transport/fetch code
-  - no Wikimapia code lands in this wave
-
-### ING-6: Resolution Engine and Curated Publication
-
-- scope:
-  - `packages/emis-server/src/modules/ingestion/service.ts`
-  - `packages/emis-server/src/modules/ingestion/matchEngine.ts`
-  - publication bridge into `emis.objects` + `emis.object_source_refs`
-- depends on: ING-4, ING-5
-- размер: L
-- acceptance:
-  - `unique` publishes a new curated object
-  - `duplicate_with_clear_winner` updates the existing curated object and refreshes source refs
-  - `possible_duplicate_low_confidence` remains unpublished in staging
-  - `invalid_or_unmapped` remains unpublished with stable review/error state
-  - source-priority policy is enforced by object type
-
-### ING-7: API Transport
-
-- scope:
-  - `apps/web/src/routes/api/emis/ingestion/*`
-- depends on: ING-4, ING-6
-- размер: M
-- acceptance:
-  - trigger/batches/conflicts endpoints are implemented as thin transport
-  - admin-only trigger/resolve and viewer+ diagnostics are enforced
-  - stable `{ error, code }` contract exists for resolve flows
-
-### ING-8: Review UI
-
-- scope:
-  - `apps/web/src/routes/emis/objects/+page.*`
-  - `apps/web/src/routes/emis/objects/imported/[id]/*`
-  - route-local helpers/components as needed
-- depends on: ING-3, ING-7
-- размер: M
-- acceptance:
-  - `/emis/objects` has import/review mode with filters by source, status, geometry type, mapped/unmapped
-  - `/emis/objects/imported/[id]` shows raw payload, match candidates, winner rule, and resolve actions
-  - `/emis/objects/[id]` stays curated operational detail only
-
-### ING-9: Verification and Governance Closure
-
-- scope:
-  - docs/contracts/smoke coverage for the full wave
-- depends on: ING-2, ING-3, ING-6, ING-7, ING-8
-- размер: M
-- acceptance:
-  - DB docs and `RUNTIME_CONTRACT.md` are updated
-  - verification covers DB constraints, source-priority winners, unpublished staging conflicts, geometry variants, curated publication, and mart separation
-  - tactical report can truthfully declare readiness state
+- acceptance: doc map явно разделяет generic agent model и domain overlays; все ссылки консистентны; EMIS remains first-class supported overlay; добавление будущего `invariants-oracle.md` или `invariants-cubejs.md` не требует нового переписывания core workflow docs
+- verification intent: проверить, что новый читатель может пройти маршрут "generic workflow -> relevant domain overlay" без неоднозначности и broken references
+- verification mode: `verification-first`
+- заметки: это doc consistency slice, без расширения scope в code/runtime
 
 ## Ограничения
 
-- не писать SQL в `apps/web/src/routes/api/emis/*`
-- не писать HTTP-логику в `packages/emis-server/src/modules/*`
-- не пускать BI/read-side напрямую в `stg_emis`
-- не смешивать structural migration и domain rewrite вне scope этой wave
-- не расширять scope волны до Wikimapia, background runtime, scheduler или queue
-- не ломать curated `/api/emis/objects` и `/emis/objects/[id]` ради staging concerns
+- Это только docs/process refactor; code, packages, routes, runtime contracts и execution paths не меняются
+- Не ломать действующий agent workflow для EMIS во время и после refactor
+- Держать refactor минимальным: extraction и genericization ссылок, а не переписывание всей системы документации
+- Не трогать already-clean docs: `docs/agents/skills/debugging.md`, `docs/agents/skills/testing-strategy.md`, `docs/agents/memory-protocol.md`
+- Не менять canonical ownership артефактов: `current_plan.md`, `last_report.md`, `memory.md`, report types, role names, operating modes
+- Не удалять EMIS-specific правила без явного нового canonical home в overlay docs
+- Предпочитать overlay indirection и additive docs над массовыми rename/move, если rename не даёт явной пользы
+
+## Per-slice integrity checklist
+
+После каждого slice worker и reviewer проверяют:
+
+1. **Принципы не потеряны**: core lifecycle (plan → execute → review → accept), role ownership (strategic/tactical/worker/reviewers), Review Gate (slice + integration), governance passes (architecture/baseline) — всё на месте и не размыто
+2. **Сложность не выросла**: количество обязательных файлов для старта работы не увеличилось; новый overlay — это дополнение, а не ещё один обязательный шаг
+3. **Навигация из AGENTS.md**: каждый новый или перемещённый doc имеет строку в `docs/AGENTS.md`; читатель может найти любой doc за один шаг из doc map
+4. **Нет broken references**: все ссылки из изменённых docs ведут на существующие файлы; grep `invariants.md`, `emis_session_bootstrap`, `emis_known_exceptions` и т.д. не выдаёт dangling links
+5. **EMIS не сломан**: текущий EMIS workflow можно пройти по overlay path так же, как раньше — по прямым ссылкам; EMIS-specific rules не потеряны и не задублированы
+6. **Нет запутанности**: generic doc не содержит domain-specific правил (кроме явных `example:` блоков); overlay не содержит generic workflow rules
+7. **Backward compatibility**: формат plan/handoff/report/review request не сломан; старые артефакты (reports, plans) остаются валидными
+
+Если любой пункт нарушен — это `WARNING` при review, и slice не принимается без fix.
 
 ## Ожидаемый результат
 
-- в EMIS появляется reusable ingestion contour в `packages/emis-server` и `packages/emis-contracts`
-- OSM и GEM можно подтянуть в staging, сопоставить с curated objects и безопасно опубликовать
-- ambiguous/import-invalid cases видны в review UI и не загрязняют curated слой
-- full geometry поддерживается на imported object path end-to-end
-- `mart.emis_objects_dim` продолжает отражать только curated результат
-
-## Recommended Handoff To Lead-Tactical
-
-Начинать с:
-
-1. `ING-1`
-2. `ING-2`
-3. `ING-3`
-
-Затем:
-
-4. `ING-4` и `ING-5`
-5. `ING-6`
-6. `ING-7`
-7. `ING-8`
-8. `ING-9`
-
-Подробный design reference:
-
-- `docs/plans/emis_external_object_ingestion.md`
+- `docs/agents/*` описывают generic agent workflow, применимый к любому домену в этом repo
+- Domain-specific rules живут в отдельных overlays, начиная с EMIS, и подключаются из generic docs без hardcoded default domain
+- EMIS workflow остаётся полностью рабочим и discoverable через explicit overlay path
+- Для Oracle, CubeJS и будущих контуров появляется понятный extension path: добавить overlay docs, не переписывая core workflow

@@ -7,9 +7,9 @@
 SvelteKit 2 + TypeScript + TailwindCSS 4 + PostgreSQL/PostGIS.
 Архитектура: single-deployable modular monolith with layered app structure and package boundaries.
 `shared/entities/features/widgets` — это app-local layer organization, а не название всей архитектуры.
-EMIS — отдельный доменный контур внутри того же modular monolith.
+Domain-specific contours (e.g. EMIS) live as overlays inside the same modular monolith.
 
-Подробнее: `docs/emis_session_bootstrap.md`, `docs/emis_freeze_note.md`.
+Подробнее: see relevant domain bootstrap/freeze doc if applicable (e.g. `docs/emis_session_bootstrap.md`, `docs/emis_freeze_note.md`).
 
 ## Твой цикл работы
 
@@ -238,9 +238,7 @@ Mode: autonomous — ты утверждаешь план сам, не ждёш�
 
 ## Ключевые документы для чтения
 
-- `docs/emis_session_bootstrap.md` — текущее состояние проекта
-- `docs/emis_freeze_note.md` — замороженные решения
-- `docs/archive/emis/emis_implementation_reference_v1.md` — historical implementation decisions
+- Relevant domain bootstrap/freeze/archive doc if applicable (e.g. `docs/emis_session_bootstrap.md`, `docs/emis_freeze_note.md`, `docs/archive/emis/emis_implementation_reference_v1.md`)
 - `docs/agents/workflow.md` — общий lifecycle
 - `docs/agents/review-gate.md` — Review Gate и governance passes
 - `docs/agents/invariants.md` — project invariants

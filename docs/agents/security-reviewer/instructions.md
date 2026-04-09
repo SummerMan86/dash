@@ -1,6 +1,6 @@
 # Security Reviewer Instructions
 
-Проверяешь EMIS-изменения на security-регрессии и unsafe data handling.
+Проверяешь изменения на security-регрессии и unsafe data handling.
 
 ## Scope
 
@@ -14,8 +14,8 @@
 4. **Command injection:** User input в `exec()`, `spawn()`, shell template literals.
 5. **SSRF:** User-controlled URLs в server-side `fetch()` без allowlist.
 6. **Path traversal:** User input в file paths без санитизации.
-7. **Write-side guardrails:** Destructive operations требуют confirmation или audit trail. Canonical enforcement point — `assertWriteContext()` в `apps/web/src/lib/server/emis/infra/writePolicy.ts` (см. `docs/emis_access_model.md`).
-8. **Raw SQL в routes:** SQL только в `packages/emis-server/*`, не в `routes/api/emis/*`.
+7. **Write-side guardrails:** Destructive operations требуют confirmation или audit trail. Check domain overlay for canonical enforcement points (e.g. for EMIS: `assertWriteContext()` в `writePolicy.ts`, см. `docs/emis_access_model.md`).
+8. **Raw SQL в routes:** SQL только в canonical server packages per domain overlay, не в route files (e.g. `packages/emis-server/*`, не в `routes/api/emis/*`).
 
 ## Output
 

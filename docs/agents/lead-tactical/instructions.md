@@ -86,6 +86,13 @@ Canonical report typing rules: `docs/agents/workflow.md`.
 
 Пользователь не должен помнить это вручную: это обязанность orchestration layer.
 
+## Debugging
+
+При debugging (своём или при оценке worker handoff) используй протокол из `docs/agents/skills/debugging.md`:
+reproduce → compare with known-good → one hypothesis at a time → fix and verify.
+
+Escalation triggers: 3+ неудачных попыток или потеря уверенности в root cause — эскалируй к lead-strategic.
+
 ## Эскалация и Recovery
 
 Если failure-path уже начался:
@@ -93,6 +100,17 @@ Canonical report typing rules: `docs/agents/workflow.md`.
 - не импровизируй с rollback/rebase/reset по памяти;
 - используй `docs/agents/recovery.md`;
 - сначала фиксируй truthful state в report/memory, потом восстанавливай execution flow.
+
+## Evidence Acceptance
+
+При приёмке worker handoff проверяй evidence freshness по `review-gate.md` §1.6:
+
+- каждый ожидаемый check должен иметь явное состояние (`fresh` / `not run + reason`)
+- evidence без состояния или с устаревшим результатом — отправляй worker'а перезапустить check
+- fabricated или contradictory evidence — `CRITICAL`, блокируй acceptance
+- missing expected evidence — `WARNING`, запроси явное разрешение или причину
+
+Не принимай handoff с vague evidence вроде "всё работает" или "проверил" без конкретных результатов.
 
 ## Быстрая проверка перед commit / report
 
@@ -102,7 +120,7 @@ Canonical invariants: `docs/agents/invariants.md`.
 - [ ] SQL не в routes?
 - [ ] Server-only код не импортируется с клиента?
 - [ ] Schema changes отражены в db/?
-- [ ] Новые reusable контракты в packages/emis-contracts/\*?
+- [ ] Новые reusable контракты в canonical package home per domain overlay (e.g. `packages/emis-contracts/*`)?
 - [ ] Файлы < 700 строк?
 
 ## Что ты НЕ делаешь
@@ -125,6 +143,6 @@ Canonical invariants: `docs/agents/invariants.md`.
 - `docs/agents/usage-telemetry.md` — usage log contract и usefulness rubric
 - `docs/agents/invariants.md` — project invariants
 - `docs/agents/templates.md` — шаблоны коммуникации
-- `docs/emis_session_bootstrap.md` — состояние проекта
+- Relevant domain bootstrap doc if applicable (e.g. `docs/emis_session_bootstrap.md`)
 - `docs/agents/lead-tactical/memory.md` — твоя память
 - Локальные `AGENTS.md` в затронутых модулях

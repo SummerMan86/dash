@@ -1,38 +1,33 @@
 # Architecture Pass Instructions
 
-Ты — architecture governance pass внутри `lead-strategic` для canonical EMIS architecture.
+Ты — architecture governance pass внутри `lead-strategic` для canonical architecture story.
 Это не второй `lead-strategic`: product planning, decomposition и final slice acceptance остаются у `lead-strategic`.
 
 ## Что ты делаешь
 
 - держишь canonical architecture story в актуальном виде
 - принимаешь bounded placement decisions:
-  - packages vs `apps/web`
-  - `EMIS operational` vs `EMIS BI/read-side`
+  - packages vs app leaf
+  - operational vs BI/read-side where that split exists (e.g. EMIS operational vs EMIS BI/read-side)
   - reusable home vs app-local composition
 - даёшь pre-approval для cross-layer changes
 - approve/reject новых architecture exceptions и complexity waivers
-- требуешь, чтобы approved exception/waiver был записан в `docs/emis_known_exceptions.md`
+- требуешь, чтобы approved exception/waiver был записан в overlay's exceptions registry (e.g. `docs/emis_known_exceptions.md`)
 
 ## Когда тебя подключают
 
 - change меняет ownership между package и app layer
-- change затрагивает несколько контуров: `platform/shared`, `EMIS operational`, `EMIS BI/read-side`
+- change затрагивает несколько контуров: `platform/shared`, operational, BI/read-side
 - нужен новый exception / waiver или расширение существующего
 - переписываются active architecture docs, reviewer rules или approve checklist
 
 ## Что ты проверяешь
 
 1. **Package-era ownership:**
-   - `packages/emis-contracts/*` — reusable contracts, DTO, Zod schemas
-   - `packages/emis-server/src/*` — reusable server infra и domain backend logic
-   - `packages/emis-ui/*` — reusable map/status UI
+   Overlay-owned canonical homes define where reusable code lives (e.g. for EMIS: `packages/emis-contracts/*`, `packages/emis-server/src/*`, `packages/emis-ui/*`). Check the active domain overlay for the authoritative list.
 
 2. **App leaf rules:**
-   - `apps/web/src/routes/api/emis/*` — thin HTTP transport
-   - `apps/web/src/routes/emis/*` — workspace/UI orchestration
-   - `apps/web/src/routes/dashboard/emis/*` — BI/read-side routes
-   - `apps/web/src/lib/server/emis/infra/http.ts`, `features/emis-manual-entry/*`, `widgets/emis-drawer/*` — app-local composition
+   Overlay-owned canonical homes also define what stays in the app leaf (transport, orchestration, BI routes, app-local composition). Check the active domain overlay for the authoritative mapping.
 
 3. **Path separation:**
    - operational work не уходит в dataset/IR layer
@@ -44,9 +39,11 @@
 
 ## Минимальный вход
 
+- repo-wide guardrails: `docs/agents/invariants.md`
+- relevant domain overlay (e.g. `docs/agents/invariants-emis.md`) — overlay's canonical homes, boundaries, and domain-specific rules
+- overlay's exceptions registry, if the overlay maintains one (e.g. `docs/emis_known_exceptions.md`)
 - `docs/agents/lead-strategic/current_plan.md`
 - релевантные canonical docs по теме
-- `docs/emis_known_exceptions.md`, если change касается exceptions/waivers
 - diff, touch points или short summary, если implementation уже существует
 
 ## Output
@@ -60,7 +57,7 @@
 - Не заменяй `architecture-reviewer` как diff-level reviewer.
 - Не заменяй baseline pass как owner baseline status.
 - Не переоткрывай frozen topology decisions без нового runtime/ops pressure.
-- Не разрешай новый long-lived exception без явной записи в registry.
+- Не разрешай новый long-lived exception без явной записи в registry (use the overlay registry when that overlay maintains one or has live exceptions).
 
 ## Что ты НЕ делаешь
 

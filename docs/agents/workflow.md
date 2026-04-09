@@ -7,7 +7,7 @@ Core process для работы агентной команды.
 
 - `review-gate.md` — review model, strategic acceptance/reframe loop, governance passes
 - `recovery.md` — failure-path и recovery protocols
-- `invariants.md` — общие project invariants
+- `invariants.md` — generic repo-wide project invariants (domain overlays: `invariants-emis.md`, etc.)
 - `git-protocol.md` — branches, worktrees, integration choreography
 - `memory-protocol.md` — ownership и timing для `memory.md`
 - `usage-telemetry.md` — append-only usage history и optimization analytics contract
@@ -339,7 +339,7 @@ Failure-path после эскалации описан в `docs/agents/recovery
 | `lead-strategic/memory.md` | `lead-strategic` | следующий strategic thread |
 | `lead-tactical/memory.md` | `lead-tactical` | следующий tactical session |
 | `runtime/agents/usage-log.ndjson` | `lead-tactical` | локальная optimization analytics / future DB import |
-| `emis_known_exceptions.md` | `lead-strategic` governance loop | все роли по необходимости |
+| domain-specific exceptions registry (e.g. `emis_known_exceptions.md` per overlay) | `lead-strategic` governance loop | все роли по необходимости |
 
 Правила хранения:
 
@@ -365,7 +365,7 @@ pane #2  worker B (если нужен)
 
 - `docs/agents/review-gate.md` — Review Gate, strategic acceptance/reframe loop, governance passes
 - `docs/agents/recovery.md` — failure-path и recovery protocols
-- `docs/agents/invariants.md` — repo и EMIS invariants
+- `docs/agents/invariants.md` — generic repo-wide invariants (domain overlays: `invariants-emis.md`, etc.)
 - `docs/agents/git-protocol.md` — branch/worktree discipline
 - `docs/agents/memory-protocol.md` — кто и когда пишет `memory.md`
 - `docs/agents/usage-telemetry.md` — durable usage log и usefulness rubric

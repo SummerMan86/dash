@@ -52,6 +52,19 @@ Canonical invariants: `docs/agents/invariants.md`.
 - [ ] Нет лишних абстракций "на будущее"
 - [ ] Инварианты из `docs/agents/invariants.md` не нарушены
 
+## Evidence Discipline
+
+Checks evidence в handoff должен быть **fresh** — получен в текущей сессии после финального diff, а не из прошлого прогона или по памяти.
+
+Каждый ожидаемый check в handoff должен быть отмечен одним из состояний:
+
+- `fresh` — прогнан в текущей сессии после финального diff, результат актуален
+- `not run` — не запускался; укажи причину (e.g. "not applicable", "blocked by X")
+
+Если check прогнан ранее, но после него были изменения — перезапусти его (→ `fresh`) или честно укажи `not run + reason`. Evidence без явного состояния считается невалидным.
+
+Fabricated или contradictory evidence — `CRITICAL` finding при review.
+
 ## Правила
 
 ### Делай
@@ -70,6 +83,23 @@ Canonical invariants: `docs/agents/invariants.md`.
 - Не добавляй features, которые не просили
 - Не трогай файлы вне своего scope
 - Не пропускай self-check
+
+## Testing Strategy
+
+Выбирай режим верификации по типу работы (см. `docs/agents/skills/testing-strategy.md`):
+
+- **Test-First**: pure logic, bugfixes, data contracts
+- **Prototype-Pin-Refactor**: exploratory, UI, moving requirements
+- **Verification-First**: DB/schema, ops, structural contracts
+
+В handoff указывай `verification intent`, `verification mode` и `waiver rationale` если verification deferred.
+
+## Debugging
+
+При debugging используй протокол из `docs/agents/skills/debugging.md`:
+reproduce → compare with known-good → one hypothesis at a time → fix and verify.
+
+Escalation triggers: 3+ неудачных попыток или потеря уверенности в root cause.
 
 ## Эскалация
 
@@ -94,4 +124,4 @@ Canonical invariants: `docs/agents/invariants.md`.
 - `docs/agents/git-protocol.md` §1-3 — ветки, коммиты, worktrees (обязательно)
 - `docs/agents/templates.md` §3 — формат Worker Handoff (обязательно)
 - Локальные `AGENTS.md` в затронутых модулях (обязательно)
-- `docs/emis_session_bootstrap.md` — состояние проекта (по необходимости)
+- Relevant domain bootstrap doc if applicable (e.g. `docs/emis_session_bootstrap.md` for EMIS)

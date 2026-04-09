@@ -69,6 +69,8 @@ Optional:
 - depends on: — (или ST-N)
 - размер: S | M | L
 - acceptance: <done-when для slice>
+- verification intent: <что проверяем>
+- verification mode: `test-first` | `prototype-pin` | `verification-first`
 - заметки: <опционально>
 
 ### ST-2: <название>
@@ -77,6 +79,8 @@ Optional:
 - depends on: ST-1
 - размер: M
 - acceptance: <done-when для slice>
+- verification intent: <что проверяем>
+- verification mode: `test-first` | `prototype-pin` | `verification-first`
 - заметки: <опционально>
 
 ## Ограничения
@@ -89,6 +93,15 @@ Optional:
 - <что должно работать после выполнения>
 - <какие файлы/контракты появятся или изменятся>
 ```
+
+### Plan self-review checklist
+
+Before handing off the plan, verify:
+
+- [ ] Every slice has `acceptance` that is testable, not vague
+- [ ] Every non-trivial slice has `verification intent` and `verification mode`
+- [ ] If verification is deferred or waived, there is a `waiver rationale`
+- [ ] Plan stays at decision-level — no implementation walkthroughs
 
 ## 2. Задача worker'у (lead-tactical → worker)
 
@@ -119,7 +132,7 @@ Optional:
 ## Scope
 
 - файлы: <список>
-- слои: route UI | widgets | entities | server/emis | db/docs
+- слои: route UI | widgets | entities | server/<domain> | db/docs
 - НЕ трогать: <файлы/модули вне scope>
 
 ## Ветки
@@ -144,7 +157,8 @@ Optional:
 ## Evidence
 
 - верни, какие проверки реально запускались, где и с каким итогом
-- если ожидаемая проверка не запускалась, напиши `not run` и причину
+- каждый check должен иметь состояние: `fresh` (прогнан после финального diff) или `not run + reason`
+- evidence без состояния не принимается (см. `review-gate.md` §1.6)
 
 ## Формат сдачи
 
@@ -185,6 +199,12 @@ Skip conditions:
 - ключевые файлы: <список>
 - placement notes: <только если решение неочевидно>
 
+## Verification
+
+- verification intent: <что проверялось>
+- verification mode: `test-first` | `prototype-pin` | `verification-first`
+- waiver rationale: <если verification deferred или skipped>
+
 ## Ветки
 
 - worker branch: direct integration branch (default) | agent/worker/<slug> (subagent mode)
@@ -200,7 +220,7 @@ Skip conditions:
 
 ## Checks Evidence
 
-- <команда>: <green|red|not run> — <где запускалось / краткая причина>
+- <команда>: <green|red> `fresh` | `not run` — <reason>
 
 ## Review Disposition
 
@@ -317,10 +337,10 @@ Optional:
 
 ## Checks Evidence
 
-- `pnpm check`: <green|red|not run> — <where / reason>
-- `pnpm build`: <green|red|not run> — <where / reason>
-- `pnpm lint:boundaries`: <green|red|not run> — <where / reason>
-- other: <command/result> | `none`
+- `pnpm check`: <green|red> `fresh` | `not run` — <reason>
+- `pnpm build`: <green|red> `fresh` | `not run` — <reason>
+- `pnpm lint:boundaries`: <green|red> `fresh` | `not run` — <reason>
+- other: <command/result> `fresh` | `none`
 
 ## Ветки
 
@@ -495,10 +515,10 @@ Optional:
 
 ## Checks Evidence
 
-- `pnpm check`: <green|red|not run> — <where / reason>
-- `pnpm build`: <green|red|not run> — <where / reason>
-- `pnpm lint:boundaries`: <green|red|not run> — <where / reason>
-- other: <command/result> | `none`
+- `pnpm check`: <green|red> `fresh` | `not run` — <reason>
+- `pnpm build`: <green|red> `fresh` | `not run` — <reason>
+- `pnpm lint:boundaries`: <green|red> `fresh` | `not run` — <reason>
+- other: <command/result> `fresh` | `none`
 
 ## Fixes During Verification
 
@@ -542,7 +562,7 @@ Diff (slice diff или git diff main..feature/<topic>):
 
 Architecture context:
 
-- contour: <platform/shared | EMIS operational | EMIS BI/read-side>
+- contour: <platform/shared | domain operational | domain BI/read-side> (e.g. EMIS operational, EMIS BI/read-side)
 - expected home: <packages/... | apps/web/...>
 - exceptions / waivers touched: <none | EXC-...>
 
@@ -700,9 +720,9 @@ Checks:
 - `pnpm check`: <green|red|not run>
 - `pnpm build`: <green|red|not run>
 - `pnpm lint:boundaries`: <green|red|not run>
-- `pnpm emis:smoke`: <green|red|not run>
-- `pnpm emis:offline-smoke`: <green|red|not run>
-- `pnpm emis:write-smoke`: <green|red|not required>
+- domain-specific smoke tests (per command, if any):
+  - `<command>`: <green|red|not run>
+  - or `not required` if domain has no smoke suite
 
 Known Exceptions:
 
@@ -744,7 +764,7 @@ Decision: approve placement | approve with exception | request reshape | needs s
 
 Context:
 
-- contour: <platform/shared | EMIS operational | EMIS BI/read-side>
+- contour: <platform/shared | domain operational | domain BI/read-side> (e.g. EMIS operational, EMIS BI/read-side)
 - reusable home: <packages/... | not applicable>
 - app-leaf touch points: <apps/web/... | none>
 

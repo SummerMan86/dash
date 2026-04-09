@@ -107,7 +107,8 @@ Repo-wide architecture contract живёт в [architecture.md](./architecture.m
 | `agents/workflow.md`                          | core agent lifecycle                         | процесс GPT-5.4 → Claude, plan ownership, execution loop, escalation     |
 | `agents/review-gate.md`                       | review и governance model                    | slice/integration review, strategic acceptance/reframe pass, architecture/baseline pass  |
 | `agents/recovery.md`                          | failure-path protocol                        | recovery rules для rejected slices, branch divergence и tooling outage   |
-| `agents/invariants.md`                        | project invariants                           | architecture/data/schema/complexity guardrails                           |
+| `agents/invariants.md`                        | generic project invariants                   | repo-wide architecture/data/schema/complexity guardrails                 |
+| `agents/autonomous-protocol.md`               | autonomous execution protocol                | autonomous mode lifecycle, decision framework, guardrails, recovery      |
 | `agents/git-protocol.md`                      | branch и worktree protocol                   | ветки, worktrees, merge choreography, checkpoints                        |
 | `agents/memory-protocol.md`                   | memory ownership                             | кто и когда пишет `memory.md`, auto-compact recovery                     |
 | `agents/usage-telemetry.md`                   | agent usage telemetry                        | durable usage history, usefulness rubric, file-first telemetry contract  |
@@ -120,6 +121,15 @@ Repo-wide architecture contract живёт в [architecture.md](./architecture.m
 | `agents/lead-tactical/instructions.md`        | Claude Opus tactical lead instructions       | как управлять workers, review gate, report                               |
 | `agents/worker/instructions.md`               | Claude worker instructions                   | как выполнять задачи, self-check, handoff                                |
 | `agents/*-reviewer/instructions.md`           | reviewer role instructions                   | checks, output format, scope для каждого ревьюера                        |
+| `agents/skills/debugging.md`                  | debugging playbook                           | reproduce, compare, hypothesize, fix, escalation triggers                |
+| `agents/skills/testing-strategy.md`           | three-mode testing strategy                  | test-first, prototype-pin-refactor, verification-first, per-slice fields |
+| `agents/user-guide.md`                        | user-facing agent workflow runbook           | как ставить задачи команде агентов, integrated orchestration path        |
+
+#### Domain invariant overlays
+
+| Документ                                      | Владеет                                      | Source of truth для                                                      |
+| --------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------ |
+| `agents/invariants-emis.md`                   | EMIS domain invariants                       | EMIS boundaries, data invariants, tech notes (overlay to invariants.md)  |
 
 ### Active
 
@@ -174,7 +184,9 @@ Repo-wide architecture contract живёт в [architecture.md](./architecture.m
 - `agents/workflow.md` - если нужен core agent lifecycle
 - `agents/review-gate.md` - если нужен Review Gate, strategic acceptance/reframe pass или governance pass
 - `agents/recovery.md` - если выполнение ушло с happy path
-- `agents/invariants.md` - если нужны project invariants и guardrails
+- `agents/autonomous-protocol.md` - если задача в autonomous mode
+- `agents/invariants.md` - если нужны generic project invariants и guardrails
+- `agents/invariants-emis.md` - если нужны EMIS-specific domain invariants
 - `agents/git-protocol.md` - если нужны branches, worktrees и merge choreography
 - `agents/memory-protocol.md` - если нужно понять ownership `memory.md`
 - `agents/usage-telemetry.md` - если нужен durable usage log, usefulness rubric или telemetry storage contract
