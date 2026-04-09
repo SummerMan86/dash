@@ -286,6 +286,130 @@ Recommended v2 shape:
 - refine review request/result templates in `docs/agents/templates.md`
 - add a short behavioral section to reviewer-facing and worker/tactical instructions
 
+## Deferred V3 Ideas
+
+These items look valuable from `quint-code`, but they should come only after the
+v1/v2 rollout proves useful in practice.
+
+### 1. Decision Refresh / Stale-Review Cadence
+
+Source inspiration:
+
+- `README.md` decision refresh / evidence aging
+- `/q-refresh`
+- `/q-status`
+
+Useful delta for this repo:
+
+- add an explicit `refresh by` or `review by` field for active supporting decisions
+- make stale rollout docs and temporary policies visible before they silently drift
+- require explicit `superseded`, `extended`, or `closed` disposition for active rollout docs
+- standardize evidence state as:
+  - `fresh`
+  - `stale`
+  - `missing`
+- keep this as simple status wording only, not as a computed trust score
+
+Why this is useful here:
+
+- the repo already cares about stale docs, owner+expiry, and truthful governance
+- current workflow has expiry for waivers, but not a general refresh cadence for active supporting plans
+
+Why deferred:
+
+- it is process-governance polish, not a prerequisite for verification/testing/debugging adoption
+- adding refresh mechanics too early would create overhead before the base rollout is battle-tested
+
+Recommended v3 shape:
+
+- add a small lifecycle section to active rollout docs
+- use `fresh/stale/missing` evidence wording in supporting rollout and review-related docs
+- optionally add a short refresh rule to `docs/agents/workflow.md` or `memory-protocol.md`
+
+### 2. Onboarding / Decision Backfill Scan
+
+Source inspiration:
+
+- `/q-onboard`
+
+Useful delta for this repo:
+
+- when entering an older or underdocumented module, require a quick scan for:
+  - existing local `AGENTS.md`
+  - current contracts
+  - unresolved caveats / deferred items
+  - decisions worth backfilling into docs before implementation starts
+
+Why this is useful here:
+
+- this repo relies heavily on doc truthfulness and contour-aware navigation
+- the highest friction areas are often legacy or half-documented zones, not greenfield slices
+
+Why deferred:
+
+- current navigation is already strong enough for the first rollout waves
+- this becomes more valuable once the new verification/testing discipline is in steady use
+
+Recommended v3 shape:
+
+- add a short “onboarding scan” rule to worker/tactical instructions
+- optionally create a tiny reusable `docs/agents/skills/onboarding-scan.md`
+
+### 3. Depth Calibration
+
+Source inspiration:
+
+- analysis depth / blast-radius calibration in `quint-code`
+
+Useful delta for this repo:
+
+- require an explicit depth hint for non-trivial work:
+  - `light`
+  - `standard`
+  - `deep`
+- tie depth to blast radius, reversibility, and cross-module impact instead of vague “be thorough”
+- make plan and handoff expectations more proportional to actual risk
+
+Why this is useful here:
+
+- current workflow already distinguishes low-risk vs high-risk work, but not with one compact shared depth label
+- it would help align planning effort, review intensity, and evidence expectations
+
+Why deferred:
+
+- the current rollout already introduces new verification/testing structure
+- depth labels are useful only after the base workflow changes settle
+
+Recommended v3 shape:
+
+- add `depth: light | standard | deep` to strategic plan and tactical handoff templates
+- define one short rubric in `docs/agents/templates.md` or `workflow.md`
+
+### 4. Diversity Check On Variants
+
+Source inspiration:
+
+- variant-diversity checks in `quint-code`
+
+Useful delta for this repo:
+
+- when `lead-strategic` or `lead-tactical` compares alternatives, require a quick check that options differ in kind, not only in degree
+- reduce false choice between near-identical variants with cosmetic differences
+
+Why this is useful here:
+
+- it improves architectural or tactical comparisons without adding heavy process
+- it is especially relevant when using agents to generate multiple “alternatives” that are often structurally the same
+
+Why deferred:
+
+- it is useful mainly for design/decision-heavy slices, not for the foundational v1 rollout
+
+Recommended v3 shape:
+
+- add one checklist line to planning/decision templates:
+  - “Do the variants differ in kind, not only in degree?”
+
 ## Next Execution Entrypoint
 
 The first implementation chat should execute:
