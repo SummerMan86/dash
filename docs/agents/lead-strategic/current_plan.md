@@ -2,7 +2,28 @@
 
 ## Цель
 
-Привести dashboard-builder к стабильному состоянию: canonical architecture docs, verification foundation, реализация target BI architecture, тесты на target contracts, cleanup. Порядок: docs → verification → architecture implementation → target tests → cleanup. Operating mode: `ordinary iterative`.
+Привести dashboard-builder к стабильному состоянию: canonical architecture docs, verification foundation, реализация target BI architecture, тесты на target contracts, cleanup. Порядок: docs → verification → architecture implementation → target tests → cleanup.
+
+## Operating Mode
+
+`high-risk iterative / unstable wave` — начиная с Phase 2.
+
+Почему high-risk:
+- Phase 3 меняет runtime: provider selection, filter contract, IR type, dataset execution path
+- Ошибка в registry/provider dispatch ломает все dashboard pages
+- Filter unification затрагивает все BI routes одновременно
+- IR narrowing — breaking change в TypeScript contracts
+
+## Review Discipline
+
+- **strategic-reviewer** запускается после каждого принятого slice (per operating mode)
+- Каждый slice Phase 3 требует:
+  - `pnpm check` + `pnpm build` + `pnpm test` — fresh evidence обязательно
+  - slice review: code-reviewer + architecture-reviewer (minimum)
+  - security-reviewer для S-23 (route handler changes) и S-24 (filter/param contract)
+- **Перепроверка на каждом шаге**: lead-tactical не принимает slice без fresh green checks
+- **Rollback plan**: каждый slice Phase 3 additive (fallback на current switch); S-24/S-25 деструктивны — требуют explicit checkpoint commit перед началом
+- **Integration review** обязателен перед merge Phase 3 в main
 
 ## Выполненные подзадачи
 
