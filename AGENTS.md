@@ -24,6 +24,7 @@
 1. `README.md`
 2. `docs/architecture.md` (canonical repo-wide foundation doc)
 3. `docs/architecture_dashboard_bi.md` (BI vertical: dataset IR, providers, filters, DWH)
+3a. `docs/architecture_dashboard_bi_target.md` (BI vertical target-state: provider registry, filter contract, IR policy)
 4. локальный `AGENTS.md` в нужной папке
 5. `docs/current-project-analysis.md`, если нужен historical context до package-era
 6. локальный `CLAUDE.md`, если рядом нет `AGENTS.md`
@@ -92,6 +93,7 @@ EMIS-активный контур сейчас находится здесь:
 - `docs/architecture.md` - canonical repo-wide foundation architecture doc
 - `docs/architecture_dashboard_bi.md` - BI vertical architecture (dataset IR, providers, filters, DWH)
 - `docs/architecture_emis.md` - EMIS vertical architecture (operational paths, contracts, ingestion, PostGIS)
+- `docs/architecture_dashboard_bi_target.md` - target-state BI architecture (provider registry, filter unification, IR policy)
 - `docs/architecture_dashboard_builder.md` - compatibility wrapper pointing to the three split docs
 - `AGENTS.md` в корне - выбрать контур, увидеть reading path и конвенцию навигационных файлов
 - `docs/AGENTS.md` - единственный полный каталог документации и reading order

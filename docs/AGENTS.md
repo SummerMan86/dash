@@ -35,6 +35,7 @@ Compatibility wrapper (old links): [architecture_dashboard_builder.md](./archite
 | ---------------------------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------- |
 | `architecture.md`                                                                  | canonical repo-wide foundation               | topology, package map, import rules, deployment, shared infrastructure            |
 | `architecture_dashboard_bi.md`                                                     | BI vertical architecture                     | dataset IR path, providers, filters, DWH integrations, extension points           |
+| `architecture_dashboard_bi_target.md`                                              | BI vertical target-state architecture        | target provider model, filter contract, IR capability policy, Oracle/CubeJS path  |
 | `architecture_emis.md`                                                             | EMIS vertical architecture                   | operational paths, contracts, ingestion, PostGIS, auth                             |
 | `architecture_dashboard_builder.md`                                                | compatibility wrapper                        | points to the three split docs above; kept so existing links work                 |
 | `../apps/web/src/routes/dashboard/wildberries/dwh_for_wildberries_requirements.md` | Wildberries DWH contract                     | полный контракт с DWH: витрины, колонки, фильтры, алерты, требования к качеству |
@@ -160,6 +161,7 @@ Compatibility wrapper (old links): [architecture_dashboard_builder.md](./archite
 1. `README.md`
 2. `architecture.md` (canonical repo-wide foundation)
 3. `architecture_dashboard_bi.md` (BI vertical)
+3a. `architecture_dashboard_bi_target.md` (BI vertical target-state)
 4. `../db/schema_catalog.md`
 5. если задача про Wildberries DWH - `../apps/web/src/routes/dashboard/wildberries/dwh_for_wildberries_requirements.md`
 6. если задача про strategy dashboards - `strategy/bi_strategy.md`
