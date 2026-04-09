@@ -1,245 +1,202 @@
-# Plan: EMIS Phase 5 — Production-Ready Auth Hardening
+# Plan: EMIS External Object Ingestion, Wave 1
 
 ## Цель
 
-Превратить текущую базовую auth (DF-3: env-based users, plaintext passwords, in-memory sessions, opt-in mode) в production-ready систему:
+Добавить в EMIS generic ingestion contour для внешних объектов с активными source adapters только для `osm` и `gem`, сохранив строгую границу между:
 
-- Auth обязателен по умолчанию
-- Пароли в bcrypt
-- Users в БД с admin UI
-- Sessions persistent в БД
-- Смена пароля, seed начального admin
+- `stg_emis` как raw truth и run state
+- `emis.objects` как curated operational truth
+- `mart.emis_objects_dim` как BI/read-side truth поверх curated objects
 
-Результат: EMIS можно безопасно выставить для команды без рисков unauthorized access.
+Результат wave:
 
-## Контекст
+- внешние объекты можно подтягивать в staging, дедуплицировать, публиковать в curated слой и ревьюить через минимальный EMIS UI
+- low-confidence duplicates и invalid/unmapped cases не публикуются автоматически
+- imported objects поддерживают full geometry end-to-end
 
-- Phase 4 (DF-3) реализовала базовую auth: `EMIS_AUTH_MODE=none|session`, env-based users, plaintext password comparison, in-memory sessions, login/logout pages, role enforcement
-- Текущие файлы:
-  - `apps/web/src/lib/server/emis/infra/auth.ts` — session/user store, role helpers
-  - `apps/web/src/hooks.server.ts` — middleware
-  - `apps/web/src/routes/emis/login/` — login page
-  - `apps/web/src/routes/emis/logout/` — logout
-  - `apps/web/src/lib/server/emis/infra/writePolicy.ts` — `assertWriteContext()` с session support
-- Contract: `docs/emis_access_model.md` section 5
-- DB: `db/current_schema.sql` — `emis` schema, нет таблицы users/sessions
+## Operating Mode
 
-## Scope
+- `high-risk iterative / unstable wave`
 
-Только auth hardening. Никаких новых фич, UI изменений за пределами auth/admin.
+Почему:
 
-## Slices
+- меняется DB schema
+- меняются runtime contracts
+- расширяется object geometry contract
+- появляется новый server module + API namespace
+- добавляется review UI
+- порядок slices зависит от фактического результата предыдущих этапов
 
-### AUTH-1: Contract freeze — production auth design (docs only)
+## Canonical Decisions
 
-- status: **completed** (2026-04-04)
+- active sources этой волны: `osm`, `gem`
+- `wikimapia` явно вне scope этой волны до отдельного source-validation/legal-ops pass
+- `emis.objects.external_id` остаётся только compatibility field
+- canonical multi-source identity живёт в `emis.object_source_refs`
+- source winner определяется type-based policy, без field-level merge heuristics в wave 1
+- full geometry входит в wave 1:
+  - `Point`
+  - `LineString`
+  - `Polygon`
+  - `Multi*` variants
+- manual create/edit может оставаться point-first, но non-point imported objects должны быть защищены от порчи текущим lat/lon flow
+- wave 1 не вводит отдельный background runtime, scheduler или queue; ingestion запускается из текущего app runtime по admin trigger
+
+## Подзадачи
+
+### ING-1: Contract Freeze and Execution Alignment
+
 - scope:
-  - Обновить `docs/emis_access_model.md` section 5 с новым контрактом
-  - Зафиксировать решения:
-    - `EMIS_AUTH_MODE` default меняется с `none` на `session`
-    - `EMIS_AUTH_MODE=none` остаётся для dev/smoke (backward compat)
-    - Users таблица: `emis.users` (id, username, password_hash, role, created_at, updated_at)
-    - Sessions таблица: `emis.sessions` (id, user_id, role, created_at, expires_at)
-    - Password hashing: bcrypt (cost factor 12)
-    - Initial admin seed: via `db/seeds/` или env fallback `EMIS_ADMIN_PASSWORD`
-    - Smoke tests: `EMIS_AUTH_MODE=none` для dev, отдельный auth smoke для session mode
-  - Зафиксировать migration plan: добавить таблицы без breaking change для текущего env-based mode
-- done when: контракт заморожен, migration plan ясен
+  - `docs/plans/emis_external_object_ingestion.md`
+  - `apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
+  - `docs/agents/lead-strategic/current_plan.md`
+- depends on: —
+- размер: S
+- acceptance:
+  - frozen API namespace: `trigger / batches / conflicts`
+  - frozen DB names: `obj_import_run`, `obj_import_candidate`, `obj_candidate_match`, `object_source_refs`
+  - frozen resolution outcomes and source-priority policy
+  - frozen rule for non-point imported objects in point-first manual edit flow
 
-### AUTH-2: DB schema — users and sessions tables
+### ING-2: DB Foundation
 
-- status: **completed** (2026-04-04)
 - scope:
-  - Создать таблицу `emis.users`:
-    ```sql
-    id            UUID PRIMARY KEY DEFAULT gen_random_uuid()
-    username      TEXT NOT NULL UNIQUE
-    password_hash TEXT NOT NULL
-    role          TEXT NOT NULL CHECK (role IN ('viewer','editor','admin'))
-    created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
-    updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
-    ```
-  - Создать таблицу `emis.sessions`:
-    ```sql
-    id            UUID PRIMARY KEY DEFAULT gen_random_uuid()
-    user_id       UUID NOT NULL REFERENCES emis.users(id)
-    role          TEXT NOT NULL
-    created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
-    expires_at    TIMESTAMPTZ NOT NULL
-    ```
-  - Index: `emis.sessions(expires_at)` для cleanup
-  - Seed initial admin user (bcrypt hash)
-  - Обновить `db/current_schema.sql`, `db/schema_catalog.md`, `db/applied_changes.md`
-- constraints:
-  - Не ломать существующую `emis` schema
-  - SQL migration в `db/` по convention
-- done when:
-  - Tables created and seeded
-  - `pnpm check`, `pnpm build` green
+  - `db/current_schema.sql`
+  - `db/pending_changes.sql`
+  - `db/applied_changes.md`
+  - `db/schema_catalog.md`
+  - reference seeds/dictionaries if needed
+- depends on: ING-1
+- размер: M
+- acceptance:
+  - staging tables and `emis.object_source_refs` exist
+  - DB uniqueness enforces source-scoped identity
+  - counters/status/error fields support batch tracking
+  - reference rows for active sources and missing object types are present truthfully
 
-### AUTH-3: Bcrypt password hashing + DB user store
+### ING-3: Geometry Broadening and Curated Object Contract Upgrade
 
-- status: **completed** (2026-04-05)
 - scope:
-  - Добавить `bcrypt` dependency (или `@node-rs/bcrypt` для performance)
-  - Рефакторить `auth.ts`:
-    - `authenticateUser()`: bcrypt.compare вместо plaintext
-    - `getConfiguredUsers()`: читать из DB (primary), fallback на env var (migration period)
-    - Добавить `createUser()`, `updateUser()`, `listUsers()`, `getUserById()`
-  - User repository в `packages/emis-server/src/modules/users/` (SQL queries)
-  - User contracts в `packages/emis-contracts/src/emis-user/`
-- constraints:
-  - Backward compat: если `EMIS_USERS` env задан И DB users пуста, использовать env (с warning)
-  - Если DB users есть, env fallback игнорируется
-  - bcrypt cost factor 12 (configurable через env `EMIS_BCRYPT_ROUNDS`)
-- done when:
-  - Password verification через bcrypt
-  - Users из DB
-  - Env fallback работает для migration
-  - `pnpm check`, `pnpm build`, `pnpm lint:boundaries` green
+  - `packages/emis-contracts/src/emis-geo/*`
+  - `packages/emis-contracts/src/emis-object/*`
+  - curated object queries/routes/UI that expose geometry
+- depends on: ING-1
+- размер: M
+- acceptance:
+  - `EmisObject*` contracts support full geometry safely
+  - object list/detail surfaces expose `geometryType`, `sourceOrigin`, and primary source-ref metadata where needed
+  - point, line, polygon, and relevant multi-geometries read correctly through API and UI
+  - non-point imported objects are not corruptible through current manual edit entry points
 
-### AUTH-4: DB session persistence
+### ING-4: Ingestion Contracts and Query/Repository Layer
 
-- status: **completed** (2026-04-05)
 - scope:
-  - Рефакторить session store из in-memory Map в DB-backed:
-    - `createSession()`: INSERT в `emis.sessions`
-    - `getSession()`: SELECT + expiry check
-    - `deleteSession()`: DELETE
-    - Expired session cleanup: периодический DELETE или lazy на read
-  - Sessions переживают restart сервера
-  - Session repository в `packages/emis-server/src/modules/sessions/` или в users module
-- constraints:
-  - Fallback на in-memory если нет DB connection (graceful degradation)
-  - Session TTL: 24h (configurable через env `EMIS_SESSION_TTL_HOURS`)
-- done when:
-  - Sessions persist across server restart
-  - Expired sessions cleaned up
-  - `pnpm check`, `pnpm build` green
+  - `packages/emis-contracts/src/emis-ingestion/*`
+  - `packages/emis-server/src/modules/ingestion/repository.ts`
+  - `packages/emis-server/src/modules/ingestion/queries.ts`
+- depends on: ING-2, ING-3
+- размер: M
+- acceptance:
+  - typed contracts exist for batches, imported candidates, matches, trigger/list/resolve inputs
+  - repository/query layer covers staging persistence and review reads
+  - package boundaries remain clean
 
-### AUTH-5: Admin user management UI
+### ING-5: Source Adapters and Registry
 
-- status: **completed** (2026-04-05)
 - scope:
-  - API endpoints:
-    - `GET /api/emis/admin/users` — list users (admin only)
-    - `POST /api/emis/admin/users` — create user (admin only)
-    - `PATCH /api/emis/admin/users/:id` — update user (admin only, role/password change)
-    - `DELETE /api/emis/admin/users/:id` — deactivate user (admin only, soft or hard delete)
-  - UI page: `/emis/admin/users`
-    - List all users (username, role, created_at)
-    - Create new user form (username, password, role)
-    - Edit user (change role, reset password)
-    - Delete/deactivate user
-    - Admin cannot delete own account
-  - Wired through `assertWriteContext()` + admin role enforcement
-- constraints:
-  - Follow EMIS API conventions from RUNTIME_CONTRACT
-  - Admin only — enforce in hooks + route handlers
-  - Password не возвращается в API responses
-  - SQL в `packages/emis-server/` only
-- done when:
-  - Users manageable через admin UI
-  - API endpoints работают с audit
-  - `pnpm check`, `pnpm build`, `pnpm lint:boundaries` green
-  - Smoke checks для user management API
+  - `packages/emis-server/src/modules/ingestion/adapters/*`
+- depends on: ING-4
+- размер: M
+- acceptance:
+  - generic adapter interface exists
+  - source registry/config is isolated from fetchers
+  - OSM and GEM normalize into one candidate contract
+  - mapping rules are isolated from transport/fetch code
+  - no Wikimapia code lands in this wave
 
-### AUTH-6: Change password flow
+### ING-6: Resolution Engine and Curated Publication
 
-- status: **completed** (2026-04-05)
 - scope:
-  - API: `POST /api/emis/auth/change-password` (any authenticated user)
-    - Body: `{ currentPassword, newPassword }`
-    - Verify current password via bcrypt
-    - Hash new password, update DB
-    - Invalidate all other sessions for this user
-  - UI: `/emis/settings` или modal на profile dropdown
-    - Current password field
-    - New password + confirm
-    - Success feedback
-  - Password requirements: minimum 8 characters (fixed contract)
-- constraints:
-  - Любой authenticated user может менять свой пароль
-  - Admin может reset пароль другого user через AUTH-5
-  - Не требовать current password при admin reset
-- done when:
-  - Users can change own password
-  - Old sessions invalidated after change
-  - `pnpm check`, `pnpm build` green
+  - `packages/emis-server/src/modules/ingestion/service.ts`
+  - `packages/emis-server/src/modules/ingestion/matchEngine.ts`
+  - publication bridge into `emis.objects` + `emis.object_source_refs`
+- depends on: ING-4, ING-5
+- размер: L
+- acceptance:
+  - `unique` publishes a new curated object
+  - `duplicate_with_clear_winner` updates the existing curated object and refreshes source refs
+  - `possible_duplicate_low_confidence` remains unpublished in staging
+  - `invalid_or_unmapped` remains unpublished with stable review/error state
+  - source-priority policy is enforced by object type
 
-### AUTH-7: Default auth mode switch + smoke coverage
+### ING-7: API Transport
 
-- status: **completed** (2026-04-05)
 - scope:
-  - Переключить `EMIS_AUTH_MODE` default с `none` на `session`
-  - Обновить auth.ts: `getAuthMode()` returns `session` when env not set
-  - При `session` mode без DB users И без `EMIS_USERS` env:
-    - Auto-create admin from `EMIS_ADMIN_PASSWORD` env (если задан)
-    - Или fallback на `none` с warning (safety net)
-  - Обновить smoke scripts:
-    - `pnpm emis:smoke` — добавить `EMIS_AUTH_MODE=none` в env (explicit opt-out)
-    - Новый `pnpm emis:auth-smoke` — тестирует auth flows в session mode:
-      - Login with valid credentials → 200 + session cookie
-      - Login with invalid credentials → fail
-      - Access protected route without session → 401/redirect
-      - Access admin route as editor → 403
-      - Admin user CRUD via `/api/emis/admin/users`
-      - Change password flow
-  - Обновить `.env.example` с auth-related переменными
-- done when:
-  - Auth enabled by default
-  - Existing smoke tests still pass (explicit `EMIS_AUTH_MODE=none`)
-  - New auth smoke tests pass
-  - `pnpm check`, `pnpm build` green
+  - `apps/web/src/routes/api/emis/ingestion/*`
+- depends on: ING-4, ING-6
+- размер: M
+- acceptance:
+  - trigger/batches/conflicts endpoints are implemented as thin transport
+  - admin-only trigger/resolve and viewer+ diagnostics are enforced
+  - stable `{ error, code }` contract exists for resolve flows
 
-### AUTH-8: Governance closure and final baseline
+### ING-8: Review UI
 
-- status: **completed** (2026-04-05)
 - scope:
-  - Full baseline: all 8 checks, including auth smoke and Prettier
-  - Update docs:
-    - `docs/emis_access_model.md` — reflect production auth
-    - `docs/emis_session_bootstrap.md`
-    - `docs/emis_next_tasks_2026_03_22.md`
-    - `RUNTIME_CONTRACT.md` — add user/session endpoints
-  - Update agent docs: `last_report.md`, `memory.md`, this plan
-- done when:
-  - All checks green
-  - Docs consistent
-  - Baseline closed
+  - `apps/web/src/routes/emis/objects/+page.*`
+  - `apps/web/src/routes/emis/objects/imported/[id]/*`
+  - route-local helpers/components as needed
+- depends on: ING-3, ING-7
+- размер: M
+- acceptance:
+  - `/emis/objects` has import/review mode with filters by source, status, geometry type, mapped/unmapped
+  - `/emis/objects/imported/[id]` shows raw payload, match candidates, winner rule, and resolve actions
+  - `/emis/objects/[id]` stays curated operational detail only
 
-## Execution Order
+### ING-9: Verification and Governance Closure
 
-```
-AUTH-1 (contract) → AUTH-2 (DB schema)
-                     ├→ AUTH-3 (bcrypt + DB users) → AUTH-5 (admin UI)
-                     │                              → AUTH-6 (change password)
-                     └→ AUTH-4 (DB sessions)
-                                                      ↓
-                     AUTH-7 (default switch + smoke) ←─┘
-                                                      ↓
-                     AUTH-8 (governance closure)
-```
+- scope:
+  - docs/contracts/smoke coverage for the full wave
+- depends on: ING-2, ING-3, ING-6, ING-7, ING-8
+- размер: M
+- acceptance:
+  - DB docs and `RUNTIME_CONTRACT.md` are updated
+  - verification covers DB constraints, source-priority winners, unpublished staging conflicts, geometry variants, curated publication, and mart separation
+  - tactical report can truthfully declare readiness state
 
-- AUTH-1 first (contract freeze)
-- AUTH-2 depends on AUTH-1 (schema from contract)
-- AUTH-3 and AUTH-4 can run in parallel after AUTH-2
-- AUTH-5 and AUTH-6 depend on AUTH-3
-- AUTH-7 depends on AUTH-3 + AUTH-4
-- AUTH-8 after all
+## Ограничения
+
+- не писать SQL в `apps/web/src/routes/api/emis/*`
+- не писать HTTP-логику в `packages/emis-server/src/modules/*`
+- не пускать BI/read-side напрямую в `stg_emis`
+- не смешивать structural migration и domain rewrite вне scope этой wave
+- не расширять scope волны до Wikimapia, background runtime, scheduler или queue
+- не ломать curated `/api/emis/objects` и `/emis/objects/[id]` ради staging concerns
+
+## Ожидаемый результат
+
+- в EMIS появляется reusable ingestion contour в `packages/emis-server` и `packages/emis-contracts`
+- OSM и GEM можно подтянуть в staging, сопоставить с curated objects и безопасно опубликовать
+- ambiguous/import-invalid cases видны в review UI и не загрязняют curated слой
+- full geometry поддерживается на imported object path end-to-end
+- `mart.emis_objects_dim` продолжает отражать только curated результат
 
 ## Recommended Handoff To Lead-Tactical
 
-1. AUTH-1 (docs only, quick)
-2. AUTH-2 (DB schema, quick)
-3. AUTH-3 + AUTH-4 in parallel (main implementation)
-4. AUTH-5 + AUTH-6 in parallel (UI + flows)
-5. AUTH-7 (integration, switch default)
-6. AUTH-8 (governance)
+Начинать с:
 
-## Risk Notes
+1. `ING-1`
+2. `ING-2`
+3. `ING-3`
 
-- AUTH-7 (default switch) — changing default auth mode is a breaking change for local dev. Mitigation: clear documentation, `.env.example` update, smoke scripts explicitly set `EMIS_AUTH_MODE=none`.
-- bcrypt is CPU-intensive — use async `bcrypt.compare()` to not block event loop.
-- DB sessions add DB dependency to auth path — ensure graceful fallback if DB is down.
-- Password storage — never log passwords, never return `password_hash` in API responses.
+Затем:
+
+4. `ING-4` и `ING-5`
+5. `ING-6`
+6. `ING-7`
+7. `ING-8`
+8. `ING-9`
+
+Подробный design reference:
+
+- `docs/plans/emis_external_object_ingestion.md`

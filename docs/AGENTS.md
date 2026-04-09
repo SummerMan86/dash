@@ -121,6 +121,12 @@ Repo-wide architecture contract живёт в [architecture.md](./architecture.m
 | `agents/worker/instructions.md`               | Claude worker instructions                   | как выполнять задачи, self-check, handoff                                |
 | `agents/*-reviewer/instructions.md`           | reviewer role instructions                   | checks, output format, scope для каждого ревьюера                        |
 
+### Active
+
+| Документ                                          | Владеет                       | Source of truth для                                                                  |
+| ------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------ |
+| `plans/agent_workflow_superpowers_adaptation.md`  | agent workflow rollout plan   | hybrid adoption waves, testing strategy, execution split for Superpowers adaptation  |
+
 ### Archive
 
 | Документ           | Владеет                              | Source of truth для                                                                               |
