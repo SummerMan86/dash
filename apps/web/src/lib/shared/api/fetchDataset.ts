@@ -2,9 +2,10 @@ import type {
 	DatasetId,
 	DatasetQuery,
 	DatasetResponse,
+	DatasetClientError,
 	JsonValue
 } from '@dashboard-builder/platform-datasets';
-import { CONTRACT_VERSION } from '@dashboard-builder/platform-datasets';
+import { CONTRACT_VERSION, normalizeDatasetError } from '@dashboard-builder/platform-datasets';
 import {
 	getFilterSnapshot,
 	getEffectiveFilters,
@@ -79,6 +80,20 @@ export type FetchDatasetArgs = {
 	 */
 	useFlatParams?: boolean;
 };
+
+/**
+ * Client-side fetch error with normalized DatasetClientError shape.
+ * Thrown by fetchDataset on HTTP or network errors.
+ */
+export class DatasetFetchError extends Error {
+	readonly clientError: DatasetClientError;
+
+	constructor(clientError: DatasetClientError) {
+		super(clientError.message);
+		this.name = 'DatasetFetchError';
+		this.clientError = clientError;
+	}
+}
 
 type CacheEntry = { expiresAt: number; value: DatasetResponse };
 
@@ -204,9 +219,8 @@ export async function fetchDataset(args: FetchDatasetArgs): Promise<DatasetRespo
 		});
 
 		if (!res.ok) {
-			// Keep the error readable for beginners (status + body).
 			const text = await res.text().catch(() => '');
-			throw new Error(`fetchDataset: ${res.status} ${res.statusText}${text ? ` - ${text}` : ''}`);
+			throw new DatasetFetchError(normalizeDatasetError(new Error(`HTTP ${res.status}`), text));
 		}
 
 		const data = (await res.json()) as DatasetResponse;
