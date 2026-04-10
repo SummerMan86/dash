@@ -25,22 +25,29 @@ import {
 	compileStrategyMartDataset,
 	type StrategyMartDatasetId
 } from './definitions/strategyMart';
+import {
+	IFTS_DATASETS,
+	compileIftsDataset,
+	type IftsDatasetId
+} from './definitions/iftsMart';
 
 type KnownDatasetId =
 	| PaymentDatasetId
 	| WildberriesDatasetId
 	| ProductPeriodDatasetId
 	| EmisMartDatasetId
-	| StrategyMartDatasetId;
+	| StrategyMartDatasetId
+	| IftsDatasetId;
 
 /**
- * Dataset compiler entrypoint.
+ * Dataset compiler entrypoint — transitional family-switch.
  *
- * This is the "routing layer" for dataset definitions:
- * - it picks the right dataset definition based on datasetId
- * - it returns IR (which providers can execute)
+ * TODO(BR-9): replace this switch with genericCompile() when registry entries
+ * carry paramsSchema and queryBindings. After BR-9, this file should only
+ * contain the escape hatch for custom compile functions, not the family routing.
  *
- * Think of it as a registry, but implemented with simple code for MVP.
+ * This is a dual catalog: dataset identity exists both here and in registry/index.ts.
+ * Keep both in sync until genericCompile() absorbs the declarative datasets.
  */
 export function isKnownDatasetId(id: string): id is KnownDatasetId {
 	return (
@@ -48,7 +55,8 @@ export function isKnownDatasetId(id: string): id is KnownDatasetId {
 		Object.values(WILDBERRIES_DATASETS).includes(id as WildberriesDatasetId) ||
 		Object.values(PRODUCT_PERIOD_DATASETS).includes(id as ProductPeriodDatasetId) ||
 		Object.values(EMIS_MART_DATASETS).includes(id as EmisMartDatasetId) ||
-		Object.values(STRATEGY_MART_DATASETS).includes(id as StrategyMartDatasetId)
+		Object.values(STRATEGY_MART_DATASETS).includes(id as StrategyMartDatasetId) ||
+		Object.values(IFTS_DATASETS).includes(id as IftsDatasetId)
 	);
 }
 
@@ -67,6 +75,9 @@ export function compileDataset(datasetId: DatasetId, query: DatasetQuery): Datas
 	}
 	if (Object.values(STRATEGY_MART_DATASETS).includes(datasetId as StrategyMartDatasetId)) {
 		return compileStrategyMartDataset(datasetId as StrategyMartDatasetId, query);
+	}
+	if (Object.values(IFTS_DATASETS).includes(datasetId as IftsDatasetId)) {
+		return compileIftsDataset(datasetId as IftsDatasetId, query);
 	}
 	// This error code is used by the HTTP layer to return 404.
 	throw Object.assign(new Error(`Unknown datasetId: ${datasetId}`), { code: 'DATASET_NOT_FOUND' });

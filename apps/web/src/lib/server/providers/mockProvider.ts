@@ -5,7 +5,7 @@ import type {
 	IrOrderBy,
 	IrSelectItem
 } from '@dashboard-builder/platform-datasets';
-import type { Provider, ServerContext } from '@dashboard-builder/platform-datasets';
+import type { Provider, ProviderEntry, ServerContext } from '@dashboard-builder/platform-datasets';
 import { CONTRACT_VERSION } from '@dashboard-builder/platform-datasets';
 
 import {
@@ -102,11 +102,6 @@ function evalExpr(expr: IrExpr, row: Row): unknown {
 					return false;
 			}
 		}
-		case 'call': {
-			// MVP: no aggregation execution in mockProvider yet.
-			// Definitions in MVP avoid `call`/groupBy; future providers can implement properly.
-			throw new Error(`mockProvider: call() not supported (${expr.name})`);
-		}
 	}
 }
 
@@ -151,7 +146,7 @@ function serializeOrderBy(orderBy: IrOrderBy[] | undefined) {
 }
 
 export const mockProvider: Provider = {
-	async execute(irQuery: DatasetIr, ctx: ServerContext): Promise<DatasetResponse> {
+	async execute(irQuery: DatasetIr, _entry: ProviderEntry, ctx: ServerContext): Promise<DatasetResponse> {
 		// The execute method is what the BFF calls after compiling DatasetQuery -> IR.
 		if (irQuery.kind !== 'select') throw new Error(`mockProvider: unsupported IR kind`);
 		if (irQuery.from.kind !== 'dataset') throw new Error(`mockProvider: unsupported source`);

@@ -20,7 +20,7 @@
  */
 import type { DatasetId } from './contract';
 
-export type IrValue = string | number | boolean | null;
+export type IrValue = string | number | boolean | null | IrValue[];
 
 export type IrExpr =
 	| { kind: 'col'; name: string }
@@ -30,11 +30,11 @@ export type IrExpr =
 	| { kind: 'not'; item: IrExpr }
 	| {
 			kind: 'bin';
-			op: '=' | '!=' | '<' | '<=' | '>' | '>=' | 'in';
+			op: '=' | '!=' | '<' | '<=' | '>' | '>=' | 'in' | 'like';
 			left: IrExpr;
 			right: IrExpr;
 	  }
-	| { kind: 'call'; name: 'sum' | 'count' | 'avg' | 'min' | 'max'; args: IrExpr[] };
+;
 
 export type IrSelectItem = { expr: IrExpr; as?: string };
 
@@ -47,9 +47,9 @@ export type SelectIr = {
 	from: DatasetSource;
 	select: IrSelectItem[];
 	where?: IrExpr;
-	groupBy?: IrExpr[];
 	orderBy?: IrOrderBy[];
 	limit?: number;
+	offset?: number;
 };
 
 export type DatasetIr = SelectIr;
@@ -86,7 +86,4 @@ export const ir = {
 	inList(left: IrExpr, right: IrExpr): IrExpr {
 		return { kind: 'bin', op: 'in', left, right };
 	},
-	call(name: 'sum' | 'count' | 'avg' | 'min' | 'max', args: IrExpr[]) {
-		return { kind: 'call', name, args } as const;
-	}
 };

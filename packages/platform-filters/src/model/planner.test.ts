@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { planFiltersForDataset, getServerParamsForDataset } from './planner';
+import { planFiltersForDataset, planFiltersForTargets, getServerParamsForDataset } from './planner';
 import {
 	registerFilters,
 	clearRegistry,
@@ -218,5 +218,63 @@ describe('planFiltersForDataset — runtime context', () => {
 
 		expect(plan.serverParams).toEqual({ ws_param: 'val' });
 		expect(plan.appliedFilters).toContain('wsFilter');
+	});
+});
+
+describe('planFiltersForTargets — batch planning', () => {
+	const TARGET_A = 'test.datasetA';
+	const TARGET_B = 'test.datasetB';
+
+	it('returns plans for multiple targets', () => {
+		registerFilters([
+			{
+				id: 'shared_filter',
+				type: 'select',
+				label: 'Shared',
+				scope: 'global',
+				apply: 'server',
+				bindings: {
+					[TARGET_A]: { field: 'col_a', param: 'filter_a' },
+					[TARGET_B]: { field: 'col_b', param: 'filter_b' },
+				},
+			},
+		]);
+
+		const plans = planFiltersForTargets(
+			[TARGET_A, TARGET_B],
+			{ shared_filter: 'val' },
+		);
+
+		expect(plans.size).toBe(2);
+		expect(plans.get(TARGET_A)?.serverParams).toEqual({ filter_a: 'val' });
+		expect(plans.get(TARGET_B)?.serverParams).toEqual({ filter_b: 'val' });
+	});
+
+	it('returns empty plan for targets without bindings', () => {
+		registerFilters([
+			{
+				id: 'only_a',
+				type: 'select',
+				label: 'Only A',
+				scope: 'global',
+				apply: 'server',
+				bindings: {
+					[TARGET_A]: { field: 'col', param: 'p' },
+				},
+			},
+		]);
+
+		const plans = planFiltersForTargets(
+			[TARGET_A, TARGET_B],
+			{ only_a: 'val' },
+		);
+
+		expect(plans.get(TARGET_A)?.serverParams).toEqual({ p: 'val' });
+		expect(plans.get(TARGET_B)?.serverParams).toEqual({});
+	});
+
+	it('returns empty map for empty target list', () => {
+		const plans = planFiltersForTargets([], { any: 'val' });
+		expect(plans.size).toBe(0);
 	});
 });

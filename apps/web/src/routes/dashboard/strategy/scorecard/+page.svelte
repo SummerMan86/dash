@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { DatasetResponse } from '@dashboard-builder/platform-datasets';
-	import { useFilterWorkspace } from '@dashboard-builder/platform-filters';
-	import { fetchDataset } from '$shared/api/fetchDataset';
-	import { useDebouncedLoader } from '@dashboard-builder/platform-core';
+	import type { DatasetResponse, AsyncState } from '@dashboard-builder/platform-datasets';
+	import { ok, loading, error as errorState, idle, normalizeDatasetError } from '@dashboard-builder/platform-datasets';
+	import { useFilterWorkspace, planFiltersForTarget } from '@dashboard-builder/platform-filters';
+	import { fetchDataset, DatasetFetchError } from '$shared/api/fetchDataset';
 	import { cn } from '@dashboard-builder/platform-ui';
 	import { Button } from '@dashboard-builder/platform-ui';
 	import {
@@ -25,207 +25,102 @@
 		STRATEGY_WORKSPACE_ID
 	} from '../constants';
 	import { strategyFilters } from '../filters';
+	import { asNumber, sortRows, type SortDir, type StrategyRow } from '../utils';
 	import {
-		asBoolean,
-		asNumber,
-		asString,
-		sortRows,
-		type SortDir,
-		type StrategyRow
-	} from '../utils';
+		type ScorecardRow,
+		type DepartmentSummary,
+		type HorizonSummary,
+		type ScorecardBadgeVariant,
+		toCoverage,
+		getCoverageVariant,
+		getCoverageBarClass,
+		clampBarWidth,
+		mapToScorecardRows,
+	} from './view-model';
 
-	type ScorecardBadgeVariant = 'success' | 'warning' | 'error' | 'info' | 'muted';
-
-	type ScorecardRow = {
-		departmentCode: string;
-		departmentName: string;
-		perspectiveCode: string;
-		perspectiveName: string;
-		horizonCode: string;
-		horizonName: string;
-		totalKpiCount: number;
-		kpiWithTarget: number;
-		kpiWithActual: number;
-		gapCount: number;
-		weightMissingFlag: boolean;
-		missingWeightRows: number;
-		planCoveragePct: number | null;
-		actualCoveragePct: number | null;
-		readinessLabel: string;
-		readinessVariant: ScorecardBadgeVariant;
-		attentionScore: number;
-	};
-
-	type DepartmentSummary = {
-		departmentCode: string;
-		departmentName: string;
-		rowsCount: number;
-		totalKpiCount: number;
-		kpiWithTarget: number;
-		kpiWithActual: number;
-		gapCount: number;
-		rowsWithoutWeights: number;
-		planCoveragePct: number | null;
-		actualCoveragePct: number | null;
-		attentionScore: number;
-	};
-
-	type HorizonSummary = {
-		horizonCode: string;
-		horizonName: string;
-		totalKpiCount: number;
-		kpiWithTarget: number;
-		kpiWithActual: number;
-		gapCount: number;
-		planCoveragePct: number | null;
-		actualCoveragePct: number | null;
-	};
-
-	function toCoverage(numerator: number, denominator: number): number | null {
-		if (!Number.isFinite(denominator) || denominator <= 0) return null;
-		return (numerator / denominator) * 100;
-	}
-
-	function getCoverageVariant(value: number | null): ScorecardBadgeVariant {
-		if (value === null) return 'muted';
-		if (value >= 80) return 'success';
-		if (value >= 50) return 'warning';
-		return 'error';
-	}
-
-	function getCoverageBarClass(value: number | null, emphasize = false): string {
-		if (value === null) return 'bg-muted-foreground/20';
-		if (value >= 80) return emphasize ? 'bg-emerald-500' : 'bg-emerald-400';
-		if (value >= 50) return emphasize ? 'bg-amber-500' : 'bg-amber-400';
-		return emphasize ? 'bg-rose-500' : 'bg-rose-400';
-	}
-
-	function clampBarWidth(value: number | null): string {
-		if (value === null) return '0%';
-		return `${Math.max(6, Math.min(100, value))}%`;
-	}
-
-	function getReadiness(values: {
-		totalKpiCount: number;
-		planCoveragePct: number | null;
-		actualCoveragePct: number | null;
-		gapCount: number;
-		weightMissingFlag: boolean;
-	}): { label: string; variant: ScorecardBadgeVariant; attentionScore: number } {
-		const uncoveredActual = Math.max(
-			0,
-			values.totalKpiCount -
-				Math.round(((values.actualCoveragePct ?? 0) * values.totalKpiCount) / 100)
-		);
-		const baseAttentionScore =
-			(values.weightMissingFlag ? 140 : 0) +
-			uncoveredActual * 6 +
-			values.gapCount * 10 +
-			(values.planCoveragePct === null ? 15 : Math.max(0, 75 - values.planCoveragePct));
-
-		if (values.totalKpiCount === 0) {
-			return { label: 'Нет KPI', variant: 'muted', attentionScore: 0 };
-		}
-
-		if (values.weightMissingFlag) {
-			return {
-				label: 'Нужно добрать веса',
-				variant: 'warning',
-				attentionScore: baseAttentionScore
-			};
-		}
-
-		if ((values.actualCoveragePct ?? 0) >= 80 && values.gapCount === 0) {
-			return { label: 'Можно показывать', variant: 'success', attentionScore: baseAttentionScore };
-		}
-
-		if ((values.actualCoveragePct ?? 0) >= 50 && (values.planCoveragePct ?? 0) >= 70) {
-			return { label: 'Рабочий прогресс', variant: 'info', attentionScore: baseAttentionScore };
-		}
-
-		return { label: 'Зона внимания', variant: 'error', attentionScore: baseAttentionScore };
-	}
+	const DATASET_ID = STRATEGY_DATASET_IDS.scorecardOverview;
 
 	const filterRuntime = useFilterWorkspace({
 		workspaceId: STRATEGY_WORKSPACE_ID,
 		ownerId: 'scorecard',
-		specs: strategyFilters
+		specs: strategyFilters,
 	});
 
-	let dataset = $state<DatasetResponse | null>(null);
-	let error = $state<string | null>(null);
+	// --- Page-local async query state (target pattern) ---
+	let queryState = $state<AsyncState<DatasetResponse>>(idle());
 	let sortKey = $state<keyof ScorecardRow>('attentionScore');
 	let sortDir = $state<SortDir>('desc');
+	let fetchVersion = 0; // closure counter for stale-request guard, not reactive
 
 	let effectiveFilters = $derived(filterRuntime.effective);
-	let rows = $derived.by(() => {
-		const sourceRows = (dataset?.rows ?? []) as StrategyRow[];
-		return sourceRows.map((row): ScorecardRow => {
-			const totalKpiCount = asNumber(row.total_kpi_count) ?? 0;
-			const kpiWithTarget = asNumber(row.kpi_with_target) ?? 0;
-			const kpiWithActual = asNumber(row.kpi_with_actual) ?? 0;
-			const gapCount = asNumber(row.gap_count) ?? 0;
-			const weightMissingFlag = asBoolean(row.weight_missing_flag) === true;
-			const planCoveragePct = toCoverage(kpiWithTarget, totalKpiCount);
-			const actualCoveragePct = toCoverage(kpiWithActual, totalKpiCount);
-			const readiness = getReadiness({
-				totalKpiCount,
-				planCoveragePct,
-				actualCoveragePct,
-				gapCount,
-				weightMissingFlag
+
+	// Rows derived from current data (keep-previous-data on refresh)
+	let currentData = $derived(
+		queryState.status === 'ok' ? queryState.data
+		: queryState.status === 'error' && queryState.data ? queryState.data
+		: null,
+	);
+	let rows = $derived(currentData ? mapToScorecardRows(currentData.rows) : []);
+
+	// --- Explicit planner + flat params fetch (no legacy merge) ---
+	async function loadDataset() {
+		const version = ++fetchVersion;
+		const prevData = currentData;
+
+		// Mark as loading/refreshing
+		queryState = prevData
+			? ok(prevData, true) // keep previous data visible, mark as refreshing
+			: loading();
+
+		try {
+			// Explicit planner call — server params resolved client-side
+			const plan = planFiltersForTarget(
+				DATASET_ID,
+				filterRuntime.getSnapshot(),
+				{ workspaceId: filterRuntime.workspaceId, ownerId: filterRuntime.ownerId },
+			);
+
+			// Flat params: planner serverParams + page-local params merged explicitly
+			const params = { ...plan.serverParams, limit: 2000 };
+
+			const data = await fetchDataset({
+				id: DATASET_ID,
+				params,
+				useFlatParams: true, // canonical migrated path — no legacy filter merge
+				cache: { ttlMs: 30_000 },
 			});
 
-			return {
-				departmentCode: asString(row.department_code) ?? '—',
-				departmentName: asString(row.department_name) ?? asString(row.department_code) ?? '—',
-				perspectiveCode: asString(row.perspective_code) ?? '—',
-				perspectiveName: asString(row.perspective_name) ?? asString(row.perspective_code) ?? '—',
-				horizonCode: asString(row.horizon_code) ?? '—',
-				horizonName: asString(row.horizon_name) ?? asString(row.horizon_code) ?? '—',
-				totalKpiCount,
-				kpiWithTarget,
-				kpiWithActual,
-				gapCount,
-				weightMissingFlag,
-				missingWeightRows: asNumber(row.missing_weight_rows) ?? 0,
-				planCoveragePct,
-				actualCoveragePct,
-				readinessLabel: readiness.label,
-				readinessVariant: readiness.variant,
-				attentionScore: readiness.attentionScore
-			};
-		});
-	});
-
-	const loader = useDebouncedLoader({
-		watch: () => $effectiveFilters,
-		delayMs: 250,
-		load: () =>
-			fetchDataset({
-				id: STRATEGY_DATASET_IDS.scorecardOverview,
-				params: { limit: 2000 },
-				cache: { ttlMs: 30_000 },
-				filterContext: {
-					snapshot: filterRuntime.getSnapshot(),
-					workspaceId: filterRuntime.workspaceId,
-					ownerId: filterRuntime.ownerId
-				}
-			}),
-		onData: (data) => {
-			dataset = data;
-			error = null;
-		},
-		onError: (err) => {
-			error = err instanceof Error ? err.message : String(err);
+			// Stale-request guard
+			if (version !== fetchVersion) return;
+			queryState = ok(data);
+		} catch (e) {
+			if (version !== fetchVersion) return;
+			const clientError = e instanceof DatasetFetchError
+				? e.clientError
+				: normalizeDatasetError(e);
+			queryState = errorState(clientError, prevData ?? undefined);
 		}
+	}
+
+	// Watch filters and reload with debounce
+	let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+	$effect(() => {
+		// Touch effectiveFilters to subscribe to changes
+		void effectiveFilters;
+		clearTimeout(debounceTimer);
+		debounceTimer = setTimeout(loadDataset, 250);
+		return () => clearTimeout(debounceTimer);
 	});
 
 	let sortedRows = $derived(sortRows(rows, sortKey, sortDir));
+	let isLoading = $derived(queryState.status === 'loading');
+	let isRefreshing = $derived(queryState.status === 'ok' && queryState.refreshing === true);
+	let errorMessage = $derived(queryState.status === 'error' ? queryState.error.message : null);
+
 	let latestExecutedAt = $derived.by(() =>
-		dataset?.meta?.executedAt
-			? formatDate(dataset.meta.executedAt, { day: '2-digit', month: 'short', year: 'numeric' })
-			: null
+		currentData?.meta?.executedAt
+			? formatDate(currentData.meta.executedAt, { day: '2-digit', month: 'short', year: 'numeric' })
+			: null,
 	);
 
 	let departmentCount = $derived(new Set(rows.map((row) => row.departmentCode)).size);
@@ -474,8 +369,8 @@
 			{#if latestExecutedAt}
 				<span>Снимок: {latestExecutedAt}</span>
 			{/if}
-			<Button type="button" variant="outline" onclick={loader.reload} disabled={loader.loading}>
-				{loader.loading ? 'Обновляем...' : 'Обновить'}
+			<Button type="button" variant="outline" onclick={loadDataset} disabled={isLoading || isRefreshing}>
+				{isLoading || isRefreshing ? 'Обновляем...' : 'Обновить'}
 			</Button>
 		</div>
 	</header>
@@ -607,9 +502,9 @@
 		</CardContent>
 	</Card>
 
-	{#if error}
+	{#if errorMessage}
 		<div class="rounded-lg border border-error/30 bg-error-muted p-4 text-sm text-error">
-			{error}
+			{errorMessage}
 		</div>
 	{/if}
 
@@ -618,7 +513,7 @@
 			label="Департаментов"
 			hint="Количество департаментов в текущем опубликованном срезе"
 			value={formatNumber(departmentCount)}
-			loading={loader.loading && rows.length === 0}
+			loading={isLoading && rows.length === 0}
 		/>
 		<StatCard
 			label="KPI в срезе"
@@ -847,7 +742,7 @@
 				{sortKey}
 				{sortDir}
 				onSort={handleSort}
-				loading={loader.loading && sortedRows.length === 0}
+				loading={isLoading && sortedRows.length === 0}
 				empty={emptyState}
 			/>
 		</CardContent>

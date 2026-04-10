@@ -1,5 +1,7 @@
 import type { DatasetResponse } from './contract';
+import type { DatasetId } from './contract';
 import type { DatasetIr } from './ir';
+import type { SourceDescriptor, DatasetFieldDef } from './registry';
 
 /**
  * ServerContext is NOT part of DatasetQuery.
@@ -17,6 +19,10 @@ export type ServerContext = {
 	tenantId: string;
 	userId?: string;
 	scopes?: string[];
+	/** Correlation / tracing id. Must NOT affect cache identity. */
+	requestId?: string;
+	locale?: string;
+	timezone?: string;
 };
 
 export interface Provider {
@@ -24,9 +30,21 @@ export interface Provider {
 	 * Execute a compiled IR on a particular backend (Oracle/Postgres/Cube/mock).
 	 *
 	 * Providers are "adapters" in Ports & Adapters / Hexagonal Architecture.
-	 * The *port* is this interface, owned by the core (`entities/dataset`).
+	 * The *port* is this interface, owned by the core.
 	 *
-	 * Must be deterministic for the same (ir, ctx) inputs.
+	 * `entry` provides registry-owned metadata: source descriptor, fields.
 	 */
-	execute: (ir: DatasetIr, ctx: ServerContext) => Promise<DatasetResponse>;
+	execute: (ir: DatasetIr, entry: ProviderEntry, ctx: ServerContext) => Promise<DatasetResponse>;
 }
+
+/**
+ * Minimal entry shape that providers need for execution.
+ * Satisfied by both DatasetRegistryEntry and server RegistryEntry.
+ */
+export type ProviderEntry = {
+	datasetId: DatasetId;
+	source: SourceDescriptor;
+	fields: DatasetFieldDef[];
+	cache?: { ttlMs: number; refreshIntervalMs?: number; staleWhileRevalidate?: boolean };
+	execution?: { defaultLimit?: number; maxLimit?: number; timeoutMs?: number };
+};

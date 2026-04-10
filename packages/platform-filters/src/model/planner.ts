@@ -211,6 +211,29 @@ export function planFiltersForTarget(
 }
 
 /**
+ * Batch plan filter application for multiple targets at once.
+ *
+ * This is the ergonomic helper for pages that coordinate several datasets
+ * with the same effective filters. Avoids per-dataset planning boilerplate.
+ *
+ * @param targetIds - dataset/target ids to plan for
+ * @param effectiveFilters - current filter values
+ * @param context - optional runtime context (workspace, owner)
+ * @returns Map from targetId to FilterPlan
+ */
+export function planFiltersForTargets(
+	targetIds: string[],
+	effectiveFilters: FilterValues,
+	context?: FilterRuntimeContext,
+): Map<string, FilterPlan> {
+	const result = new Map<string, FilterPlan>();
+	for (const targetId of targetIds) {
+		result.set(targetId, planFiltersForTarget(targetId, effectiveFilters, context));
+	}
+	return result;
+}
+
+/**
  * Extract only server-side filter params for a dataset.
  * Used for building cache keys (client filters should NOT affect cache key).
  *

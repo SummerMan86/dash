@@ -2,9 +2,10 @@ import type {
 	DatasetId,
 	DatasetQuery,
 	DatasetResponse,
+	DatasetClientError,
 	JsonValue
 } from '@dashboard-builder/platform-datasets';
-import { CONTRACT_VERSION } from '@dashboard-builder/platform-datasets';
+import { CONTRACT_VERSION, normalizeDatasetError } from '@dashboard-builder/platform-datasets';
 import {
 	getFilterSnapshot,
 	getEffectiveFilters,
@@ -36,13 +37,17 @@ type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Respo
 export type FetchDatasetArgs = {
 	id: DatasetId;
 	/**
-	 * Dataset-specific params (widget config etc).
-	 * Global filters are merged in automatically from the shared filter runtime.
+	 * Flat dataset params — the canonical wire bag.
+	 * On the migrated path, this is the ONLY input to the server.
+	 * Planner output and page/widget params are merged here client-side before transport.
 	 */
 	params?: Record<string, JsonValue>;
 	/**
 	 * Extra filters to merge on top of global filters (optional).
 	 * If keys overlap, `filters` wins over global snapshot.
+	 *
+	 * @deprecated Use `params` directly with planner-produced serverParams.
+	 * Will be removed after filter migration completes.
 	 */
 	filters?: Record<string, JsonValue>;
 	requestId?: string;
@@ -68,7 +73,27 @@ export type FetchDatasetArgs = {
 		workspaceId?: string;
 		ownerId?: string;
 	};
+	/**
+	 * When true, skip legacy filter merge (getFilterSnapshot + auto-merge).
+	 * Migrated pages set this to true and provide all params explicitly.
+	 * Default: false (backward compatible with non-migrated pages).
+	 */
+	useFlatParams?: boolean;
 };
+
+/**
+ * Client-side fetch error with normalized DatasetClientError shape.
+ * Thrown by fetchDataset on HTTP or network errors.
+ */
+export class DatasetFetchError extends Error {
+	readonly clientError: DatasetClientError;
+
+	constructor(clientError: DatasetClientError) {
+		super(clientError.message);
+		this.name = 'DatasetFetchError';
+		this.clientError = clientError;
+	}
+}
 
 type CacheEntry = { expiresAt: number; value: DatasetResponse };
 
@@ -99,42 +124,55 @@ export async function fetchDataset(args: FetchDatasetArgs): Promise<DatasetRespo
 	if (!doFetch)
 		throw new Error('fetchDataset: no fetch available (provide args.fetch in SSR/load)');
 
-	// Get effective filters from the new store
-	const effectiveFilters =
-		(args.filterContext?.snapshot as FilterValues | undefined) ?? getEffectiveFilters();
-	const runtimeContext: FilterRuntimeContext | undefined =
-		args.filterContext?.workspaceId && args.filterContext?.ownerId
-			? {
-					workspaceId: args.filterContext.workspaceId,
-					ownerId: args.filterContext.ownerId
-				}
-			: (getActiveFilterRuntime() ?? undefined);
+	// Resolve filter plan and build query
+	let plan: ReturnType<typeof planFiltersForDataset> | null = null;
+	let query: DatasetQuery;
 
-	// Plan filter application (if filters are registered for this dataset)
-	const plan = (
-		runtimeContext ? hasFiltersForTarget(args.id, runtimeContext) : hasFiltersForDataset(args.id)
-	)
-		? planFiltersForDataset(args.id, effectiveFilters, runtimeContext)
-		: null;
+	if (args.useFlatParams) {
+		// --- Canonical migrated path ---
+		// All params are provided explicitly by the caller.
+		// Planner output is merged into params by the page, not by fetchDataset.
+		// No legacy filter merge, no implicit getFilterSnapshot().
+		// Client-side filtering is the caller's responsibility on this path.
+		query = {
+			contractVersion: CONTRACT_VERSION,
+			...(args.requestId ? { requestId: args.requestId } : {}),
+			...(args.params ? { params: args.params } : {}),
+		};
+	} else {
+		// --- Legacy path (non-migrated pages) ---
+		const effectiveFilters =
+			(args.filterContext?.snapshot as FilterValues | undefined) ?? getEffectiveFilters();
+		const runtimeContext: FilterRuntimeContext | undefined =
+			args.filterContext?.workspaceId && args.filterContext?.ownerId
+				? {
+						workspaceId: args.filterContext.workspaceId,
+						ownerId: args.filterContext.ownerId,
+					}
+				: (getActiveFilterRuntime() ?? undefined);
 
-	// Build merged filters:
-	// 1. Legacy global filters (for backward compat)
-	// 2. Planned server params (from new filter system)
-	// 3. Explicit overrides from args.filters
-	const legacyFilters = getFilterSnapshot() as unknown as Record<string, JsonValue>;
-	const mergedFilters: Record<string, JsonValue> = {
-		...legacyFilters,
-		...(plan?.serverParams ?? {}),
-		...(args.filters ?? {})
-	};
+		plan = (
+			runtimeContext
+				? hasFiltersForTarget(args.id, runtimeContext)
+				: hasFiltersForDataset(args.id)
+		)
+			? planFiltersForDataset(args.id, effectiveFilters, runtimeContext)
+			: null;
 
-	// This is the only request payload format the BFF understands.
-	const query: DatasetQuery = {
-		contractVersion: CONTRACT_VERSION,
-		...(args.requestId ? { requestId: args.requestId } : {}),
-		...(Object.keys(mergedFilters).length ? { filters: mergedFilters } : {}),
-		...(args.params ? { params: args.params } : {})
-	};
+		const legacyFilters = getFilterSnapshot() as unknown as Record<string, JsonValue>;
+		const mergedFilters: Record<string, JsonValue> = {
+			...legacyFilters,
+			...(plan?.serverParams ?? {}),
+			...(args.filters ?? {}),
+		};
+
+		query = {
+			contractVersion: CONTRACT_VERSION,
+			...(args.requestId ? { requestId: args.requestId } : {}),
+			...(Object.keys(mergedFilters).length ? { filters: mergedFilters } : {}),
+			...(args.params ? { params: args.params } : {}),
+		};
+	}
 
 	// Cache key uses the request payload. Client-side post-filtering stays outside it.
 	const key = makeKey(args.id, query);
@@ -181,9 +219,8 @@ export async function fetchDataset(args: FetchDatasetArgs): Promise<DatasetRespo
 		});
 
 		if (!res.ok) {
-			// Keep the error readable for beginners (status + body).
 			const text = await res.text().catch(() => '');
-			throw new Error(`fetchDataset: ${res.status} ${res.statusText}${text ? ` - ${text}` : ''}`);
+			throw new DatasetFetchError(normalizeDatasetError(new Error(`HTTP ${res.status}`), text));
 		}
 
 		const data = (await res.json()) as DatasetResponse;
