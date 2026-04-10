@@ -7,8 +7,8 @@
  * Canonical reference: docs/architecture_dashboard_bi_target.md §1
  */
 import type { z } from 'zod';
-import type { DatasetId, DatasetField, JsonValue } from './contract';
-import type { SelectIr } from './ir';
+import type { DatasetId, DatasetQuery, DatasetField, JsonValue } from './contract';
+import type { SelectIr, DatasetIr } from './ir';
 
 // ---------------------------------------------------------------------------
 // SourceDescriptor — "where data lives"
@@ -97,8 +97,15 @@ export type DatasetRegistryEntry<
 	queryBindings?: {
 		filters?: DatasetFilterBinding[];
 	};
-	/** Custom compile function. If omitted, genericCompile() will be used (introduced in BR-9). */
-	compile?: (params: TParams) => SelectIr;
+	/**
+	 * Custom compile function. If omitted, genericCompile() is used with queryBindings.
+	 *
+	 * Custom compile receives the raw DatasetQuery (not typedParams).
+	 * Custom compile functions handle their own param extraction from query.
+	 * paramsSchema validation runs before compile for input gating, but typedParams
+	 * are passed only to genericCompile.
+	 */
+	compile?: (datasetId: DatasetId, query: DatasetQuery) => DatasetIr;
 	/** Optional Zod schema for row validation (dev/test). */
 	rowSchema?: z.ZodType<TRow>;
 	access?: DatasetAccess;
