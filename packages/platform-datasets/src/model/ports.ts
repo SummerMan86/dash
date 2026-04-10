@@ -45,4 +45,6 @@ export type ProviderEntry = {
 	datasetId: DatasetId;
 	source: SourceDescriptor;
 	fields: DatasetFieldDef[];
+	cache?: { ttlMs: number; refreshIntervalMs?: number; staleWhileRevalidate?: boolean };
+	execution?: { defaultLimit?: number; maxLimit?: number; timeoutMs?: number };
 };

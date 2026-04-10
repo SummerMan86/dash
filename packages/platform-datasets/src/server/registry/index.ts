@@ -262,6 +262,8 @@ const iftsEntries: RegistryEntry[] = [
 	{
 		datasetId: 'ifts.payment_stats',
 		source: { kind: 'oracle', connectionName: 'ifts', schema: 'ACH', table: 'T_PAYM_STAT' },
+		cache: { ttlMs: 15_000 },
+		execution: { timeoutMs: 5_000 },
 		fields: columnsToFields({
 			PAYM_STAT_ID: 'number', OPERDAY_ID: 'number', COLLECT_TIME: 'datetime',
 			SERVICE: 'string', PAYM_PROCESSED_TOTAL: 'number',
@@ -273,6 +275,8 @@ const iftsEntries: RegistryEntry[] = [
 	{
 		datasetId: 'ifts.message_stats',
 		source: { kind: 'oracle', connectionName: 'ifts', schema: 'ACH', table: 'T_MSGS_STAT' },
+		cache: { ttlMs: 15_000 },
+		execution: { timeoutMs: 5_000 },
 		fields: columnsToFields({
 			MSGS_STAT_ID: 'number', OPERDAY_ID: 'number', COLLECT_TIME: 'datetime',
 			IM_PROCESSED_TOTAL: 'number', IM_PROCESSED_TIME_AVG: 'number',

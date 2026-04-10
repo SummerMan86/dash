@@ -76,7 +76,7 @@ export function compileIftsDataset(
 					{ expr: ir.col('PAYM_REJECTED_TOTAL') },
 					{ expr: ir.col('PAYM_REJECTED_PERIOD') },
 				],
-				where: whereParts.length === 1 ? whereParts[0] : whereParts.length > 1 ? ir.and(whereParts) : undefined,
+				where: whereParts.length ? ir.and(whereParts) : undefined,
 				orderBy: [{ expr: ir.col('COLLECT_TIME'), dir: 'desc' }],
 				limit,
 			};

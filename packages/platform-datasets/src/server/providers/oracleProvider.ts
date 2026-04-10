@@ -49,8 +49,10 @@ async function getPool(): Promise<oracledb.Pool> {
 	return poolPromise;
 }
 
-// Graceful shutdown — called on process termination
-if (typeof process !== 'undefined') {
+// Graceful shutdown — called on process termination (registered once)
+let shutdownRegistered = false;
+if (typeof process !== 'undefined' && !shutdownRegistered) {
+	shutdownRegistered = true;
 	const shutdown = async () => {
 		if (pool) {
 			try { await pool.close(0); } catch { /* ignore */ }
@@ -119,7 +121,7 @@ const SAFE_OPS = new Set(['=', '!=', '<', '<=', '>', '>=', 'in', 'like']);
 function exprToSql(expr: IrExpr, binds: unknown[], columns: Record<string, DatasetFieldType>): string {
 	switch (expr.kind) {
 		case 'col': {
-			if (!columns[expr.name]) throw new Error(`oracleProvider: unknown column "${expr.name}"`);
+			if (!(expr.name in columns)) throw new Error(`oracleProvider: unknown column "${expr.name}"`);
 			return qIdent(expr.name);
 		}
 		case 'lit': {
@@ -255,10 +257,15 @@ export const oracleProvider: Provider = {
 		// Build SQL
 		const { text, binds, selectedFields } = buildSelectSql(irQuery, entry, columns);
 
+		// Cache and execution hints
+		const ttlMs = entry.cache?.ttlMs ?? 0;
+		const timeoutMs = entry.execution?.timeoutMs ?? 10_000;
+		const key = ttlMs > 0
+			? cacheKey(datasetId, text, Object.fromEntries(binds.map((v, i) => [`b${i + 1}`, v])), ctx.tenantId)
+			: null;
+
 		// Check cache
-		const ttlMs = (entry as { cache?: { ttlMs?: number } }).cache?.ttlMs ?? 0;
-		if (ttlMs > 0) {
-			const key = cacheKey(datasetId, text, Object.fromEntries(binds.map((v, i) => [`b${i + 1}`, v])), ctx.tenantId);
+		if (key) {
 			const cached = getCached(key);
 			if (cached) {
 				return {
@@ -267,9 +274,6 @@ export const oracleProvider: Provider = {
 				};
 			}
 		}
-
-		// Execute with timeout
-		const timeoutMs = (entry as { execution?: { timeoutMs?: number } }).execution?.timeoutMs ?? 10_000;
 		const oraPool = await getPool();
 		let connection: oracledb.Connection | null = null;
 
@@ -302,8 +306,7 @@ export const oracleProvider: Provider = {
 			};
 
 			// Populate cache
-			if (ttlMs > 0) {
-				const key = cacheKey(datasetId, text, Object.fromEntries(binds.map((v, i) => [`b${i + 1}`, v])), ctx.tenantId);
+			if (key) {
 				setCache(key, response, ttlMs);
 			}
 
