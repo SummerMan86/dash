@@ -17,6 +17,10 @@ export type ServerContext = {
 	tenantId: string;
 	userId?: string;
 	scopes?: string[];
+	/** Correlation / tracing id. Must NOT affect cache identity. */
+	requestId?: string;
+	locale?: string;
+	timezone?: string;
 };
 
 export interface Provider {

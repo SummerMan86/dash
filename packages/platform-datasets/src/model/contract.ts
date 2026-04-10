@@ -44,15 +44,16 @@ export type DatasetQueryV1 = {
 	/**
 	 * Global filters snapshot (typically produced by `entities/filter`).
 	 *
-	 * We keep filters inside the query so the BFF can stay stateless and
-	 * the cache key can be derived from a single input object.
-	 *
-	 * NOTE: tenant/user context should NOT be put here; it belongs to server ctx.
+	 * @deprecated Target wire contract uses flat `params` only.
+	 * Legacy filter bags should be adapted into flat `params` before transport.
+	 * New datasets and migrated pages should use `params` directly.
+	 * Will be removed after filter migration (BR-5).
 	 */
 	filters?: Record<string, JsonValue>;
 	/**
 	 * Dataset-specific parameters (widget config etc).
-	 * This is intentionally opaque to keep widgets decoupled from providers.
+	 * This is the canonical flat wire bag — planner output and page/widget
+	 * params are merged client-side before transport.
 	 */
 	params?: Record<string, JsonValue>;
 };
@@ -93,14 +94,41 @@ export type DatasetResponseV1 = {
 	meta?: {
 		executedAt?: string;
 		tenantId?: string;
-		source?: 'mock' | 'oracle' | 'postgres' | 'cube' | 'unknown';
+		/** @deprecated Use `sourceKind` instead. Will be removed after migration. */
+		source?: 'mock' | 'oracle' | 'postgres' | 'cube' | 'clickhouse' | 'unknown';
 		limit?: number;
 		offset?: number;
 		sort?: Array<{
 			field: string;
 			dir: 'asc' | 'desc';
 		}>;
+		/** Total row count when the backend can provide it cheaply. */
+		totalCount?: number;
+		/** Backend that actually served the response (for observability). */
+		sourceKind?: string;
+		/** Age of the cached value in ms; 0 or omitted for fresh responses. */
+		cacheAgeMs?: number;
 	};
 };
 
 export type DatasetResponse = DatasetResponseV1;
+
+// ---------------------------------------------------------------------------
+// DatasetError — stable JSON error shape for dataset operations
+// ---------------------------------------------------------------------------
+
+export type DatasetErrorCode =
+	| 'DATASET_NOT_FOUND'
+	| 'DATASET_ACCESS_DENIED'
+	| 'DATASET_INVALID_PARAMS'
+	| 'UNSUPPORTED_BACKEND'
+	| 'DATASET_EXECUTION_FAILED'
+	| 'DATASET_TIMEOUT'
+	| 'DATASET_CONNECTION_ERROR';
+
+export type DatasetError = {
+	error: string;
+	code: DatasetErrorCode;
+	retryable: boolean;
+	requestId?: string;
+};

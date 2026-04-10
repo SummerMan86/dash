@@ -41,6 +41,12 @@ importers:
       prettier-plugin-tailwindcss:
         specifier: ^0.7.1
         version: 0.7.1(prettier-plugin-svelte@3.4.0(prettier@3.6.2)(svelte@5.43.14))(prettier@3.6.2)
+      svelte-check:
+        specifier: ^4.3.4
+        version: 4.3.4(picomatch@4.0.3)(svelte@5.43.14)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
       typescript-eslint:
         specifier: ^8.46.1
         version: 8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
@@ -169,6 +175,9 @@ importers:
 
   packages/emis-contracts:
     dependencies:
+      '@types/geojson':
+        specifier: ^7946.0.15
+        version: 7946.0.16
       zod:
         specifier: ^3.23.8
         version: 3.25.76
@@ -194,6 +203,9 @@ importers:
       '@types/bcryptjs':
         specifier: ^2.4.6
         version: 2.4.6
+      '@types/geojson':
+        specifier: ^7946.0.15
+        version: 7946.0.16
       '@types/pg':
         specifier: ^8.16.0
         version: 8.16.0
@@ -239,6 +251,9 @@ importers:
       pg:
         specifier: ^8.16.3
         version: 8.16.3
+      zod:
+        specifier: ^3.23.8
+        version: 3.25.76
     devDependencies:
       '@types/pg':
         specifier: ^8.16.0
