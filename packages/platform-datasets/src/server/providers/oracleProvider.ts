@@ -19,48 +19,54 @@ import { CONTRACT_VERSION } from '../../model';
 // Pool lifecycle — lazy init, graceful shutdown
 // ---------------------------------------------------------------------------
 
-// Current limitation: single global pool for all oracle datasets.
-// Registry entries declare connectionName (e.g. 'ifts') but it is not used yet.
-// Multi-connection routing by connectionName is deferred to BR-10.
-let pool: oracledb.Pool | null = null;
-let poolPromise: Promise<oracledb.Pool> | null = null;
+// Multi-connection pool management: one pool per connectionName.
+// Env vars: ORACLE_{NAME}_USER, ORACLE_{NAME}_PASSWORD, ORACLE_{NAME}_CONNECT_STRING
+// Fallback for default/first connection: ORACLE_USER, ORACLE_PASSWORD, ORACLE_CONNECT_STRING
+const pools = new Map<string, oracledb.Pool>();
+const poolPromises = new Map<string, Promise<oracledb.Pool>>();
 
-function getOracleConfig() {
-	const user = process.env.ORACLE_USER;
-	const password = process.env.ORACLE_PASSWORD;
-	const connectString = process.env.ORACLE_CONNECT_STRING;
+function getOracleConfig(connectionName: string) {
+	const prefix = `ORACLE_${connectionName.toUpperCase()}_`;
+	const user = process.env[`${prefix}USER`] ?? process.env.ORACLE_USER;
+	const password = process.env[`${prefix}PASSWORD`] ?? process.env.ORACLE_PASSWORD;
+	const connectString = process.env[`${prefix}CONNECT_STRING`] ?? process.env.ORACLE_CONNECT_STRING;
 	if (!user || !password || !connectString) {
-		throw new Error('oracleProvider: Oracle connection not configured');
+		throw new Error(`oracleProvider: Oracle connection '${connectionName}' not configured`);
 	}
 	return { user, password, connectString };
 }
 
-async function getPool(): Promise<oracledb.Pool> {
-	if (pool) return pool;
-	if (poolPromise) return poolPromise;
-	poolPromise = (async () => {
-		const config = getOracleConfig();
-		pool = await oracledb.createPool({
+async function getPool(connectionName: string): Promise<oracledb.Pool> {
+	const existing = pools.get(connectionName);
+	if (existing) return existing;
+	const pending = poolPromises.get(connectionName);
+	if (pending) return pending;
+	const promise = (async () => {
+		const config = getOracleConfig(connectionName);
+		const pool = await oracledb.createPool({
 			...config,
 			poolMin: 1,
 			poolMax: 4,
 			poolIncrement: 1,
 		});
+		pools.set(connectionName, pool);
 		return pool;
 	})();
-	poolPromise.catch(() => { poolPromise = null; }); // allow retry on failure
-	return poolPromise;
+	promise.catch(() => { poolPromises.delete(connectionName); });
+	poolPromises.set(connectionName, promise);
+	return promise;
 }
 
-// Graceful shutdown — called on process termination (registered once)
+// Graceful shutdown — close all pools
 let shutdownRegistered = false;
 if (typeof process !== 'undefined' && !shutdownRegistered) {
 	shutdownRegistered = true;
 	const shutdown = async () => {
-		if (pool) {
+		for (const [name, pool] of pools) {
 			try { await pool.close(0); } catch { /* ignore */ }
-			pool = null;
 		}
+		pools.clear();
+		poolPromises.clear();
 	};
 	process.on('SIGTERM', shutdown);
 	process.on('SIGINT', shutdown);
@@ -275,7 +281,8 @@ export const oracleProvider: Provider = {
 				};
 			}
 		}
-		const oraPool = await getPool();
+		const connectionName = entry.source.kind === 'oracle' ? (entry.source as { connectionName: string }).connectionName : 'default';
+		const oraPool = await getPool(connectionName);
 		let connection: oracledb.Connection | null = null;
 
 		try {
