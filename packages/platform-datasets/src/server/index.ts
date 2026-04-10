@@ -13,3 +13,5 @@ export { postgresProvider } from './providers/postgresProvider';
 export { executeDatasetQuery, DatasetExecutionError, registerProvider } from './executeDatasetQuery';
 export { getRegistryEntry, isRegisteredDataset, listRegisteredDatasets } from './registry';
 export type { RegistryEntry } from './registry';
+export { getDatasetSchema } from './getDatasetSchema';
+export type { DatasetSchemaField, DatasetSchemaResponse } from './getDatasetSchema';
