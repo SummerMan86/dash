@@ -20,27 +20,33 @@ import { CONTRACT_VERSION } from '../../model';
 // ---------------------------------------------------------------------------
 
 let pool: oracledb.Pool | null = null;
+let poolPromise: Promise<oracledb.Pool> | null = null;
 
 function getOracleConfig() {
 	const user = process.env.ORACLE_USER;
 	const password = process.env.ORACLE_PASSWORD;
 	const connectString = process.env.ORACLE_CONNECT_STRING;
 	if (!user || !password || !connectString) {
-		throw new Error('oracleProvider: ORACLE_USER, ORACLE_PASSWORD, ORACLE_CONNECT_STRING must be set');
+		throw new Error('oracleProvider: Oracle connection not configured');
 	}
 	return { user, password, connectString };
 }
 
 async function getPool(): Promise<oracledb.Pool> {
 	if (pool) return pool;
-	const config = getOracleConfig();
-	pool = await oracledb.createPool({
-		...config,
-		poolMin: 1,
-		poolMax: 4,
-		poolIncrement: 1,
-	});
-	return pool;
+	if (poolPromise) return poolPromise;
+	poolPromise = (async () => {
+		const config = getOracleConfig();
+		pool = await oracledb.createPool({
+			...config,
+			poolMin: 1,
+			poolMax: 4,
+			poolIncrement: 1,
+		});
+		return pool;
+	})();
+	poolPromise.catch(() => { poolPromise = null; }); // allow retry on failure
+	return poolPromise;
 }
 
 // Graceful shutdown — called on process termination
@@ -63,10 +69,11 @@ type CacheEntry = { expiresAt: number; response: DatasetResponse };
 const cache = new Map<string, CacheEntry>();
 const MAX_CACHE_ENTRIES = 200;
 
-function cacheKey(datasetId: string, params: Record<string, unknown>, tenantId: string): string {
+function cacheKey(datasetId: string, sqlText: string, params: Record<string, unknown>, tenantId: string): string {
 	// requestId excluded from cache identity per architecture doc
+	// sqlText included to prevent collision between different query shapes with same bind values
 	const sortedParams = Object.keys(params).sort().map(k => `${k}=${JSON.stringify(params[k])}`).join('&');
-	return `${datasetId}:${tenantId}:${sortedParams}`;
+	return `${datasetId}:${tenantId}:${sqlText}:${sortedParams}`;
 }
 
 function getCached(key: string): DatasetResponse | null {
@@ -131,12 +138,21 @@ function exprToSql(expr: IrExpr, binds: unknown[], columns: Record<string, Datas
 			return `(NOT ${exprToSql(expr.item, binds, columns)})`;
 		case 'bin': {
 			if (!SAFE_OPS.has(expr.op)) throw new Error(`oracleProvider: unsupported operator: ${expr.op}`);
+			if (expr.op === 'in') {
+				// IN requires col on left and literal array on right
+				if (expr.right.kind !== 'lit' || !Array.isArray(expr.right.value)) {
+					throw new Error('oracleProvider: IN requires a literal array on the right side');
+				}
+				const left = exprToSql(expr.left, binds, columns);
+				const items = (expr.right.value as unknown[]).map(v => {
+					binds.push(v);
+					return `:b${binds.length}`;
+				});
+				if (!items.length) return '1=0'; // empty IN is always false
+				return `(${left} IN (${items.join(', ')}))`;
+			}
 			const left = exprToSql(expr.left, binds, columns);
 			const right = exprToSql(expr.right, binds, columns);
-			if (expr.op === 'in') {
-				// Oracle IN with bind: use = ANY is not supported, use IN list
-				return `(${left} IN (${right}))`;
-			}
 			return `(${left} ${expr.op} ${right})`;
 		}
 		case 'call':
@@ -242,7 +258,7 @@ export const oracleProvider: Provider = {
 		// Check cache
 		const ttlMs = (entry as { cache?: { ttlMs?: number } }).cache?.ttlMs ?? 0;
 		if (ttlMs > 0) {
-			const key = cacheKey(datasetId, Object.fromEntries(binds.map((v, i) => [`b${i + 1}`, v])), ctx.tenantId);
+			const key = cacheKey(datasetId, text, Object.fromEntries(binds.map((v, i) => [`b${i + 1}`, v])), ctx.tenantId);
 			const cached = getCached(key);
 			if (cached) {
 				return {
@@ -287,7 +303,7 @@ export const oracleProvider: Provider = {
 
 			// Populate cache
 			if (ttlMs > 0) {
-				const key = cacheKey(datasetId, Object.fromEntries(binds.map((v, i) => [`b${i + 1}`, v])), ctx.tenantId);
+				const key = cacheKey(datasetId, text, Object.fromEntries(binds.map((v, i) => [`b${i + 1}`, v])), ctx.tenantId);
 				setCache(key, response, ttlMs);
 			}
 
@@ -309,7 +325,11 @@ export const oracleProvider: Provider = {
 				throw err;
 			}
 
-			throw e;
+			// Sanitize: never forward raw Oracle exception beyond provider boundary
+			console.error('[oracleProvider] execution error:', message);
+			const sanitized = new Error('Oracle query failed');
+			Object.assign(sanitized, { code: 'DATASET_EXECUTION_FAILED', retryable: false });
+			throw sanitized;
 		} finally {
 			if (connection) {
 				try { await connection.close(); } catch { /* ignore close errors */ }
