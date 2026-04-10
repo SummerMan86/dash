@@ -25,13 +25,19 @@ import {
 	compileStrategyMartDataset,
 	type StrategyMartDatasetId
 } from './definitions/strategyMart';
+import {
+	IFTS_DATASETS,
+	compileIftsDataset,
+	type IftsDatasetId
+} from './definitions/iftsMart';
 
 type KnownDatasetId =
 	| PaymentDatasetId
 	| WildberriesDatasetId
 	| ProductPeriodDatasetId
 	| EmisMartDatasetId
-	| StrategyMartDatasetId;
+	| StrategyMartDatasetId
+	| IftsDatasetId;
 
 /**
  * Dataset compiler entrypoint.
@@ -48,7 +54,8 @@ export function isKnownDatasetId(id: string): id is KnownDatasetId {
 		Object.values(WILDBERRIES_DATASETS).includes(id as WildberriesDatasetId) ||
 		Object.values(PRODUCT_PERIOD_DATASETS).includes(id as ProductPeriodDatasetId) ||
 		Object.values(EMIS_MART_DATASETS).includes(id as EmisMartDatasetId) ||
-		Object.values(STRATEGY_MART_DATASETS).includes(id as StrategyMartDatasetId)
+		Object.values(STRATEGY_MART_DATASETS).includes(id as StrategyMartDatasetId) ||
+		Object.values(IFTS_DATASETS).includes(id as IftsDatasetId)
 	);
 }
 
@@ -67,6 +74,9 @@ export function compileDataset(datasetId: DatasetId, query: DatasetQuery): Datas
 	}
 	if (Object.values(STRATEGY_MART_DATASETS).includes(datasetId as StrategyMartDatasetId)) {
 		return compileStrategyMartDataset(datasetId as StrategyMartDatasetId, query);
+	}
+	if (Object.values(IFTS_DATASETS).includes(datasetId as IftsDatasetId)) {
+		return compileIftsDataset(datasetId as IftsDatasetId, query);
 	}
 	// This error code is used by the HTTP layer to return 404.
 	throw Object.assign(new Error(`Unknown datasetId: ${datasetId}`), { code: 'DATASET_NOT_FOUND' });

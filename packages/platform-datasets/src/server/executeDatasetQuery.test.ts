@@ -237,6 +237,18 @@ describe('registry', () => {
 		}
 	});
 
+	it('returns entry for all oracle datasets', () => {
+		const oracleDatasets = [
+			'ifts.system_parameters', 'ifts.payment_stats',
+			'ifts.message_stats', 'ifts.operday_state',
+		];
+		for (const id of oracleDatasets) {
+			const entry = getRegistryEntry(id);
+			expect(entry, `missing entry for ${id}`).toBeDefined();
+			expect(entry!.source.kind).toBe('oracle');
+		}
+	});
+
 	it('returns undefined for unknown dataset', () => {
 		expect(getRegistryEntry('unknown.dataset')).toBeUndefined();
 	});

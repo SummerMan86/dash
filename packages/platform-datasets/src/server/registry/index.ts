@@ -245,6 +245,54 @@ const paymentEntries: RegistryEntry[] = [
 ];
 
 // ---------------------------------------------------------------------------
+// IFTS datasets (Oracle-backed, real-time)
+// ---------------------------------------------------------------------------
+
+const iftsEntries: RegistryEntry[] = [
+	{
+		datasetId: 'ifts.system_parameters',
+		source: { kind: 'oracle', connectionName: 'ifts', schema: 'ACH', table: 'SYSTEM_PARAMETERS' },
+		fields: columnsToFields({
+			OPERDAY: 'date', SESSION_ID: 'string', SERVICE: 'string',
+			PROJECT_CODE: 'string', SYS_NAME: 'string',
+			QUEUE_SIZE: 'number', QUEUE_AMOUNT: 'number',
+			MAX_QUEUE_SIZE: 'number', MAX_QUEUE_AMOUNT: 'number',
+		}),
+	},
+	{
+		datasetId: 'ifts.payment_stats',
+		source: { kind: 'oracle', connectionName: 'ifts', schema: 'ACH', table: 'T_PAYM_STAT' },
+		fields: columnsToFields({
+			PAYM_STAT_ID: 'number', OPERDAY_ID: 'number', COLLECT_TIME: 'datetime',
+			SERVICE: 'string', PAYM_PROCESSED_TOTAL: 'number',
+			PAYM_PROCESSED_PERIOD: 'number', PAYM_QUEUED_IN_PERIOD: 'number',
+			PAYM_QUEUED_OUT_PERIOD: 'number', PAYM_QUEUED_CURRENT: 'number',
+			PAYM_REJECTED_TOTAL: 'number', PAYM_REJECTED_PERIOD: 'number',
+		}),
+	},
+	{
+		datasetId: 'ifts.message_stats',
+		source: { kind: 'oracle', connectionName: 'ifts', schema: 'ACH', table: 'T_MSGS_STAT' },
+		fields: columnsToFields({
+			MSGS_STAT_ID: 'number', OPERDAY_ID: 'number', COLLECT_TIME: 'datetime',
+			IM_PROCESSED_TOTAL: 'number', IM_PROCESSED_TIME_AVG: 'number',
+			IM_PROCESSED_PERIOD: 'number', IM_REJECTED_TOTAL: 'number',
+			IM_REJECTED_PERIOD: 'number', OM_PROCESSED_TOTAL: 'number',
+			OM_PROCESSED_TOTAL_TIME_AVG: 'number', OM_PROCESSED_PERIOD: 'number',
+			OM_REJECTED_TOTAL: 'number', OM_REJECTED_PERIOD: 'number',
+		}),
+	},
+	{
+		datasetId: 'ifts.operday_state',
+		source: { kind: 'oracle', connectionName: 'ifts', schema: 'ACH', table: 'OPERDAY_STATE' },
+		fields: columnsToFields({
+			OPERDAY_STATE_ID: 'number', OPERDAY_ID: 'number', STATE_ID: 'number',
+			STATUS: 'string', START_TIME: 'datetime', FINISH_TIME: 'datetime',
+		}),
+	},
+];
+
+// ---------------------------------------------------------------------------
 // Registry assembly
 // ---------------------------------------------------------------------------
 
@@ -255,6 +303,7 @@ for (const entry of [
 	...emisEntries,
 	...strategyEntries,
 	...paymentEntries,
+	...iftsEntries,
 ]) {
 	registry.set(entry.datasetId, entry);
 }
