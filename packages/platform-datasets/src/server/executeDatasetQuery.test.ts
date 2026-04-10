@@ -3,6 +3,7 @@ import type { DatasetQuery, DatasetResponse } from '../model';
 import type { Provider, ServerContext } from '../model';
 import { CONTRACT_VERSION } from '../model';
 import { DatasetExecutionError, registerProvider, executeDatasetQuery } from './executeDatasetQuery';
+import { getRegistryEntry } from './registry';
 
 // --- Test fixtures ---
 
@@ -22,13 +23,13 @@ const stubResponse: DatasetResponse = {
 };
 
 const stubPostgresProvider: Provider = {
-	async execute() {
+	async execute(_ir, _entry, _ctx) {
 		return { ...stubResponse };
 	},
 };
 
 const stubMockProvider: Provider = {
-	async execute(_ir, _ctx) {
+	async execute(_ir, _entry, _ctx) {
 		return { ...stubResponse, datasetId: 'payment.kpi', meta: { source: 'mock' as const } };
 	},
 };
@@ -122,7 +123,7 @@ describe('executeDatasetQuery', () => {
 
 	it('throws DATASET_EXECUTION_FAILED on provider error', async () => {
 		registerProvider('postgres', {
-			async execute() {
+			async execute(_ir, _entry) {
 				throw new Error('connection refused');
 			},
 		});
@@ -140,7 +141,7 @@ describe('executeDatasetQuery', () => {
 
 	it('throws DATASET_CONNECTION_ERROR when DATABASE_URL missing', async () => {
 		registerProvider('postgres', {
-			async execute() {
+			async execute(_ir, _entry) {
 				throw new Error('DATABASE_URL is not configured');
 			},
 		});
@@ -160,12 +161,12 @@ describe('executeDatasetQuery', () => {
 	describe('provider routing', () => {
 		// Use distinct providers per kind to verify the correct one is called.
 		const postgresTracker: Provider = {
-			async execute() {
+			async execute(_ir, _entry) {
 				return { ...stubResponse, meta: { source: 'postgres' as const } };
 			},
 		};
 		const mockTracker: Provider = {
-			async execute() {
+			async execute(_ir, _entry) {
 				return { ...stubResponse, meta: { source: 'mock' as const } };
 			},
 		};
@@ -208,6 +209,51 @@ describe('executeDatasetQuery', () => {
 
 			const result = await executeDatasetQuery('payment.kpi', stubQuery, stubCtx);
 			expect(result.meta?.source).toBe('mock');
+		});
+	});
+});
+
+describe('registry', () => {
+	it('returns entry for all postgres datasets', () => {
+		const pgDatasets = [
+			'wildberries.fact_product_office_day', 'wildberries.fact_product_period',
+			'emis.news_flat', 'emis.object_news_facts', 'emis.objects_dim', 'emis.ship_route_vessels',
+			'strategy.entity_overview', 'strategy.scorecard_overview',
+			'strategy.performance_detail', 'strategy.cascade_detail',
+		];
+		for (const id of pgDatasets) {
+			const entry = getRegistryEntry(id);
+			expect(entry, `missing entry for ${id}`).toBeDefined();
+			expect(entry!.source.kind).toBe('postgres');
+		}
+	});
+
+	it('returns entry for all mock datasets', () => {
+		const mockDatasets = ['payment.kpi', 'payment.timeseriesDaily', 'payment.topClients', 'payment.mccSummary'];
+		for (const id of mockDatasets) {
+			const entry = getRegistryEntry(id);
+			expect(entry, `missing entry for ${id}`).toBeDefined();
+			expect(entry!.source.kind).toBe('mock');
+		}
+	});
+
+	it('returns undefined for unknown dataset', () => {
+		expect(getRegistryEntry('unknown.dataset')).toBeUndefined();
+	});
+
+	it('entry fields match postgresProvider column count', () => {
+		const entry = getRegistryEntry('wildberries.fact_product_office_day');
+		expect(entry).toBeDefined();
+		expect(entry!.fields.length).toBe(18); // 18 columns in original DATASETS mapping
+	});
+
+	it('entry source contains correct schema and table', () => {
+		const entry = getRegistryEntry('strategy.entity_overview');
+		expect(entry).toBeDefined();
+		expect(entry!.source).toEqual({
+			kind: 'postgres',
+			schema: 'mart_strategy',
+			table: 'slobi_entity_overview',
 		});
 	});
 });

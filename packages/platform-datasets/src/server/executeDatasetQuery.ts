@@ -5,18 +5,19 @@
  * Route handlers delegate here after transport parsing and context derivation.
  *
  * Flow:
- *   1. Validate dataset exists (compile-time check via isKnownDatasetId)
- *   2. Access check (placeholder — registry-based check arrives in BR-3)
+ *   1. Registry lookup
+ *   2. Access check (placeholder — full enforcement in a future slice)
  *   3. Compile DatasetQuery → IR
- *   4. Resolve provider (transitional: prefix-based until BR-3 registry)
- *   5. Execute IR via provider
+ *   4. Resolve provider by entry.source.kind
+ *   5. Execute IR via provider (entry-owned metadata)
  *   6. Return DatasetResponse
  *
  * Canonical reference: docs/architecture_dashboard_bi_target.md §1
  */
-import type { DatasetId, DatasetQuery, DatasetResponse, DatasetErrorCode } from '../model';
+import type { DatasetId, DatasetQuery, DatasetResponse, DatasetErrorCode, DatasetIr } from '../model';
 import type { Provider, ServerContext } from '../model';
-import { compileDataset, isKnownDatasetId } from './compile';
+import { compileDataset } from './compile';
+import { getRegistryEntry } from './registry';
 
 // ---------------------------------------------------------------------------
 // DatasetExecutionError — typed error for dataset operations
@@ -59,21 +60,6 @@ export function registerProvider(kind: string, provider: Provider): void {
 	providerRegistry.set(kind, provider);
 }
 
-/**
- * Transitional provider resolution by dataset id prefix.
- * Will be replaced by entry.source.kind lookup in BR-3.
- */
-function resolveProviderKind(datasetId: string): string {
-	if (
-		datasetId.startsWith('wildberries.') ||
-		datasetId.startsWith('emis.') ||
-		datasetId.startsWith('strategy.')
-	) {
-		return 'postgres';
-	}
-	return 'mock';
-}
-
 // ---------------------------------------------------------------------------
 // executeDatasetQuery — package-orchestrated execution
 // ---------------------------------------------------------------------------
@@ -85,9 +71,9 @@ export async function executeDatasetQuery(
 ): Promise<DatasetResponse> {
 	const requestId = query.requestId;
 
-	// 1. Validate dataset exists
-	if (!isKnownDatasetId(datasetId)) {
-		// Sanitize reflected value: truncate and restrict to safe characters
+	// 1. Registry lookup
+	const entry = getRegistryEntry(datasetId);
+	if (!entry) {
 		const safeId = datasetId.slice(0, 64).replace(/[^a-zA-Z0-9._-]/g, '');
 		throw new DatasetExecutionError(
 			'DATASET_NOT_FOUND',
@@ -97,15 +83,14 @@ export async function executeDatasetQuery(
 		);
 	}
 
-	// 2. Access check (placeholder — registry-based check arrives in BR-3)
-	// When registry entries exist: assertDatasetAccess(entry, ctx)
+	// 2. Access check (placeholder — full enforcement in a future slice)
+	// assertDatasetAccess(entry, ctx)
 
 	// 3. Compile
-	let ir;
+	let ir: DatasetIr;
 	try {
 		ir = compileDataset(datasetId, query);
 	} catch (e: unknown) {
-		// Log original error server-side; don't leak internals to client
 		console.error('[dataset] compile error:', e instanceof Error ? e.message : e);
 		throw new DatasetExecutionError(
 			'DATASET_EXECUTION_FAILED',
@@ -115,8 +100,8 @@ export async function executeDatasetQuery(
 		);
 	}
 
-	// 4. Resolve provider
-	const providerKind = resolveProviderKind(datasetId);
+	// 4. Resolve provider by entry.source.kind
+	const providerKind = entry.source.kind;
 	const provider = providerRegistry.get(providerKind);
 	if (!provider) {
 		throw new DatasetExecutionError(
@@ -127,17 +112,14 @@ export async function executeDatasetQuery(
 		);
 	}
 
-	// 5. Execute
+	// 5. Execute with registry-owned entry
 	try {
-		const response = await provider.execute(ir, ctx);
+		const response = await provider.execute(ir, entry, ctx);
 		return requestId ? { ...response, requestId } : response;
 	} catch (e: unknown) {
 		const message = e instanceof Error ? e.message : String(e);
-
-		// Log original error server-side; don't leak internals to client
 		console.error('[dataset] execution error:', message);
 
-		// TODO(BR-3): replace string-sniff with typed ProviderError after provider contract update
 		if (message.includes('DATABASE_URL')) {
 			throw new DatasetExecutionError(
 				'DATASET_CONNECTION_ERROR',

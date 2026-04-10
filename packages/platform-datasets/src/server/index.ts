@@ -11,3 +11,5 @@ registerProvider('postgres', postgresProvider);
 export { compileDataset, isKnownDatasetId } from './compile';
 export { postgresProvider } from './providers/postgresProvider';
 export { executeDatasetQuery, DatasetExecutionError, registerProvider } from './executeDatasetQuery';
+export { getRegistryEntry, isRegisteredDataset, listRegisteredDatasets } from './registry';
+export type { RegistryEntry } from './registry';
