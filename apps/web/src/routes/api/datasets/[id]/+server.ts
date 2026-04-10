@@ -2,104 +2,91 @@ import { json, type RequestHandler } from '@sveltejs/kit';
 
 import type { DatasetQuery } from '@dashboard-builder/platform-datasets';
 import { CONTRACT_VERSION } from '@dashboard-builder/platform-datasets';
-import { compileDataset, postgresProvider } from '@dashboard-builder/platform-datasets/server';
+import {
+	executeDatasetQuery,
+	DatasetExecutionError,
+	registerProvider,
+} from '@dashboard-builder/platform-datasets/server';
 import { mockProvider } from '$lib/server/providers/mockProvider';
 
-/**
- * Transport adapter (HTTP).
- *
- * This file is allowed to know about:
- * - HTTP (Request/Response)
- * - SvelteKit routing (`params.id`)
- * - canonical server packages (`compileDataset`, providers)
- *
- * This file should NOT contain:
- * - SQL or Cube logic
- * - chart/UI logic
- *
- * High-level flow:
- * 1) Validate DatasetQuery contract
- * 2) Build server context (tenant/user)
- * 3) Compile DatasetQuery -> IR
- * 4) Execute IR via a Provider adapter
- * 5) Return DatasetResponse
- */
-function getUnknownProp(obj: unknown, key: string): unknown {
-	if (typeof obj !== 'object' || obj === null) return undefined;
-	if (!(key in obj)) return undefined;
-	return (obj as Record<string, unknown>)[key];
-}
+// Register app-owned providers at module load time.
+// Postgres is auto-registered by the package.
+registerProvider('mock', mockProvider);
 
+/**
+ * Dataset query transport adapter (HTTP thin shell).
+ *
+ * Responsibilities:
+ * - parse and validate the transport contract
+ * - derive ServerContext from request
+ * - delegate to executeDatasetQuery()
+ * - map typed errors to HTTP responses
+ *
+ * This file must NOT contain: SQL, provider logic, dataset-specific rules.
+ */
+
+// TODO: derive tenantId from verified session/JWT, not untrusted header.
+// Current x-tenant-id header is an MVP placeholder for testing.
 function getTenantId(request: Request): string {
-	// MVP: in real app, derive from auth/session/JWT. Here we accept a header for testing.
 	return request.headers.get('x-tenant-id')?.trim() || 'demo';
 }
 
-function isPostgresDataset(datasetId: string): boolean {
-	return (
-		datasetId.startsWith('wildberries.') ||
-		datasetId.startsWith('emis.') ||
-		datasetId.startsWith('strategy.')
-	);
-}
-
-function jsonDatasetError(status: number, code: string, error: string) {
+function jsonError(status: number, code: string, error: string) {
 	return json({ error, code }, { status });
 }
 
+const ERROR_STATUS_MAP: Record<string, number> = {
+	DATASET_NOT_FOUND: 404,
+	DATASET_ACCESS_DENIED: 403,
+	DATASET_INVALID_PARAMS: 400,
+	UNSUPPORTED_BACKEND: 500,
+	DATASET_EXECUTION_FAILED: 500,
+	DATASET_TIMEOUT: 504,
+	DATASET_CONNECTION_ERROR: 503,
+};
+
 export const POST: RequestHandler = async ({ params, request }) => {
+	// 1. Parse transport
 	const datasetId = params.id;
 	if (!datasetId) {
-		return jsonDatasetError(400, 'DATASET_ID_MISSING', 'Missing dataset id');
+		return jsonError(400, 'DATASET_ID_MISSING', 'Missing dataset id');
 	}
 
 	let query: DatasetQuery;
 	try {
 		query = (await request.json()) as DatasetQuery;
 	} catch {
-		return jsonDatasetError(400, 'DATASET_INVALID_JSON', 'Invalid JSON body');
+		return jsonError(400, 'DATASET_INVALID_JSON', 'Invalid JSON body');
 	}
 
 	if (!query || typeof query !== 'object') {
-		return jsonDatasetError(400, 'DATASET_INVALID_QUERY', 'Invalid query');
+		return jsonError(400, 'DATASET_INVALID_QUERY', 'Invalid query');
 	}
+
+	// 2. Validate contract version
 	if (query.contractVersion !== CONTRACT_VERSION) {
-		const got = getUnknownProp(query, 'contractVersion');
-		return jsonDatasetError(
+		return jsonError(
 			400,
 			'DATASET_UNSUPPORTED_CONTRACT_VERSION',
-			`Unsupported contractVersion: ${String(got ?? 'missing')}`
+			`Unsupported contractVersion: ${String(query.contractVersion ?? 'missing')}`,
 		);
 	}
 
-	const ctx = { tenantId: getTenantId(request) };
+	// 3. Derive server context
+	const ctx = {
+		tenantId: getTenantId(request),
+		requestId: query.requestId,
+	};
 
-	let ir;
+	// 4. Delegate to package orchestration
 	try {
-		ir = compileDataset(datasetId, query);
-	} catch (e: unknown) {
-		const code = getUnknownProp(e, 'code');
-		if (code === 'DATASET_NOT_FOUND') {
-			return jsonDatasetError(404, 'DATASET_NOT_FOUND', 'Dataset not found');
-		}
-		return jsonDatasetError(500, 'DATASET_COMPILE_FAILED', 'Failed to compile dataset query');
-	}
-
-	try {
-		const provider = isPostgresDataset(datasetId) ? postgresProvider : mockProvider;
-		const response = await provider.execute(ir, ctx);
-		// Echo requestId if present (helps UI dedup/tracing).
-		if (query.requestId) response.requestId = query.requestId;
+		const response = await executeDatasetQuery(datasetId, query, ctx);
 		return json(response);
 	} catch (e: unknown) {
-		const message = e instanceof Error ? e.message : '';
-		if (isPostgresDataset(datasetId) && message.includes('DATABASE_URL')) {
-			return jsonDatasetError(
-				500,
-				'DATASET_DATABASE_URL_MISSING',
-				'DATABASE_URL is not set (required for postgres-backed datasets)'
-			);
+		if (e instanceof DatasetExecutionError) {
+			const status = ERROR_STATUS_MAP[e.code] ?? 500;
+			return json(e.toJSON(), { status });
 		}
-		return jsonDatasetError(500, 'DATASET_EXECUTION_FAILED', 'Failed to execute dataset query');
+		return jsonError(500, 'DATASET_EXECUTION_FAILED', 'Unexpected error');
 	}
 };
