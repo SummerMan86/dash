@@ -20,7 +20,7 @@
  */
 import type { DatasetId } from './contract';
 
-export type IrValue = string | number | boolean | null;
+export type IrValue = string | number | boolean | null | IrValue[];
 
 export type IrExpr =
 	| { kind: 'col'; name: string }

@@ -6,7 +6,7 @@
  *
  * Canonical reference: docs/architecture_dashboard_bi_target.md §1
  */
-import type { SelectIr, IrExpr } from '../model';
+import type { SelectIr, IrExpr, IrValue } from '../model';
 import type { DatasetFieldDef, DatasetFilterBinding } from '../model';
 import { ir } from '../model';
 
@@ -58,7 +58,7 @@ export function genericCompile(
 					break;
 				case 'in':
 					if (Array.isArray(value)) {
-						whereParts.push(ir.inList(ir.col(binding.field), ir.lit(value as never)));
+						whereParts.push(ir.inList(ir.col(binding.field), ir.lit(value as IrValue[])));
 					}
 					break;
 				case 'like':
@@ -82,7 +82,7 @@ export function genericCompile(
 		if (!sortField) {
 			throw new Error(`genericCompile: unknown or non-sortable field: ${sortBy}`);
 		}
-		const sortDir = typedParams.sortDir === 'desc' ? 'desc' as const : 'asc' as const;
+		const sortDir = typedParams.sortDir === 'desc' ? 'desc' : 'asc';
 		orderBy = [{ expr: ir.col(sortBy), dir: sortDir }];
 	}
 

@@ -41,7 +41,10 @@ export type RegistryEntry = ProviderEntry & {
 	queryBindings?: { filters?: DatasetFilterBinding[] };
 	/**
 	 * Custom compile function. If omitted, genericCompile() is used with queryBindings.
-	 * Signature uses DatasetId (string) for compatibility with narrower per-family types.
+	 *
+	 * Custom compile receives the raw DatasetQuery (not typedParams from paramsSchema.parse).
+	 * Custom compile functions are responsible for their own param extraction from query.
+	 * paramsSchema validation still runs before compile but its output is used only by genericCompile.
 	 */
 	compile?: (datasetId: DatasetId, query: DatasetQuery) => DatasetIr;
 };
