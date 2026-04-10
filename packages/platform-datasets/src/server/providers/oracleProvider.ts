@@ -160,8 +160,6 @@ function exprToSql(expr: IrExpr, binds: unknown[], columns: Record<string, Datas
 			const right = exprToSql(expr.right, binds, columns);
 			return `(${left} ${expr.op} ${right})`;
 		}
-		case 'call':
-			throw new Error(`oracleProvider: call() not supported (${expr.name})`);
 	}
 }
 
@@ -252,7 +250,7 @@ export const oracleProvider: Provider = {
 	async execute(irQuery: DatasetIr, entry: ProviderEntry, ctx: ServerContext): Promise<DatasetResponse> {
 		if (irQuery.kind !== 'select') throw new Error('oracleProvider: unsupported IR kind');
 		if (irQuery.from.kind !== 'dataset') throw new Error('oracleProvider: unsupported source');
-		if (irQuery.groupBy?.length) throw new Error('oracleProvider: groupBy not supported');
+
 
 		const datasetId = irQuery.from.id;
 		const columns = buildColumnIndex(entry.fields);

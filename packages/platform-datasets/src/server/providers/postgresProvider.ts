@@ -106,9 +106,6 @@ function exprToSql(expr: IrExpr, b: SqlBuilder, columns: Record<string, DatasetF
 			const right = exprToSql(expr.right, b, columns);
 			return `(${left} ${expr.op} ${right})`;
 		}
-		case 'call': {
-			throw new Error(`postgresProvider: call() not supported in MVP (${expr.name})`);
-		}
 	}
 }
 
@@ -178,7 +175,7 @@ export const postgresProvider: Provider = {
 
 		const datasetId = irQuery.from.id;
 
-		if (irQuery.groupBy?.length) throw new Error(`postgresProvider: groupBy not supported in MVP`);
+
 
 		// Use registry-owned metadata
 		const columns = buildColumnIndex(entry.fields);

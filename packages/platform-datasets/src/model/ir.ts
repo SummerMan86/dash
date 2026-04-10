@@ -34,12 +34,7 @@ export type IrExpr =
 			left: IrExpr;
 			right: IrExpr;
 	  }
-	/**
-	 * @deprecated Aggregation calls are not part of the target read-model IR.
-	 * Analytical workloads belong in published backend views or a future AnalyticalIr.
-	 * Will be removed after IR cleanup (BR-9).
-	 */
-	| { kind: 'call'; name: 'sum' | 'count' | 'avg' | 'min' | 'max'; args: IrExpr[] };
+;
 
 export type IrSelectItem = { expr: IrExpr; as?: string };
 
@@ -52,12 +47,6 @@ export type SelectIr = {
 	from: DatasetSource;
 	select: IrSelectItem[];
 	where?: IrExpr;
-	/**
-	 * @deprecated groupBy is not part of the target read-model IR.
-	 * Analytical workloads belong in published backend views or a future AnalyticalIr.
-	 * Will be removed after IR cleanup (BR-9).
-	 */
-	groupBy?: IrExpr[];
 	orderBy?: IrOrderBy[];
 	limit?: number;
 	offset?: number;
@@ -97,11 +86,4 @@ export const ir = {
 	inList(left: IrExpr, right: IrExpr): IrExpr {
 		return { kind: 'bin', op: 'in', left, right };
 	},
-	/**
-	 * @deprecated Aggregation calls are not part of the target read-model IR.
-	 * Will be removed after IR cleanup (BR-9).
-	 */
-	call(name: 'sum' | 'count' | 'avg' | 'min' | 'max', args: IrExpr[]) {
-		return { kind: 'call', name, args } as const;
-	}
 };

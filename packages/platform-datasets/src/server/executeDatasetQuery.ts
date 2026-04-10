@@ -7,17 +7,18 @@
  * Flow:
  *   1. Registry lookup
  *   2. Access check (placeholder — full enforcement in a future slice)
- *   3. Compile DatasetQuery → IR
- *   4. Resolve provider by entry.source.kind
- *   5. Execute IR via provider (entry-owned metadata)
- *   6. Return DatasetResponse
+ *   3. Parse params via entry.paramsSchema
+ *   4. Compile: entry.compile (custom) or genericCompile (declarative)
+ *   5. Resolve provider by entry.source.kind
+ *   6. Execute IR via provider (entry-owned metadata)
+ *   7. Return DatasetResponse
  *
  * Canonical reference: docs/architecture_dashboard_bi_target.md §1
  */
 import type { DatasetId, DatasetQuery, DatasetResponse, DatasetErrorCode, DatasetIr } from '../model';
 import type { Provider, ServerContext } from '../model';
-import { compileDataset } from './compile';
 import { getRegistryEntry } from './registry';
+import { genericCompile } from './genericCompile';
 
 // ---------------------------------------------------------------------------
 // DatasetExecutionError — typed error for dataset operations
@@ -111,10 +112,30 @@ export async function executeDatasetQuery(
 	const t0 = Date.now();
 	const sourceKind = entry.source.kind;
 
-	// 3. Compile
+	// 3. Parse params via entry.paramsSchema (target flow step 3)
+	let typedParams: Record<string, unknown>;
+	try {
+		typedParams = entry.paramsSchema.parse(query.params ?? {});
+	} catch (e: unknown) {
+		const totalMs = Date.now() - t0;
+		console.error('[dataset] params validation error:', e instanceof Error ? e.message : e);
+		emitQuerySignal({ datasetId, sourceKind, requestId, totalMs, errorCode: 'DATASET_INVALID_PARAMS' });
+		throw new DatasetExecutionError(
+			'DATASET_INVALID_PARAMS',
+			'Invalid dataset query parameters',
+			false,
+			requestId,
+		);
+	}
+
+	// 4. Compile: custom compile or genericCompile from queryBindings
 	let ir: DatasetIr;
 	try {
-		ir = compileDataset(datasetId, query);
+		if (entry.compile) {
+			ir = entry.compile(datasetId, query);
+		} else {
+			ir = genericCompile(entry, typedParams);
+		}
 	} catch (e: unknown) {
 		const totalMs = Date.now() - t0;
 		console.error('[dataset] compile error:', e instanceof Error ? e.message : e);
@@ -129,7 +150,7 @@ export async function executeDatasetQuery(
 
 	const compileMs = Date.now() - t0;
 
-	// 4. Resolve provider by entry.source.kind
+	// 5. Resolve provider by entry.source.kind
 	const provider = providerRegistry.get(sourceKind);
 	if (!provider) {
 		emitQuerySignal({ datasetId, sourceKind, requestId, totalMs: Date.now() - t0, errorCode: 'UNSUPPORTED_BACKEND' });
@@ -141,7 +162,7 @@ export async function executeDatasetQuery(
 		);
 	}
 
-	// 5. Execute with registry-owned entry
+	// 6. Execute with registry-owned entry
 	try {
 		const response = await provider.execute(ir, entry, ctx);
 		const totalMs = Date.now() - t0;

@@ -102,11 +102,6 @@ function evalExpr(expr: IrExpr, row: Row): unknown {
 					return false;
 			}
 		}
-		case 'call': {
-			// MVP: no aggregation execution in mockProvider yet.
-			// Definitions in MVP avoid `call`/groupBy; future providers can implement properly.
-			throw new Error(`mockProvider: call() not supported (${expr.name})`);
-		}
 	}
 }
 

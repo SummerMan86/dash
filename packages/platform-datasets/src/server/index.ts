@@ -11,6 +11,7 @@ registerProvider('postgres', postgresProvider);
 registerProvider('oracle', oracleProvider);
 
 export { compileDataset, isKnownDatasetId } from './compile';
+export { genericCompile } from './genericCompile';
 export { postgresProvider } from './providers/postgresProvider';
 export { oracleProvider } from './providers/oracleProvider';
 export { executeDatasetQuery, DatasetExecutionError, registerProvider } from './executeDatasetQuery';
