@@ -50,7 +50,7 @@
 	let queryState = $state<AsyncState<DatasetResponse>>(idle());
 	let sortKey = $state<keyof ScorecardRow>('attentionScore');
 	let sortDir = $state<SortDir>('desc');
-	let fetchVersion = $state(0);
+	let fetchVersion = 0; // closure counter for stale-request guard, not reactive
 
 	let effectiveFilters = $derived(filterRuntime.effective);
 

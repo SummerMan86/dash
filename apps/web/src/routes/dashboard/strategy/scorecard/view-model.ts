@@ -92,16 +92,13 @@ export function clampBarWidth(value: number | null): string {
 
 export function getReadiness(values: {
 	totalKpiCount: number;
+	kpiWithActual: number;
 	planCoveragePct: number | null;
 	actualCoveragePct: number | null;
 	gapCount: number;
 	weightMissingFlag: boolean;
 }): { label: string; variant: ScorecardBadgeVariant; attentionScore: number } {
-	const uncoveredActual = Math.max(
-		0,
-		values.totalKpiCount -
-			Math.round(((values.actualCoveragePct ?? 0) * values.totalKpiCount) / 100),
-	);
+	const uncoveredActual = Math.max(0, values.totalKpiCount - values.kpiWithActual);
 	const baseAttentionScore =
 		(values.weightMissingFlag ? 140 : 0) +
 		uncoveredActual * 6 +
@@ -142,6 +139,7 @@ export function mapToScorecardRows(rawRows: Array<Record<string, JsonValue>>): S
 		const actualCoveragePct = toCoverage(kpiWithActual, totalKpiCount);
 		const readiness = getReadiness({
 			totalKpiCount,
+			kpiWithActual,
 			planCoveragePct,
 			actualCoveragePct,
 			gapCount,
