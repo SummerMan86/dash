@@ -19,6 +19,9 @@ import { CONTRACT_VERSION } from '../../model';
 // Pool lifecycle — lazy init, graceful shutdown
 // ---------------------------------------------------------------------------
 
+// Current limitation: single global pool for all oracle datasets.
+// Registry entries declare connectionName (e.g. 'ifts') but it is not used yet.
+// Multi-connection routing by connectionName is deferred to BR-10.
 let pool: oracledb.Pool | null = null;
 let poolPromise: Promise<oracledb.Pool> | null = null;
 

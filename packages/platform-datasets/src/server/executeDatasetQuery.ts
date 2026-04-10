@@ -61,6 +61,28 @@ export function registerProvider(kind: string, provider: Provider): void {
 }
 
 // ---------------------------------------------------------------------------
+// Structured query telemetry — minimal signal per query completion/failure
+// ---------------------------------------------------------------------------
+
+type QuerySignal = {
+	datasetId: string;
+	sourceKind: string;
+	requestId?: string;
+	compileMs?: number;
+	executeMs?: number;
+	totalMs: number;
+	rowCount?: number;
+	cacheHit?: boolean;
+	errorCode?: string;
+};
+
+function emitQuerySignal(signal: QuerySignal): void {
+	// Structured JSON log — minimal first-wave sink.
+	// Future: replace with proper telemetry pipeline.
+	console.log(JSON.stringify({ ...signal, ts: new Date().toISOString(), kind: 'dataset_query' }));
+}
+
+// ---------------------------------------------------------------------------
 // executeDatasetQuery — package-orchestrated execution
 // ---------------------------------------------------------------------------
 
@@ -86,12 +108,17 @@ export async function executeDatasetQuery(
 	// 2. Access check (placeholder — full enforcement in a future slice)
 	// assertDatasetAccess(entry, ctx)
 
+	const t0 = Date.now();
+	const sourceKind = entry.source.kind;
+
 	// 3. Compile
 	let ir: DatasetIr;
 	try {
 		ir = compileDataset(datasetId, query);
 	} catch (e: unknown) {
+		const totalMs = Date.now() - t0;
 		console.error('[dataset] compile error:', e instanceof Error ? e.message : e);
+		emitQuerySignal({ datasetId, sourceKind, requestId, totalMs, errorCode: 'DATASET_EXECUTION_FAILED' });
 		throw new DatasetExecutionError(
 			'DATASET_EXECUTION_FAILED',
 			'Failed to compile dataset query',
@@ -100,13 +127,15 @@ export async function executeDatasetQuery(
 		);
 	}
 
+	const compileMs = Date.now() - t0;
+
 	// 4. Resolve provider by entry.source.kind
-	const providerKind = entry.source.kind;
-	const provider = providerRegistry.get(providerKind);
+	const provider = providerRegistry.get(sourceKind);
 	if (!provider) {
+		emitQuerySignal({ datasetId, sourceKind, requestId, totalMs: Date.now() - t0, errorCode: 'UNSUPPORTED_BACKEND' });
 		throw new DatasetExecutionError(
 			'UNSUPPORTED_BACKEND',
-			`No provider registered for source kind: ${providerKind}`,
+			`No provider registered for source kind: ${sourceKind}`,
 			false,
 			requestId,
 		);
@@ -115,12 +144,21 @@ export async function executeDatasetQuery(
 	// 5. Execute with registry-owned entry
 	try {
 		const response = await provider.execute(ir, entry, ctx);
+		const totalMs = Date.now() - t0;
+		const executeMs = totalMs - compileMs;
+		emitQuerySignal({
+			datasetId, sourceKind, requestId, compileMs, executeMs, totalMs,
+			rowCount: response.rows.length,
+			cacheHit: (response.meta?.cacheAgeMs ?? 0) > 0,
+		});
 		return requestId ? { ...response, requestId } : response;
 	} catch (e: unknown) {
 		const message = e instanceof Error ? e.message : String(e);
+		const totalMs = Date.now() - t0;
 		console.error('[dataset] execution error:', message);
 
 		if (message.includes('DATABASE_URL')) {
+			emitQuerySignal({ datasetId, sourceKind, requestId, totalMs, errorCode: 'DATASET_CONNECTION_ERROR' });
 			throw new DatasetExecutionError(
 				'DATASET_CONNECTION_ERROR',
 				'Database connection not configured',
@@ -129,10 +167,13 @@ export async function executeDatasetQuery(
 			);
 		}
 
+		const errorCode = (e as { code?: string }).code ?? 'DATASET_EXECUTION_FAILED';
+		const retryable = errorCode === 'DATASET_TIMEOUT' || errorCode === 'DATASET_CONNECTION_ERROR';
+		emitQuerySignal({ datasetId, sourceKind, requestId, totalMs, errorCode });
 		throw new DatasetExecutionError(
-			'DATASET_EXECUTION_FAILED',
+			errorCode as DatasetErrorCode,
 			'Dataset query execution failed',
-			false,
+			retryable,
 			requestId,
 		);
 	}
