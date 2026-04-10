@@ -24,8 +24,9 @@ import type { ProviderEntry } from '../../model';
  * Extends ProviderEntry (the provider-facing contract from model/ports.ts).
  * Uses a simplified shape without paramsSchema/compile generics.
  * Compile is still called via compileDataset() in executeDatasetQuery.
- * Full DatasetRegistryEntry<TParams> with Zod paramsSchema arrives
- * when datasets migrate to typed params (BR-5+).
+ *
+ * @deprecated Will be replaced by DatasetRegistryEntry<TParams> after BR-8/BR-9
+ * when datasets migrate to typed params and genericCompile absorbs the central switch.
  */
 export type RegistryEntry = ProviderEntry;
 

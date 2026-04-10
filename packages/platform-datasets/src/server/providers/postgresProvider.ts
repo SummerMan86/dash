@@ -229,7 +229,7 @@ export const postgresProvider: Provider = {
 			meta: {
 				executedAt: new Date().toISOString(),
 				tenantId: ctx.tenantId,
-				source: 'postgres',
+				source: 'postgres', // deprecated — kept for backward compat; new providers should set sourceKind only
 				sourceKind: 'postgres',
 				limit: typeof irQuery.limit === 'number' ? irQuery.limit : undefined,
 				offset: typeof irQuery.offset === 'number' ? irQuery.offset : undefined,
