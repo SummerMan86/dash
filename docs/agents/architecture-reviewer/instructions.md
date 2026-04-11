@@ -83,9 +83,89 @@ Severity:
 - `WARNING`: wrong package/app home, layer boundary drift, complexity threshold, untracked exception/waiver
 - `INFO`: minor observation, не блокирует
 
+### Verdict `needs design decision` — протокол согласования
+
+Если diff review выявил новое архитектурное решение (новый паттерн, расширение контракта, неожиданный placement), verdict = `needs design decision`.
+
+**Этот verdict блокирует merge** до выполнения протокола:
+
+1. `lead-tactical` эскалирует finding к `lead-strategic` (или architecture pass, `review-gate.md` §3.1)
+2. Решение согласуется и фиксируется в architecture doc **до merge**:
+   - `architecture_dashboard_bi.md` для BI-решений
+   - `architecture_emis.md` для EMIS-решений
+   - `architecture.md` для repo-wide решений
+3. Если решение создаёт enforceable rule → обновляется `invariants.md`
+4. Если решение создаёт migration debt → обновляется debt register (§9 `architecture_dashboard_bi.md`)
+5. После фиксации в docs → re-review (architecture-reviewer) подтверждает, что diff соответствует зафиксированному решению
+
+Решение, обнаруженное post-implementation, не должно мержиться "задним числом". Протокол: **остановить → согласовать → зафиксировать в docs → продолжить**.
+
+## Mode 2: Pre-Implementation Architecture Audit
+
+Запускается **до начала реализации** по запросу `lead-tactical` (trigger: `workflow.md` §2.3.1) или `lead-strategic` (при планировании).
+
+В этом режиме вход — не diff, а **planned scope**: описание фичи, затронутые файлы/пакеты/слои, planned changes.
+
+### Required input (audit mode)
+
+- `docs/agents/invariants.md` (§1-9)
+- `docs/architecture_dashboard_bi.md` (§8 guardrails + §9 debt register) — если BI scope
+- relevant domain overlay (e.g. `docs/agents/invariants-emis.md`) — если domain scope
+- planned scope: описание фичи, planned files, architectural surface
+- overlay's exceptions registry, if applicable
+
+### Checks (audit mode)
+
+1. **Compliance с текущими guardrails:**
+   - BI: page decomposition, paramsSchema explicit, fetchDataset migration path, caching symmetry, chart configuration (`architecture_dashboard_bi.md` §8)
+   - Общие: layer boundaries, placement, server isolation, execution-path boundaries, stabilization state, technologies (`invariants.md` §1-9)
+   - Domain: domain-specific rules from overlay
+
+2. **Migration debt impact:**
+   - Planned scope пересекается с migration debt zone (`architecture_dashboard_bi.md` §9)?
+   - Если да — какой debt resolution включить в slice budget
+
+3. **New architectural decisions needed:**
+   - Planned change требует нового паттерна, контракта, IR-расширения?
+   - Planned change создаёт new coupling между packages/layers?
+   - Planned change следует extension pattern "add registration, not poke holes"?
+
+4. **Documentation readiness:**
+   - Есть ли архитектурное решение, которое должно быть задокументировано **до** начала реализации? (`invariants.md` §8 architecture-docs-first)
+
+### Output (audit mode)
+
+```
+# Audit: architecture-reviewer (pre-implementation)
+
+Readiness: CLEAR | CLEAR WITH DEBT | DOCS FIRST | ESCALATE
+
+Planned scope: <краткое описание>
+
+Compliance:
+- [OK|WARNING|ISSUE] <guardrail> — <status>
+
+Debt zones:
+- <debt entry from §9> — <impact on planned scope> | "none"
+
+New decisions needed:
+- <decision description> — requires doc update in <file> | "none"
+
+Required actions before implementation:
+- <action> или "none — ready to proceed"
+```
+
+Readiness levels:
+
+- `CLEAR` — compliance OK, нет debt zones, нет new decisions → начинаем реализацию
+- `CLEAR WITH DEBT` — compliance OK, но scope пересекается с debt zone → debt resolution добавляется в plan
+- `DOCS FIRST` — нужны doc updates до начала реализации → обновить docs → потом реализовать
+- `ESCALATE` — нужен architecture pass (`review-gate.md` §3.1) или strategic decision → эскалация к `lead-strategic`
+
 ## Не делай
 
 - Не комментируй security (это `security-reviewer`)
 - Не блокируй по стилистике
 - Не переоткрывай уже принятый architecture-pass decision, если diff его не нарушает
-- Не отмечай pre-existing violations вне diff
+- Не отмечай pre-existing violations вне diff (в diff mode)
+- В audit mode: не пиши код, не предлагай implementation — только readiness assessment

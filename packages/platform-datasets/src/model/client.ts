@@ -5,7 +5,7 @@
  * Section components receive ready data or explicit loading/error props.
  * Dataset results do not live in global stores.
  *
- * Canonical reference: docs/architecture_dashboard_bi_target.md §4
+ * Canonical reference: docs/architecture_dashboard_bi.md §4
  */
 
 // ---------------------------------------------------------------------------

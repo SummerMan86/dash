@@ -477,5 +477,5 @@ All ingestion endpoints follow the standard `{ error, code }` shape.
 
 ### Canonical reference
 
-Full ingestion design: `docs/plans/emis_external_object_ingestion.md`.
+Full ingestion design: `docs/archive/emis/emis_external_object_ingestion.md`.
 Strategic plan: `docs/agents/lead-strategic/current_plan.md`.

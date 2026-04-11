@@ -15,6 +15,9 @@
 			"default": "./src/widgets/index.ts"
 		}
 	},
+	"scripts": {
+		"check": "svelte-check --tsconfig ./tsconfig.json"
+	},
 	"dependencies": {
 		"@dashboard-builder/platform-datasets": "workspace:*",
 		"@dashboard-builder/platform-ui": "workspace:*"

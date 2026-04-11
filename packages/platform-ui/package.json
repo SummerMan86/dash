@@ -11,6 +11,9 @@
 			"default": "./src/index.ts"
 		}
 	},
+	"scripts": {
+		"check": "svelte-check --tsconfig ./tsconfig.json"
+	},
 	"dependencies": {
 		"clsx": "^2.1.1",
 		"echarts": "^6.0.0",

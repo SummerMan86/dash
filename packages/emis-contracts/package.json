@@ -14,7 +14,11 @@
 		"./emis-user": "./src/emis-user/index.ts",
 		"./emis-ingestion": "./src/emis-ingestion/index.ts"
 	},
+	"scripts": {
+		"check": "tsc --noEmit"
+	},
 	"dependencies": {
+		"@types/geojson": "^7946.0.15",
 		"zod": "^3.23.8"
 	}
 }

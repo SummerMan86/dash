@@ -42,7 +42,7 @@ Current gaps that this wave must close:
 - no generic ingestion module exists in `packages/emis-server`
 - no source-scoped identity bridge exists for multi-source curated objects
 - current manual object editor is latitude/longitude-only and would corrupt imported non-point geometry unless guarded explicitly
-- `docs/plans/emis_external_object_ingestion.md` previously described a different API/UI scope and stale naming
+- `docs/archive/emis/emis_external_object_ingestion.md` previously described a different API/UI scope and stale naming
 
 ## Canonical Decisions Frozen Before Execution
 
@@ -291,7 +291,7 @@ These points were ambiguous before and are now fixed for execution:
 ### ING-1: Contract freeze and detailed design alignment
 
 - scope:
-  - `docs/plans/emis_external_object_ingestion.md`
+  - `docs/archive/emis/emis_external_object_ingestion.md`
   - `docs/agents/lead-strategic/current_plan.md`
   - `apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
 - acceptance:

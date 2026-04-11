@@ -54,16 +54,8 @@ Canonical invariants: `docs/agents/invariants.md`.
 
 ## Evidence Discipline
 
-Checks evidence в handoff должен быть **fresh** — получен в текущей сессии после финального diff, а не из прошлого прогона или по памяти.
-
-Каждый ожидаемый check в handoff должен быть отмечен одним из состояний:
-
-- `fresh` — прогнан в текущей сессии после финального diff, результат актуален
-- `not run` — не запускался; укажи причину (e.g. "not applicable", "blocked by X")
-
-Если check прогнан ранее, но после него были изменения — перезапусти его (→ `fresh`) или честно укажи `not run + reason`. Evidence без явного состояния считается невалидным.
-
-Fabricated или contradictory evidence — `CRITICAL` finding при review.
+Каждый check в handoff отмечай как `fresh` или `not run + reason`. Полные правила: `review-gate.md` §1.6.
+Fabricated или contradictory evidence — `CRITICAL`.
 
 ## Правила
 
@@ -121,7 +113,7 @@ Escalation triggers: 3+ неудачных попыток или потеря у
 Читай только то, что нужно для реализации slice. Orchestration lifecycle, governance passes и strategic review — ответственность lead-tactical, не твоя.
 
 - `docs/agents/invariants.md` — project guardrails (обязательно)
-- `docs/agents/git-protocol.md` §1-3 — ветки, коммиты, worktrees (обязательно)
-- `docs/agents/templates.md` §3 — формат Worker Handoff (обязательно)
+- `docs/agents/git-protocol.md` §1-2 и §3.1 — ветки, коммиты, teammate discipline (обязательно; §3.2 subagent mode — только если lead-tactical назначил subagent mode)
+- `docs/agents/templates.md` §0 (правила заполнения) и §3 (формат Worker Handoff) — обязательно
 - Локальные `AGENTS.md` в затронутых модулях (обязательно)
 - Relevant domain bootstrap doc if applicable (e.g. `docs/emis_session_bootstrap.md` for EMIS)

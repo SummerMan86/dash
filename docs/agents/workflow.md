@@ -36,11 +36,12 @@ Claude Opus (lead-tactical, tactical-orchestrator)
 
 | Роль workflow | Реализация | Основная ответственность |
 | --- | --- | --- |
-| `lead-strategic` | Codex / GPT-5.4 | canonical owner `current_plan.md`, strategic acceptance |
+| `lead-strategic` | Codex / GPT-5.4 | canonical owner `current_plan.md`, strategic acceptance, architecture-docs-first при планировании |
 | `strategic-reviewer` | bounded pass внутри `lead-strategic` thread | strategic acceptance/reframe safety net по `plan/report/diff` |
-| `lead-tactical` | Claude Opus | execution flow, worker dispatch, Review Gate, report |
+| `lead-tactical` | Claude Opus | execution flow, worker dispatch, Review Gate, Architecture Readiness Check, report |
 | `worker` | Claude teammate | реализация одного slice |
 | `*-reviewer` | fresh Claude subagent | diff review по своей зоне |
+| `architecture-reviewer` (audit mode) | fresh Claude subagent | pre-implementation readiness assessment по planned scope |
 
 **Правило `--write`:**
 
@@ -194,6 +195,47 @@ Bootstrap hints (`--low-risk`, legacy `--simple`) не создают sanctioned
 - `lead-tactical` — owner execution flow, но не semantic owner плана;
 - если нужен reframe, `lead-tactical` оформляет `Plan Change Request`;
 - следующий dependent slice не стартует, пока новый plan state не зафиксирован.
+
+### 2.3.1. Architecture Readiness Check (pre-implementation)
+
+Перед началом исполнения фичи или значимого изменения `lead-tactical` проводит bounded architecture readiness check.
+
+**Trigger:** хотя бы один из:
+
+- фича затрагивает BI vertical (datasets, providers, filters, BI pages);
+- фича вводит новый dataset, provider или BI-страницу;
+- фича затрагивает cross-layer boundaries (package ↔ app, server ↔ client);
+- фича затрагивает зону с известным migration debt (см. `architecture_dashboard_bi.md` §9);
+- unfamiliar code или новый домен.
+
+**Что проверяется:**
+
+1. Соответствие planned change текущим architectural guardrails (`architecture_dashboard_bi.md` §8, `invariants.md` §1-9).
+2. Не попадает ли planned scope в зону migration debt (`architecture_dashboard_bi.md` §9) — если да, миграция включается в scope.
+3. Нужны ли новые архитектурные решения, которых нет в текущей документации.
+
+**Протокол документирования архитектурных решений:**
+
+Если аудит выявил потребность в новом архитектурном решении (новый паттерн, новый контракт, расширение IR, новый scope фильтров):
+
+1. Решение фиксируется в соответствующем architecture doc **до начала реализации** (не после).
+2. Если решение создаёт новый инвариант — он добавляется в `invariants.md`.
+3. Если решение меняет migration debt — обновляется §9 `architecture_dashboard_bi.md`.
+4. Если решение требует governance — эскалируется через `architecture pass` (§3.1 `review-gate.md`).
+
+**Не обязателен для:**
+
+- docs-only / trivial изменений;
+- работы строго в рамках одного уже задокументированного паттерна (e.g. добавление ещё одного declarative dataset по существующему шаблону);
+- фиксов, явно привязанных к конкретному багу без architectural surface.
+
+**Кто выполняет:**
+
+- `lead-strategic` выявляет потребность в new architectural decisions **при планировании** (шаг 5 в `lead-strategic/instructions.md`) и фиксирует их в docs как часть плана;
+- `lead-tactical` проводит bounded readiness check самостоятельно перед началом execution;
+- если нужен structured audit, `lead-tactical` запускает **`architecture-reviewer` в audit mode** (Mode 2 в `architecture-reviewer/instructions.md`);
+- `architecture-reviewer` возвращает readiness verdict: `CLEAR | CLEAR WITH DEBT | DOCS FIRST | ESCALATE`;
+- если readiness = `ESCALATE` — `lead-tactical` эскалирует к `lead-strategic` для architecture pass (`review-gate.md` §3.1).
 
 ### 2.4. Strategic operating mode
 

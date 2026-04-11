@@ -6,7 +6,7 @@ Execution-ready handoff для `lead-tactical` по новой active wave:
 
 - plan owner: `lead-strategic`
 - canonical plan: `docs/agents/lead-strategic/current_plan.md`
-- detailed design reference: `docs/plans/emis_external_object_ingestion.md`
+- detailed design reference: `docs/archive/emis/emis_external_object_ingestion.md`
 
 ## Operating Mode
 
@@ -54,7 +54,7 @@ Default cadence:
 
 - Прочитать:
   - `docs/agents/lead-strategic/current_plan.md`
-  - `docs/plans/emis_external_object_ingestion.md`
+  - `docs/archive/emis/emis_external_object_ingestion.md`
   - `docs/emis_session_bootstrap.md`
   - `docs/emis_working_contract.md`
   - `apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`

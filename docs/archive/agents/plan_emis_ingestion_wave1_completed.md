@@ -47,7 +47,7 @@
 ### ING-1: Contract Freeze and Execution Alignment
 
 - scope:
-  - `docs/plans/emis_external_object_ingestion.md`
+  - `docs/archive/emis/emis_external_object_ingestion.md`
   - `apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
   - `docs/agents/lead-strategic/current_plan.md`
 - depends on: —
@@ -199,4 +199,4 @@
 
 Подробный design reference:
 
-- `docs/plans/emis_external_object_ingestion.md`
+- `docs/archive/emis/emis_external_object_ingestion.md`

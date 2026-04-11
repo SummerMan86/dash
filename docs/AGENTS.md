@@ -4,7 +4,7 @@
 Canonical repo-wide foundation: [architecture.md](./architecture.md).
 BI vertical: [architecture_dashboard_bi.md](./architecture_dashboard_bi.md).
 EMIS vertical: [architecture_emis.md](./architecture_emis.md).
-BI target-state: [architecture_dashboard_bi_target.md](./architecture_dashboard_bi_target.md).
+Historical BI archive: [archive/bi/architecture_dashboard_bi.md](./archive/bi/architecture_dashboard_bi.md).
 Модульная навигация и contour entry points: корневой [AGENTS.md](../AGENTS.md).
 `README.md` отвечает только за quick start и описание приложения.
 
@@ -34,14 +34,13 @@ BI target-state: [architecture_dashboard_bi_target.md](./architecture_dashboard_
 | Документ                                                                           | Владеет                                      | Source of truth для                                                             |
 | ---------------------------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------- |
 | `architecture.md`                                                                  | canonical repo-wide foundation               | topology, package map, import rules, deployment, shared infrastructure            |
-| `architecture_dashboard_bi.md`                                                     | BI vertical architecture                     | dataset IR path, providers, filters, DWH integrations, extension points           |
-| `architecture_dashboard_bi_target.md`                                              | BI vertical target-state architecture        | target provider model, filter contract, IR capability policy, Oracle/CubeJS path  |
+| `architecture_dashboard_bi.md`                                                     | BI vertical architecture                     | dataset runtime, filter contract, BI-adjacent ops paths, DWH integrations, extension points |
 | `architecture_emis.md`                                                             | EMIS vertical architecture                   | operational paths, contracts, ingestion, PostGIS, auth                             |
 | `../apps/web/src/routes/dashboard/wildberries/dwh_for_wildberries_requirements.md` | Wildberries DWH contract                     | полный контракт с DWH: витрины, колонки, фильтры, алерты, требования к качеству |
 | `strategy/bi_strategy.md`                                                          | local dashboard-builder BI strategy contract | как переложить Power BI strategy/BSC постановку в MVE-архитектуру               |
 | `../apps/web/src/routes/dashboard/strategy/AGENTS.md`                              | strategy route development contract          | current pages, grain rules, filter contract и rollout path                      |
 | `../apps/web/src/lib/server/datasets/AGENTS.md`                                    | dataset layer routing contract               | как `strategy.*` datasets подключаются в app runtime                            |
-| `../packages/platform-datasets/AGENTS.md`                                          | dataset runtime package contract             | canonical `compileDataset`, dataset definitions и Postgres provider mapping     |
+| `../packages/platform-datasets/AGENTS.md`                                          | dataset runtime package contract             | registry-driven pipeline, Postgres + Oracle providers, shared LRU cache, definitions |
 | `../apps/web/src/lib/server/providers/AGENTS.md`                                   | provider mapping contract                    | как `strategy.*` datasets маппятся на `mart_strategy.slobi_*`                   |
 | `../db/schema_catalog.md`                                                          | active app DB catalog                        | какие app-схемы и SQL-объекты считаются рабочими                                |
 | `../db/current_schema.sql`                                                         | active app DB snapshot                       | текущая структура схем `emis`, `stg_emis`, `mart_emis`, `mart`                  |
@@ -58,7 +57,9 @@ BI target-state: [architecture_dashboard_bi_target.md](./architecture_dashboard_
 
 | Документ                                            | Владеет                          | Source of truth для                                                                                                         |
 | --------------------------------------------------- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `current-project-analysis.md`                       | historical platform analysis     | мартовский анализ проекта до package-era; полезен для исторического контекста, но не source of truth по текущей архитектуре |
+| `archive/platform/current-project-analysis.md`      | historical platform analysis     | мартовский анализ проекта до package-era; полезен для исторического контекста, но не source of truth по текущей архитектуре |
+| `archive/bi/architecture_dashboard_bi.md`           | pre-refactor BI architecture     | retired BI runtime shape before Wave 1 registry/filter/IR cleanup                                                      |
+| `archive/bi/bi_refactor_rollout.md`                 | completed BI rollout plan        | historical BR-1..BR-10 sequencing, defaults and acceptance criteria                                                   |
 | `archive/strategy-v1/strategy_session_bootstrap.md` | historical strategy bootstrap    | старый entry point по `strategy-drive` / `Strategy DWH v1`                                                                  |
 | `archive/strategy-v1/strategy_dwh_v1.md`            | historical strategy architecture | старые `strategy.*` data contracts, marts и dataset ids                                                                     |
 | `archive/strategy-v1/strategy_newcomer_guide.md`    | historical strategy onboarding   | старый newcomer context по strategy-срезу                                                                                   |
@@ -94,13 +95,13 @@ BI target-state: [architecture_dashboard_bi_target.md](./architecture_dashboard_
 | `emis_review_gate.md`            | EMIS review gate                 | lifecycle review, mandatory approve cases, approve checklist                                |
 | `emis_offline_maps_ops.md`       | offline maps ops-runbook         | эксплуатация MapTiler/PMTiles и production caveats                                          |
 | `emis_next_tasks_2026_03_22.md`  | backlog                          | remaining tasks и polish stack                                                              |
-| `plans/emis_external_object_ingestion.md`                    | ingestion wave 1 detailed design | canonical API namespace, DB model, resolution policy, geometry contract, execution slices    |
-| `plans/emis_external_object_ingestion_lead_tactical_handoff.md` | ingestion wave 1 tactical handoff | execution-ready handoff для lead-tactical: scope, sequencing, risk notes                  |
 
 ### Archive
 
 | Документ                                                     | Владеет                           | Source of truth для                                                                |
 | ------------------------------------------------------------ | --------------------------------- | ---------------------------------------------------------------------------------- |
+| `archive/emis/emis_external_object_ingestion.md`             | completed ingestion design        | historical wave-1 design for external object ingestion after rollout completion    |
+| `archive/emis/emis_external_object_ingestion_lead_tactical_handoff.md` | completed ingestion handoff | historical tactical handoff for wave-1 ingestion                                   |
 | `archive/emis/emis_implementation_reference_v1.md`           | archived implementation rationale | retained implementation decisions, API/data assumptions и historical rollout order |
 | `archive/emis/emis_vessel_current_positions_handoff_plan.md` | completed task handoff            | completed slice `layer=vessels` / current positions в `/emis`                      |
 | `archive/emis/emis_todo_vessel_markers.md`                   | completed task notes              | historical vessel marker TODO notes                                                |
@@ -159,15 +160,16 @@ BI target-state: [architecture_dashboard_bi_target.md](./architecture_dashboard_
 1. `README.md`
 2. `architecture.md` (canonical repo-wide foundation)
 3. `architecture_dashboard_bi.md` (BI vertical)
-3a. `architecture_dashboard_bi_target.md` (BI vertical target-state)
 4. `../db/schema_catalog.md`
 5. если задача про Wildberries DWH - `../apps/web/src/routes/dashboard/wildberries/dwh_for_wildberries_requirements.md`
 6. если задача про strategy dashboards - `strategy/bi_strategy.md`
 7. если задача про strategy dashboards - `../apps/web/src/routes/dashboard/strategy/AGENTS.md`
 8. если задача про strategy datasets/runtime - `../apps/web/src/lib/server/datasets/AGENTS.md`
-9. если нужен historical context до package-era - `current-project-analysis.md`
+9. если нужен historical context до package-era - `archive/platform/current-project-analysis.md`
 10. при необходимости - `/home/orl/Shl/КА/MS BI/bsc_model/agent_pack/docs/imported/dashboard-builder/4. strategy_entity_bsc_mart_pilot_verification_2026_03_21.md`
-11. при необходимости - `archive/strategy-v1/strategy_session_bootstrap.md`
+11. при необходимости - `archive/bi/architecture_dashboard_bi.md`
+12. при необходимости - `archive/bi/bi_refactor_rollout.md`
+13. при необходимости - `archive/strategy-v1/strategy_session_bootstrap.md`
 
 ### Для ops / deploy
 
@@ -192,6 +194,8 @@ BI target-state: [architecture_dashboard_bi_target.md](./architecture_dashboard_
 - `emis_review_gate.md` - если нужен approve checklist или review verdict
 - `emis_offline_maps_ops.md` - если работа про offline maps или PMTiles
 - `emis_next_tasks_2026_03_22.md` - если нужен backlog
+- `archive/emis/emis_external_object_ingestion.md` - если нужен historical design context по completed ingestion wave
+- `archive/emis/emis_external_object_ingestion_lead_tactical_handoff.md` - если нужен historical tactical handoff по completed ingestion wave
 - `archive/emis/emis_implementation_reference_v1.md` - если нужен historical rollout context или retained implementation rationale
 - `agents/workflow.md` - если нужен core agent lifecycle
 - `agents/review-gate.md` - если нужен Review Gate, strategic acceptance/reframe pass или governance pass
@@ -218,6 +222,5 @@ BI target-state: [architecture_dashboard_bi_target.md](./architecture_dashboard_
 - `architecture.md` владеет canonical repo-wide foundation architecture.
 - `architecture_dashboard_bi.md` владеет BI vertical architecture.
 - `architecture_emis.md` владеет EMIS vertical architecture.
-- `architecture_dashboard_bi_target.md` владеет BI target-state architecture.
 - Корневой `AGENTS.md` владеет развилкой по контурам и navigation entry points.
 - `README.md` не должен дублировать doc map; он только отправляет сюда.

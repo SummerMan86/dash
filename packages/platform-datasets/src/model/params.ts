@@ -4,7 +4,7 @@
  * Datasets should compose these with dataset-specific params via z.object().merge()
  * or z.intersection(). genericCompile() understands these standard params automatically.
  *
- * Canonical reference: docs/architecture_dashboard_bi_target.md §2
+ * Canonical reference: docs/architecture_dashboard_bi.md §2
  */
 import { z } from 'zod';
 

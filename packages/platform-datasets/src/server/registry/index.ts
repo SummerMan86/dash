@@ -9,7 +9,7 @@
  * - Declarative: queryBindings + no compile → genericCompile() produces IR
  * - Custom compile: explicit compile function → custom IR
  *
- * Canonical reference: docs/architecture_dashboard_bi_target.md §1
+ * Canonical reference: docs/architecture_dashboard_bi.md §1
  */
 import { z } from 'zod';
 import type { DatasetId, DatasetQuery, DatasetIr, DatasetFieldType } from '../../model';

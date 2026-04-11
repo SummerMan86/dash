@@ -33,6 +33,9 @@
 		"./modules/ingestion/adapters": "./src/modules/ingestion/adapters/index.ts",
 		"./modules/ingestion/matchEngine": "./src/modules/ingestion/matchEngine.ts"
 	},
+	"scripts": {
+		"check": "tsc --noEmit"
+	},
 	"dependencies": {
 		"@dashboard-builder/db": "workspace:*",
 		"@dashboard-builder/emis-contracts": "workspace:*",
@@ -41,6 +44,7 @@
 	},
 	"devDependencies": {
 		"@types/bcryptjs": "^2.4.6",
+		"@types/geojson": "^7946.0.15",
 		"@types/pg": "^8.16.0"
 	},
 	"peerDependencies": {

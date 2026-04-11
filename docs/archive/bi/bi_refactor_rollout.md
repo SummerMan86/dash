@@ -1,6 +1,9 @@
 # BI Refactor Rollout
 
-Execution-oriented companion to [architecture_dashboard_bi_target.md](../architecture_dashboard_bi_target.md).
+Archived completed rollout plan.
+Historical context only; active BI architecture now lives in [../../architecture_dashboard_bi.md](../../architecture_dashboard_bi.md).
+
+Execution-oriented companion to [../../architecture_dashboard_bi.md](../../architecture_dashboard_bi.md).
 
 This document is intentionally not an architecture spec.
 It owns rollout defaults, slice order, acceptance criteria, and context-light execution rules for the BI refactor.
@@ -20,7 +23,7 @@ Use this document when the task is:
 - executing a concrete BI refactor step
 - deciding what is in or out of first wave
 
-Use [architecture_dashboard_bi_target.md](../architecture_dashboard_bi_target.md) when the task is:
+Use [../../architecture_dashboard_bi.md](../../architecture_dashboard_bi.md) when the task is:
 
 - deciding target contracts
 - checking placement and ownership rules
@@ -307,8 +310,8 @@ Key rules for future task dialogs:
 
 To keep future dialogs small, read only:
 
-1. [architecture.md](../architecture.md)
-2. [architecture_dashboard_bi_target.md](../architecture_dashboard_bi_target.md)
+1. [architecture.md](../../architecture.md)
+2. [architecture_dashboard_bi.md](../../architecture_dashboard_bi.md)
 3. this document
 4. package-local `AGENTS.md` for the slice being edited
 

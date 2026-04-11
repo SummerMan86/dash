@@ -301,21 +301,72 @@ Fixes during AUTH-8 governance:
 
 Verification: all 7 canonical checks green + auth-smoke 10/10 + Prettier clean.
 
+### Stabilization Plan Phase 2: Verification Foundation (DONE, 2026-04-09)
+
+Executed as lead-tactical, no workers. All 3 slices completed on `main`:
+
+- S-3 — baseline re-closed Green (4 canonical checks)
+- S-5 — 8 per-package tsconfig.json + `packages/tsconfig.base.json` shared base; `pnpm check:packages` root command
+  - TS-only packages (db, emis-contracts, emis-server, platform-datasets): `tsc --noEmit`
+  - Svelte packages (platform-core, platform-filters, platform-ui, emis-ui): `svelte-check --tsconfig ./tsconfig.json`
+  - `@types/geojson` added to emis-contracts + emis-server (transitive workspace symlink resolution)
+  - `svelte-check` added to root devDependencies for pnpm hoisting
+- S-4 — `.github/workflows/ci.yml` in reporting mode (per-step continue-on-error)
+
+Canonical checks now 5: check, check:packages, build, lint:boundaries, test
+
+Review findings fixed:
+- Extracted shared tsconfig base (code-reviewer WARNING)
+- Moved continue-on-error from job-level to step-level (code-reviewer WARNING)
+
+Strategic acceptance: accepted by Codex/GPT-5.4 via `--fresh --write`. Operating mode reframed: `ordinary iterative` for S-20..S-22, mandatory re-escalation to `high-risk` before S-23.
+
+### OC Wave: Oracle-First LRU Cache Foundation (DONE, 2026-04-10)
+
+Self-executed (no workers). 3 slices on `main`.
+
+- OC-1 — Shared LRU cache helper `providerCache.ts` (97 lines, 14 tests): `createProviderCache()` + `buildCacheKey()`
+  - `lru-cache` v11, default 200 entries, manual TTL via `Date.now()`, `structuredClone` on read+write
+  - Internal to platform-datasets, not exported from `./server`
+- OC-2 — oracleProvider migrated from ad-hoc `Map`/FIFO to shared LRU (net -26 lines)
+  - `cacheAgeMs` now from `cachedAt` timestamp, connectionName hardened with explicit throw guard
+  - 4 Oracle-specific cache key tests added
+- OC-3 — All 5 canonical checks green, no drift
+
+Review: 7 passes (arch, security, code, docs ×2, attempted Codex strategic)
+Key fixes from review: `\0` separator (security), connectionName dead code (code), vi.useRealTimers() (code), binds as array (code), AGENTS.md full rewrite (docs), docs/AGENTS.md stale desc (docs), arch doc §4 "normalized params" clarified (docs)
+
+Docs updated: `packages/platform-datasets/AGENTS.md` (full rewrite), `docs/architecture_dashboard_bi.md` §4 (implementation block + progressive disclosure), `docs/AGENTS.md` line 43
+
+### CA Wave: BI Clean Architecture — Audit-Driven Remediation (ACTIVE, 2026-04-11)
+
+New plan created by lead-strategic on 2026-04-11. 17 slices (CA-0..CA-16) across 5 waves:
+
+- Wave 0: CA-0 — ESLint governance baseline (precondition for all later waves)
+- Wave 1: CA-1 (product-analytics decompose), CA-2 (stock-alerts decompose) — parallel
+- Wave 2: CA-3..CA-7 — filter path migration to useFlatParams, remove legacy path
+- Wave 3: CA-8..CA-12 — typed custom compile, explicit paramsSchema, cache middleware
+- Wave 4: CA-13..CA-16 — cleanup, access control, route-local tests, wave closure
+
+Key constraints:
+- No new functionality — strictly refactoring and contract hardening
+- Wire contract unchanged until CA-7
+- BI vertical scope only (no EMIS, no strategy dashboard)
+- 127 green tests as baseline
+- `pnpm lint:eslint` not green repo-wide; "don't worsen touched files" policy
+- Architecture readiness: CLEAR (decisions pre-documented in §8/§9)
+
 ## Заметки для следующей сессии
 
-- H-1..H-5 all done — wave H is complete
-- P3.1..P3.6 all done — phase 2 is complete
-- DS-1..DS-4 done — active docs layer synced with canonical architecture
-- NW-1..NW-5 done — access model, write-policy, dictionaries, observability, MVE acceptance
-- **MVE is closed. All deferrals resolved.**
-- **P1 done** — vessel historical track integration
-- **P2 done** — offline maps ops hardening
-- **Phase 3 done** — tech debt cleanup, baseline Green / closed
-- **Phase 4 done** — MVE deferrals (DF-1 soft-delete UI, DF-2 admin CRUD, DF-3 auth, DF-5 governance)
-- **Phase 5 done** — production auth hardening (AUTH-1..AUTH-8), baseline Green / closed
-- All carry-forward items from P1/P2 era are resolved
+- All prior waves complete (H, P3, DS, NW, P1, P2, Phase 3/4/5 EMIS, OC)
+- **Stabilization Plan Phase 1 done** — architecture canon
+- **Stabilization Plan Phase 2 done** — verification foundation, baseline Green
+- **OC Wave done** — shared LRU cache foundation, Oracle provider adopted
+- **CA Wave active** — BI Clean Architecture remediation, starting from CA-0
+- Operating mode: `ordinary iterative`
+- Canonical checks are now 5 (added check:packages)
 - Auth is on by default (`EMIS_AUTH_MODE` defaults to `session`); smoke scripts use `EMIS_AUTH_MODE=none`
+- `providerCache.ts` is internal — future providers (Postgres etc.) can adopt it when they need server-side caching
 - Remaining optional future cleanup:
   - 16 server-side MIGRATION re-export shims (active, not dead code)
   - `EMIS_USERS` env var deprecated but still functional (transition fallback)
-- Codebase is ready for next product planning cycle

@@ -1,315 +1,372 @@
-# Plan: Dashboard-Builder BI Refactor Wave 1 — COMPLETE
+# Plan: BI Clean Architecture — Audit-Driven Remediation
 
 ## Status
 
-**Wave 1 complete.** All 10 slices (BR-1..BR-10) implemented, reviewed, and merged to `main`.
-Branch: `feature/bi-refactor-wave1` (merged). 109 tests, 30+ review passes, 5-check Green.
+- active on `2026-04-11`
+- previous completed plan archived in `docs/archive/agents/lead_strategic_current_plan_2026_04_10_oracle_cache_foundation.md`
 
 ## Цель
 
-Привести non-EMIS BI contour (`wildberries`, `strategy`, generic dashboard runtime) к canonical target architecture из `docs/architecture_dashboard_bi_target.md`, сохранив low-ops single-deployable delivery для клиентов без собственной техподдержки.
+Довести BI-вертикаль до состояния чистой архитектуры на основе замечаний architecture audit (2026-04-11).
 
-**Цель достигнута.** Target architecture реализована. Reference migration: `/dashboard/strategy/scorecard/`.
+Аудит выявил, что фундамент (registry, IR, providers, filter planner) зрелый и хорошо спроектирован, но три класса проблем мешают низкой когнитивной нагрузке при разработке:
 
-## Canonical Reframe
+1. God component и отсутствие декомпозиции на страницах
+2. Незавершённая миграция filter path (legacy vs flat params)
+3. Bypass валидации через `looseParams` на большинстве датасетов
+4. Implicit filter runtime в client data path (`active runtime` / global fallback)
+5. Слабое тестовое покрытие route-local BI logic и WB proxy path
 
-- Старый draft `S-20` -> `S-29` retired. Он был собран до фиксации target BI architecture и больше не задаёт sequencing.
-- Canonical execution order для BI refactor теперь задаётся slices `BR-1` -> `BR-10` ниже.
-- Scope этой wave: только non-EMIS BI first wave. EMIS operational refactor и EMIS BI migration не входят в этот план.
-
-## Pre-Implementation Watchpoints
-
-These points do not reopen the target architecture. They are execution clarifications that must be tracked explicitly during rollout and tightened if real implementation evidence requires it.
-
-- `BR-2` -> `BR-3` is an intentional transitional bridge:
-  - `executeDatasetQuery()` may land before registry extraction is fully canonical
-  - this bridge is acceptable only as a short-lived rollout seam
-  - `BR-3` must close registry ownership clearly so package orchestration does not sit on top of a long-lived mixed metadata model
-- `/api/datasets/:id/schema` needs one explicit implementation policy for schema visibility:
-  - decide how `hidden` fields are exposed or suppressed
-  - choose one canonical `Zod -> JSON Schema` export path
-  - keep this as execution detail unless implementation evidence shows a real contract gap
-- filter migration must not leave a permanent compatibility merge path inside `fetchDataset()`:
-  - compatibility adapters are allowed only at wrapper boundaries for non-migrated pages
-  - migrated pages must use explicit planner output + intentional param merge into flat `DatasetQuery.params`
-- honest IR cleanup is mandatory, not aspirational:
-  - `groupBy` / `call()` must not survive as part of the canonical read-model path after declarative mode lands
-  - if a real analytical need appears, it should trigger a separate `AnalyticalIr` discussion, not silent re-expansion of `SelectIr`
-- first-wave low-ops baseline must stay explicit:
-  - bounded in-memory provider cache inside the app process is the default server cache path
-  - PostgreSQL remains the app-owned persistence home for dashboards, saved BI metadata, and related builder state
-  - no mandatory Redis, external cache tier, or standalone Cube deployment for the first release
-- if Cube enters the rollout later:
-  - model it as explicit `source.kind: 'cube'`
-  - use it for published or pre-aggregated read models, not as a hidden proxy behind `oracle` / `clickhouse`
-- real-time refresh must remain page-owned in the first wave:
-  - bounded polling over `fetchDataset()` is the default
-  - SSE/WebSocket is a future optimization only if evidence shows polling is insufficient
-- freshness observability is part of the runtime acceptance path:
-  - changed slices must preserve a credible path to `sourceKind` and `cacheAgeMs` in telemetry and, where needed, response metadata for RT dashboards
+Все замечания зафиксированы в `docs/architecture_dashboard_bi.md` §8 (guardrails) и §9 (migration debt register).
 
 ## Operating Mode
 
-Current mode: `high-risk iterative / unstable wave` for `BR-1` -> `BR-8`.
+- current mode: `ordinary iterative`
+- escalate to `high-risk iterative`, если:
+  - slice меняет public wire contract (`DatasetQuery`, `DatasetResponse`)
+  - slice требует coordinated changes в 3+ packages
+  - slice ломает существующие тесты (127 green tests as baseline)
 
-Почему high-risk сейчас:
+## Architecture Readiness
 
-- `BR-1` -> `BR-5` меняют canonical dataset/runtime seam, route transport seam и filter wire contract
-- `BR-7` добавляет первый real-time non-Postgres provider, cache policy, timeout/cancel behavior и freshness semantics
-- `BR-8` закрывает первый route-local reference migration end-to-end
+Readiness check выполнен в рамках аудита. Все architectural decisions уже зафиксированы:
+- `architecture_dashboard_bi.md` §8 — code quality guardrails
+- `architecture_dashboard_bi.md` §9 — migration debt register
+- `invariants.md` §8 — architecture-docs-first
+- `invariants.md` §9 — BI vertical invariants
 
-Плановая деэскалация:
+Readiness: `CLEAR` — решения задокументированы, можно приступать к реализации.
 
-- после принятия `BR-8` с fresh green 5-check evidence и без open drift по route/access/cache/query-state можно переключиться на `ordinary iterative` для `BR-9` и optional `BR-10`
-- если любой принятый slice меняет acceptance следующего шага или заново открывает route/provider boundary risk, режим сразу возвращается в `high-risk iterative / unstable wave`
+## Waves
 
-## Autonomous Execution Protocol
+### Wave 0: Lint Governance Baseline (Critical)
 
-Эта wave исполняется в **максимально автономном** режиме. Пользователь подтвердил план и ожидает минимум прерываний при высоком уровне ответственности.
+Зафиксировать model проверки качества кода: какие команды canonical, какие lint-сигналы blocking, и по каким правилам новые ESLint-checks можно добавлять по мере роста проекта. Также скорректировать агентную модель, чтобы это работало. Учесть baseline-governor и когда его надо вызывать, после каждой доработки, в конце подзадач?
 
-### Когда agents продолжают без паузы на пользователя
+### Wave 1: Page Decomposition (Critical)
 
-- strategic verdict — `ACCEPT`: lead-tactical сразу запускает следующий slice
-- strategic verdict — `ACCEPT WITH ADJUSTMENTS`: lead-strategic фиксирует `Plan Change Request`, lead-tactical применяет и продолжает — без паузы, если adjustment не меняет wave scope
-- post-slice reframe не выявил scope drift или новый architectural risk
-- 5-check verification green
-- reviewer findings — только `INFO` или `WARNING`, все resolved в рамках slice
+Устранить god component и привести страницы к чистой композиции; попутно сделать route-local BI logic тестируемой.
 
-### Когда нужна пауза на пользователя
+### Wave 2: Filter Path Migration (Critical)
 
-- `CRITICAL` finding от любого reviewer
-- scope change: slice потребовал работу за пределами заявленного scope wave (например, EMIS spillover, новая schema migration, новый external dependency)
-- `REJECT` verdict после 2+ cycles (recovery path RP-5)
-- новый exception / waiver, не покрытый existing invariants
-- решение, которое меняет durable target architecture (не plan sequencing, а сам `architecture_dashboard_bi_target.md`)
-- финальный merge wave в main после BR-8 или BR-10
+Завершить миграцию на `useFlatParams: true`, удалить legacy path.
 
-### Structural Reframe Checkpoints
+### Wave 3: Contract Hardening (High)
 
-Обязательные расширенные reframe points, где lead-strategic должен пересмотреть оставшийся план целиком (не только next slice), даже если текущий slice прошёл чисто:
+Заменить `looseParams` на явные Zod-схемы, унифицировать кеширование.
 
-**После BR-3 (fan-out point):**
-- registry extraction доказана; package ownership model работает или нет
-- решение: запускать BR-4/BR-5/BR-7 параллельно или линейно
-- проверить: не появились ли новые зависимости между BR-4, BR-5, BR-7
-- проверить: EMIS mechanical extraction прошла чисто, mock datasets в реестре
+### Wave 4: Cleanup & Hardening (Medium/Low)
 
-**После BR-7 (first non-Postgres provider):**
-- Oracle provider доказан; multi-backend path работает или нет
-- проверить: cache/timeout/cancel contract не потребовал изменений в core runtime
-- проверить: provider contract (`execute(ir, entry, ctx)`) выдержал первый реальный backend
-- решение: BR-8 reference page selection — какая страница даёт максимальный reference value
+Убрать дубликаты, реализовать access control, навести порядок в demo.
 
-**После BR-8 (convergence / de-escalation gate):**
-- первая page migration end-to-end: flat params + page-local state + no legacy merge
-- решение: деэскалация в `ordinary iterative` для BR-9/BR-10 или сохранение `high-risk`
-- проверить: reference page достаточно убедительна для паттерна; не нужны corrections в target doc
-- если всё green — agents продолжают BR-9 автономно без паузы на юзера
-
-### Parallel Dispatch Window
-
-После принятия BR-3 lead-tactical может запустить параллельные worker'ы:
-
-```
-BR-3 accepted
-  ├─ worker A: BR-4 (schema introspection)
-  ├─ worker B: BR-5 (flat filter contract)
-  └─ worker C: BR-7 (Oracle provider)
-```
-
-Условия для параллельного запуска:
-- BR-3 verdict `ACCEPT` с green 5-check
-- post-BR-3 structural reframe подтвердил отсутствие новых зависимостей
-- каждый worker получает изолированный scope из plan (не перекрывающиеся файлы)
-- если worker'ы не могут быть файлово-изолированы, fallback на линейное исполнение
-
-Слияние параллельных результатов:
-- lead-tactical принимает каждый worker-result по отдельности (slice review + strategic acceptance)
-- интеграционный review после слияния всех трёх, до запуска BR-6 (зависит от BR-5)
-- conflict resolution — lead-tactical, не worker
-
-## Review Discipline
-
-- `BR-1` -> `BR-8`:
-  - short post-slice reframe обязателен всегда
-  - `strategic-reviewer` запускается после каждого принятого slice
-  - minimum slice review: `code-reviewer` + `architecture-reviewer`
-- `security-reviewer` обязателен для:
-  - `BR-2` (`executeDatasetQuery`, HTTP error mapping, access gate)
-  - `BR-3` (`postgresProvider` refactor, SQL-generating code changes, dataset catalog ownership transfer)
-  - `BR-4` (`/api/datasets/:id/schema`, schema access policy)
-  - `BR-5` (filter input merge semantics, transport seam change, user-controlled params reaching server)
-  - `BR-7` (backend credentials, cache identity, timeout/retryable behavior, cancellation/pool safety)
-- `BR-9` и optional `BR-10` можно перевести на risk-triggered `strategic-reviewer` cadence только после stabilizing reframe post-`BR-8`
-- acceptance каждого slice требует fresh evidence на canonical 5-check baseline:
-  - `pnpm check`
-  - `pnpm check:packages`
-  - `pnpm build`
-  - `pnpm lint:boundaries`
-  - `pnpm test`
-- после каждого stable slice обязателен checkpoint commit
-
-## Закрытый groundwork
-
-### Docs / Architecture Canon ✅
-
-- repo-wide foundation, BI current-state и BI target-state docs уже зафиксированы
-- rollout ownership и slice order зафиксированы в `docs/plans/bi_refactor_rollout.md`
-
-### Verification Foundation ✅
-
-- canonical 5-check baseline уже Green (passes, но текущее test coverage — ~26 pilot tests; core dataset runtime largely untested; `test-first` verification mode на каждом slice должен существенно расширить покрытие)
-- per-package verification введён через `pnpm check:packages`
-- CI reporting gate уже существует; перевод в blocking mode не часть этой wave
-
-## Граф зависимостей
-
-После BR-3 цепочка разветвляется. Линейное исполнение допустимо, но не обязательно.
-
-```
-BR-1 → BR-2 → BR-3 ─┬─ BR-4 (schema introspection)
-                      ├─ BR-5 (filters) → BR-6 (client state) ─┐
-                      └─ BR-7 (Oracle provider) ────────────────┼─→ BR-8 (first migration)
-                                                                     │
-                                                                     ↓
-                                                                   BR-9 → BR-10
-```
-
-BR-4, BR-5 и BR-7 технически независимы друг от друга после BR-3. BR-8 — convergence point, требует BR-6 и BR-7.
+---
 
 ## Подзадачи
 
-### BR-1: Dataset Runtime Contracts
+### CA-0: Establish ESLint governance baseline
 
-- scope: `packages/platform-datasets/src/model/*`, contract/runtime types in `platform-datasets`
-- depends on: verification foundation
+- wave: 0
+- scope: `eslint.config.js`, `package.json`, `docs/architecture.md` §8, `docs/agents/invariants.md`, `docs/agents/lead-strategic/current_plan.md`
+- depends on: —
 - размер: M
-- acceptance: final first-wave contract shapes добавлены additively и компилируются вместе с текущим runtime: `DatasetRegistryEntry`, `SourceDescriptor` (including explicit `cube`), `DatasetFieldDef`, `DatasetFilterBinding`, `DatasetAccess`, expanded cache contract, flat `DatasetQuery.params`, `DatasetError.retryable`, `SelectIr.offset`, response/telemetry freshness fields; route behavior ещё не меняется
-- verification intent: target contract surface существует и может co-exist с current execution path без route cutover
-- verification mode: `test-first`
-- заметки: не вводить `CapabilityProfile` или capability matrix; `groupBy` / `call()` не расширяются и не становятся зависимостью новых slice'ов; пометить `groupBy` и `call()` в `SelectIr` как `@deprecated` в JSDoc чтобы IDE подсвечивала случайное использование; зафиксировать `ContractVersion` strategy (остаётся `'v1'` с additive расширениями, или вводится `'v2'` с routing logic в route handler)
+- acceptance:
+  - canonical verification commands разделены и явно задокументированы:
+    - `pnpm lint:format` — formatting only
+    - `pnpm lint:eslint` — semantic lint only
+    - `pnpm lint:boundaries` — architectural import boundaries only
+    - `pnpm lint` — aggregate entrypoint
+  - в `docs/architecture.md` §8 добавлена policy, что именно означает каждый lint command и какой из них обязателен для architectural slices
+  - в `docs/agents/invariants.md` добавлены правила для введения новых ESLint-checks:
+    - правило должно быть low-noise и без массовых false positives
+    - правило не вводится repo-wide как blocking, пока baseline по нему uncontrolled
+    - для red baseline допускается `touched-files only` enforcement
+    - architectural guardrails приоритетнее stylistic rules
+    - новый blocking rule сопровождается remediation plan или bounded scope
+  - зафиксирован project policy для роста:
+    - новые rules добавляются только через docs-first decision
+    - предпочтение правилам, которые защищают boundaries, contracts, unsafe runtime patterns и accidental complexity
+    - stylistic checks не должны маскировать архитектурные сигналы
+  - `eslint.config.js` приведён к low-noise baseline:
+    - архивный код исключён из lint scope
+    - placeholder-параметры `_name` не создают лишний шум
+    - есть отдельный guardrail для dashboard client modules vs server imports
+  - `pnpm lint:boundaries` green
+  - `pnpm lint:eslint` baseline явно зафиксирован: текущий долг не обязан быть полностью закрыт этим slice, но policy "не ухудшать touched files" становится canonical
+- verification intent: сделать lint управляемым инструментом архитектурного governance, а не случайным источником шума
+- verification mode: `verification-first`
+- заметки:
+  - slice не обязан делать весь repo lint-green
+  - slice обязан сделать lint-policy однозначной для следующих волн
 
-### BR-2: Package-Orchestrated Execution
+### CA-1: Decompose product-analytics page
 
-- scope: `packages/platform-datasets/src/server/executeDatasetQuery.ts` (new), `apps/web/src/routes/api/datasets/[id]/+server.ts`, typed package errors
-- depends on: BR-1
+- wave: 1
+- scope: `apps/web/src/routes/dashboard/wildberries/product-analytics/`
+- depends on: —
+- размер: L
+- acceptance:
+  - `+page.svelte` ≤ 300 строк, содержит только data loading, filter wiring, layout composition
+  - price management вынесен в `PriceEditor.svelte` (самостоятельный компонент со своей state machine)
+  - product table вынесен в `ProductTable.svelte` (сортировка, рендеринг строк, sparkline)
+  - detail panel вынесен в `ProductDetail.svelte` (метрики, рекомендации)
+  - `analyzeProduct()` вызывается **один раз** в `$derived` (Map по nm_id), не per-row в `{#each}`
+  - chart options вынесены в `view-model.ts` как фабричные функции
+  - добавлены route-local unit tests для `aggregation.ts`, `recommendations.ts` и `view-model.ts`
+  - все 127 тестов green, `pnpm check` и `pnpm build` pass
+- verification intent: page decomposition сохраняет текущее поведение без регрессий
+- verification mode: `prototype-pin-refactor` (UI change, проверка через dev server)
+- заметки: не добавлять новую функциональность; строго рефакторинг
+
+### CA-2: Decompose stock-alerts page
+
+- wave: 1
+- scope: `apps/web/src/routes/dashboard/wildberries/stock-alerts/`
+- depends on: —
 - размер: M
-- acceptance: route handler становится thin shell: parse transport, derive `ServerContext`, delegate в `executeDatasetQuery(datasetId, query, ctx)`, map typed errors to HTTP; provider selection by dataset prefix уходит из route code; dataset access проверяется package-owned orchestration before compile / execute
-- verification intent: existing dataset requests проходят через package entrypoint без route-level provider logic
-- verification mode: `test-first`
-- заметки: ownership dataset metadata и registry extraction ещё не cut over здесь; это следующий slice
+- acceptance:
+  - `+page.svelte` ≤ 350 строк
+  - aggregation pipeline уже в `aggregation.ts` (OK), но drill-down panel вынесен в отдельный компонент
+  - preset / filter / office-detail composition не размазана по `+page.svelte`; page остаётся orchestration-only
+  - добавлены route-local unit tests для `aggregation.ts` и `utils.ts`
+  - `pnpm check` и `pnpm build` pass
+- verification intent: та же декомпозиция без изменения поведения
+- verification mode: `prototype-pin-refactor`
+- заметки: параллелен CA-1, нет зависимостей
 
-### BR-3: Registry Extraction from Postgres Provider
+### CA-3: Migrate WB office-day to useFlatParams
 
-- scope: `packages/platform-datasets/src/server/registry/*`, existing dataset definitions, `postgresProvider`
-- depends on: BR-2
-- размер: L
-- acceptance: registry становится canonical owner dataset entries, fields и source descriptors для migrated Postgres datasets; `postgresProvider` получает entry-owned metadata вместо provider-local catalog; central compile/dataset-family switch перестаёт быть canonical source of truth
-- verification intent: migrated datasets продолжают исполняться через provider без metadata drift и без provider-owned dataset catalog
-- verification mode: `test-first`
-- заметки: custom `compile` остаётся supported; `genericCompile()` ещё не вводится; EMIS-датасеты (`emis.*`) в `postgresProvider` перекладываются в реестр механически (entry + source descriptor) без миграции страниц — чтобы provider перестал владеть каталогом целиком; mock-backed датасеты (payment analytics и др.) также получают registry entries с `source.kind: 'mock'`
+- wave: 2
+- scope: `apps/web/src/routes/dashboard/wildberries/office-day/+page.svelte`, `apps/web/src/lib/shared/api/fetchDataset.ts`
+- depends on: CA-1 (для минимизации merge conflicts)
+- размер: S
+- acceptance:
+  - page вызывает `fetchDataset({ ..., useFlatParams: true })` с явными params из planner
+  - page не использует `getFilterSnapshot()` или implicit filter merge
+  - поведение не изменено
+- verification intent: страница работает идентично через canonical path
+- verification mode: `prototype-pin-refactor`
 
-### BR-4: Schema Introspection
+### CA-4: Migrate WB product-analytics to useFlatParams
 
-- scope: `platform-datasets` schema lookup/export, `GET /api/datasets/:id/schema`
-- depends on: BR-3
+- wave: 2
+- scope: `apps/web/src/routes/dashboard/wildberries/product-analytics/+page.svelte`
+- depends on: CA-1, CA-3
+- размер: S
+- acceptance: аналогично CA-3
+- verification mode: `prototype-pin-refactor`
+
+### CA-5: Migrate WB stock-alerts to useFlatParams
+
+- wave: 2
+- scope: `apps/web/src/routes/dashboard/wildberries/stock-alerts/+page.svelte`
+- depends on: CA-2, CA-3
+- размер: S
+- acceptance: аналогично CA-3
+- verification mode: `prototype-pin-refactor`
+
+### CA-6: Migrate demo dashboard to useFlatParams
+
+- wave: 2
+- scope: `apps/web/src/routes/dashboard/demo/+page.svelte`
+- depends on: CA-3
+- размер: S
+- acceptance: аналогично CA-3; demo page использует `useFlatParams: true`
+- verification mode: `prototype-pin-refactor`
+
+### CA-7: Remove legacy filter path from fetchDataset
+
+- wave: 2
+- scope: `apps/web/src/lib/shared/api/fetchDataset.ts`, `@dashboard-builder/platform-filters` (getFilterSnapshot, getEffectiveFilters exports)
+- depends on: CA-3, CA-4, CA-5, CA-6 (все страницы мигрированы)
 - размер: M
-- acceptance: `getDatasetSchema(datasetId)` и HTTP schema endpoint отдают `fields` + exported params schema without data query execution; schema path использует ту же dataset access policy, что и query execution; route остаётся thin
-- verification intent: schema can be fetched without query execution; unauthorized datasets (access check fails) не раскрывают schema; `hidden` fields suppressed из schema response (field-level, не dataset-level flag)
+- acceptance:
+  - `fetchDataset.ts` содержит только canonical flat-params path
+  - `useFlatParams` parameter удалён (больше не нужен — есть только один path)
+  - `DatasetQuery.filters` field удалён из wire contract
+  - `fetchDataset.ts` больше не импортирует и не использует `getFilterSnapshot()`, `getEffectiveFilters()` или `getActiveFilterRuntime()`
+  - implicit active-runtime fallback убран из BI data path; страница обязана передать params явно
+  - legacy filter helpers либо удалены из public exports, либо изолированы как internal compatibility API без участия в canonical BI path
+  - добавлен low-noise ESLint guardrail, запрещающий legacy helper usage на canonical BI path (`fetchDataset` / BI pages), если rule не даёт false positives
+  - все 127+ тестов green, `pnpm check`, `pnpm build`, `pnpm lint:boundaries` pass
+  - migration debt entries #2 и #3 закрыты в `architecture_dashboard_bi.md` §9
+- verification intent: единственный canonical data path, нет ambiguity
 - verification mode: `test-first`
-- заметки: `/schema` telemetry может быть lighter, но access denials должны быть видимы; этот surface также должен оставаться пригодным для embedded metadata-driven query builder, а не arbitrary SQL UI
+- заметки: это breaking change для non-migrated consumers; убедиться, что все страницы мигрированы до этого slice
 
-### BR-5: Flat Filter Contract Migration
+### CA-8: Introduce typed custom compile contract
 
-- scope: `packages/platform-filters/src/model/*`, planner APIs, `apps/web/src/lib/shared/api/fetchDataset.ts`, active BI route filter wiring
-- depends on: BR-3
-- размер: L
-- acceptance: flat `DatasetQuery.params` становится единственным canonical wire bag на migrated path; planner resolves provenance client-side via `planFiltersForTarget()` / `planFiltersForTargets()`; implicit legacy merge убран из canonical `fetchDataset` path; first-wave canonical combinations ограничены tier-1 (`workspace + server`, `owner + server`, `workspace + client`)
-- verification intent: migrated filter flow идёт end-to-end через planner-only path и не скрывает merge precedence
-- verification mode: `test-first`
-- заметки: compatibility adapter допустим только на wrapper boundary для non-migrated pages; не расширять wave на `shared + *` или `* + hybrid`; включает alignment planner API: текущий `planFiltersForDataset()` переименовывается в `planFiltersForTarget()`, добавляется batch-helper `planFiltersForTargets()` — target naming из architecture doc
-
-### BR-6: Client Query State Alignment
-
-- scope: route-local BI pages/helpers, `fetchDataset` client facade, page-local async query state
-- depends on: BR-5
+- wave: 3
+- scope: `packages/platform-datasets/src/model/registry.ts`, `packages/platform-datasets/src/server/executeDatasetQuery.ts`, `packages/platform-datasets/src/server/registry/index.ts`, custom compile definitions
+- depends on: CA-7
 - размер: M
-- acceptance: migrated pages используют page-owned `AsyncState<T>` / typed client errors, keep-previous-data refresh, optional page-owned auto-refresh и in-flight dedup / cancellation через `fetchDataset`; dataset results не уходят в new global stores
-- verification intent: page-local orchestration соответствует route-first model и не даёт regressions по stale-request UX
+- acceptance:
+  - custom compile получает parsed params / typed params, а не raw `DatasetQuery`
+  - `executeDatasetQuery()` передаёт в custom compile результат `paramsSchema.parse(...)`
+  - custom compile больше не читает `.filters`; flat params являются единственным compile input
+  - тесты runtime/registry обновлены под новый compile contract
+  - `pnpm test`, `pnpm check` green
+- verification intent: убрать contract hole между `paramsSchema` и custom compile
 - verification mode: `test-first`
-- заметки: `TanStack Query` не вводить в этой wave; не вводить global subscription runtime
 
-### BR-7: Oracle Provider
+### CA-9: Explicit paramsSchema for WB datasets
 
-- scope: `platform-datasets` provider layer, Oracle provider infra, one Oracle-backed dataset definition
-- depends on: BR-3
-- размер: L
-- acceptance: один paginated Oracle read-model dataset вызывается через standard dataset route и возвращает корректные данные (route/provider proof, не full page migration); provider lazy-initializes client / pool, использует bounded in-memory TTL cache, поддерживает timeout + best-effort cancel, не держит pool в плохом состоянии после timeout и имеет explicit retryable error mapping
-- verification intent: first real-time non-Postgres backend работает без изменений route contract; page migration scope остаётся в BR-8
-- verification mode: `test-first`
-- заметки: использовать `node-oracledb` Thin mode; не добавлять fake capability layer; Cube не делать обязательной частью этого slice
-
-### BR-8: First Dashboard Migration
-
-- scope: one real BI route under `apps/web/src/routes/dashboard/<domain>/...`, route-local `filters.ts`, `view-model.ts`, page components
-- depends on: BR-6, BR-7 (convergence point: нужны flat params + client state + provider path)
-- размер: L
-- acceptance: одна реальная BI page мигрирована end-to-end на target runtime: flat params contract, page-local query state, no legacy filter merge, no page-specific provider branching; page становится reference slice для следующих migrations
-- verification intent: target dataset runtime доказан на real route-local page composition
-- verification mode: `test-first`
-- заметки: выбрать страницу с максимальным reference value, а не самый широкий churn
-
-### BR-9: Generic Compiler + Honest IR Cleanup
-
-- scope: `genericCompile(entry, typedParams)`, declarative registry bindings, `packages/platform-datasets/src/model/ir.ts`, at least one simple dataset
-- depends on: BR-8
+- wave: 3
+- scope: `packages/platform-datasets/src/server/registry/index.ts`, `packages/platform-datasets/src/server/definitions/wildberriesOfficeDay.ts`, `wildberriesProductPeriod.ts`
+- depends on: CA-8
 - размер: M
-- acceptance: хотя бы один dataset использует declarative mode end-to-end через explicit query bindings; `genericCompile()` работает на narrowed read-model `SelectIr`; remaining `groupBy` / `call()` debt removed or isolated so target runtime stays honest; custom `compile` remains supported
-- verification intent: declarative mode работает без возврата fake capabilities или unsupported IR semantics в canonical path
+- acceptance:
+  - `wildberries.fact_product_office_day` и `wildberries.fact_product_period` имеют explicit Zod paramsSchema с конкретными полями (dateFrom, dateTo, limit, offset и др.)
+  - `looseParams` больше не используется для WB datasets
+  - compile использует typed params, а не raw query bag
+  - тесты для param validation добавлены
+  - `pnpm test` green
+  - migration debt entry #1 обновлён (2 из 13 resolved)
+- verification intent: bad params ловятся на уровне контракта, не SQL
 - verification mode: `test-first`
-- заметки: этот slice закрывает последний target gap по honest read-model IR
 
-### BR-10: Further Providers or Second Reference Migration
+### CA-10: Explicit paramsSchema for payment datasets
 
-- scope: one additional provider or one more high-value migration after runtime path is proven
-- depends on: BR-9
-- размер: L
-- acceptance: architecture extends через static registration only; route contract не меняется; не появляется runtime plugin loading или capability matrix relapse
-- verification intent: target path масштабируется дальше первого provider / first reference page
+- wave: 3
+- scope: `packages/platform-datasets/src/server/registry/index.ts`, `packages/platform-datasets/src/server/definitions/paymentAnalytics.ts`
+- depends on: CA-8
+- размер: S
+- acceptance: аналогично CA-9 для `payment.*` datasets (4 штуки)
 - verification mode: `test-first`
-- заметки: optional milestone, не blocker для wave close если `BR-1` -> `BR-9` уже доказали target architecture достаточно убедительно
+
+### CA-11: Explicit paramsSchema for IFTS datasets
+
+- wave: 3
+- scope: `packages/platform-datasets/src/server/registry/index.ts`, `packages/platform-datasets/src/server/definitions/iftsMart.ts`
+- depends on: CA-8
+- размер: M
+- acceptance: аналогично CA-9 для `ifts.*` datasets (4 штуки); Oracle-specific params (operday, service, etc.) typed
+- verification mode: `test-first`
+- заметки: параллелен CA-9 и CA-10
+
+### CA-12: Provider cache middleware
+
+- wave: 3
+- scope: `packages/platform-datasets/src/server/executeDatasetQuery.ts`, `packages/platform-datasets/src/server/providers/postgresProvider.ts`, `packages/platform-datasets/src/server/providers/oracleProvider.ts`
+- depends on: —
+- размер: M
+- acceptance:
+  - cache check/populate логика вынесена из `oracleProvider` в middleware-слой (decorator или orchestration step в `executeDatasetQuery`)
+  - `postgresProvider` автоматически получает caching для datasets с `entry.cache.ttlMs > 0`
+  - Oracle provider продолжает работать как раньше, но через shared middleware
+  - cache key основан на `datasetId + normalized params + relevant server context`; `requestId` не участвует
+  - тесты для cache middleware добавлены
+  - `pnpm test` green
+  - migration debt entry #6 закрыт
+- verification intent: кеширование провайдер-агностичное, DRY
+- verification mode: `test-first`
+
+### CA-13: Remove duplicate dataset definitions
+
+- wave: 4
+- scope: `apps/web/src/lib/server/datasets/definitions/`
+- depends on: CA-9, CA-10, CA-11
+- размер: S
+- acceptance:
+  - директория `apps/web/src/lib/server/datasets/definitions/` удалена или содержит только re-exports из `packages/platform-datasets`
+  - все imports обновлены
+  - `pnpm lint:boundaries` и `pnpm build` pass
+  - migration debt entry #7 закрыт
+- verification mode: `verification-first`
+
+### CA-14: Implement assertDatasetAccess
+
+- wave: 4
+- scope: `packages/platform-datasets/src/server/executeDatasetQuery.ts`, `packages/platform-datasets/src/model/ports.ts`
+- depends on: —
+- размер: M
+- acceptance:
+  - `assertDatasetAccess(entry, ctx)` реализован: проверяет `entry.access.requiredScopes` против `ctx.scopes`
+  - при несоответствии бросает `DatasetExecutionError` с кодом `DATASET_ACCESS_DENIED`
+  - placeholder comment удалён
+  - тесты для access denied и access granted добавлены
+  - `pnpm test` green
+  - migration debt entry #5 закрыт
+- verification mode: `test-first`
+- заметки: текущие datasets не имеют `access.requiredScopes`, поэтому behavior не меняется; это подготовка к multi-tenant
+
+### CA-15: Add WB BI route-local and proxy tests
+
+- wave: 4
+- scope: `apps/web/src/routes/dashboard/wildberries/*`, `apps/web/src/routes/api/wb/prices/+server.ts`
+- depends on: CA-1, CA-2
+- размер: S
+- acceptance:
+  - есть targeted tests на route-local BI logic, которая не покрыта package-level suite
+  - `/api/wb/prices` покрыт тестами на validation, missing token, upstream error mapping и success response
+  - `pnpm test` green
+- verification intent: route-local BI logic больше не остаётся "слепой зоной" между packages и UI
+- verification mode: `test-first`
+
+### CA-16: Wave closure and debt register update
+
+- wave: 4
+- scope: `docs/architecture_dashboard_bi.md` §9, verification
+- depends on: CA-1..CA-15
+- размер: S
+- acceptance:
+  - все 7 entries в migration debt register обновлены (resolved или updated status)
+  - `pnpm check`, `pnpm build`, `pnpm test`, `pnpm lint:boundaries` green
+  - final architecture-reviewer integration review pass
+- verification mode: `verification-first`
+
+## Sequencing
+
+```
+Wave 1 (parallel):
+  CA-1 (product-analytics decompose)  ─┐
+  CA-2 (stock-alerts decompose)        ─┤
+                                        │
+Wave 2 (sequential after Wave 1):       │
+  CA-3 (office-day useFlatParams)    ◄──┘
+  CA-4 (product-analytics useFlatParams) ◄── CA-1, CA-3
+  CA-5 (stock-alerts useFlatParams)      ◄── CA-2, CA-3
+  CA-6 (demo useFlatParams)              ◄── CA-3
+  CA-7 (remove legacy path)             ◄── CA-3..CA-6
+
+Wave 3:
+  CA-8  (typed custom compile contract) ◄── CA-7
+  CA-9  (WB paramsSchema)               ◄── CA-8
+  CA-10 (payment paramsSchema)          ◄── CA-8
+  CA-11 (IFTS paramsSchema)             ◄── CA-8
+  CA-12 (cache middleware)                 (independent, can start anytime)
+
+Wave 4 (after Wave 3):
+  CA-13 (remove duplicate definitions) ◄── CA-9..CA-11
+  CA-14 (assertDatasetAccess)          (independent)
+  CA-15 (WB route-local/proxy tests)   ◄── CA-1, CA-2
+  CA-16 (wave closure)                 ◄── all
+```
+
+Precondition:
+  CA-0 (lint governance baseline) runs before Wave 1 and becomes the verification policy for all later slices
 
 ## Ограничения
 
-- Эта wave покрывает только non-EMIS BI first wave; EMIS operational refactor и EMIS BI migration out of scope
-- Никакого SQL в `routes/api/datasets/*`
-- Никакого provider selection в route code
-- Никаких dataset/schema access bypasses мимо package orchestration
-- Никаких reversed imports из packages в app
-- Не вводить `CapabilityProfile`, fake provider matrices или runtime plugin loading
-- `genericCompile()` не вводить раньше `BR-9`
-- Никаких новых global stores для dataset data/query state
-- Никакого `TanStack Query`, dashboard DSL или broad app-wide query-manager migration в этой wave
-- Никакой mandatory external infra для first-wave BI delivery: built-in in-memory cache и app-owned PostgreSQL persistence остаются baseline
-- Embedded query builder, если добавляется, работает только через registry/schema introspection; arbitrary SQL builder out of scope
-- Filter wire contract target: flat `DatasetQuery.params`; planner provenance resolving stays client-side
-- Honest IR remains target: новые slices не должны снова опираться на `groupBy` / `call()` как на canonical supported contract
-- Provider cache остаётся provider-owned и bounded; cache identity must exclude `requestId`
-- Real-time refresh в first wave остаётся page-owned polling-first pattern; no global subscription runtime
-- Cube, если используется, должен быть explicit source kind, а не скрытая прослойка под `oracle` / `clickhouse`
-- Minimal structured query telemetry must exist at every changed runtime boundary
-- Old draft backlog items, not part of this wave:
-  - EMIS tests / shim burn-down
-  - alerts deployment contract / pending migration drain
-  - platform-core formatting-only test expansion
-  - broad folder naming cleanup without direct BI payoff
+- Не добавлять новую функциональность — строго рефакторинг и contract hardening
+- Не менять wire contract (`DatasetQuery`/`DatasetResponse`) до CA-7 (coordinated removal of `.filters`)
+- Не трогать EMIS datasets и routes — scope ограничен BI vertical
+- Не трогать strategy dashboard — его paramsSchema уже explicit
+- Реальная auth / tenant derivation для dataset routes не входит в этот план; CA-14 даёт access-gate scaffold, но не вводит новый auth contour
+- 127 green tests — baseline; каждый slice должен закончиться с ≥ 127 green tests
+- `pnpm lint:eslint` сейчас не green repo-wide; slices не должны увеличивать lint debt в touched files и по возможности должны его уменьшать
+- `pnpm check`, `pnpm build`, `pnpm lint:boundaries` — обязательная верификация каждого slice
+- после CA-0 добавление новых blocking ESLint rules допускается только через docs-first rule-introduction policy
 
 ## Ожидаемый результат
 
-- `platform-datasets` владеет canonical dataset registry, execution orchestration, schema introspection и provider dispatch
-- `/api/datasets/:id` остаётся thin HTTP transport; `/api/datasets/:id/schema` существует и использует ту же access policy
-- Migrated BI pages используют flat params contract, page-local async query state и polling-first RT refresh без hidden global data stores
-- Oracle provider доказывает first-wave multi-provider path с bounded built-in server-side cache и timeout/cancel discipline
-- Embedded metadata-driven query builder может опираться на registry/schema surface без перехода к arbitrary SQL authoring
-- Declarative dataset mode работает поверх honest read-model `SelectIr`
-- Старый pre-target sequencing больше не используется; future implementation tasks открываются по `BR-*` slices
+- Все BI pages ≤ 350 строк с чистой декомпозицией (SRP)
+- Единственный canonical data path в `fetchDataset()` без legacy branch
+- Нет implicit active-runtime fallback в BI data path
+- Custom compile получает только validated params
+- Все BI datasets с explicit paramsSchema — contract-level validation
+- Provider-agnostic кеширование через middleware
+- Нет дубликатов dataset definitions
+- Access control реализован (подготовка к multi-tenant)
+- Route-local BI logic и WB proxy path покрыты focused tests
+- Migration debt register §9 полностью закрыт
+- Когнитивная нагрузка при разработке нового дашборда: минимальная

@@ -6,21 +6,27 @@
 
 1. **Прочитай** план: `docs/agents/lead-strategic/current_plan.md`
 2. **Прочитай** свой `memory.md` для контекста
-3. **Для каждой подзадачи:**
+3. **Architecture Readiness Check** (если triggered по `workflow.md` §2.3.1):
+   - Проверь compliance с `architecture_dashboard_bi.md` §8 и `invariants.md` §1-9
+   - Если planned scope попадает в migration debt zone (§9) — включи debt resolution в slice budget
+   - Если нужны новые architectural decisions — зафиксируй их в docs **до начала реализации**
+   - Если нужен full audit — делегируй как governance pass (`review-gate.md` §3.3)
+4. **Для каждой подзадачи:**
    - Если задача нетривиальная, многослайсовая или unfamiliar — **по умолчанию поставь её worker'у**
    - Если это точечный и понятный фикс (< 200 строк, 1-2 файла) — можешь выполнить сам
    - Для выбора `batch` vs `iterative` используй default heuristic из `docs/agents/workflow.md`; при сомнении выбирай `iterative`
-4. **Прими результат** от worker'а (handoff note + checks evidence + review disposition/results)
-5. **Если нужен reframe**, оформи `Plan Change Request` и отправь его `lead-strategic` / Codex; не меняй semantic ownership плана самостоятельно
-6. **Определи, нужен ли integration Review Gate**; если нужен, запусти его по `docs/agents/review-gate.md`
-7. **Исправь** non-critical findings сам или через нового worker'а
-8. **Эскалируй** CRITICAL findings к пользователю
-9. **Перед report проверь governance timing**:
-   - нужен ли `architecture pass` по событию
-   - нужен ли `baseline pass` как wave-close gate
-10. **Выбери формат report**: `full | lightweight | governance-closeout`, затем запиши `docs/agents/lead-tactical/last_report.md`
-11. **Запиши usage telemetry entry** в `runtime/agents/usage-log.ndjson` по `docs/agents/usage-telemetry.md`
-12. **Обнови** свой `memory.md` и, если были значимые strategic решения, `docs/agents/lead-strategic/memory.md`
+5. **Прими результат** от worker'а (handoff note + checks evidence + review disposition/results)
+6. **Если нужен reframe**, оформи `Plan Change Request` и отправь его `lead-strategic` / Codex; не меняй semantic ownership плана самостоятельно
+7. **Определи, нужен ли integration Review Gate**; если нужен, запусти его по `docs/agents/review-gate.md`
+8. **Если architecture-reviewer вынес `needs design decision`** — блокируй merge, эскалируй к `lead-strategic` для согласования, зафиксируй решение в docs, запроси re-review (`review-gate.md` §1.2)
+9. **Исправь** non-critical findings сам или через нового worker'а
+10. **Эскалируй** CRITICAL findings к пользователю
+11. **Перед report проверь governance timing**:
+    - нужен ли `architecture pass` по событию
+    - нужен ли `baseline pass` как wave-close gate
+12. **Выбери формат report**: `full | lightweight | governance-closeout`, затем запиши `docs/agents/lead-tactical/last_report.md`
+13. **Запиши usage telemetry entry** в `runtime/agents/usage-log.ndjson` по `docs/agents/usage-telemetry.md`
+14. **Обнови** свой `memory.md` и, если были значимые strategic решения, `docs/agents/lead-strategic/memory.md`
 
 ## Worker Dispatch Delta
 
@@ -103,25 +109,12 @@ Escalation triggers: 3+ неудачных попыток или потеря у
 
 ## Evidence Acceptance
 
-При приёмке worker handoff проверяй evidence freshness по `review-gate.md` §1.6:
-
-- каждый ожидаемый check должен иметь явное состояние (`fresh` / `not run + reason`)
-- evidence без состояния или с устаревшим результатом — отправляй worker'а перезапустить check
-- fabricated или contradictory evidence — `CRITICAL`, блокируй acceptance
-- missing expected evidence — `WARNING`, запроси явное разрешение или причину
-
-Не принимай handoff с vague evidence вроде "всё работает" или "проверил" без конкретных результатов.
+При приёмке worker handoff проверяй evidence freshness по `review-gate.md` §1.6.
+Не принимай handoff с vague evidence вроде "всё работает" без конкретных результатов.
 
 ## Быстрая проверка перед commit / report
 
-Canonical invariants: `docs/agents/invariants.md`.
-
-- [ ] Код в правильном слое / package home?
-- [ ] SQL не в routes?
-- [ ] Server-only код не импортируется с клиента?
-- [ ] Schema changes отражены в db/?
-- [ ] Новые reusable контракты в canonical package home per domain overlay (e.g. `packages/emis-contracts/*`)?
-- [ ] Файлы < 700 строк?
+Перед commit или report проверь canonical invariants: `docs/agents/invariants.md` (§1-9, включая architecture-docs-first §8 и BI vertical invariants §9).
 
 ## Что ты НЕ делаешь
 

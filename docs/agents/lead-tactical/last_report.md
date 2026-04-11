@@ -1,120 +1,123 @@
-# Report: AUTH-8 — Governance Closure After Production Auth Hardening
+# Report: Oracle-First BI LRU Cache Foundation (OC Wave)
+
+## Report Type
+
+`full`
 
 ## Статус
 
-Выполнено.
+Выполнено. Все 3 slice (OC-1, OC-2, OC-3) завершены, review findings исправлены, docs обновлены.
 
 ## Что сделано
 
-- AUTH-1: completed — contract freeze for production auth design in `docs/emis_access_model.md` section 5
-- AUTH-2: completed — DB schema: `emis.users` + `emis.sessions` tables in `db/current_schema.sql`
-- AUTH-3: completed — bcrypt password hashing (bcryptjs, cost 12) + DB user store with env fallback
-- AUTH-4: completed — DB session persistence with in-memory fallback, lazy expiry cleanup
-- AUTH-5: completed — admin user management at `/emis/admin/users` (UI + 4 API endpoints)
-- AUTH-6: completed — change password at `/emis/settings` + `/api/emis/auth/change-password`
-- AUTH-7: completed — default auth mode switched to `session`, `pnpm emis:auth-smoke` added
-- AUTH-8: completed — governance closure: all checks green, docs updated, baseline closed
+- OC-1: Shared LRU cache helper (`packages/platform-datasets/src/server/providerCache.ts`, 97 lines)
+  - `createProviderCache({ maxEntries })` — bounded LRU via `lru-cache` v11, default 200 entries
+  - `buildCacheKey(datasetId, params, tenantId)` — deterministic key, `\0` separator, requestId excluded
+  - Manual TTL via `Date.now()` (testable with fake timers), `structuredClone` on read+write
+  - 14 tests: hit, miss, TTL expiry, tenant separation, requestId exclusion, LRU eviction order, write-side + read-side immutability, colon separator collision
+
+- OC-2: Oracle Provider Adoption (`oracleProvider.ts`, net -26 lines)
+  - Replaced ad-hoc `Map`/FIFO TTL cache with shared `providerCache`
+  - `meta.cacheAgeMs` now derived from `cachedAt` timestamp (simpler, more reliable)
+  - `connectionName` extraction hardened: explicit throw guard instead of silent `'default'` fallback
+  - Removed unused `IrSelectItem` import
+  - 4 tests: sqlText differentiation, requestId exclusion, tenant separation, bind value differentiation
+
+- OC-3: Wave closure — all 5 canonical checks green, no drift in protected scope
+
+- Docs: AGENTS.md full rewrite, architecture_dashboard_bi.md §4 updated with implementation details, docs/AGENTS.md description updated
 
 ## Plan Sync
 
-- current_plan.md: `updated by lead-strategic/Codex`
+- current_plan.md: `unchanged`
 - plan change requests: `none`
+- operating mode at handoff: `ordinary iterative`
+- mode change signal: `none`
 
-## Review Gate
+## Review Disposition
 
-### Findings по severity
+- integration review: `run` (all 5 reviewers: architecture, security, code, docs × 2 passes)
+- rationale: first adoption of shared cache primitive, cross-file change within provider layer
 
-**CRITICAL** (блокирует merge):
+## Strategic Cadence
 
-- нет
+- next-slice impact: `none`
+- strategic-reviewer yield: `not run` (Codex submitted but no substantive response returned)
+- strategic-reviewer model: `not run`
+- why strategic-reviewer was run: attempted for plan acceptance
+- cross-model value: `not applicable`
+- cadence note: Codex strategic review deferred; findings resolved by Claude reviewers
 
-**WARNING** (исправлено / принято с обоснованием):
+## Findings по severity
 
-- `auth.ts` safety-net fix — explicit `EMIS_AUTH_MODE=session` no longer falls back to `none`
-- `scripts/emis-auth-smoke.mjs` switched from `bcrypt` import to `bcryptjs`
-- auth smoke checks aligned with SvelteKit JSON redirect envelope
-- auth smoke page redirect destructuring bug fixed
-- `.prettierignore` updated to exclude `.svelte-kit/` and `.claude/`
+**CRITICAL**:
+
+- code-reviewer: oracleProvider.ts:258 — connectionName dead code ternary with silent 'default' fallback → FIXED (explicit throw guard)
+
+**WARNING**:
+
+- security-reviewer: providerCache.ts:30 — cache key separator collision when datasetId/tenantId contain `:` → FIXED (`\0` separator)
+- code-reviewer: providerCache.test.ts — vi.useRealTimers() leak → FIXED (afterEach added)
+- code-reviewer: oracleProvider.ts:244 — binds as positional keys fragile → FIXED (binds as array)
+- code-reviewer: providerCache.ts — stale-slot documentation → FIXED (JSDoc added)
+- code-reviewer: providerCache.test.ts:82 — cachedAt tolerance unnecessary → FIXED (exact equality)
+- docs-reviewer: AGENTS.md missing oracleProvider → FIXED (full rewrite)
+- docs-reviewer (pass 2): docs/AGENTS.md:43 stale description → FIXED
 
 **INFO**:
 
-- AUTH-8 acted as governance closure / verification slice for the completed AUTH wave
-- review gate itself was not rerun as a separate reviewer package for AUTH-8 because this slice was verification + docs + bounded fixes
+- code-reviewer: read-side immutability test missing → FIXED (added)
+- code-reviewer: cachedAt JSDoc missing → FIXED
+- docs-reviewer: providerCache.ts §7 ref → FIXED (now §4+§7)
+- docs-reviewer (pass 2): "normalized params" imprecise → FIXED (clarified in arch doc)
+- architecture-reviewer: connectionName ternary fallback → covered by CRITICAL fix
 
-### Вердикты ревьюеров
+## Reviewer Verdicts
 
-- architecture-reviewer: not run
-- security-reviewer: not run
-- docs-reviewer: not run
-- code-reviewer: not run
-- ui-reviewer: not run
+- architecture-reviewer: OK (1 INFO)
+- security-reviewer: request changes → fixed (1 WARNING, 2 INFO)
+- code-reviewer: request changes → fixed (1 CRITICAL, 4 WARNING, 3 INFO)
+- docs-reviewer (pass 1): request changes → fixed (1 WARNING, 3 INFO)
+- docs-reviewer (pass 2): request changes → fixed (1 WARNING, 1 INFO)
 
-### Architecture / exceptions
+## Governance Summary
 
-- architecture pass: not needed
-- known exceptions / waivers touched: `none`
-
-### Governance Passes
-
-- architecture pass needed: `no`
-- architecture pass timing: `event-driven`
-- architecture pass result: `not needed`
-- baseline pass needed: `yes`
-- baseline pass timing: `wave-close`
-- baseline pass result: `completed`
-- rationale: AUTH-8 closed a completed auth hardening wave; no new placement decisions or waivers appeared, but a wave-close baseline verdict was required before declaring the wave green/closed
+- architecture pass: summarized inline — no boundary violations, provider-internal cache only
+- baseline pass: not needed (no schema/contract changes)
+- exceptions / waivers touched: `none`
+- rationale: OC wave is strictly provider-internal; no public API, schema, or route changes
 
 ## Checks Evidence
 
-- `pnpm check`: green — 0 errors, 0 warnings
-- `pnpm build`: green — success
-- `pnpm lint:boundaries`: green — no violations
-- `EMIS_AUTH_MODE=none pnpm emis:smoke`: green — 40/40 pass
-- `EMIS_AUTH_MODE=none pnpm emis:offline-smoke`: green — 9/9 pass
-- `EMIS_AUTH_MODE=none pnpm emis:write-smoke`: green — 7/7 pass
-- `pnpm emis:auth-smoke`: green — 13/13 pass
-- `npx prettier --check .`: green — all files formatted
-
-## Fixes During AUTH-8
-
-1. **auth.ts safety-net fix**: `getAuthMode()` now skips the safety-net fallback when `EMIS_AUTH_MODE=session` is explicitly set. Previously, the safety-net checked synchronously for DB users (always `null` at startup) and could incorrectly fall back to `none` even with explicit `session` mode.
-2. **auth-smoke bcrypt import fix**: `scripts/emis-auth-smoke.mjs` was importing `bcrypt` (not installed); changed to use `bcryptjs` via `createRequire` from `packages/emis-server/node_modules/`.
-3. **auth-smoke SvelteKit form action handling**: Updated login checks to handle SvelteKit's JSON envelope format (`{"type":"redirect","status":303,...}`) instead of expecting raw 303 HTTP responses.
-4. **auth-smoke page redirect fix**: Fixed destructuring bug where `fetch()` Response was incorrectly destructured as `{ response }`.
-5. **Prettier ignore**: Added `.svelte-kit/` and `.claude/` to `.prettierignore` to exclude build output and tool config from formatting checks.
-
-## AUTH Slices Audit
-
-| Slice  | Evidence                                                                     |
-| ------ | ---------------------------------------------------------------------------- |
-| AUTH-1 | `docs/emis_access_model.md` section 5 — contract frozen                      |
-| AUTH-2 | `db/current_schema.sql` — `emis.users` + `emis.sessions` tables              |
-| AUTH-3 | `packages/emis-server/src/modules/users/password.ts` — bcryptjs              |
-| AUTH-4 | `packages/emis-server/src/modules/sessions/repository.ts` — DB session store |
-| AUTH-5 | `apps/web/src/routes/emis/admin/users/` — page + page.server                 |
-| AUTH-6 | `apps/web/src/routes/emis/settings/` — page + page.server                    |
-| AUTH-7 | `auth.ts` getAuthMode() defaults to session; `scripts/emis-auth-smoke.mjs`   |
-
-## Doc Updates
-
-- `docs/agents/lead-strategic/current_plan.md` — all AUTH-1..AUTH-8 marked completed
-- `docs/emis_session_bootstrap.md` — Phase 5 added to completed waves, verification status updated
-- `docs/emis_next_tasks_2026_03_22.md` — Phase 5 added as completed, locked decisions updated
-- `docs/emis_access_model.md` — section 6 updated (stale "when auth is introduced" wording replaced)
-- `RUNTIME_CONTRACT.md` — auth endpoints section added (login, logout, change-password, admin users, settings)
-- `docs/agents/lead-tactical/memory.md` — Phase 5 context added
-- `docs/agents/lead-tactical/last_report.md` — this report
+- `pnpm check`: green `fresh`
+- `pnpm check:packages`: green `fresh` (all 8 packages)
+- `pnpm build`: green `fresh`
+- `pnpm lint:boundaries`: green `fresh` (no violations)
+- `pnpm test`: green `fresh` (10 files, 127 tests)
 
 ## Ветки
 
-- integration branch: `feature/emis-phase5-auth-hardening`
-- worker branches merged: none (AUTH-8 is governance-only)
-- review diff: `git diff main..feature/emis-phase5-auth-hardening`
+- integration branch: `main` (direct, no feature branch — ordinary iterative, low-risk)
+- worker branches merged: `none` (lead-tactical self-executed)
+- review diff: new files + oracleProvider.ts cache replacement
+
+## Agent Effort
+
+- workers spawned: 0 (self-executed)
+- review passes: 7 (slice: 5 parallel, integration docs: 2)
+- codex calls: 1 (strategic review — no substantive response)
+
+## Usage Telemetry
+
+- agent value: `meaningful` — 5 reviewers found 1 CRITICAL + 7 WARNING that were all fixed
+- agent value reason: security reviewer caught separator collision, code reviewer caught dead code ternary
+- orchestration value: `efficient` — self-executed 3 small slices, parallel review, quick fix cycle
+- optimization note: Codex strategic review didn't return substantive feedback; consider --resume in future
 
 ## Готовность
 
-Готово к merge. All Phase 5 auth hardening slices implemented and verified. Baseline Green / closed.
+Готово к commit. Все checks green, findings resolved, docs updated.
 
 ## Вопросы к lead-strategic
 
-Нет.
+- none

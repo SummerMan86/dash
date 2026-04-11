@@ -11,6 +11,9 @@
 			"default": "./src/index.ts"
 		}
 	},
+	"scripts": {
+		"check": "svelte-check --tsconfig ./tsconfig.json"
+	},
 	"peerDependencies": {
 		"svelte": "^5.0.0"
 	}

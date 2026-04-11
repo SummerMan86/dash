@@ -19,6 +19,9 @@
 			"default": "./src/emis-status-bar/index.ts"
 		}
 	},
+	"scripts": {
+		"check": "svelte-check --tsconfig ./tsconfig.json"
+	},
 	"dependencies": {
 		"@dashboard-builder/emis-contracts": "workspace:*",
 		"@dashboard-builder/platform-core": "workspace:*",

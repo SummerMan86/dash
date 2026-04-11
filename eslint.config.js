@@ -36,6 +36,9 @@ const appImportPatterns = [
 
 export default defineConfig(
 	includeIgnoreFile(gitignorePath),
+	{
+		ignores: ['archive/**']
+	},
 	js.configs.recommended,
 	...ts.configs.recommended,
 	...svelte.configs.recommended,
@@ -45,13 +48,29 @@ export default defineConfig(
 		languageOptions: {
 			globals: { ...globals.browser, ...globals.node }
 		},
-		rules: {
-			// typescript-eslint strongly recommend that you do not use the no-undef lint rule on TypeScript projects.
-			// see: https://typescript-eslint.io/troubleshooting/faqs/eslint/#i-get-errors-from-the-no-undef-rule-about-global-variables-not-being-defined-even-though-there-are-no-typescript-errors
-			'no-undef': 'off'
-		}
-	},
-	{
+			rules: {
+				// typescript-eslint strongly recommend that you do not use the no-undef lint rule on TypeScript projects.
+				// see: https://typescript-eslint.io/troubleshooting/faqs/eslint/#i-get-errors-from-the-no-undef-rule-about-global-variables-not-being-defined-even-though-there-are-no-typescript-errors
+				'no-undef': 'off',
+				'@typescript-eslint/no-unused-vars': [
+					'error',
+					{
+						argsIgnorePattern: '^_',
+						varsIgnorePattern: '^_',
+						caughtErrorsIgnorePattern: '^_'
+					}
+				],
+
+				// ── Svelte 5 migration rules: warn-only ─────────────────────────
+				// These are recommended Svelte 5 best practices but the codebase
+				// has a large pre-existing baseline. Kept as warnings so they
+				// surface in touched files without blocking CI on untouched code.
+				'svelte/no-navigation-without-resolve': 'warn',
+				'svelte/require-each-key': 'warn',
+				'svelte/prefer-svelte-reactivity': 'warn'
+			}
+		},
+		{
 		files: ['**/*.svelte', '**/*.svelte.ts', '**/*.svelte.js'],
 		languageOptions: {
 			parserOptions: {
@@ -341,10 +360,38 @@ export default defineConfig(
 				}
 			]
 		}
-	},
-	// EMIS transport: routes/api/emis — no UI/client code (any, not just EMIS UI)
-	{
-		files: ['apps/web/src/routes/api/emis/**/*.ts'],
+		},
+		// Dashboard client modules (non-EMIS) must stay route/UI-side and use HTTP/BFF seams.
+		{
+			files: [
+				'apps/web/src/routes/dashboard/**/*.ts',
+				'apps/web/src/routes/dashboard/**/*.svelte.ts',
+				'apps/web/src/routes/dashboard/**/*.svelte.js',
+				'apps/web/src/routes/dashboard/**/*.svelte'
+			],
+			ignores: [
+				'apps/web/src/routes/dashboard/emis/**',
+				'apps/web/src/routes/dashboard/**/+page.server.ts',
+				'apps/web/src/routes/dashboard/**/+server.ts'
+			],
+			rules: {
+				'no-restricted-imports': [
+					'error',
+					{
+						patterns: [
+							{
+								group: ['$lib/server/*', '$lib/server', '@dashboard-builder/*/server'],
+								message:
+									'dashboard client modules must not import server modules directly; use route/BFF seams'
+							}
+						]
+					}
+				]
+			}
+		},
+		// EMIS transport: routes/api/emis — no UI/client code (any, not just EMIS UI)
+		{
+			files: ['apps/web/src/routes/api/emis/**/*.ts'],
 		rules: {
 			'no-restricted-imports': [
 				'error',

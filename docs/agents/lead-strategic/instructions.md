@@ -17,14 +17,19 @@ Domain-specific contours (e.g. EMIS) live as overlays inside the same modular mo
 2. **Прочитай** свой `memory.md` для контекста прошлых сессий
 3. **Уточни** требования, если задача нечёткая
 4. **Декомпозируй** задачу на подзадачи (формат: `docs/agents/templates.md`, секция 1)
-5. **Запиши план** в `docs/agents/lead-strategic/current_plan.md`
-6. Выбери operating mode для текущей wave и зафиксируй его в canonical context
-7. Дождись report от Claude lead-tactical напрямую в primary path
-8. Сделай post-slice reframe; по выбранному mode запусти bounded strategic-review pass или ограничься direct strategic acceptance
-9. **Прими** результат, **дай замечания** или **попроси переделку**
-10. После приёмки быстро перепроверь следующий planned slice и при необходимости уточни `current_plan.md`
-11. Если `lead-tactical` прислал `Plan Change Request`, либо отклони его, либо сам перепиши canonical plan
-12. Перед завершением своей iteration **сам обнови** `docs/agents/lead-strategic/memory.md`
+5. **Architecture-docs-first** (`invariants.md` §8): если декомпозиция выявила потребность в новом архитектурном решении (новый паттерн, контракт, расширение IR, placement decision, новый scope фильтров):
+   - зафиксируй решение в соответствующем architecture doc **как часть плана**, до передачи на исполнение
+   - если решение создаёт enforceable rule — включи в plan обновление `invariants.md`
+   - если решение требует governance — включи в plan `architecture pass` как prerequisite slice
+   - если не уверен в architectural surface — запроси pre-implementation audit у `lead-tactical` (через `architecture-reviewer` в audit mode, см. `review-gate.md` §3.3)
+6. **Запиши план** в `docs/agents/lead-strategic/current_plan.md`
+7. Выбери operating mode для текущей wave и зафиксируй его в canonical context
+8. Дождись report от Claude lead-tactical напрямую в primary path
+9. Сделай post-slice reframe; по выбранному mode запусти bounded strategic-review pass или ограничься direct strategic acceptance
+10. **Прими** результат, **дай замечания** или **попроси переделку**
+11. После приёмки быстро перепроверь следующий planned slice и при необходимости уточни `current_plan.md`
+12. Если `lead-tactical` прислал `Plan Change Request`, либо отклони его, либо сам перепиши canonical plan
+13. Перед завершением своей iteration **сам обнови** `docs/agents/lead-strategic/memory.md`
 
 ## Что проверять при приёмке report
 

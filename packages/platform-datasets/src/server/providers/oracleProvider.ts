@@ -3,14 +3,14 @@
  *
  * Uses node-oracledb Thin mode (no Instant Client needed).
  * Lazy pool initialization on first use.
- * Bounded in-memory TTL cache per dataset+params.
+ * Bounded LRU cache via shared providerCache helper.
  * Timeout + best-effort statement cancellation.
  *
- * Canonical reference: docs/architecture_dashboard_bi_target.md §5
+ * Canonical reference: docs/architecture_dashboard_bi.md §7
  */
 import oracledb from 'oracledb';
 import type { DatasetField, DatasetFieldType, DatasetResponse, JsonValue } from '../../model';
-import type { DatasetIr, IrExpr, IrOrderBy, IrSelectItem } from '../../model';
+import type { DatasetIr, IrExpr, IrOrderBy } from '../../model';
 import type { Provider, ProviderEntry, ServerContext } from '../../model';
 import type { DatasetFieldDef } from '../../model';
 import { CONTRACT_VERSION } from '../../model';
@@ -73,38 +73,12 @@ if (typeof process !== 'undefined' && !shutdownRegistered) {
 }
 
 // ---------------------------------------------------------------------------
-// Bounded in-memory TTL cache
+// Shared bounded LRU cache (replaces ad-hoc Map/FIFO)
 // ---------------------------------------------------------------------------
 
-type CacheEntry = { expiresAt: number; response: DatasetResponse };
-const cache = new Map<string, CacheEntry>();
-const MAX_CACHE_ENTRIES = 200;
+import { createProviderCache, buildCacheKey } from '../providerCache';
 
-function cacheKey(datasetId: string, sqlText: string, params: Record<string, unknown>, tenantId: string): string {
-	// requestId excluded from cache identity per architecture doc
-	// sqlText included to prevent collision between different query shapes with same bind values
-	const sortedParams = Object.keys(params).sort().map(k => `${k}=${JSON.stringify(params[k])}`).join('&');
-	return `${datasetId}:${tenantId}:${sqlText}:${sortedParams}`;
-}
-
-function getCached(key: string): DatasetResponse | null {
-	const entry = cache.get(key);
-	if (!entry) return null;
-	if (Date.now() > entry.expiresAt) {
-		cache.delete(key);
-		return null;
-	}
-	return entry.response;
-}
-
-function setCache(key: string, response: DatasetResponse, ttlMs: number): void {
-	// Evict oldest entries if at capacity
-	if (cache.size >= MAX_CACHE_ENTRIES) {
-		const firstKey = cache.keys().next().value;
-		if (firstKey) cache.delete(firstKey);
-	}
-	cache.set(key, { expiresAt: Date.now() + ttlMs, response });
-}
+const providerCache = createProviderCache();
 
 // ---------------------------------------------------------------------------
 // SQL generation (Oracle dialect)
@@ -268,20 +242,21 @@ export const oracleProvider: Provider = {
 		const ttlMs = entry.cache?.ttlMs ?? 0;
 		const timeoutMs = entry.execution?.timeoutMs ?? 10_000;
 		const key = ttlMs > 0
-			? cacheKey(datasetId, text, Object.fromEntries(binds.map((v, i) => [`b${i + 1}`, v])), ctx.tenantId)
+			? buildCacheKey(datasetId, { sqlText: text, binds }, ctx.tenantId)
 			: null;
 
-		// Check cache
+		// Check shared LRU cache
 		if (key) {
-			const cached = getCached(key);
-			if (cached) {
+			const hit = providerCache.get(key);
+			if (hit) {
 				return {
-					...cached,
-					meta: { ...cached.meta, cacheAgeMs: Date.now() - (cached.meta?.executedAt ? new Date(cached.meta.executedAt).getTime() : Date.now()) },
+					...hit.response,
+					meta: { ...hit.response.meta, cacheAgeMs: Date.now() - hit.cachedAt },
 				};
 			}
 		}
-		const connectionName = entry.source.kind === 'oracle' ? (entry.source as { connectionName: string }).connectionName : 'default';
+		if (entry.source.kind !== 'oracle') throw new Error('oracleProvider: expected oracle source');
+		const connectionName = entry.source.connectionName;
 		const oraPool = await getPool(connectionName);
 		let connection: oracledb.Connection | null = null;
 
@@ -313,9 +288,9 @@ export const oracleProvider: Provider = {
 				},
 			};
 
-			// Populate cache
+			// Populate shared LRU cache
 			if (key) {
-				setCache(key, response, ttlMs);
+				providerCache.set(key, response, ttlMs);
 			}
 
 			return response;

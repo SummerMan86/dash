@@ -8,11 +8,13 @@ Canonical repo-wide architecture doc. Current-state only.
 
 ## 1. Architectural Principles
 
-Three models define the system at different levels:
+Three architecture lenses define the system at different levels:
 
 - **Repo/app level: Package-first modular SvelteKit architecture.** Reusable logic lives in `packages/*`. `apps/web` is a leaf composition shell — it owns routes, page composition, and server transport, but not domain logic or reusable contracts.
 
-- **App-local `src/lib` organization: FSD-inspired UI composition layers.** `shared → entities → features → widgets` provide a one-way dependency order for app-local UI code. This is an organizational convention, not the governing architecture — the real reusable logic lives in packages. The canonical FSD model is adapted: `entities/` is mostly empty (contracts moved to packages), `widgets/` is thin glue, routes own significant page/transport composition (SvelteKit-native, not pure FSD).
+- **App composition model: route-first UI + package-first reusable logic.** Routes own page/workspace composition and page-local BI state. Packages own reusable contracts, data execution, and server logic. This is the governing architecture for active development.
+
+- **Legacy app-local folders: secondary organization, not architectural authority.** Old `src/lib/shared`, `entities`, `features`, and `widgets` folders still exist in parts of the app as migration residue and thin glue. They may help local navigation, but they do not define placement for new architecture decisions.
 
 - **Server pattern: BFF transport over package-owned services.** SvelteKit routes (`+server.ts`, `+page.server.ts`) are thin HTTP transport. Business logic, SQL, and domain rules live in `packages/emis-server`, `packages/platform-datasets`, etc. Routes parse HTTP, validate, delegate to package entrypoints, and map errors.
 
@@ -76,13 +78,12 @@ Three models define the system at different levels:
 
 - **URL, JSON, and dataset naming are contracts, not preferences.** Operational APIs use kebab-case paths and camelCase payload names. Dataset rows mirror SQL/read-model names in snake_case. *In practice:* do not normalize one side into the other unless the contract says so.
 
-### Known Architectural Debt
+### Known Transitional Debt
 
-Three items violate these principles today and are tracked for migration (see `architecture_dashboard_bi_target.md`):
+Two BI transition seams still remain and should be treated as migration debt, not as durable architecture:
 
-1. Legacy filter merging in `fetchDataset.ts` — violates "contracts must be honest"
-2. Prefix-based provider selection in `/api/datasets/[id]/+server.ts` — violates "extend by registration"
-3. `SelectIr` exposes `groupBy`/`call()` that `postgresProvider` throws on — violates "honest capabilities"
+1. Legacy filter merging still exists in the compatibility path of `fetchDataset.ts`, and some custom dataset definitions still read `query.filters` instead of the flat canonical `query.params`.
+2. `packages/platform-datasets/src/server/compile.ts` still acts as a family-switch compiler beside the registry, so dataset identity lives in both the registry and the legacy compiler until the remaining custom compile cases are absorbed cleanly.
 
 ## 2. System Topology
 
@@ -107,7 +108,7 @@ dashboard-builder/            (workspace root)
 
 One runtime process. One build (`vite build` via `@sveltejs/adapter-node`). No microservices.
 
-## 2. Package Map
+## 3. Package Map
 
 | Package | npm name | Purpose | Key deps |
 |---|---|---|---|
@@ -122,7 +123,7 @@ One runtime process. One build (`vite build` via `@sveltejs/adapter-node`). No m
 
 Canonical home rules: new reusable code goes into `packages/*`. App-specific composition (routes, lifecycle, glue) stays in `apps/web`. Nobody imports from `apps/web`.
 
-## 3. Domain Contours
+## 4. Domain Contours
 
 ### Platform / shared
 
@@ -152,7 +153,7 @@ Server-side alert scheduler: evaluates SQL conditions against mart data, sends T
 
 See [architecture_dashboard_bi.md](./architecture_dashboard_bi.md) for the scheduler path.
 
-## 4. Import and Dependency Rules
+## 5. Import and Dependency Rules
 
 ### Package dependency graph
 
@@ -191,30 +192,40 @@ See [architecture_dashboard_bi.md](./architecture_dashboard_bi.md) for the sched
 3. `emis-server` never imports from `emis-ui`.
 4. Nobody imports from `apps/web`.
 
-### App-local UI layers (FSD-inspired, not strict FSD)
+### App-Local Structure (Route-First, Packages-First)
 
-Inside `apps/web/src/lib/`, unidirectional dependency order for UI composition:
+The app still contains historical `src/lib/` folders from an earlier FSD-like organization. They are not the governing architecture model anymore.
 
-```
-shared -> entities -> features -> widgets -> routes
-```
+For active development, placement is decided by responsibility first:
+
+- Page/workspace composition belongs to `src/routes/...`
+- Reusable contracts, data execution, and server logic belong to `packages/*`
+- Thin app-local glue may stay in `src/lib/*` when it is neither page-local nor package-worthy
 
 | Layer | Path | Alias | Contains | Status |
 |---|---|---|---|---|
-| `shared` | `src/lib/shared/` | `$shared` | API facades (`fetchDataset`), UI kit re-exports, fixtures | Active, thin glue |
-| `entities` | `src/lib/entities/` | `$entities` | Re-exports from packages | Mostly empty — contracts live in packages |
-| `features` | `src/lib/features/` | `$features` | User-facing features (dashboard-edit, emis-manual-entry) | Active; `dashboard-edit` is the strongest FSD-like slice |
-| `widgets` | `src/lib/widgets/` | `$widgets` | Composite UI blocks (filters, emis-drawer, stock-alerts) | Thin glue; reusable widgets migrated to packages |
-| `routes` | `src/routes/` | -- | Pages, API endpoints, layouts | SvelteKit-native; routes own page/transport composition |
+| `shared` | `src/lib/shared/` | `$shared` | API facades (`fetchDataset`), fixtures, thin app-local glue | Secondary support layer, not architecture driver |
+| `entities` | `src/lib/entities/` | `$entities` | Re-exports from packages, compatibility shims | Legacy / migration structure |
+| `features` | `src/lib/features/` | `$features` | Remaining app-local user flows (dashboard-edit, emis-manual-entry) | Limited active use, not the default target home |
+| `widgets` | `src/lib/widgets/` | `$widgets` | Composite UI glue blocks (filters, emis-drawer, stock-alerts) | Thin glue / migration structure |
+| `routes` | `src/routes/` | -- | Pages, API endpoints, layouts | Canonical home for UI composition |
 | `server` | `src/lib/server/` | -- | BFF: datasets, providers, alerts, strategy | Server-only; never imported from client |
 
-**How this differs from canonical FSD:**
-- Real reusable logic lives in `packages/*`, not in app-local layers
-- `entities/` and `widgets/` are mostly migration shims, not active business slices
-- Routes own significant composition logic (SvelteKit file-based routing is first-class architecture)
-- `server/` layer has no FSD equivalent — it's SvelteKit BFF, orthogonal to UI layers
+**Placement guidance for new code:**
+- New page-scoped BI UI goes into route-local files under `src/routes/dashboard/<domain>/...`
+- New reusable logic, contracts, and data execution go into `packages/*`
+- Existing `entities/features/widgets/shared` folders may host compatibility code or thin app-local glue, but they are not a required layering model for new work
+- Clear import boundaries still matter even if the structure already hints at them; “obvious from folders” is not a substitute for boundary discipline
 
-## 5. Deployment Model
+**Compact boundary rules:**
+- Routes own page/workspace composition
+- Route-local `components/`, `view-model.ts`, and `filters.ts` are page-scoped and should not become cross-route shared modules
+- Packages own reusable contracts, data execution, and server/domain logic
+- App-local shared UI primitives may live in neutral folders such as `src/lib/components/` or in `platform-ui`, but they must not know about concrete pages
+- `packages/*` must not import app code
+- Routes and app-local UI must not reach into package-private server internals; they use public package entrypoints and documented route/BFF seams
+
+## 6. Deployment Model
 
 Production deployment: **labinsight.ru** on Beget Cloud VPS (1 vCPU, 1 GB RAM, Ubuntu 24.04).
 
@@ -231,7 +242,7 @@ Key files: `Dockerfile` (multi-stage, node:20-alpine, pnpm@10), `docker-compose.
 
 Memory budget: ~590 MB used (OS + PG + Docker + Node + nginx), ~410 MB free + 512 MB swap.
 
-## 6. Documentation Taxonomy
+## 7. Documentation Taxonomy
 
 ### Canonical (current-state truth)
 
@@ -240,7 +251,6 @@ Memory budget: ~590 MB used (OS + PG + Docker + Node + nginx), ~410 MB free + 51
 | `docs/architecture.md` (this file) | Repo-wide foundation architecture |
 | `docs/architecture_dashboard_bi.md` | BI vertical architecture |
 | `docs/architecture_emis.md` | EMIS vertical architecture |
-| `docs/architecture_dashboard_bi_target.md` | BI target-state architecture |
 | `docs/emis_session_bootstrap.md` | EMIS current state and reading order |
 | `docs/emis_working_contract.md` | EMIS working rules and decision discipline |
 | `db/schema_catalog.md` | App DB schema catalog |
@@ -252,27 +262,59 @@ Memory budget: ~590 MB used (OS + PG + Docker + Node + nginx), ~410 MB free + 51
 
 ### Domain overlays (active supporting docs)
 
-`emis_access_model.md`, `emis_observability_contract.md`, `emis_read_models_contract.md`, `emis_mve_product_contract.md`, `emis_offline_maps_ops.md`, `plans/emis_external_object_ingestion.md`.
+`emis_access_model.md`, `emis_observability_contract.md`, `emis_read_models_contract.md`, `emis_mve_product_contract.md`, `emis_offline_maps_ops.md`, `emis_monorepo_target_layout.md`, `emis_next_tasks_2026_03_22.md`.
 
 ### Archive
 
-`docs/archive/emis/*`, `docs/archive/strategy-v1/*`, `docs/archive/agents/*` -- historical context only.
+`docs/archive/bi/*`, `docs/archive/emis/*`, `docs/archive/platform/*`, `docs/archive/strategy-v1/*`, `docs/archive/agents/*` -- historical context only.
 
-## 7. Verification Hooks
+## 8. Verification Hooks
 
 | Command | What it checks |
 |---|---|
 | `pnpm check` | `svelte-kit sync` + `svelte-check` -- type and parse verification across all Svelte/TS files |
+| `pnpm check:packages` | Per-package type checking (`tsc --noEmit` for TS, `svelte-check` for Svelte packages) |
 | `pnpm build` | Full production build via `vite build`. Catches import errors, missing modules, build-time failures |
 | `pnpm lint:boundaries` | Runs ESLint on packages and app layers, reports only `no-restricted-imports` violations. Enforces package dependency graph |
-| `pnpm test` | Vitest (`packages/*/src/**/*.test.ts`). Currently `passWithNoTests: true` -- no tests exist yet |
+| `pnpm lint:eslint` | Full ESLint semantic lint (unused vars, type safety, Svelte best practices). Not boundary-only |
+| `pnpm lint:format` | Prettier formatting check |
+| `pnpm lint` | Aggregate: `lint:format` + `lint:eslint` |
+| `pnpm test` | Vitest (`packages/*/src/**/*.test.ts`). 127 tests across 10 files (registry, executeDatasetQuery, genericCompile, providerCache, contract, client, schema). `passWithNoTests: true` for packages without tests |
 | `pnpm emis:smoke` | 40-check read-side and runtime contract verification |
 | `pnpm emis:write-smoke` | 7-flow write-side + audit verification |
 | `pnpm emis:offline-smoke` | 9-check offline basemap smoke test |
 | `pnpm emis:auth-smoke` | 10-check auth flow verification (login, RBAC, change-password, redirect) |
-| `pnpm lint` | Prettier format check + ESLint (full rules, not boundary-only) |
 
-## 8. New Domain Overlay Pattern
+### 8.1. Lint Governance Policy
+
+**Mandatory per-slice checks** (must pass for every architectural slice):
+
+| Check | Required state |
+|---|---|
+| `pnpm check` | 0 errors |
+| `pnpm build` | success |
+| `pnpm lint:boundaries` | 0 violations |
+| `pnpm test` | all green, ≥ baseline count |
+
+**Monitored checks** (explicit baseline, "don't worsen touched files"):
+
+| Check | Policy |
+|---|---|
+| `pnpm lint:eslint` | Errors in touched files must not increase. Warnings are informational — fix when convenient |
+| `pnpm lint:format` | Not mandatory per-slice; run before integration merge |
+
+**Rule severity tiers in `eslint.config.js`:**
+
+| Tier | Severity | Examples | Policy |
+|---|---|---|---|
+| Boundary / safety | `error` | `no-restricted-imports`, `no-unused-vars`, `no-explicit-any` | Blocking. Fix in touched files |
+| Svelte 5 migration | `warn` | `require-each-key`, `no-navigation-without-resolve`, `prefer-svelte-reactivity` | Informational. Fix opportunistically when touching the file |
+
+**Baseline (captured 2026-04-11):** 46 errors, 187 warnings. Errors are real issues (unused vars, explicit any); warnings are Svelte 5 migration debt.
+
+**Growth rule:** new ESLint rules are added only through the docs-first rule-introduction policy documented in `docs/agents/invariants.md` §10.
+
+## 9. New Domain Overlay Pattern
 
 Pattern for adding a new domain (like EMIS was added):
 
@@ -284,7 +326,7 @@ Pattern for adding a new domain (like EMIS was added):
 6. Domain invariants overlay: `docs/agents/invariants-{domain}.md`
 7. Architecture vertical doc: `docs/architecture_{domain}.md`
 
-## 9. Read Next
+## 10. Read Next
 
 | If your task involves... | Read |
 |---|---|

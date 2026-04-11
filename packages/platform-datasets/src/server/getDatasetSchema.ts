@@ -5,7 +5,7 @@
  * Hidden fields are suppressed from the response.
  * Access policy is enforced identically to query execution (placeholder for now).
  *
- * Canonical reference: docs/architecture_dashboard_bi_target.md §1 (Schema Introspection)
+ * Canonical reference: docs/architecture_dashboard_bi.md §1 (Schema Introspection)
  */
 import type { DatasetId, DatasetFieldType, SourceDescriptor } from '../model';
 import { getRegistryEntry } from './registry';

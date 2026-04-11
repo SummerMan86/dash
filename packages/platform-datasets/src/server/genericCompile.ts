@@ -4,7 +4,7 @@
  * Takes a registry entry with queryBindings and produces SelectIr
  * from typed params. No custom compile function needed.
  *
- * Canonical reference: docs/architecture_dashboard_bi_target.md §1
+ * Canonical reference: docs/architecture_dashboard_bi.md §1
  */
 import type { SelectIr, IrExpr, IrValue } from '../model';
 import type { DatasetFieldDef, DatasetFilterBinding } from '../model';
