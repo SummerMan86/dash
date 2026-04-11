@@ -86,7 +86,6 @@
 			const data = await fetchDataset({
 				id: DATASET_ID,
 				params,
-				useFlatParams: true, // canonical migrated path — no legacy filter merge
 				cache: { ttlMs: 30_000 },
 			});
 

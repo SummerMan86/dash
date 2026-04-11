@@ -71,7 +71,7 @@
 			return await fetchDataset({
 				id: datasetId,
 				params: { ...(plan?.serverParams ?? {}), ...localParams },
-				useFlatParams: true,
+
 				cache: { ttlMs: 0 }
 			});
 		},

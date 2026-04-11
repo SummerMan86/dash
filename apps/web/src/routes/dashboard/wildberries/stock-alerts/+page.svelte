@@ -142,7 +142,7 @@
 			return await fetchDataset({
 				id: datasetId,
 				params: { ...(plan?.serverParams ?? {}), limit: 50000 },
-				useFlatParams: true,
+
 				cache: { ttlMs: 60_000 }
 			});
 		},

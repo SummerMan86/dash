@@ -17,12 +17,11 @@ export const PAYMENT_DATASETS = {
 
 export type PaymentDatasetId = (typeof PAYMENT_DATASETS)[keyof typeof PAYMENT_DATASETS];
 
-function dateRangeWhere(filters: DatasetQuery['filters'] | undefined) {
-	// Example of "global filters" -> IR WHERE conditions.
-	// Later: Oracle/Postgres provider will compile this to SQL;
-	// Cube provider will map it to timeDimensions/filters.
-	const from = typeof filters?.dateFrom === 'string' ? filters.dateFrom : undefined;
-	const to = typeof filters?.dateTo === 'string' ? filters.dateTo : undefined;
+function dateRangeWhere(query: DatasetQuery) {
+	// Canonical: params (migrated pages). Fallback: filters (legacy pages).
+	const bag = { ...query.filters, ...query.params } as Record<string, unknown>;
+	const from = typeof bag.dateFrom === 'string' ? bag.dateFrom : undefined;
+	const to = typeof bag.dateTo === 'string' ? bag.dateTo : undefined;
 	if (!from && !to) return undefined;
 
 	const parts = [];
@@ -72,7 +71,7 @@ export function compilePaymentDataset(datasetId: PaymentDatasetId, query: Datase
 					{ expr: ir.col('rejected_count') },
 					{ expr: ir.col('rejected_share_pct') }
 				],
-				where: dateRangeWhere(query.filters),
+				where: dateRangeWhere(query),
 				orderBy: [{ expr: ir.col('date'), dir: 'asc' }]
 			};
 

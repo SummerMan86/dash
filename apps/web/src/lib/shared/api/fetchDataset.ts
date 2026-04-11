@@ -38,18 +38,10 @@ export type FetchDatasetArgs = {
 	id: DatasetId;
 	/**
 	 * Flat dataset params — the canonical wire bag.
-	 * On the migrated path, this is the ONLY input to the server.
 	 * Planner output and page/widget params are merged here client-side before transport.
+	 * This is the ONLY input to the server on the canonical path.
 	 */
 	params?: Record<string, JsonValue>;
-	/**
-	 * Extra filters to merge on top of global filters (optional).
-	 * If keys overlap, `filters` wins over global snapshot.
-	 *
-	 * @deprecated Use `params` directly with planner-produced serverParams.
-	 * Will be removed after filter migration completes.
-	 */
-	filters?: Record<string, JsonValue>;
 	requestId?: string;
 	/**
 	 * Supply SvelteKit `fetch` in load functions, or leave undefined to use global `fetch`.
@@ -65,20 +57,23 @@ export type FetchDatasetArgs = {
 	 */
 	cache?: { ttlMs?: number };
 	/**
-	 * Skip client-side filtering (useful for raw data access).
+	 * @deprecated Legacy filter context for non-migrated pages (strategy, EMIS).
+	 * When present, fetchDataset falls back to legacy filter merge path.
+	 * Migrated pages should NOT pass this — use explicit params from planner instead.
 	 */
-	skipClientFilter?: boolean;
 	filterContext?: {
 		snapshot?: Record<string, JsonValue>;
 		workspaceId?: string;
 		ownerId?: string;
 	};
 	/**
-	 * When true, skip legacy filter merge (getFilterSnapshot + auto-merge).
-	 * Migrated pages set this to true and provide all params explicitly.
-	 * Default: false (backward compatible with non-migrated pages).
+	 * @deprecated Extra filters for legacy path only. Ignored on canonical path.
 	 */
-	useFlatParams?: boolean;
+	filters?: Record<string, JsonValue>;
+	/**
+	 * @deprecated Skip client-side filtering. Only applies to legacy path.
+	 */
+	skipClientFilter?: boolean;
 };
 
 /**
@@ -124,27 +119,27 @@ export async function fetchDataset(args: FetchDatasetArgs): Promise<DatasetRespo
 	if (!doFetch)
 		throw new Error('fetchDataset: no fetch available (provide args.fetch in SSR/load)');
 
-	// Resolve filter plan and build query
+	// Resolve query — canonical path (default) or legacy path (when filterContext is present)
 	let plan: ReturnType<typeof planFiltersForDataset> | null = null;
 	let query: DatasetQuery;
 
-	if (args.useFlatParams) {
-		// --- Canonical migrated path ---
+	if (!args.filterContext) {
+		// --- Canonical path (default) ---
 		// All params are provided explicitly by the caller.
 		// Planner output is merged into params by the page, not by fetchDataset.
-		// No legacy filter merge, no implicit getFilterSnapshot().
-		// Client-side filtering is the caller's responsibility on this path.
 		query = {
 			contractVersion: CONTRACT_VERSION,
 			...(args.requestId ? { requestId: args.requestId } : {}),
 			...(args.params ? { params: args.params } : {}),
 		};
 	} else {
-		// --- Legacy path (non-migrated pages) ---
+		// --- Legacy path (deprecated, non-migrated pages) ---
+		// Kept for backward compatibility with strategy/EMIS pages that still
+		// pass filterContext. Will be removed when all pages are migrated.
 		const effectiveFilters =
-			(args.filterContext?.snapshot as FilterValues | undefined) ?? getEffectiveFilters();
+			(args.filterContext.snapshot as FilterValues | undefined) ?? getEffectiveFilters();
 		const runtimeContext: FilterRuntimeContext | undefined =
-			args.filterContext?.workspaceId && args.filterContext?.ownerId
+			args.filterContext.workspaceId && args.filterContext.ownerId
 				? {
 						workspaceId: args.filterContext.workspaceId,
 						ownerId: args.filterContext.ownerId,

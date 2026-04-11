@@ -21,9 +21,11 @@ function asString(value: unknown): string | undefined {
 	return s ? s : undefined;
 }
 
-function dateRangeWhere(filters: DatasetQuery['filters'] | undefined) {
-	const from = typeof filters?.dateFrom === 'string' ? filters.dateFrom : undefined;
-	const to = typeof filters?.dateTo === 'string' ? filters.dateTo : undefined;
+function dateRangeWhere(query: DatasetQuery) {
+	// Canonical: params (migrated pages). Fallback: filters (legacy pages).
+	const bag = { ...query.filters, ...query.params } as Record<string, unknown>;
+	const from = typeof bag.dateFrom === 'string' ? bag.dateFrom : undefined;
+	const to = typeof bag.dateTo === 'string' ? bag.dateTo : undefined;
 	if (!from && !to) return undefined;
 
 	const parts = [];
@@ -52,7 +54,7 @@ export function compileWildberriesDataset(
 			const limit = clampLimit(p.limit, 500);
 
 			const whereParts = [];
-			const dateWhere = dateRangeWhere(query.filters);
+			const dateWhere = dateRangeWhere(query);
 			if (dateWhere) whereParts.push(dateWhere);
 			if (typeof nmId === 'number') whereParts.push(ir.eq(ir.col('nm_id'), ir.lit(nmId)));
 			if (typeof officeId === 'number')

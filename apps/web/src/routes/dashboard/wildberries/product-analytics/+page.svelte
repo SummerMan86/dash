@@ -68,7 +68,7 @@
 			return fetchDataset({
 				id: 'wildberries.fact_product_period',
 				params: { ...(plan?.serverParams ?? {}), limit: 5000 },
-				useFlatParams: true,
+
 				cache: { ttlMs: 60_000 }
 			});
 		},

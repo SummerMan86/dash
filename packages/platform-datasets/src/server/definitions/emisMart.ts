@@ -38,9 +38,11 @@ function clampLimit(value: unknown, fallback: number): number {
 	return Math.max(0, Math.min(50_000, Math.floor(n)));
 }
 
-function publishedRangeWhere(filters: DatasetQuery['filters'] | undefined) {
-	const from = typeof filters?.dateFrom === 'string' ? filters.dateFrom : undefined;
-	const to = typeof filters?.dateTo === 'string' ? filters.dateTo : undefined;
+function publishedRangeWhere(query: DatasetQuery) {
+	// Canonical: params (migrated pages). Fallback: filters (legacy pages).
+	const bag = { ...query.filters, ...query.params } as Record<string, unknown>;
+	const from = typeof bag.dateFrom === 'string' ? bag.dateFrom : undefined;
+	const to = typeof bag.dateTo === 'string' ? bag.dateTo : undefined;
 	if (!from && !to) return undefined;
 
 	const parts = [];
@@ -67,7 +69,7 @@ export function compileEmisMartDataset(
 			const limit = clampLimit(p.limit, 200);
 
 			const whereParts = [];
-			const rangeWhere = publishedRangeWhere(query.filters);
+			const rangeWhere = publishedRangeWhere(query);
 			if (rangeWhere) whereParts.push(rangeWhere);
 			if (countryCode) whereParts.push(ir.eq(ir.col('country_code'), ir.lit(countryCode)));
 			if (sourceCode) whereParts.push(ir.eq(ir.col('source_code'), ir.lit(sourceCode)));
@@ -119,7 +121,7 @@ export function compileEmisMartDataset(
 			const limit = clampLimit(p.limit, 500);
 
 			const whereParts = [];
-			const rangeWhere = publishedRangeWhere(query.filters);
+			const rangeWhere = publishedRangeWhere(query);
 			if (rangeWhere) whereParts.push(rangeWhere);
 			if (objectId) whereParts.push(ir.eq(ir.col('object_id'), ir.lit(objectId)));
 			if (newsId) whereParts.push(ir.eq(ir.col('news_id'), ir.lit(newsId)));
