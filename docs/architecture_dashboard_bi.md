@@ -1107,19 +1107,19 @@ The stable core declares "explicit Zod-based params normalization per dataset" a
 
 Current status: 4 of 17 datasets use explicit schemas (`strategy.*`). The remaining 13 use `looseParams`.
 
-### `fetchDataset()` Migration Path
+### `fetchDataset()` Canonical Path
 
-The canonical data-fetching path is `useFlatParams: true` with all params provided explicitly.
+The canonical data-fetching path is the default: call `fetchDataset()` **without** `filterContext`, providing all params explicitly.
 
 Rules for new pages:
 
-- **New BI pages must use `useFlatParams: true`.** No legacy filter merge, no `getFilterSnapshot()` side-effect.
-- Pages provide all params explicitly: planner output (`plan.serverParams`) + page-local params, merged intentionally before calling `fetchDataset()`.
-- Reference implementation: `/dashboard/strategy/scorecard/+page.svelte`.
+- **New BI pages must not pass `filterContext`.** No legacy filter merge, no `getFilterSnapshot()` side-effect.
+- Pages call `planFiltersForDataset()` directly, merge `plan.serverParams` + page-local params into `params`, and pass to `fetchDataset({ id, params })`.
+- Reference implementations: all WB pages (`office-day`, `product-analytics`, `stock-alerts`), `strategy/scorecard`, `demo`.
 
-Current status: 1 of ~6 BI pages uses `useFlatParams: true`. The rest use the legacy path.
+Current status: all BI pages use the canonical path. Legacy path (deprecated, gated by `filterContext`) is still used by strategy cascade/overview/performance/scorecard_v2 and EMIS BI pages.
 
-The legacy path in `fetchDataset.ts` (lines 143–175) will be removed after all pages migrate. It is not a supported architectural pattern for new work.
+The legacy path will be removed when strategy/EMIS pages are migrated. It is not a supported pattern for new work.
 
 ### Provider Caching Symmetry
 
@@ -1146,9 +1146,9 @@ Tracked migration debts in the BI vertical. Each entry has a trigger for when it
 | # | Debt | Current State | Trigger for Resolution | Durable Target |
 |---|------|---------------|------------------------|----------------|
 | 1 | `looseParams` on 13/17 datasets | `z.record(z.unknown())` bypasses validation | When dataset is touched for any change | Explicit Zod schema per dataset |
-| 2 | Legacy filter path in `fetchDataset.ts` | `useFlatParams: false` default, `getFilterSnapshot()` side-effect | When page is touched for any change | `useFlatParams: true`, no legacy merge |
-| 3 | `DatasetQuery.filters` field | Deprecated but still populated on legacy path | After all pages migrate to flat params | Remove from wire contract |
-| 4 | `product-analytics/+page.svelte` god component | 779 lines, 6+ responsibilities | Next feature touch to this page | Split into 3-4 focused components |
+| 2 | Legacy filter path in `fetchDataset.ts` | Canonical flat-params is default; legacy path deprecated, gated by `filterContext`. Strategy/EMIS still use legacy | When strategy/EMIS pages migrate | Remove deprecated `filterContext` path and legacy imports |
+| 3 | `DatasetQuery.filters` field | Deprecated; still populated on legacy path. Custom compiles use `{ ...filters, ...params }` merge | After all pages migrate to flat params | Remove from wire contract |
+| 4 | `product-analytics/+page.svelte` ~~god component~~ | **Resolved (CA-1):** 778→256 lines. PriceEditor, ProductTable, ProductDetail extracted. PriceEditor (operational) co-located — waiver | If PriceEditor moves to dedicated route | Relocate PriceEditor to non-analytics scope |
 | 5 | `assertDatasetAccess()` placeholder | Comment-only, no enforcement | When multi-tenant or role-based access is needed | Enforce `entry.access.requiredScopes` |
 | 6 | Postgres provider has no server-side caching | Only Oracle uses `providerCache` | When Postgres dataset needs caching | Use shared `providerCache` helper |
 | 7 | Dataset definitions duplicated | Compile functions in both `packages/platform-datasets/src/server/definitions/` and `apps/web/src/lib/server/datasets/definitions/` | Next cleanup pass | Single canonical location in package |

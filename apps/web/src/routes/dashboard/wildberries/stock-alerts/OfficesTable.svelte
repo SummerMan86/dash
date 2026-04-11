@@ -13,14 +13,14 @@
 		selectedRegion,
 		loading,
 		hasData,
-		onofficeclick
+		onOfficeClick
 	}: {
 		aggregations: OfficeAggregation[];
 		selectedOfficeId: number | null;
 		selectedRegion: string;
 		loading: boolean;
 		hasData: boolean;
-		onofficeclick: (office: OfficeAggregation) => void;
+		onOfficeClick: (office: OfficeAggregation) => void;
 	} = $props();
 </script>
 
@@ -63,7 +63,7 @@
 									'cursor-pointer border-b border-border/50 transition-colors hover:bg-muted/40',
 									selectedOfficeId === office.office_id && 'bg-muted/30'
 								)}
-								onclick={() => onofficeclick(office)}
+								onclick={() => onOfficeClick(office)}
 							>
 								<td class="px-3 py-2 font-medium whitespace-nowrap">
 									{office.office_name || `#${office.office_id}`}

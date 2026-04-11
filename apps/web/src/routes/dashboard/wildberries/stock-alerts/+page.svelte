@@ -276,7 +276,7 @@
 		{selectedRegion}
 		loading={loader.loading}
 		hasData={!!data}
-		onofficeclick={handleOfficeClick}
+		onOfficeClick={handleOfficeClick}
 	/>
 
 	<!-- SKU Drill-down Panel -->
@@ -284,7 +284,7 @@
 		<OfficeSkuPanel
 			office={selectedOffice}
 			skuList={selectedOfficeSku}
-			onclose={() => (selectedOfficeId = null)}
+			onClose={() => (selectedOfficeId = null)}
 		/>
 	{/if}
 </div>

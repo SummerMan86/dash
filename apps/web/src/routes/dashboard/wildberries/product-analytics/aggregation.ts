@@ -167,6 +167,7 @@ export function calculateKpi(products: ProductSummary[]): ProductAnalyticsKpi {
 		buyoutPctCount = 0;
 
 	for (const p of products) {
+		// WB revenue = buyout_sum (confirmed payments after returns, not order_sum)
 		totalRevenue += p.buyout_sum;
 		totalOrders += p.order_count;
 		totalBuyouts += p.buyout_count;

@@ -10,7 +10,7 @@
 	} from '@dashboard-builder/platform-core';
 	import type { ProductSummary } from './types';
 	import type { Recommendation, Severity } from './recommendations';
-	import { getWorstSeverity } from './recommendations';
+	import { getWorstSeverity, severityToVariant } from './recommendations';
 
 	// --- Props ---
 	let {
@@ -39,19 +39,6 @@
 		return sortDir === 'asc' ? ' \u2191' : ' \u2193';
 	}
 
-	type SeverityVariant = 'success' | 'warning' | 'error' | 'info';
-	function severityToVariant(severity: Severity): SeverityVariant {
-		switch (severity) {
-			case 'critical':
-				return 'error';
-			case 'warning':
-				return 'warning';
-			case 'info':
-				return 'info';
-			default:
-				return 'success';
-		}
-	}
 
 	const columns = [
 		{ col: 'order_sum', label: 'Заказы' },

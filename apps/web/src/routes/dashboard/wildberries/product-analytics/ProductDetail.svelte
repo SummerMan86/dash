@@ -13,6 +13,7 @@
 		getSeverityColor,
 		getSeverityBgColor,
 		getSeverityLabel,
+		severityToVariant,
 		type Recommendation,
 		type Severity
 	} from './recommendations';
@@ -30,19 +31,6 @@
 	} = $props();
 
 	// --- Helpers ---
-	type SeverityVariant = 'success' | 'warning' | 'error' | 'info';
-	function severityToVariant(severity: Severity): SeverityVariant {
-		switch (severity) {
-			case 'critical':
-				return 'error';
-			case 'warning':
-				return 'warning';
-			case 'info':
-				return 'info';
-			default:
-				return 'success';
-		}
-	}
 
 	const metricsGrid = $derived([
 		{

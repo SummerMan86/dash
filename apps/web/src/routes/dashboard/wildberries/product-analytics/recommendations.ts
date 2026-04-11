@@ -215,3 +215,18 @@ export function getSeverityLabel(severity: Severity): string {
 			return 'Норма';
 	}
 }
+
+export type SeverityVariant = 'success' | 'warning' | 'error' | 'info';
+
+export function severityToVariant(severity: Severity): SeverityVariant {
+	switch (severity) {
+		case 'critical':
+			return 'error';
+		case 'warning':
+			return 'warning';
+		case 'info':
+			return 'info';
+		default:
+			return 'success';
+	}
+}

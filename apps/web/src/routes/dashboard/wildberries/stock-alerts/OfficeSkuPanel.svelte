@@ -9,11 +9,11 @@
 	let {
 		office,
 		skuList,
-		onclose
+		onClose
 	}: {
 		office: OfficeAggregation;
 		skuList: SkuDetail[];
-		onclose: () => void;
+		onClose: () => void;
 	} = $props();
 </script>
 
@@ -23,7 +23,7 @@
 			<CardTitle>
 				SKU — {office.office_name || `Склад #${office.office_id}`}
 			</CardTitle>
-			<Button variant="ghost" size="sm" onclick={onclose}>
+			<Button variant="ghost" size="sm" onclick={onClose}>
 				Закрыть
 			</Button>
 		</div>

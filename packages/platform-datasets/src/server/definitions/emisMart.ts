@@ -227,8 +227,10 @@ export function compileEmisMartDataset(
 			const limit = clampLimit(p.limit, 1000);
 
 			const whereParts = [];
-			const from = typeof query.filters?.dateFrom === 'string' ? query.filters.dateFrom : undefined;
-			const to = typeof query.filters?.dateTo === 'string' ? query.filters.dateTo : undefined;
+			// Canonical: params (migrated pages). Fallback: filters (legacy pages).
+			const bag = { ...query.filters, ...query.params } as Record<string, unknown>;
+			const from = typeof bag.dateFrom === 'string' ? bag.dateFrom : undefined;
+			const to = typeof bag.dateTo === 'string' ? bag.dateTo : undefined;
 
 			if (from) whereParts.push(ir.gte(ir.col('last_fetched_at'), ir.lit(from)));
 			if (to) whereParts.push(ir.lte(ir.col('last_fetched_at'), ir.lit(to)));
