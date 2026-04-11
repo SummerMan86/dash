@@ -5,7 +5,11 @@
 	import { Input } from '@dashboard-builder/platform-ui';
 	import { formatNumber } from '@dashboard-builder/platform-core';
 	import type { DatasetResponse, JsonValue } from '@dashboard-builder/platform-datasets';
-	import { useFilterWorkspace } from '@dashboard-builder/platform-filters';
+	import {
+		useFilterWorkspace,
+		planFiltersForDataset,
+		hasFiltersForTarget
+	} from '@dashboard-builder/platform-filters';
 	import { FilterPanel } from '@dashboard-builder/platform-filters/widgets';
 	import { officeDayFilters } from './filters';
 
@@ -47,25 +51,28 @@
 		load: async () => {
 			error = null;
 
-			// Dataset-specific params
-			const params: Record<string, JsonValue> = {};
-			if (nmId) params.nmId = nmId;
-			if (officeId) params.officeId = officeId;
-			if (chrtId) params.chrtId = chrtId;
-			if (regionName) params.regionName = regionName;
-			if (limit) params.limit = limit;
+			// Planner-produced server params from filter runtime
+			const runtimeCtx = {
+				workspaceId: filterRuntime.workspaceId,
+				ownerId: filterRuntime.ownerId
+			};
+			const plan = hasFiltersForTarget(datasetId, runtimeCtx)
+				? planFiltersForDataset(datasetId, filterRuntime.getSnapshot(), runtimeCtx)
+				: null;
 
-			// Filters come from FilterPanel via the store
-			// fetchDataset will automatically use them through planner
+			// Dataset-specific local params
+			const localParams: Record<string, JsonValue> = {};
+			if (nmId) localParams.nmId = nmId;
+			if (officeId) localParams.officeId = officeId;
+			if (chrtId) localParams.chrtId = chrtId;
+			if (regionName) localParams.regionName = regionName;
+			if (limit) localParams.limit = limit;
+
 			return await fetchDataset({
 				id: datasetId,
-				...(Object.keys(params).length ? { params } : {}),
-				cache: { ttlMs: 0 },
-				filterContext: {
-					snapshot: filterRuntime.getSnapshot(),
-					workspaceId: filterRuntime.workspaceId,
-					ownerId: filterRuntime.ownerId
-				}
+				params: { ...(plan?.serverParams ?? {}), ...localParams },
+				useFlatParams: true,
+				cache: { ttlMs: 0 }
 			});
 		},
 		onData: (result) => {

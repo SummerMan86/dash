@@ -58,10 +58,10 @@
 		loading = true;
 		try {
 			const [kpiRes, tsRes, clientsRes, mccRes] = await Promise.all([
-				fetchDataset({ id: 'payment.kpi', cache: { ttlMs: 10_000 } }),
-				fetchDataset({ id: 'payment.timeseriesDaily', cache: { ttlMs: 10_000 } }),
-				fetchDataset({ id: 'payment.topClients', cache: { ttlMs: 10_000 } }),
-				fetchDataset({ id: 'payment.mccSummary', cache: { ttlMs: 10_000 } })
+				fetchDataset({ id: 'payment.kpi', useFlatParams: true, cache: { ttlMs: 10_000 } }),
+				fetchDataset({ id: 'payment.timeseriesDaily', useFlatParams: true, cache: { ttlMs: 10_000 } }),
+				fetchDataset({ id: 'payment.topClients', useFlatParams: true, cache: { ttlMs: 10_000 } }),
+				fetchDataset({ id: 'payment.mccSummary', useFlatParams: true, cache: { ttlMs: 10_000 } })
 			]);
 
 			// For MVP the response is generic rows/fields, so we cast into our known fixture types.

@@ -8,7 +8,11 @@
 	import { StatCard } from '@dashboard-builder/platform-ui';
 	import { Select } from '@dashboard-builder/platform-ui';
 	import type { DatasetResponse, JsonValue } from '@dashboard-builder/platform-datasets';
-	import { useFilterWorkspace } from '@dashboard-builder/platform-filters';
+	import {
+		useFilterWorkspace,
+		planFiltersForDataset,
+		hasFiltersForTarget
+	} from '@dashboard-builder/platform-filters';
 	import { FilterPanel } from '@dashboard-builder/platform-filters/widgets';
 	import { ScenarioParams } from '$widgets/stock-alerts';
 
@@ -125,16 +129,21 @@
 		delayMs: 250,
 		load: async () => {
 			error = null;
-			// Load data with higher limit for aggregation
+
+			// Planner-produced server params from filter runtime
+			const runtimeCtx = {
+				workspaceId: filterRuntime.workspaceId,
+				ownerId: filterRuntime.ownerId
+			};
+			const plan = hasFiltersForTarget(datasetId, runtimeCtx)
+				? planFiltersForDataset(datasetId, filterRuntime.getSnapshot(), runtimeCtx)
+				: null;
+
 			return await fetchDataset({
 				id: datasetId,
-				params: { limit: 50000 },
-				cache: { ttlMs: 60_000 }, // Cache for 1 minute
-				filterContext: {
-					snapshot: filterRuntime.getSnapshot(),
-					workspaceId: filterRuntime.workspaceId,
-					ownerId: filterRuntime.ownerId
-				}
+				params: { ...(plan?.serverParams ?? {}), limit: 50000 },
+				useFlatParams: true,
+				cache: { ttlMs: 60_000 }
 			});
 		},
 		onData: (result) => {

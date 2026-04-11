@@ -1,7 +1,11 @@
 <script lang="ts">
 	import { fetchDataset } from '$shared/api';
 	import { useDebouncedLoader } from '@dashboard-builder/platform-core';
-	import { useFilterWorkspace } from '@dashboard-builder/platform-filters';
+	import {
+		useFilterWorkspace,
+		planFiltersForDataset,
+		hasFiltersForTarget
+	} from '@dashboard-builder/platform-filters';
 	import { FilterPanel } from '@dashboard-builder/platform-filters/widgets';
 	import { Select } from '@dashboard-builder/platform-ui';
 	import { StatCard } from '@dashboard-builder/platform-ui';
@@ -48,17 +52,26 @@
 	const loader = useDebouncedLoader({
 		watch: () => $effectiveFilters,
 		delayMs: 300,
-		load: () =>
-			fetchDataset({
+		load: () => {
+			const runtimeCtx = {
+				workspaceId: filterRuntime.workspaceId,
+				ownerId: filterRuntime.ownerId
+			};
+			const plan = hasFiltersForTarget('wildberries.fact_product_period', runtimeCtx)
+				? planFiltersForDataset(
+						'wildberries.fact_product_period',
+						filterRuntime.getSnapshot(),
+						runtimeCtx
+					)
+				: null;
+
+			return fetchDataset({
 				id: 'wildberries.fact_product_period',
-				params: { limit: 5000 },
-				cache: { ttlMs: 60_000 },
-				filterContext: {
-					snapshot: filterRuntime.getSnapshot(),
-					workspaceId: filterRuntime.workspaceId,
-					ownerId: filterRuntime.ownerId
-				}
-			}),
+				params: { ...(plan?.serverParams ?? {}), limit: 5000 },
+				useFlatParams: true,
+				cache: { ttlMs: 60_000 }
+			});
+		},
 		onData: (data) => {
 			rows = data.rows;
 			error = null;
