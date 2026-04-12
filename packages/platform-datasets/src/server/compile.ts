@@ -60,24 +60,33 @@ export function isKnownDatasetId(id: string): id is KnownDatasetId {
 	);
 }
 
+/**
+ * Merge query.filters + query.params into a single flat bag.
+ * Params override filters when keys collide (params is canonical).
+ */
+function mergeParams(query: DatasetQuery): Record<string, unknown> {
+	return { ...query.filters, ...query.params } as Record<string, unknown>;
+}
+
 export function compileDataset(datasetId: DatasetId, query: DatasetQuery): DatasetIr {
+	const params = mergeParams(query);
 	if (Object.values(PAYMENT_DATASETS).includes(datasetId as PaymentDatasetId)) {
-		return compilePaymentDataset(datasetId as PaymentDatasetId, query);
+		return compilePaymentDataset(datasetId as PaymentDatasetId, params);
 	}
 	if (Object.values(WILDBERRIES_DATASETS).includes(datasetId as WildberriesDatasetId)) {
-		return compileWildberriesDataset(datasetId as WildberriesDatasetId, query);
+		return compileWildberriesDataset(datasetId as WildberriesDatasetId, params);
 	}
 	if (Object.values(PRODUCT_PERIOD_DATASETS).includes(datasetId as ProductPeriodDatasetId)) {
-		return compileProductPeriodDataset(datasetId as ProductPeriodDatasetId, query);
+		return compileProductPeriodDataset(datasetId as ProductPeriodDatasetId, params);
 	}
 	if (Object.values(EMIS_MART_DATASETS).includes(datasetId as EmisMartDatasetId)) {
-		return compileEmisMartDataset(datasetId as EmisMartDatasetId, query);
+		return compileEmisMartDataset(datasetId as EmisMartDatasetId, params);
 	}
 	if (Object.values(STRATEGY_MART_DATASETS).includes(datasetId as StrategyMartDatasetId)) {
-		return compileStrategyMartDataset(datasetId as StrategyMartDatasetId, query);
+		return compileStrategyMartDataset(datasetId as StrategyMartDatasetId, params);
 	}
 	if (Object.values(IFTS_DATASETS).includes(datasetId as IftsDatasetId)) {
-		return compileIftsDataset(datasetId as IftsDatasetId, query);
+		return compileIftsDataset(datasetId as IftsDatasetId, params);
 	}
 	// This error code is used by the HTTP layer to return 404.
 	throw Object.assign(new Error(`Unknown datasetId: ${datasetId}`), { code: 'DATASET_NOT_FOUND' });

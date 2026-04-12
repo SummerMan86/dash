@@ -1,4 +1,4 @@
-import type { DatasetId, DatasetIr, DatasetQuery } from '../../model';
+import type { DatasetId, DatasetIr } from '../../model';
 import { ir } from '../../model';
 
 export const STRATEGY_MART_DATASETS = {
@@ -30,26 +30,23 @@ function clampLimit(value: unknown, fallback: number): number {
 	return Math.max(0, Math.min(50_000, Math.floor(n)));
 }
 
-function commonStrategyFilters(query: DatasetQuery) {
-	const p = (query.params ?? {}) as Record<string, unknown>;
-	const f = (query.filters ?? {}) as Record<string, unknown>;
-
+function commonStrategyFilters(params: Record<string, unknown>) {
 	return {
-		departmentCode: asString(p.departmentCode) || asString(f.departmentCode),
-		perspectiveCode: asString(p.perspectiveCode) || asString(f.perspectiveCode),
-		horizonCode: asString(p.horizonCode) || asString(f.horizonCode),
-		strategyEntityId: asString(p.strategyEntityId) || asString(f.strategyEntityId),
-		statusLabel: asString(p.statusLabel) || asString(f.statusLabel),
-		pathStatus: asString(p.pathStatus) || asString(f.pathStatus),
-		limit: clampLimit(p.limit, 500)
+		departmentCode: asString(params.departmentCode),
+		perspectiveCode: asString(params.perspectiveCode),
+		horizonCode: asString(params.horizonCode),
+		strategyEntityId: asString(params.strategyEntityId),
+		statusLabel: asString(params.statusLabel),
+		pathStatus: asString(params.pathStatus),
+		limit: clampLimit(params.limit, 500)
 	};
 }
 
 export function compileStrategyMartDataset(
 	datasetId: StrategyMartDatasetId,
-	query: DatasetQuery
+	params: Record<string, unknown>
 ): DatasetIr {
-	const filters = commonStrategyFilters(query);
+	const filters = commonStrategyFilters(params);
 
 	switch (datasetId) {
 		case STRATEGY_MART_DATASETS.entityOverview: {
@@ -111,7 +108,7 @@ export function compileStrategyMartDataset(
 					{ expr: ir.col('coverage_items_total'), dir: 'desc' },
 					{ expr: ir.col('strategy_entity_id'), dir: 'asc' }
 				],
-				limit: clampLimit((query.params as Record<string, unknown> | undefined)?.limit, 5_000)
+				limit: clampLimit(params.limit, 5_000)
 			};
 		}
 
@@ -162,7 +159,7 @@ export function compileStrategyMartDataset(
 					{ expr: ir.col('horizon_order'), dir: 'asc' },
 					{ expr: ir.col('perspective_order'), dir: 'asc' }
 				],
-				limit: clampLimit((query.params as Record<string, unknown> | undefined)?.limit, 2_000)
+				limit: clampLimit(params.limit, 2_000)
 			};
 		}
 
@@ -224,7 +221,7 @@ export function compileStrategyMartDataset(
 					{ expr: ir.col('created_at'), dir: 'desc' },
 					{ expr: ir.col('performance_entity_key'), dir: 'asc' }
 				],
-				limit: clampLimit((query.params as Record<string, unknown> | undefined)?.limit, 10_000)
+				limit: clampLimit(params.limit, 10_000)
 			};
 		}
 
@@ -285,7 +282,7 @@ export function compileStrategyMartDataset(
 					{ expr: ir.col('path_depth'), dir: 'desc' },
 					{ expr: ir.col('path_id'), dir: 'asc' }
 				],
-				limit: clampLimit((query.params as Record<string, unknown> | undefined)?.limit, 5_000)
+				limit: clampLimit(params.limit, 5_000)
 			};
 		}
 	}

@@ -1,4 +1,4 @@
-import type { DatasetId, DatasetIr, DatasetQuery } from '../../model';
+import type { DatasetId, DatasetIr } from '../../model';
 import { ir } from '../../model';
 
 export const IFTS_DATASETS = {
@@ -31,9 +31,8 @@ function clampLimit(value: unknown, fallback: number): number {
 
 export function compileIftsDataset(
 	datasetId: IftsDatasetId,
-	query: DatasetQuery,
+	params: Record<string, unknown>,
 ): DatasetIr {
-	const p = (query.params ?? {}) as Record<string, unknown>;
 
 	switch (datasetId) {
 		case IFTS_DATASETS.systemParameters:
@@ -55,8 +54,8 @@ export function compileIftsDataset(
 			};
 
 		case IFTS_DATASETS.paymentStats: {
-			const limit = clampLimit(p.limit, 500);
-			const service = asString(p.service);
+			const limit = clampLimit(params.limit, 500);
+			const service = asString(params.service);
 			const whereParts = [];
 			if (service) whereParts.push(ir.eq(ir.col('SERVICE'), ir.lit(service)));
 
@@ -83,7 +82,7 @@ export function compileIftsDataset(
 		}
 
 		case IFTS_DATASETS.messageStats: {
-			const limit = clampLimit(p.limit, 500);
+			const limit = clampLimit(params.limit, 500);
 			return {
 				kind: 'select',
 				from: { kind: 'dataset', id: datasetId },

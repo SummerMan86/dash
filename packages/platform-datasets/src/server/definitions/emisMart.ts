@@ -1,4 +1,4 @@
-import type { DatasetId, DatasetIr, DatasetQuery } from '../../model';
+import type { DatasetId, DatasetIr } from '../../model';
 import { ir } from '../../model';
 
 export const EMIS_MART_DATASETS = {
@@ -38,11 +38,9 @@ function clampLimit(value: unknown, fallback: number): number {
 	return Math.max(0, Math.min(50_000, Math.floor(n)));
 }
 
-function publishedRangeWhere(query: DatasetQuery) {
-	// Canonical: params (migrated pages). Fallback: filters (legacy pages).
-	const bag = { ...query.filters, ...query.params } as Record<string, unknown>;
-	const from = typeof bag.dateFrom === 'string' ? bag.dateFrom : undefined;
-	const to = typeof bag.dateTo === 'string' ? bag.dateTo : undefined;
+function publishedRangeWhere(params: Record<string, unknown>) {
+	const from = typeof params.dateFrom === 'string' ? params.dateFrom : undefined;
+	const to = typeof params.dateTo === 'string' ? params.dateTo : undefined;
 	if (!from && !to) return undefined;
 
 	const parts = [];
@@ -53,23 +51,20 @@ function publishedRangeWhere(query: DatasetQuery) {
 
 export function compileEmisMartDataset(
 	datasetId: EmisMartDatasetId,
-	query: DatasetQuery
+	params: Record<string, unknown>
 ): DatasetIr {
-	const p = (query.params ?? {}) as Record<string, unknown>;
-	const f = (query.filters ?? {}) as Record<string, unknown>;
-
 	switch (datasetId) {
 		case EMIS_MART_DATASETS.newsFlat: {
-			const countryCode = asString(p.countryCode) || asString(f.countryCode) || asString(f.country);
-			const sourceCode = asString(p.sourceCode);
-			const newsType = asString(p.newsType);
-			const sourceOrigin = asString(p.sourceOrigin);
-			const isManual = asBoolean(p.isManual);
-			const hasGeometry = asBoolean(p.hasGeometry);
-			const limit = clampLimit(p.limit, 200);
+			const countryCode = asString(params.countryCode) || asString(params.country);
+			const sourceCode = asString(params.sourceCode);
+			const newsType = asString(params.newsType);
+			const sourceOrigin = asString(params.sourceOrigin);
+			const isManual = asBoolean(params.isManual);
+			const hasGeometry = asBoolean(params.hasGeometry);
+			const limit = clampLimit(params.limit, 200);
 
 			const whereParts = [];
-			const rangeWhere = publishedRangeWhere(query);
+			const rangeWhere = publishedRangeWhere(params);
 			if (rangeWhere) whereParts.push(rangeWhere);
 			if (countryCode) whereParts.push(ir.eq(ir.col('country_code'), ir.lit(countryCode)));
 			if (sourceCode) whereParts.push(ir.eq(ir.col('source_code'), ir.lit(sourceCode)));
@@ -109,19 +104,19 @@ export function compileEmisMartDataset(
 		}
 
 		case EMIS_MART_DATASETS.objectNewsFacts: {
-			const objectId = asString(p.objectId);
-			const newsId = asString(p.newsId);
-			const objectTypeCode = asString(p.objectTypeCode);
-			const sourceCode = asString(p.sourceCode);
-			const countryCode = asString(p.countryCode) || asString(f.countryCode) || asString(f.country);
-			const linkType = asString(p.linkType);
-			const newsSourceOrigin = asString(p.newsSourceOrigin);
-			const objectSourceOrigin = asString(p.objectSourceOrigin);
-			const isPrimary = asBoolean(p.isPrimary);
-			const limit = clampLimit(p.limit, 500);
+			const objectId = asString(params.objectId);
+			const newsId = asString(params.newsId);
+			const objectTypeCode = asString(params.objectTypeCode);
+			const sourceCode = asString(params.sourceCode);
+			const countryCode = asString(params.countryCode) || asString(params.country);
+			const linkType = asString(params.linkType);
+			const newsSourceOrigin = asString(params.newsSourceOrigin);
+			const objectSourceOrigin = asString(params.objectSourceOrigin);
+			const isPrimary = asBoolean(params.isPrimary);
+			const limit = clampLimit(params.limit, 500);
 
 			const whereParts = [];
-			const rangeWhere = publishedRangeWhere(query);
+			const rangeWhere = publishedRangeWhere(params);
 			if (rangeWhere) whereParts.push(rangeWhere);
 			if (objectId) whereParts.push(ir.eq(ir.col('object_id'), ir.lit(objectId)));
 			if (newsId) whereParts.push(ir.eq(ir.col('news_id'), ir.lit(newsId)));
@@ -172,12 +167,12 @@ export function compileEmisMartDataset(
 		}
 
 		case EMIS_MART_DATASETS.objectsDim: {
-			const countryCode = asString(p.countryCode) || asString(f.countryCode) || asString(f.country);
-			const objectTypeCode = asString(p.objectTypeCode);
-			const status = asString(p.status);
-			const sourceOrigin = asString(p.sourceOrigin);
-			const geometryType = asString(p.geometryType);
-			const limit = clampLimit(p.limit, 500);
+			const countryCode = asString(params.countryCode) || asString(params.country);
+			const objectTypeCode = asString(params.objectTypeCode);
+			const status = asString(params.status);
+			const sourceOrigin = asString(params.sourceOrigin);
+			const geometryType = asString(params.geometryType);
+			const limit = clampLimit(params.limit, 500);
 
 			const whereParts = [];
 			if (countryCode) whereParts.push(ir.eq(ir.col('country_code'), ir.lit(countryCode)));
@@ -222,15 +217,13 @@ export function compileEmisMartDataset(
 		}
 
 		case EMIS_MART_DATASETS.shipRouteVessels: {
-			const flag = asString(p.flag);
-			const vesselType = asString(p.vesselType);
-			const limit = clampLimit(p.limit, 1000);
+			const flag = asString(params.flag);
+			const vesselType = asString(params.vesselType);
+			const limit = clampLimit(params.limit, 1000);
 
 			const whereParts = [];
-			// Canonical: params (migrated pages). Fallback: filters (legacy pages).
-			const bag = { ...query.filters, ...query.params } as Record<string, unknown>;
-			const from = typeof bag.dateFrom === 'string' ? bag.dateFrom : undefined;
-			const to = typeof bag.dateTo === 'string' ? bag.dateTo : undefined;
+			const from = typeof params.dateFrom === 'string' ? params.dateFrom : undefined;
+			const to = typeof params.dateTo === 'string' ? params.dateTo : undefined;
 
 			if (from) whereParts.push(ir.gte(ir.col('last_fetched_at'), ir.lit(from)));
 			if (to) whereParts.push(ir.lte(ir.col('last_fetched_at'), ir.lit(to)));

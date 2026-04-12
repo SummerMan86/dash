@@ -67,7 +67,7 @@ describe('DatasetRegistryEntry', () => {
 		expect(entry.compile).toBeUndefined();
 	});
 
-	it('constructs an entry with custom compile', () => {
+	it('constructs an entry with custom compile receiving typed params', () => {
 		const entry: DatasetRegistryEntry<z.infer<typeof paramsSchema>> = {
 			datasetId: 'test.custom',
 			source: { kind: 'postgres', schema: 'mart', table: 'data' },

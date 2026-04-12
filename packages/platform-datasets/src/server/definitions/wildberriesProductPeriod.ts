@@ -1,4 +1,4 @@
-import type { DatasetId, DatasetQuery } from '../../model';
+import type { DatasetId } from '../../model';
 import type { DatasetIr } from '../../model';
 import { ir } from '../../model';
 
@@ -22,11 +22,9 @@ function asString(value: unknown): string | undefined {
 	return s ? s : undefined;
 }
 
-function dateRangeWhere(query: DatasetQuery) {
-	// Canonical: params (migrated pages). Fallback: filters (legacy pages).
-	const bag = { ...query.filters, ...query.params } as Record<string, unknown>;
-	const from = typeof bag.dateFrom === 'string' ? bag.dateFrom : undefined;
-	const to = typeof bag.dateTo === 'string' ? bag.dateTo : undefined;
+function dateRangeWhere(params: Record<string, unknown>) {
+	const from = typeof params.dateFrom === 'string' ? params.dateFrom : undefined;
+	const to = typeof params.dateTo === 'string' ? params.dateTo : undefined;
 	if (!from && !to) return undefined;
 
 	const parts = [];
@@ -43,19 +41,17 @@ function clampLimit(value: unknown, fallback: number): number {
 
 export function compileProductPeriodDataset(
 	datasetId: ProductPeriodDatasetId,
-	query: DatasetQuery
+	params: Record<string, unknown>
 ): DatasetIr {
 	switch (datasetId) {
 		case PRODUCT_PERIOD_DATASETS.factProductPeriod: {
-			const p = (query.params ?? {}) as Record<string, unknown>;
-			const f = (query.filters ?? {}) as Record<string, unknown>;
-			const nmId = asNumber(p.nmId);
-			const brandName = asString(p.brandName) || asString(f.brand_name);
-			const subjectName = asString(p.subjectName) || asString(f.subject_name);
-			const limit = clampLimit(p.limit, 1000);
+			const nmId = asNumber(params.nmId);
+			const brandName = asString(params.brandName) || asString(params.brand_name);
+			const subjectName = asString(params.subjectName) || asString(params.subject_name);
+			const limit = clampLimit(params.limit, 1000);
 
 			const whereParts = [];
-			const dateWhere = dateRangeWhere(query);
+			const dateWhere = dateRangeWhere(params);
 			if (dateWhere) whereParts.push(dateWhere);
 			if (typeof nmId === 'number') whereParts.push(ir.eq(ir.col('nm_id'), ir.lit(nmId)));
 			if (brandName) whereParts.push(ir.eq(ir.col('brand_name'), ir.lit(brandName)));

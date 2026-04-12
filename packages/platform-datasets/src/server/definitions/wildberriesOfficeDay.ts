@@ -1,4 +1,4 @@
-import type { DatasetId, DatasetQuery } from '../../model';
+import type { DatasetId } from '../../model';
 import type { DatasetIr } from '../../model';
 import { ir } from '../../model';
 
@@ -21,11 +21,9 @@ function asString(value: unknown): string | undefined {
 	return s ? s : undefined;
 }
 
-function dateRangeWhere(query: DatasetQuery) {
-	// Canonical: params (migrated pages). Fallback: filters (legacy pages).
-	const bag = { ...query.filters, ...query.params } as Record<string, unknown>;
-	const from = typeof bag.dateFrom === 'string' ? bag.dateFrom : undefined;
-	const to = typeof bag.dateTo === 'string' ? bag.dateTo : undefined;
+function dateRangeWhere(params: Record<string, unknown>) {
+	const from = typeof params.dateFrom === 'string' ? params.dateFrom : undefined;
+	const to = typeof params.dateTo === 'string' ? params.dateTo : undefined;
 	if (!from && !to) return undefined;
 
 	const parts = [];
@@ -42,19 +40,18 @@ function clampLimit(value: unknown, fallback: number): number {
 
 export function compileWildberriesDataset(
 	datasetId: WildberriesDatasetId,
-	query: DatasetQuery
+	params: Record<string, unknown>
 ): DatasetIr {
 	switch (datasetId) {
 		case WILDBERRIES_DATASETS.factProductOfficeDay: {
-			const p = (query.params ?? {}) as Record<string, unknown>;
-			const nmId = asNumber(p.nmId);
-			const officeId = asNumber(p.officeId);
-			const chrtId = asNumber(p.chrtId);
-			const regionName = asString(p.regionName);
-			const limit = clampLimit(p.limit, 500);
+			const nmId = asNumber(params.nmId);
+			const officeId = asNumber(params.officeId);
+			const chrtId = asNumber(params.chrtId);
+			const regionName = asString(params.regionName);
+			const limit = clampLimit(params.limit, 500);
 
 			const whereParts = [];
-			const dateWhere = dateRangeWhere(query);
+			const dateWhere = dateRangeWhere(params);
 			if (dateWhere) whereParts.push(dateWhere);
 			if (typeof nmId === 'number') whereParts.push(ir.eq(ir.col('nm_id'), ir.lit(nmId)));
 			if (typeof officeId === 'number')

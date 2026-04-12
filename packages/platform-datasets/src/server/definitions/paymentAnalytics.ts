@@ -1,4 +1,4 @@
-import type { DatasetId, DatasetQuery } from '../../model';
+import type { DatasetId } from '../../model';
 import type { DatasetIr } from '../../model';
 import { ir } from '../../model';
 
@@ -17,11 +17,9 @@ export const PAYMENT_DATASETS = {
 
 export type PaymentDatasetId = (typeof PAYMENT_DATASETS)[keyof typeof PAYMENT_DATASETS];
 
-function dateRangeWhere(query: DatasetQuery) {
-	// Canonical: params (migrated pages). Fallback: filters (legacy pages).
-	const bag = { ...query.filters, ...query.params } as Record<string, unknown>;
-	const from = typeof bag.dateFrom === 'string' ? bag.dateFrom : undefined;
-	const to = typeof bag.dateTo === 'string' ? bag.dateTo : undefined;
+function dateRangeWhere(params: Record<string, unknown>) {
+	const from = typeof params.dateFrom === 'string' ? params.dateFrom : undefined;
+	const to = typeof params.dateTo === 'string' ? params.dateTo : undefined;
 	if (!from && !to) return undefined;
 
 	const parts = [];
@@ -35,7 +33,7 @@ function dateRangeWhere(query: DatasetQuery) {
  *
  * Note: IR describes a desired query; how it's executed depends on provider (Oracle/Postgres/Cube/mock).
  */
-export function compilePaymentDataset(datasetId: PaymentDatasetId, query: DatasetQuery): DatasetIr {
+export function compilePaymentDataset(datasetId: PaymentDatasetId, params: Record<string, unknown>): DatasetIr {
 	// Dataset definition = schema knowledge + mapping rules.
 	// It does NOT execute anything (execution is Provider's job).
 	switch (datasetId) {
@@ -71,7 +69,7 @@ export function compilePaymentDataset(datasetId: PaymentDatasetId, query: Datase
 					{ expr: ir.col('rejected_count') },
 					{ expr: ir.col('rejected_share_pct') }
 				],
-				where: dateRangeWhere(query),
+				where: dateRangeWhere(params),
 				orderBy: [{ expr: ir.col('date'), dir: 'asc' }]
 			};
 

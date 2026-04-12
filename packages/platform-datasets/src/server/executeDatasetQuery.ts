@@ -112,10 +112,14 @@ export async function executeDatasetQuery(
 	const t0 = Date.now();
 	const sourceKind = entry.source.kind;
 
-	// 3. Parse params via entry.paramsSchema (target flow step 3)
+	// 3. Merge filters + params into a single bag, then validate via paramsSchema.
+	//    Filters are legacy (deprecated); params is canonical. Spread order ensures
+	//    params overrides filters when keys collide. Compile functions receive the
+	//    parsed result and never see the raw DatasetQuery.
+	const paramsBag = { ...query.filters, ...query.params };
 	let typedParams: Record<string, unknown>;
 	try {
-		typedParams = entry.paramsSchema.parse(query.params ?? {});
+		typedParams = entry.paramsSchema.parse(paramsBag);
 	} catch (e: unknown) {
 		const totalMs = Date.now() - t0;
 		console.error('[dataset] params validation error:', e instanceof Error ? e.message : e);
@@ -129,10 +133,11 @@ export async function executeDatasetQuery(
 	}
 
 	// 4. Compile: custom compile or genericCompile from queryBindings
+	//    Both paths receive typedParams (parsed output), never raw DatasetQuery.
 	let ir: DatasetIr;
 	try {
 		if (entry.compile) {
-			ir = entry.compile(datasetId, query);
+			ir = entry.compile(datasetId, typedParams);
 		} else {
 			ir = genericCompile(entry, typedParams);
 		}
