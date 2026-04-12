@@ -114,6 +114,7 @@ Historical BI archive: [archive/bi/architecture_dashboard_bi.md](./archive/bi/ar
 
 | Документ                                      | Владеет                                      | Source of truth для                                                      |
 | --------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------ |
+| `agents/definition-of-done.md`                | composable DoD checklists                    | Slice/Wave/Feature DoD, responsibility matrix, docs severity escalation   |
 | `agents/workflow.md`                          | core agent lifecycle                         | процесс GPT-5.4 → Claude, plan ownership, execution loop, escalation     |
 | `agents/review-gate.md`                       | review и governance model                    | slice/integration review, strategic acceptance/reframe pass, architecture/baseline pass  |
 | `agents/recovery.md`                          | failure-path protocol                        | recovery rules для rejected slices, branch divergence и tooling outage   |
@@ -128,7 +129,8 @@ Historical BI archive: [archive/bi/architecture_dashboard_bi.md](./archive/bi/ar
 | `agents/architecture-steward/instructions.md` | `lead-strategic` architecture-pass checklist | как делать architecture governance pass: placement decisions и waivers   |
 | `agents/baseline-governor/instructions.md`    | `lead-strategic` baseline-pass checklist     | как делать baseline pass: baseline status, known exceptions, verdict     |
 | `agents/strategic-reviewer/instructions.md`   | strategic-reviewer instructions              | как делать bounded strategic acceptance/reframe pass и cheap cross-model second look |
-| `agents/lead-tactical/instructions.md`        | Claude Opus tactical lead instructions       | как управлять workers, review gate, report                               |
+| `agents/orchestrator/instructions.md`         | Claude Opus orchestration-only instructions  | как управлять workers, review gate, report без self-execution            |
+| `agents/lead-tactical/instructions.md`        | compatibility alias → orchestrator           | legacy entry point для старых prompt/script flows                        |
 | `agents/worker/instructions.md`               | Claude worker instructions                   | как выполнять задачи, self-check, handoff                                |
 | `agents/*-reviewer/instructions.md`           | reviewer role instructions                   | checks, output format, scope для каждого ревьюера                        |
 | `agents/skills/debugging.md`                  | debugging playbook                           | reproduce, compare, hypothesize, fix, escalation triggers                |

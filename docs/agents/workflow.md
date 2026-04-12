@@ -21,10 +21,10 @@ Core process для работы агентной команды.
     │
     ├─ ставит задачу
     ▼
-Claude Opus (lead-tactical, tactical-orchestrator)
+Claude Opus (orchestrator; legacy alias: lead-tactical)
     │
     ├─ /codex:rescue --write "создай/обнови план"
-    ├─ исполняет plan loop: workers, review, report
+    ├─ ведёт execution loop: workers, review, report
     ├─ /codex:rescue --resume "strategic review report"
     ├─ post-slice reframe и strategic acceptance loop по выбранному operating mode
     │
@@ -38,7 +38,7 @@ Claude Opus (lead-tactical, tactical-orchestrator)
 | --- | --- | --- |
 | `lead-strategic` | Codex / GPT-5.4 | canonical owner `current_plan.md`, strategic acceptance, architecture-docs-first при планировании |
 | `strategic-reviewer` | bounded pass внутри `lead-strategic` thread | strategic acceptance/reframe safety net по `plan/report/diff` |
-| `lead-tactical` | Claude Opus | execution flow, worker dispatch, Review Gate, Architecture Readiness Check, report |
+| `orchestrator` | Claude Opus | code-blind execution flow, worker dispatch, Review Gate, Architecture Readiness Check, report |
 | `worker` | Claude teammate | реализация одного slice |
 | `*-reviewer` | fresh Claude subagent | diff review по своей зоне |
 | `architecture-reviewer` (audit mode) | fresh Claude subagent | pre-implementation readiness assessment по planned scope |
@@ -68,7 +68,7 @@ Claude Opus (lead-tactical, tactical-orchestrator)
 1. `--resume` экономит токены внутри одного thread, но не заменяет durable `memory.md`.
 2. Codex не видит navigation docs автоматически; нужные файлы нужно явно включать в task или prompt.
 3. Пользователь остаётся decision owner для merge, scope changes и CRITICAL escalations.
-4. Долгие Codex-задачи можно запускать в background, но execution ownership остаётся у `lead-tactical`.
+4. Долгие Codex-задачи можно запускать в background, но execution ownership остаётся у `orchestrator`.
 
 ### 1.2. Ручная модель (fallback, deprecated)
 
@@ -80,15 +80,39 @@ Claude Opus (lead-tactical, tactical-orchestrator)
 
 - `lead-strategic` — canonical owner плана, а не кодовой реализации.
 - initial plan — рабочая гипотеза; после каждого принятого slice он уточняется по реальному состоянию repo.
-- `lead-tactical` — owner execution flow, но не semantic owner плана.
+- `orchestrator` — owner execution flow, но не semantic owner плана.
+- `orchestrator` не реализует product code; любой implementation slice идёт через worker.
 - `worker` реализует slice в заданном scope и сдаёт truthful handoff с evidence.
 - `reviewer` — fresh pass без persistent review memory.
 - Качество важнее параллелизма; параллелизм нужен только для независимых bounded slices.
 - Пользователь — approver, а не manual relay.
 
-### Протокол оркестрации (`lead-tactical`)
+### Протокол оркестрации (`orchestrator`)
 
-`lead-tactical` совмещает исполнение и orchestration. Отдельной top-level роли `orchestrator` нет.
+`orchestrator` — отдельная top-level execution role.
+`lead-tactical` остаётся только compatibility alias в старых prompt/script flows.
+Canonical durable artifacts живут в `docs/agents/orchestrator/*`.
+Legacy wrappers остаются по путям `docs/agents/lead-tactical/*`.
+
+**Что `orchestrator` читает по умолчанию:**
+
+- `current_plan.md`;
+- свою durable memory в `docs/agents/orchestrator/memory.md`;
+- worker handoff notes;
+- reviewer verdicts;
+- checks evidence;
+- changed-files inventory;
+- branch/checkpoint metadata;
+- короткие diff/impact summaries.
+
+**Что `orchestrator` не делает:**
+
+- не пишет product code;
+- не открывает source files и raw diff hunks по умолчанию;
+- не запускает product checks (`check/build/test/lint`) для implementation slices сам;
+- не делает `git add/commit` для product changes;
+- не исправляет reviewer findings сам;
+- не компенсирует плохой handoff тем, что "сам быстро посмотрит код".
 
 **Когда делегировать Codex / GPT-5.4:**
 
@@ -98,19 +122,25 @@ Claude Opus (lead-tactical, tactical-orchestrator)
 - semantic reframe через `Plan Change Request`;
 - governance decision, если change упирается в placement, waiver или baseline state.
 
-**Когда делать самому:**
+**Что `orchestrator` делает сам:**
 
 - координация execution flow;
-- быстрые локальные фиксы;
-- self-checks и интеграционные проверки;
 - сборка report;
-- обновление tactical memory и strategic backfill при необходимости.
+- обновление memory и usage telemetry;
+- strategic backfill при необходимости.
 
-**Когда делегировать worker'у:**
+**Когда dispatch worker обязателен:**
 
-- slice нетривиальный, unfamiliar или multi-file;
-- plan iterative и требует свежего контекста на каждый slice;
-- нужен bounded parallelism по независимым ownership slices.
+- любой implementation slice, включая trivial local fix;
+- любые product checks и runtime verification;
+- любые code changes по findings;
+- любые уточнения, которые требуют открыть код или diff.
+
+**Как `orchestrator` держит контекст чистым:**
+
+- trivial implementation changes идут через `micro-worker`, а не через self-execution;
+- при недостаточном evidence запускается transparency request, re-review или verification/fix-worker;
+- при design/boundary ambiguity эскалация идёт в `lead-strategic`, а не в self-implementation loop.
 
 ### Гибридная модель: teammates + subagents
 
@@ -122,8 +152,8 @@ Claude Opus (lead-tactical, tactical-orchestrator)
 Workers как teammates (default):
 
 - видят `AGENTS.md`, локальные docs и репозиторий целиком;
-- работают в том же checkout и integration branch, что и `lead-tactical`; коммитят только в рамках assigned scope;
-- общаются с `lead-tactical` через SendMessage;
+- работают в том же checkout и integration branch, что и `orchestrator`; коммитят только в рамках assigned scope;
+- общаются с `orchestrator` через SendMessage;
 - не ведут отдельный durable `memory.md`.
 
 Эскалация worker в subagent:
@@ -150,7 +180,7 @@ Reviewers как fresh subagents:
 | Архитектурный риск | низкий | средний-высокий |
 | Новый домен / unfamiliar code | нет | да |
 
-**Default heuristic для `lead-tactical`:**
+**Default heuristic для `orchestrator`:**
 
 Выбирай `iterative`, если верно хотя бы одно:
 
@@ -159,7 +189,7 @@ Reviewers как fresh subagents:
 - change включает schema files или DB contract;
 - change пересекает больше одного контура или package/app boundary;
 - acceptance следующего slice зависит от результата текущего;
-- это unfamiliar code для текущего tactical context.
+- это unfamiliar code для текущего orchestration context.
 
 Выбирай `batch`, если одновременно верно всё ниже:
 
@@ -171,11 +201,17 @@ Reviewers как fresh subagents:
 
 Если сигналы смешанные, побеждает `iterative`.
 
+Dispatch heuristic:
+
+- implementation slice всегда идёт через worker;
+- если slice trivial и bounded, выбирай `micro-worker`, а не self-execution;
+- parallel workers допустимы только для независимых ownership slices.
+
 ### 2.2. Планирование (`lead-strategic`)
 
 **Интегрированная модель:**
 
-1. `lead-tactical` получает задачу от пользователя.
+1. `orchestrator` получает задачу от пользователя.
 2. Поднимает strategic loop через `/codex:rescue --fresh --write`.
 3. `lead-strategic` создаёт или обновляет `current_plan.md`.
 4. Пользователь подтверждает план, если задача нетривиальна или меняет scope.
@@ -192,13 +228,13 @@ Bootstrap hints (`--low-risk`, legacy `--simple`) не создают sanctioned
 ### 2.3. Ownership плана
 
 - `lead-strategic` — canonical owner `docs/agents/lead-strategic/current_plan.md`;
-- `lead-tactical` — owner execution flow, но не semantic owner плана;
-- если нужен reframe, `lead-tactical` оформляет `Plan Change Request`;
+- `orchestrator` — owner execution flow, но не semantic owner плана;
+- если нужен reframe, `orchestrator` оформляет `Plan Change Request`;
 - следующий dependent slice не стартует, пока новый plan state не зафиксирован.
 
 ### 2.3.1. Architecture Readiness Check (pre-implementation)
 
-Перед началом исполнения фичи или значимого изменения `lead-tactical` проводит bounded architecture readiness check.
+Перед началом исполнения фичи или значимого изменения `orchestrator` проводит bounded architecture readiness check.
 
 **Trigger:** хотя бы один из:
 
@@ -232,10 +268,10 @@ Bootstrap hints (`--low-risk`, legacy `--simple`) не создают sanctioned
 **Кто выполняет:**
 
 - `lead-strategic` выявляет потребность в new architectural decisions **при планировании** (шаг 5 в `lead-strategic/instructions.md`) и фиксирует их в docs как часть плана;
-- `lead-tactical` проводит bounded readiness check самостоятельно перед началом execution;
-- если нужен structured audit, `lead-tactical` запускает **`architecture-reviewer` в audit mode** (Mode 2 в `architecture-reviewer/instructions.md`);
+- `orchestrator` проводит bounded readiness check самостоятельно перед началом execution;
+- если нужен structured audit, `orchestrator` запускает **`architecture-reviewer` в audit mode** (Mode 2 в `architecture-reviewer/instructions.md`);
 - `architecture-reviewer` возвращает readiness verdict: `CLEAR | CLEAR WITH DEBT | DOCS FIRST | ESCALATE`;
-- если readiness = `ESCALATE` — `lead-tactical` эскалирует к `lead-strategic` для architecture pass (`review-gate.md` §3.1).
+- если readiness = `ESCALATE` — `orchestrator` эскалирует к `lead-strategic` для architecture pass (`review-gate.md` §3.1).
 
 ### 2.4. Strategic operating mode
 
@@ -274,35 +310,36 @@ Risk signals для slice-level strategic-reviewer pass: canonical list в `revi
 
 ### 2.5. Batch-исполнение
 
-1. `lead-tactical` читает `current_plan.md`.
-2. Выполняет подзадачи сам или через worker'ов.
-3. Запускает Review Gate, если он нужен по `review-gate.md`.
-4. Выбирает формат report и пишет `last_report.md`.
-5. Запускает strategic acceptance review.
-6. После acceptance пользователь подтверждает merge.
+1. `orchestrator` читает `current_plan.md` и свою durable memory.
+2. Dispatches worker'ов на все implementation slices.
+3. Принимает handoff packets и добирает недостающий evidence через reviewers / transparency requests / verification-workers.
+4. Запускает Review Gate, если он нужен по `review-gate.md`.
+5. Выбирает формат report и пишет `last_report.md`.
+6. Запускает strategic acceptance review.
+7. После acceptance пользователь подтверждает merge.
 
 ### 2.6. Iterative-исполнение
 
 1. `worker` получает handoff на один slice.
 2. Реализует slice, прогоняет self-check и slice review.
 3. Фиксит локальные non-critical findings.
-4. Возвращает `lead-tactical` summary, checks evidence и review disposition/results.
-5. `lead-tactical` передаёт slice result в strategic loop.
+4. Возвращает `orchestrator` summary, change manifest, checks evidence и review disposition/results.
+5. `orchestrator` принимает или отклоняет handoff на основе артефактов, затем передаёт slice result в strategic loop.
 6. `lead-strategic` делает post-slice reframe следующего slice и, в зависимости от current operating mode, запускает bounded `strategic-reviewer` pass или ограничивается direct strategic acceptance. По умолчанию bounded pass идёт через `gpt-5.4-mini`; на `gpt-5.4` эскалируй только для design/boundary/contract-sensitive ambiguity.
 7. Вердикт:
    - `ACCEPT` — запускается следующий slice;
    - `ACCEPT WITH ADJUSTMENTS` — оформляется `Plan Change Request`, затем обновлённый slice flow;
    - `REJECT` — findings возвращаются в execution loop. При 3+ rejection cycles действует `recovery.md` RP-5.
-8. После всех slices `lead-tactical` запускает integration Review Gate, если он нужен, затем final strategic review.
+8. После всех slices `orchestrator` запускает integration Review Gate, если он нужен, затем final strategic review.
 
 Детали slice review, integration review, governance passes и strategic acceptance/reframe pass лежат в `review-gate.md`.
 
 ### 2.7. Формат report
 
-`lead-tactical` выбирает один из canonical report types:
+`orchestrator` выбирает один из canonical report types:
 
 - `full` — multi-slice, cross-layer, risky implementation;
-- `lightweight` — trivial local fix, docs-only, one-slice batch;
+- `lightweight` — docs-only или one-slice low-risk worker-owned change;
 - `governance-closeout` — verification/docs/baseline closure без нового product implementation.
 
 Правила:
@@ -320,7 +357,7 @@ Cost-awareness калибрует cadence strategic loop, а не отменяе
 Правила по умолчанию:
 
 - не требуй отдельный strategic pass на trivial slice, если slice review green и post-slice reframe не меняет plan semantics;
-- если несколько slices подряд не меняют plan, boundaries и acceptance logic, `lead-tactical` может предложить снизить cadence, а `lead-strategic` — переключить operating mode;
+- если несколько slices подряд не меняют plan, boundaries и acceptance logic, `orchestrator` может предложить снизить cadence, а `lead-strategic` — переключить operating mode;
 - если per-slice strategic pass регулярно находит important issues или меняет next-slice plan, это high-yield cadence, и его не нужно "оптимизировать away";
 - если passes становятся low-yield, cadence нужно снижать или явно объяснять, почему выбранный mode остаётся оправданным.
 - default cost-saving path для cross-model recheck: сначала `gpt-5.4-mini`, а не full `gpt-5.4`.
@@ -336,7 +373,7 @@ Cost-awareness калибрует cadence strategic loop, а не отменяе
 
 **Интегрированная модель:**
 
-1. `lead-tactical` запускает `/codex:rescue --resume`.
+1. `orchestrator` запускает `/codex:rescue --resume`.
 2. `lead-strategic` сверяет report, plan fit, scope, architecture и review discipline.
 3. Делает post-slice or final reframe и запускает bounded `strategic-reviewer` pass, если этого требует current operating mode или risk signals.
 4. Выносит `ACCEPT`, `ACCEPT WITH NOTES` или `REJECT`.
@@ -346,7 +383,7 @@ Cost-awareness калибрует cadence strategic loop, а не отменяе
 
 ### 2.10. Эскалация
 
-`lead-tactical` эскалирует к пользователю, когда:
+`orchestrator` эскалирует к пользователю, когда:
 
 - найден `CRITICAL`;
 - нужен scope или priority change;
@@ -370,17 +407,38 @@ Cost-awareness калибрует cadence strategic loop, а не отменяе
 
 Failure-path после эскалации описан в `docs/agents/recovery.md`.
 
+### 2.11. Wave Closure
+
+После принятия последнего slice волны и прохождения integration review (если нужен) `orchestrator` запускает wave closure.
+
+**Кто:** `orchestrator` выполняет, `lead-strategic` верифицирует.
+
+**Checklist:** `docs/agents/definition-of-done.md` Level 2 (Wave DoD).
+
+**Порядок:**
+
+1. Все slices волны имеют `ACCEPT` verdict.
+2. Plan change requests resolved или rejected.
+3. Integration review green (если применим).
+4. Governance passes выполнены: architecture pass (если placement/boundary decisions), baseline pass (статус зафиксирован).
+5. Documentation sync: architecture docs, invariants, current_plan.md отражают итоги волны.
+6. State: operating mode валиден, memory.md обновлён, test baseline зафиксирован числом.
+
+**Output:** governance-closeout report или финальная секция в full report с Wave DoD status.
+
+Baseline number из wave closure становится минимальным порогом для следующей волны.
+
 ## 3. Коммуникация и артефакты
 
 ### Файловый протокол
 
 | Файл | Кто пишет | Кто читает |
 | --- | --- | --- |
-| `lead-strategic/current_plan.md` | `lead-strategic` | `lead-tactical`, workers по need-to-know |
-| `lead-tactical/last_report.md` | `lead-tactical` | `lead-strategic`, пользователь |
-| `lead-strategic/memory.md` | `lead-strategic` | следующий strategic thread |
-| `lead-tactical/memory.md` | `lead-tactical` | следующий tactical session |
-| `runtime/agents/usage-log.ndjson` | `lead-tactical` | локальная optimization analytics / future DB import |
+| `docs/agents/lead-strategic/current_plan.md` | `lead-strategic` | `orchestrator`, workers по need-to-know |
+| `docs/agents/orchestrator/last_report.md` | `orchestrator` | `lead-strategic`, пользователь |
+| `docs/agents/lead-strategic/memory.md` | `lead-strategic` | следующий strategic thread |
+| `docs/agents/orchestrator/memory.md` | `orchestrator` | следующий orchestration session |
+| `runtime/agents/usage-log.ndjson` | `orchestrator` | локальная optimization analytics / future DB import |
 | domain-specific exceptions registry (e.g. `emis_known_exceptions.md` per overlay) | `lead-strategic` governance loop | все роли по необходимости |
 
 Правила хранения:
@@ -393,18 +451,19 @@ Failure-path после эскалации описан в `docs/agents/recovery
 ### Tmux-сессии / Agent Teams
 
 ```text
-pane #0  lead-tactical
+pane #0  orchestrator
 pane #1  worker A
 pane #2  worker B (если нужен)
 ```
 
-- `lead-tactical` держит orchestration context и запускает reviewers как fresh subagents;
-- worker-teammates разделяют checkout и integration branch с `lead-tactical`;
-- worker-teammates общаются с `lead-tactical` через SendMessage;
+- `orchestrator` держит orchestration context и запускает reviewers как fresh subagents;
+- worker-teammates разделяют checkout и integration branch с `orchestrator`;
+- worker-teammates общаются с `orchestrator` через SendMessage;
 - пользователь может зайти в pane worker'а напрямую.
 
 ### Canonical supporting docs
 
+- `docs/agents/definition-of-done.md` — composable DoD checklists (Slice → Wave → Feature)
 - `docs/agents/review-gate.md` — Review Gate, strategic acceptance/reframe loop, governance passes
 - `docs/agents/recovery.md` — failure-path и recovery protocols
 - `docs/agents/invariants.md` — generic repo-wide invariants (domain overlays: `invariants-emis.md`, etc.)

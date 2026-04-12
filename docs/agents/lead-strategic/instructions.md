@@ -21,14 +21,14 @@ Domain-specific contours (e.g. EMIS) live as overlays inside the same modular mo
    - зафиксируй решение в соответствующем architecture doc **как часть плана**, до передачи на исполнение
    - если решение создаёт enforceable rule — включи в plan обновление `invariants.md`
    - если решение требует governance — включи в plan `architecture pass` как prerequisite slice
-   - если не уверен в architectural surface — запроси pre-implementation audit у `lead-tactical` (через `architecture-reviewer` в audit mode, см. `review-gate.md` §3.3)
+   - если не уверен в architectural surface — запроси pre-implementation audit у `orchestrator` (через `architecture-reviewer` в audit mode, см. `review-gate.md` §3.3)
 6. **Запиши план** в `docs/agents/lead-strategic/current_plan.md`
 7. Выбери operating mode для текущей wave и зафиксируй его в canonical context
-8. Дождись report от Claude lead-tactical напрямую в primary path
+8. Дождись report от Claude `orchestrator` напрямую в primary path
 9. Сделай post-slice reframe; по выбранному mode запусти bounded strategic-review pass или ограничься direct strategic acceptance
 10. **Прими** результат, **дай замечания** или **попроси переделку**
 11. После приёмки быстро перепроверь следующий planned slice и при необходимости уточни `current_plan.md`
-12. Если `lead-tactical` прислал `Plan Change Request`, либо отклони его, либо сам перепиши canonical plan
+12. Если `orchestrator` прислал `Plan Change Request`, либо отклони его, либо сам перепиши canonical plan
 13. Перед завершением своей iteration **сам обнови** `docs/agents/lead-strategic/memory.md`
 
 ## Что проверять при приёмке report
@@ -39,6 +39,10 @@ Domain-specific contours (e.g. EMIS) live as overlays inside the same modular mo
 - Scope: worker не вышел за пределы задачи?
 - Качество: нет ли accidental complexity?
 - Next-slice impact: меняет ли реальный diff sequencing, acceptance или operating mode?
+- Documentation sync: architecture docs отражают решения, принятые в этой волне? (при wave close)
+- Test baseline: число тестов зафиксировано и не уменьшилось от начала волны?
+
+При закрытии feature/initiative — проверь Feature DoD из `docs/agents/definition-of-done.md` Level 3.
 
 ## Когда использовать strategic-reviewer
 
@@ -100,7 +104,7 @@ Role-specific delta:
 - явно проверь, сохраняется ли выбранный operating mode; если нет, переключи его и запиши короткую причину
 - если transition спорный, risk profile вырос или реальный diff меняет assumptions плана, запускай bounded `strategic-reviewer` pass
 - не открывай новый диалог только ради такого reframe, пока продолжается та же wave и контекст остаётся управляемым
-- не ожидай, что `lead-tactical` будет тихо править canonical plan за тебя
+- не ожидай, что `orchestrator` будет тихо править canonical plan за тебя
 
 Перед завершением своей strategic iteration зафиксируй в `memory.md`:
 
@@ -149,19 +153,19 @@ Canonical список: `docs/agents/invariants.md`.
 | **Conflict resolution** | Арбитраж, когда reviewers расходятся или worker оспаривает scope |
 | **Knowledge management** | Обновление `memory.md`, фиксация canonical decisions в plan |
 
-### Что делегируешь (через lead-tactical → workers)
+### Что делегируешь (через orchestrator → workers)
 
 | Зона | Делегируется кому |
 | --- | --- |
 | **Весь код** | workers (slice handoff с чётким scope и acceptance criteria) |
-| **Команды** (build, test, lint, git) | lead-tactical / workers |
-| **Review execution** | reviewer subagents (запускает lead-tactical) |
-| **Исследование кода** | lead-tactical ("покажи текущую структуру X") |
+| **Команды** (build, test, lint, git) | workers; orchestrator только принимает evidence |
+| **Review execution** | reviewer subagents (запускает orchestrator) |
+| **Исследование кода** | worker/reviewer по transparency request от orchestrator |
 | **Proof of concept** | workers ("реализуй spike для Z, верни findings без merge") |
 
 ### Transparency requests — управление без чтения кода
 
-Ты не видишь код напрямую. Вместо этого используй **transparency requests** — структурированные запросы к lead-tactical для получения нужной информации.
+Ты не видишь код напрямую. Вместо этого используй **transparency requests** — структурированные запросы к `orchestrator` для получения нужной информации.
 
 | Запрос | Когда использовать | Формат ответа |
 | --- | --- | --- |

@@ -13,12 +13,12 @@
 
 ### Report Types
 
-У `lead-tactical` есть три canonical формата `last_report.md`:
+У `orchestrator` есть три canonical формата `last_report.md`:
 
 | Report type | Когда использовать | Что обязательно |
 | --- | --- | --- |
 | `full` | multi-slice, cross-layer, risky implementation, полноценный integration review | plan sync, review findings/disposition, checks evidence, readiness |
-| `lightweight` | trivial local fix, docs-only, one-slice batch, low-risk local change | status, done summary, checks evidence, review disposition, readiness |
+| `lightweight` | docs-only или one-slice low-risk worker-owned change | status, done summary, checks evidence, review disposition, readiness |
 | `governance-closeout` | verification/docs/baseline closure slice без нового product implementation | status, closure summary, baseline/architecture disposition, checks evidence, readiness |
 
 Жёсткое правило:
@@ -37,7 +37,7 @@
 
 Во всех остальных случаях достаточно короткого summary внутри `last_report.md`.
 
-## 1. План задачи (lead-strategic → lead-tactical)
+## 1. План задачи (lead-strategic → orchestrator)
 
 Файл: `docs/agents/lead-strategic/current_plan.md`
 
@@ -103,7 +103,7 @@ Before handing off the plan, verify:
 - [ ] If verification is deferred or waived, there is a `waiver rationale`
 - [ ] Plan stays at decision-level — no implementation walkthroughs
 
-## 2. Задача worker'у (lead-tactical → worker)
+## 2. Задача worker'у (orchestrator → worker)
 
 Передаётся через Agent spawn или SendMessage.
 
@@ -115,6 +115,7 @@ Required:
 - base branch / base checkpoint
 - acceptance
 - проверки
+- какие артефакты вернуть оркестратору
 
 Optional:
 
@@ -160,17 +161,25 @@ Optional:
 - каждый check должен иметь состояние: `fresh` (прогнан после финального diff) или `not run + reason`
 - evidence без состояния не принимается (см. `review-gate.md` §1.6)
 
+## Артефакты для Orchestrator
+
+- change manifest: какие owned files реально изменены
+- boundary notes: затронуты ли contracts / schema / imports / exceptions
+- review disposition: что реально запускалось и почему
+- next action requested: `accept` | `re-review` | `fix-worker` | `escalate`
+
 ## Формат сдачи
 
 Используй шаблон `Worker Handoff` из этого файла.
 ```
 
-## 3. Результат worker'а (worker → lead-tactical)
+## 3. Результат worker'а (worker → orchestrator)
 
 Required:
 
 - задача
 - что сделано
+- change manifest
 - проверки / evidence
 - review disposition
 - риски / эскалации, если есть
@@ -198,6 +207,13 @@ Skip conditions:
 - <что реализовано>
 - ключевые файлы: <список>
 - placement notes: <только если решение неочевидно>
+
+## Change Manifest
+
+- owned files changed: <список>
+- out-of-scope files touched: `none` | <список>
+- contracts / schema / boundaries touched: `none` | <кратко>
+- short diff summary for orchestrator: <1-5 bullets>
 
 ## Verification
 
@@ -235,14 +251,25 @@ Skip conditions:
 - docs-reviewer: <OK | findings summary>
 - ui-reviewer: <OK | findings summary>
 
+## Slice DoD Status
+
+Per `docs/agents/definition-of-done.md` Level 1. Отмечай только items с gaps или N/A; green items подразумеваются пройденным self-check:
+
+- docs: <done | N/A — reason | gap — what's missing>
+- baseline tests: <maintained | grew to N>
+
+## Next Action Requested
+
+- `accept` | `re-review` | `fix-worker` | `escalate`
+
 ## Риски / Эскалации
 
 - <риск, блокер, вопрос> или `none`
 ```
 
-## 4. Report (lead-tactical → lead-strategic)
+## 4. Report (orchestrator → lead-strategic)
 
-Файл: `docs/agents/lead-tactical/last_report.md`
+Файл: `docs/agents/orchestrator/last_report.md`
 
 ### 4.1. Full Report
 
@@ -361,6 +388,15 @@ Optional:
 - orchestration value: `efficient` | `acceptable` | `overbuilt`
 - optimization note: <что менять в будущем> | `none`
 
+## Wave DoD Status (optional — only at wave close)
+
+Per `docs/agents/definition-of-done.md` Level 2:
+
+- all slices accepted: <yes | no — which pending>
+- docs sync: <done | gaps — what's missing>
+- governance: <architecture pass: done/N/A | baseline pass: done/N/A>
+- test baseline: <N (was M at wave start)>
+
 ## Готовность
 
 <готово к merge | нужно решение lead-strategic | нужна доработка>
@@ -372,7 +408,7 @@ Optional:
 
 ### 4.2. Lightweight Report
 
-Используется для trivial local fix, docs-only change или low-risk one-slice batch.
+Используется для docs-only change или low-risk one-slice worker-owned batch.
 
 Required:
 
@@ -542,7 +578,7 @@ Optional:
 <готово к merge | нужно решение lead-strategic | нужна доработка>
 ```
 
-## 5. Review Request (lead-tactical → reviewer)
+## 5. Review Request (orchestrator → reviewer)
 
 Передаётся при запуске субагента-ревьюера.
 
@@ -569,7 +605,7 @@ Architecture context:
 Focus: <на что обратить внимание>
 ```
 
-## 6. Review Result (reviewer → lead-tactical)
+## 6. Review Result (reviewer → orchestrator)
 
 Required:
 
@@ -612,7 +648,7 @@ Goal:
 Inputs:
 
 - current plan: `docs/agents/lead-strategic/current_plan.md`
-- tactical report: `docs/agents/lead-tactical/last_report.md`
+- orchestrator report: `docs/agents/orchestrator/last_report.md`
 - current operating mode: `high-risk iterative / unstable wave` | `ordinary iterative` | `batch / low-risk`
 - reviewer verdicts / risk signal: <почему нужен cross-model pass>
 - changed files: <список>
@@ -739,7 +775,7 @@ Required Follow-ups:
 - или `none`
 ```
 
-## 10. Architecture Pass Decision (architecture pass → lead-strategic / lead-tactical)
+## 10. Architecture Pass Decision (architecture pass → lead-strategic / orchestrator)
 
 Файл или сообщение по итогам bounded architecture-governance pass.
 
@@ -787,7 +823,7 @@ Allowed implementation scope:
 - <what may proceed next>
 ```
 
-## 11. Plan Change Request (lead-tactical → lead-strategic / Codex)
+## 11. Plan Change Request (orchestrator → lead-strategic / Codex)
 
 Используется, когда execution reality требует semantic reframe плана.
 
@@ -829,7 +865,7 @@ Decision needed:
 - escalate to strategic decision
 ```
 
-## 12. Usage Log Entry (lead-tactical → runtime/agents/usage-log.ndjson)
+## 12. Usage Log Entry (orchestrator → runtime/agents/usage-log.ndjson)
 
 Append-only telemetry entry для optimization analytics.
 
@@ -878,4 +914,49 @@ Required:
   "optimization_note": "<future tuning note>",
   "cross_model_value": "found_likely_missed_bug | found_acceptance_or_reframe_signal | no_additional_value | not_applicable"
 }
+```
+
+## 13. Transparency Request (orchestrator → worker / reviewer)
+
+Используется, когда handoff или review verdict недостаточен для приёмки, но `orchestrator` не должен открывать raw diff или исходники сам.
+
+Required:
+
+- request type
+- target scope
+- question
+- expected output format
+
+Allowed request types:
+
+- `EXPLAIN_DIFF`
+- `SHOW_STRUCTURE`
+- `SHOW_IMPACT`
+- `VERIFY_INVARIANT`
+- `CHECK_STATUS`
+
+```md
+# Transparency Request
+
+Request Type:
+
+- `EXPLAIN_DIFF` | `SHOW_STRUCTURE` | `SHOW_IMPACT` | `VERIFY_INVARIANT` | `CHECK_STATUS`
+
+Target Scope:
+
+- slice: <ST-N / worker name / review pass>
+- files/modules: <список или `not needed`>
+
+Question:
+
+- <что именно нужно прояснить>
+
+Expected Output:
+
+- format: bullets | table | short summary
+- max detail: no raw diff dump, no full code listing
+
+Why Needed:
+
+- <почему без этого нельзя принять handoff / verdict>
 ```

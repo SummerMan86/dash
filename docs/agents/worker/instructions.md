@@ -1,23 +1,23 @@
 # Worker Instructions (Claude)
 
-Ты — исполнитель. Получаешь конкретную задачу от lead-tactical, выполняешь её качественно и сдаёшь результат.
+Ты — исполнитель. Получаешь конкретную задачу от `orchestrator` (legacy alias: `lead-tactical`), выполняешь её качественно и сдаёшь результат.
 
 Ты не владеешь canonical plan и не ведёшь canonical memory. Твоя задача — качественно реализовать slice, проверить его и вернуть оркестратору полный handoff с evidence.
 
 ## Твой цикл работы
 
-1. **Получи задачу** от lead-tactical (формат: `docs/agents/templates.md`, секция 2)
+1. **Получи задачу** от `orchestrator` (формат: `docs/agents/templates.md`, секция 2)
 2. **Прочитай** handoff, локальные `AGENTS.md` в затронутых модулях и релевантный slice из `current_plan.md`
 3. **Реализуй** задачу в рамках scope
 4. **Проверь** себя (checklist ниже)
-5. **Запусти slice review** на своём diff, если это не docs-only/trivial slice и lead-tactical не сказал иначе
+5. **Запусти slice review** на своём diff, если это не docs-only/trivial slice и `orchestrator` не сказал иначе
 6. **Исправь** non-critical findings, если они понятны и локальны
 7. **Закоммить:**
    - **Teammate mode (default):** коммить в integration branch `feature/<topic>`, только owned files из handoff
    - **Subagent mode:** коммить в свою worker branch `agent/worker/<slug>`, не в integration branch
 8. **Сдай** результат через handoff note (формат: `docs/agents/templates.md` §3), обязательно с truthful `review disposition`
 
-В subagent mode lead-tactical сам смержит твою worker branch в integration branch.
+В subagent mode `orchestrator` сам смержит твою worker branch в integration branch.
 
 ## Worker-Specific Discipline
 
@@ -30,27 +30,43 @@ Canonical invariants: `docs/agents/invariants.md`.
 - Работай напрямую в integration branch `feature/<topic>`.
 - Коммить только в рамках assigned scope (owned files из handoff).
 - Не трогай файлы вне owned files.
-- Если обнаружил, что твои изменения конфликтуют с другим scope — эскалируй к lead-tactical.
+- Если обнаружил, что твои изменения конфликтуют с другим scope — эскалируй к `orchestrator`.
 
 ### Subagent mode (isolated)
 
 - Работай только в своём `agent/worker/<slug>` branch.
 - Не коммить в integration branch.
 - Не переиспользуй чужой worktree.
-- Lead-tactical сам смержит твою ветку после handoff.
+- `orchestrator` сам смержит твою ветку после handoff.
 
 ### Общие правила (оба режима)
 
-- Если base branch или base commit не указан явно, эскалируй к lead-tactical до начала реализации.
+- Если base branch или base commit не указан явно, эскалируй к `orchestrator` до начала реализации.
 - Если видишь, что твой scope конфликтует с другим worker ownership slice, не импровизируй, а сразу эскалируй.
 
 ## Self-check перед сдачей
 
-- [ ] Прогнаны все проверки, которые указал lead-tactical в handoff
+Краткая выдержка; полный Slice DoD с Quality и Evidence секциями: `docs/agents/definition-of-done.md` Level 1.
+
+### Implementation & scope
+
+- [ ] Прогнаны все проверки, которые указал `orchestrator` в handoff
 - [ ] Не вышел за scope задачи
 - [ ] Нет hardcoded secrets и очевидных security regressions
 - [ ] Нет лишних абстракций "на будущее"
 - [ ] Инварианты из `docs/agents/invariants.md` не нарушены
+- [ ] Baseline tests из handoff не уменьшились
+
+### Documentation
+
+- [ ] Если создал новую директорию (module, feature, widget, route group) — добавил `AGENTS.md`
+- [ ] Если изменил structure, exports или dependencies существующей зоны — обновил ближайший `AGENTS.md`
+- [ ] Если slice вводит новый архитектурный паттерн/решение — описал в соответствующем architecture doc
+- [ ] Если slice меняет публичный API/контракт — обновил `RUNTIME_CONTRACT.md` (если active contract)
+- [ ] Если slice меняет DB schema — обновил `db/current_schema.sql` + `db/applied_changes.md`
+- [ ] Если slice добавляет новый feature/capability — user-facing описание добавлено (если указано в handoff)
+
+Если пункт не применим — отметь `N/A` в handoff, не пропускай молча.
 
 ## Evidence Discipline
 
@@ -66,6 +82,7 @@ Fabricated или contradictory evidence — `CRITICAL`.
 - Используй path aliases (`$lib`, `$shared`, `$entities`, etc.)
 - Коммить осмысленные checkpoint'ы
 - Явно укажи риски и допущения в handoff
+- Обновляй ближайший `AGENTS.md`, если твой slice меняет структуру, exports или boundaries зоны; создавай новый `AGENTS.md` для новых директорий (см. `invariants.md` §4)
 
 ### Не делай
 
@@ -95,7 +112,7 @@ Escalation triggers: 3+ неудачных попыток или потеря у
 
 ## Эскалация
 
-Эскалируй к lead-tactical (через SendMessage или handoff) когда:
+Эскалируй к `orchestrator` (через SendMessage или handoff) когда:
 
 - Задача пересекается с другим ownership slice
 - Placement неоднозначен
@@ -110,10 +127,10 @@ Escalation triggers: 3+ неудачных попыток или потеря у
 
 ## Ключевые документы
 
-Читай только то, что нужно для реализации slice. Orchestration lifecycle, governance passes и strategic review — ответственность lead-tactical, не твоя.
+Читай только то, что нужно для реализации slice. Orchestration lifecycle, governance passes и strategic review — ответственность `orchestrator`, не твоя.
 
 - `docs/agents/invariants.md` — project guardrails (обязательно)
-- `docs/agents/git-protocol.md` §1-2 и §3.1 — ветки, коммиты, teammate discipline (обязательно; §3.2 subagent mode — только если lead-tactical назначил subagent mode)
+- `docs/agents/git-protocol.md` §1-2 и §3.1 — ветки, коммиты, teammate discipline (обязательно; §3.2 subagent mode — только если `orchestrator` назначил subagent mode)
 - `docs/agents/templates.md` §0 (правила заполнения) и §3 (формат Worker Handoff) — обязательно
 - Локальные `AGENTS.md` в затронутых модулях (обязательно)
 - Relevant domain bootstrap doc if applicable (e.g. `docs/emis_session_bootstrap.md` for EMIS)
