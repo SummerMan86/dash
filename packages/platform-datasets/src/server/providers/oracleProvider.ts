@@ -73,14 +73,6 @@ if (typeof process !== 'undefined' && !shutdownRegistered) {
 }
 
 // ---------------------------------------------------------------------------
-// Shared bounded LRU cache (replaces ad-hoc Map/FIFO)
-// ---------------------------------------------------------------------------
-
-import { createProviderCache, buildCacheKey } from '../providerCache';
-
-const providerCache = createProviderCache();
-
-// ---------------------------------------------------------------------------
 // SQL generation (Oracle dialect)
 // ---------------------------------------------------------------------------
 
@@ -238,23 +230,9 @@ export const oracleProvider: Provider = {
 		// Build SQL
 		const { text, binds, selectedFields } = buildSelectSql(irQuery, entry, columns);
 
-		// Cache and execution hints
-		const ttlMs = entry.cache?.ttlMs ?? 0;
+		// Execution hints
 		const timeoutMs = entry.execution?.timeoutMs ?? 10_000;
-		const key = ttlMs > 0
-			? buildCacheKey(datasetId, { sqlText: text, binds }, ctx.tenantId)
-			: null;
 
-		// Check shared LRU cache
-		if (key) {
-			const hit = providerCache.get(key);
-			if (hit) {
-				return {
-					...hit.response,
-					meta: { ...hit.response.meta, cacheAgeMs: Date.now() - hit.cachedAt },
-				};
-			}
-		}
 		if (entry.source.kind !== 'oracle') throw new Error('oracleProvider: expected oracle source');
 		const connectionName = entry.source.connectionName;
 		const oraPool = await getPool(connectionName);
@@ -273,7 +251,7 @@ export const oracleProvider: Provider = {
 
 			const rows = (result.rows ?? []) as Array<Record<string, JsonValue>>;
 
-			const response: DatasetResponse = {
+			return {
 				contractVersion: CONTRACT_VERSION,
 				datasetId,
 				fields: inferFields(columns, selectedFields),
@@ -287,13 +265,6 @@ export const oracleProvider: Provider = {
 					sort: serializeOrderBy(irQuery.orderBy),
 				},
 			};
-
-			// Populate shared LRU cache
-			if (key) {
-				providerCache.set(key, response, ttlMs);
-			}
-
-			return response;
 		} catch (e: unknown) {
 			const message = e instanceof Error ? e.message : String(e);
 

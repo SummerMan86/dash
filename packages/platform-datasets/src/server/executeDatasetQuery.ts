@@ -8,10 +8,11 @@
  *   1. Registry lookup
  *   2. Access check (placeholder — full enforcement in a future slice)
  *   3. Parse params via entry.paramsSchema
- *   4. Compile: entry.compile (custom) or genericCompile (declarative)
- *   5. Resolve provider by entry.source.kind
- *   6. Execute IR via provider (entry-owned metadata)
- *   7. Return DatasetResponse
+ *   4. Pre-compile cache check (if entry.cache.ttlMs > 0) — skip compile+execute on hit
+ *   5. Compile: entry.compile (custom) or genericCompile (declarative)
+ *   6. Resolve provider by entry.source.kind
+ *   7. Execute IR via provider (entry-owned metadata) + populate cache on success
+ *   8. Return DatasetResponse
  *
  * Canonical reference: docs/architecture_dashboard_bi.md §1
  */
@@ -19,6 +20,20 @@ import type { DatasetId, DatasetQuery, DatasetResponse, DatasetErrorCode, Datase
 import type { Provider, ServerContext } from '../model';
 import { getRegistryEntry } from './registry';
 import { genericCompile } from './genericCompile';
+import { createProviderCache, buildCacheKey } from './providerCache';
+
+// ---------------------------------------------------------------------------
+// Module-level cache instance — shared across all providers
+// ---------------------------------------------------------------------------
+
+let cache = createProviderCache();
+
+/**
+ * Reset the module-level cache. **Test-only** — never call in production.
+ */
+export function _resetCacheForTesting(): void {
+	cache = createProviderCache();
+}
 
 // ---------------------------------------------------------------------------
 // DatasetExecutionError — typed error for dataset operations
@@ -132,7 +147,31 @@ export async function executeDatasetQuery(
 		);
 	}
 
-	// 4. Compile: custom compile or genericCompile from queryBindings
+	// 4. Pre-compile cache check — if entry has ttlMs > 0, attempt cache hit
+	//    before paying compile + execute costs.
+	const ttlMs = entry.cache?.ttlMs ?? 0;
+	const cacheKey = ttlMs > 0
+		? buildCacheKey(datasetId, typedParams, ctx.tenantId)
+		: null;
+
+	if (cacheKey) {
+		const hit = cache.get(cacheKey);
+		if (hit) {
+			const totalMs = Date.now() - t0;
+			const response: DatasetResponse = {
+				...hit.response,
+				meta: { ...hit.response.meta, cacheAgeMs: Date.now() - hit.cachedAt },
+			};
+			emitQuerySignal({
+				datasetId, sourceKind, requestId, compileMs: 0, executeMs: 0, totalMs,
+				rowCount: response.rows.length,
+				cacheHit: true,
+			});
+			return requestId ? { ...response, requestId } : response;
+		}
+	}
+
+	// 5. Compile: custom compile or genericCompile from queryBindings
 	//    Both paths receive typedParams (parsed output), never raw DatasetQuery.
 	let ir: DatasetIr;
 	try {
@@ -155,7 +194,7 @@ export async function executeDatasetQuery(
 
 	const compileMs = Date.now() - t0;
 
-	// 5. Resolve provider by entry.source.kind
+	// 6. Resolve provider by entry.source.kind
 	const provider = providerRegistry.get(sourceKind);
 	if (!provider) {
 		emitQuerySignal({ datasetId, sourceKind, requestId, totalMs: Date.now() - t0, errorCode: 'UNSUPPORTED_BACKEND' });
@@ -167,15 +206,21 @@ export async function executeDatasetQuery(
 		);
 	}
 
-	// 6. Execute with registry-owned entry
+	// 7. Execute with registry-owned entry
 	try {
 		const response = await provider.execute(ir, entry, ctx);
 		const totalMs = Date.now() - t0;
 		const executeMs = totalMs - compileMs;
+
+		// Populate cache on success (errors are never cached)
+		if (cacheKey) {
+			cache.set(cacheKey, response, ttlMs);
+		}
+
 		emitQuerySignal({
 			datasetId, sourceKind, requestId, compileMs, executeMs, totalMs,
 			rowCount: response.rows.length,
-			cacheHit: (response.meta?.cacheAgeMs ?? 0) > 0,
+			cacheHit: false,
 		});
 		return requestId ? { ...response, requestId } : response;
 	} catch (e: unknown) {

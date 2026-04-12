@@ -1,8 +1,8 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import type { DatasetQuery, DatasetResponse } from '../model';
 import type { Provider, ServerContext } from '../model';
 import { CONTRACT_VERSION } from '../model';
-import { DatasetExecutionError, registerProvider, executeDatasetQuery } from './executeDatasetQuery';
+import { DatasetExecutionError, registerProvider, executeDatasetQuery, _resetCacheForTesting } from './executeDatasetQuery';
 import { getRegistryEntry } from './registry';
 
 // --- Test fixtures ---
@@ -267,5 +267,141 @@ describe('registry', () => {
 			schema: 'mart_strategy',
 			table: 'slobi_entity_overview',
 		});
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Cache middleware tests
+// ---------------------------------------------------------------------------
+
+describe('executeDatasetQuery cache middleware', () => {
+	// ifts.payment_stats has cache: { ttlMs: 15_000 } — use it to verify caching
+	const cachedDatasetId = 'ifts.payment_stats';
+	const cachedResponse: DatasetResponse = {
+		contractVersion: CONTRACT_VERSION,
+		datasetId: cachedDatasetId,
+		fields: [{ name: 'PAYM_STAT_ID', type: 'number' }],
+		rows: [{ PAYM_STAT_ID: 42 }],
+		meta: { executedAt: new Date().toISOString(), sourceKind: 'oracle' },
+	};
+
+	let executionCount: number;
+	const trackingOracleProvider: Provider = {
+		async execute(_ir, _entry, _ctx) {
+			executionCount++;
+			return { ...cachedResponse };
+		},
+	};
+
+	// Non-cached dataset for contrast (wildberries.fact_product_office_day has no cache config)
+	const nonCachedDatasetId = 'wildberries.fact_product_office_day';
+
+	beforeEach(() => {
+		vi.useFakeTimers();
+		_resetCacheForTesting();
+		executionCount = 0;
+		registerProvider('oracle', trackingOracleProvider);
+		registerProvider('postgres', stubPostgresProvider);
+		registerProvider('mock', stubMockProvider);
+	});
+
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	it('skips compile+execute on cache hit for dataset with ttlMs > 0', async () => {
+		// First call — cache miss, provider executes
+		await executeDatasetQuery(cachedDatasetId, stubQuery, stubCtx);
+		expect(executionCount).toBe(1);
+
+		// Second call — cache hit, provider NOT called
+		await executeDatasetQuery(cachedDatasetId, stubQuery, stubCtx);
+		expect(executionCount).toBe(1);
+	});
+
+	it('returns cacheAgeMs > 0 on cache hit', async () => {
+		await executeDatasetQuery(cachedDatasetId, stubQuery, stubCtx);
+
+		vi.advanceTimersByTime(3_000);
+
+		const result = await executeDatasetQuery(cachedDatasetId, stubQuery, stubCtx);
+		expect(result.meta?.cacheAgeMs).toBeGreaterThanOrEqual(3_000);
+	});
+
+	it('cache expires after ttlMs and re-executes', async () => {
+		await executeDatasetQuery(cachedDatasetId, stubQuery, stubCtx);
+		expect(executionCount).toBe(1);
+
+		// Advance past ttlMs (15_000)
+		vi.advanceTimersByTime(16_000);
+
+		await executeDatasetQuery(cachedDatasetId, stubQuery, stubCtx);
+		expect(executionCount).toBe(2);
+	});
+
+	it('does NOT cache datasets without ttlMs', async () => {
+		let pgExecCount = 0;
+		registerProvider('postgres', {
+			async execute(_ir, _entry, _ctx) {
+				pgExecCount++;
+				return { ...stubResponse };
+			},
+		});
+
+		await executeDatasetQuery(nonCachedDatasetId, stubQuery, stubCtx);
+		await executeDatasetQuery(nonCachedDatasetId, stubQuery, stubCtx);
+		expect(pgExecCount).toBe(2);
+	});
+
+	it('does NOT cache errors — provider failure is not stored', async () => {
+		let shouldFail = true;
+		registerProvider('oracle', {
+			async execute(_ir, _entry, _ctx) {
+				executionCount++;
+				if (shouldFail) {
+					shouldFail = false;
+					throw new Error('transient failure');
+				}
+				return { ...cachedResponse };
+			},
+		});
+
+		// First call fails
+		await expect(executeDatasetQuery(cachedDatasetId, stubQuery, stubCtx)).rejects.toThrow();
+		expect(executionCount).toBe(1);
+
+		// Second call succeeds — provider is called (error was not cached)
+		const result = await executeDatasetQuery(cachedDatasetId, stubQuery, stubCtx);
+		expect(executionCount).toBe(2);
+		expect(result.datasetId).toBe(cachedDatasetId);
+	});
+
+	it('separates cache by tenantId', async () => {
+		const ctxA: ServerContext = { tenantId: 'tenant-A', requestId: 'r1' };
+		const ctxB: ServerContext = { tenantId: 'tenant-B', requestId: 'r2' };
+
+		await executeDatasetQuery(cachedDatasetId, stubQuery, ctxA);
+		expect(executionCount).toBe(1);
+
+		// Different tenant — cache miss, provider called
+		await executeDatasetQuery(cachedDatasetId, stubQuery, ctxB);
+		expect(executionCount).toBe(2);
+
+		// Same tenant A again — cache hit
+		await executeDatasetQuery(cachedDatasetId, stubQuery, ctxA);
+		expect(executionCount).toBe(2);
+	});
+
+	it('echoes requestId on cache hit without including it in cache key', async () => {
+		const query1: DatasetQuery = { ...stubQuery, requestId: 'req-A' };
+		await executeDatasetQuery(cachedDatasetId, query1, stubCtx);
+
+		const query2: DatasetQuery = { ...stubQuery, requestId: 'req-B' };
+		const result = await executeDatasetQuery(cachedDatasetId, query2, stubCtx);
+
+		// Should get cache hit despite different requestId
+		expect(executionCount).toBe(1);
+		// requestId comes from query, not from cache
+		expect(result.requestId).toBe('req-B');
 	});
 });
