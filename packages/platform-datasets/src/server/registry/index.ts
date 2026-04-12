@@ -56,6 +56,42 @@ export type RegistryEntry = ProviderEntry & {
 /** Loose params schema for datasets with custom compile (compile does its own parsing). */
 const looseParams = z.record(z.unknown());
 
+// ---------------------------------------------------------------------------
+// WB param schemas — explicit typed contracts for Wildberries datasets
+// ---------------------------------------------------------------------------
+
+/** Params for wildberries.fact_product_office_day. */
+export const wbOfficeDayParams = z.object({
+	dateFrom: z.string().optional(),
+	dateTo: z.string().optional(),
+	nmId: z.coerce.number().int().optional(),
+	officeId: z.coerce.number().int().optional(),
+	chrtId: z.coerce.number().int().optional(),
+	regionName: z.string().optional(),
+	limit: z.coerce.number().int().nonnegative().max(50_000).default(500),
+}).passthrough();
+
+/** Params for wildberries.fact_product_period. */
+export const wbProductPeriodParams = z.object({
+	dateFrom: z.string().optional(),
+	dateTo: z.string().optional(),
+	nmId: z.coerce.number().int().optional(),
+	brandName: z.string().optional(),
+	brand_name: z.string().optional(),
+	subjectName: z.string().optional(),
+	subject_name: z.string().optional(),
+	limit: z.coerce.number().int().nonnegative().max(50_000).default(1000),
+}).passthrough();
+
+/** Date-range params for payment datasets that support temporal filtering. */
+export const paymentDateRangeParams = z.object({
+	dateFrom: z.string().optional(),
+	dateTo: z.string().optional(),
+});
+
+/** Empty params for payment datasets that accept no parameters. */
+export const paymentNoParams = z.object({});
+
 /** Standard pagination + filter params for strategy datasets. */
 const strategyParams = z.object({
 	departmentCode: z.string().optional(),
@@ -63,6 +99,27 @@ const strategyParams = z.object({
 	horizonCode: z.string().optional(),
 	limit: z.coerce.number().int().positive().max(50_000).default(500),
 }).passthrough();
+
+// ---------------------------------------------------------------------------
+// IFTS param schemas — one per dataset
+// ---------------------------------------------------------------------------
+
+/** ifts.system_parameters — no user-facing params (limit hardcoded to 1). */
+export const iftsSystemParametersParams = z.object({}).passthrough();
+
+/** ifts.payment_stats — limit + optional service filter. */
+export const iftsPaymentStatsParams = z.object({
+	limit: z.coerce.number().int().min(0).max(50_000).default(500),
+	service: z.string().trim().min(1).optional(),
+}).passthrough();
+
+/** ifts.message_stats — limit only. */
+export const iftsMessageStatsParams = z.object({
+	limit: z.coerce.number().int().min(0).max(50_000).default(500),
+}).passthrough();
+
+/** ifts.operday_state — no user-facing params. */
+export const iftsOperdayStateParams = z.object({}).passthrough();
 
 // ---------------------------------------------------------------------------
 // Helper: columns -> fields
@@ -84,7 +141,7 @@ const wildberriesEntries: RegistryEntry[] = [
 	{
 		datasetId: 'wildberries.fact_product_office_day',
 		source: { kind: 'postgres', schema: 'mart_marketplace', table: 'fact_product_office_day' },
-		paramsSchema: looseParams,
+		paramsSchema: wbOfficeDayParams,
 		compile: (id, p) => compileWildberriesDataset(id as never, p),
 		fields: columnsToFields({
 			seller_id: 'number', nm_id: 'number', chrt_id: 'number', office_id: 'number',
@@ -98,7 +155,7 @@ const wildberriesEntries: RegistryEntry[] = [
 	{
 		datasetId: 'wildberries.fact_product_period',
 		source: { kind: 'postgres', schema: 'mart_marketplace', table: 'fact_product_day' },
-		paramsSchema: looseParams,
+		paramsSchema: wbProductPeriodParams,
 		compile: (id, p) => compileProductPeriodDataset(id as never, p),
 		fields: columnsToFields({
 			seller_id: 'number', nm_id: 'number', dt: 'date', loaded_at: 'datetime',
@@ -275,7 +332,7 @@ const paymentEntries: RegistryEntry[] = [
 	{
 		datasetId: 'payment.kpi',
 		source: { kind: 'mock', fixtureId: 'payment.kpi' },
-		paramsSchema: looseParams,
+		paramsSchema: paymentNoParams,
 		compile: (id, p) => compilePaymentDataset(id as never, p),
 		fields: columnsToFields({
 			period_label: 'string', date_from: 'date', date_to: 'date',
@@ -287,7 +344,7 @@ const paymentEntries: RegistryEntry[] = [
 	{
 		datasetId: 'payment.timeseriesDaily',
 		source: { kind: 'mock', fixtureId: 'payment.timeseriesDaily' },
-		paramsSchema: looseParams,
+		paramsSchema: paymentDateRangeParams,
 		compile: (id, p) => compilePaymentDataset(id as never, p),
 		fields: columnsToFields({
 			date: 'date', status: 'string', trx_count: 'number', trx_amount: 'number',
@@ -297,7 +354,7 @@ const paymentEntries: RegistryEntry[] = [
 	{
 		datasetId: 'payment.topClients',
 		source: { kind: 'mock', fixtureId: 'payment.topClients' },
-		paramsSchema: looseParams,
+		paramsSchema: paymentNoParams,
 		compile: (id, p) => compilePaymentDataset(id as never, p),
 		fields: columnsToFields({
 			role: 'string', client_name: 'string', client_account: 'string',
@@ -308,7 +365,7 @@ const paymentEntries: RegistryEntry[] = [
 	{
 		datasetId: 'payment.mccSummary',
 		source: { kind: 'mock', fixtureId: 'payment.mccSummary' },
-		paramsSchema: looseParams,
+		paramsSchema: paymentNoParams,
 		compile: (id, p) => compilePaymentDataset(id as never, p),
 		fields: columnsToFields({
 			mcc: 'string', mcc_name: 'string', trx_count: 'number', trx_amount: 'number',
@@ -325,7 +382,7 @@ const iftsEntries: RegistryEntry[] = [
 	{
 		datasetId: 'ifts.system_parameters',
 		source: { kind: 'oracle', connectionName: 'ifts', schema: 'ACH', table: 'SYSTEM_PARAMETERS' },
-		paramsSchema: looseParams,
+		paramsSchema: iftsSystemParametersParams,
 		compile: (id, p) => compileIftsDataset(id as never, p),
 		fields: columnsToFields({
 			OPERDAY: 'date', SESSION_ID: 'string', SERVICE: 'string',
@@ -337,7 +394,7 @@ const iftsEntries: RegistryEntry[] = [
 	{
 		datasetId: 'ifts.payment_stats',
 		source: { kind: 'oracle', connectionName: 'ifts', schema: 'ACH', table: 'T_PAYM_STAT' },
-		paramsSchema: looseParams,
+		paramsSchema: iftsPaymentStatsParams,
 		compile: (id, p) => compileIftsDataset(id as never, p),
 		cache: { ttlMs: 15_000 },
 		execution: { timeoutMs: 5_000 },
@@ -352,7 +409,7 @@ const iftsEntries: RegistryEntry[] = [
 	{
 		datasetId: 'ifts.message_stats',
 		source: { kind: 'oracle', connectionName: 'ifts', schema: 'ACH', table: 'T_MSGS_STAT' },
-		paramsSchema: looseParams,
+		paramsSchema: iftsMessageStatsParams,
 		compile: (id, p) => compileIftsDataset(id as never, p),
 		cache: { ttlMs: 15_000 },
 		execution: { timeoutMs: 5_000 },
@@ -368,7 +425,7 @@ const iftsEntries: RegistryEntry[] = [
 	{
 		datasetId: 'ifts.operday_state',
 		source: { kind: 'oracle', connectionName: 'ifts', schema: 'ACH', table: 'OPERDAY_STATE' },
-		paramsSchema: looseParams,
+		paramsSchema: iftsOperdayStateParams,
 		compile: (id, p) => compileIftsDataset(id as never, p),
 		fields: columnsToFields({
 			OPERDAY_STATE_ID: 'number', OPERDAY_ID: 'number', STATE_ID: 'number',
