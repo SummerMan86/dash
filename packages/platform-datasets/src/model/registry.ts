@@ -104,7 +104,7 @@ export type DatasetRegistryEntry<
 	 * executeDatasetQuery merges query.filters + query.params before parsing,
 	 * so compile functions see a single flat bag and never touch DatasetQuery directly.
 	 */
-	compile?: (params: TParams) => DatasetIr;
+	compile?: (datasetId: DatasetId, params: TParams) => DatasetIr;
 	/** Optional Zod schema for row validation (dev/test). */
 	rowSchema?: z.ZodType<TRow>;
 	access?: DatasetAccess;

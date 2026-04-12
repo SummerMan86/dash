@@ -9,7 +9,8 @@ For completed rollout sequencing see [archive/bi/bi_refactor_rollout.md](./archi
 
 - Covers: dataset runtime, filter wire contract, IR policy, client-side query model, BI-adjacent operational paths, storage ownership, provider extension path, schema introspection
 - Does not cover: EMIS operational paths, repo-wide rules, detailed rollout timeline
-- First migration wave covers non-EMIS BI (`wildberries`, `strategy`, generic dashboard runtime). EMIS BI may adopt the same contracts later, but it does not block the first refactor wave
+- First migration wave covers non-EMIS analytics (`wildberries`, `strategy`, generic dashboard runtime). EMIS analytics pages (`/dashboard/emis/`) may adopt the same contracts later, but they do not block the first refactor wave
+- **EMIS read-model datasets** (`emis.*`) are now registered in the BI dataset registry and served via `executeDatasetQuery` middleware (including provider-owned caching from CA-12). EMIS operational paths remain separate (see `architecture_emis.md`)
 
 ## Document Hierarchy
 
@@ -124,6 +125,12 @@ The current model is intentionally simple:
 - optional custom `compile`
 - otherwise a default generic compiler
 
+Runtime source of truth:
+
+- `/api/datasets/:id` imports `executeDatasetQuery()` from `@dashboard-builder/platform-datasets/server`
+- package-owned compile/registry code imports definitions from `packages/platform-datasets/src/server/definitions/*`
+- `apps/web/src/lib/server/datasets/definitions/*` are legacy migration copies/reference only; they are not the runtime source of truth and must not receive new canonical dataset work
+
 ```ts
 import { z } from 'zod';
 
@@ -147,7 +154,7 @@ type DatasetRegistryEntry<TParams, TRow = Record<string, JsonValue>> = {
 	queryBindings?: {
 		filters?: DatasetFilterBinding[];
 	};
-	compile?: (params: TParams) => SelectIr;
+	compile?: (datasetId: DatasetId, params: TParams) => SelectIr;
 	rowSchema?: z.ZodType<TRow>;
 	access?: {
 		requiredScopes?: string[];
@@ -459,6 +466,11 @@ Route code must not:
 - contain SQL
 - know provider internals
 - implement dataset-specific business rules
+
+Placement rule:
+
+- if logic is reusable or defines BI runtime behavior, it belongs in `packages/platform-datasets/*`
+- `src/lib/server/*` is reserved for app-owned server glue such as `mockProvider`, alerts, and thin transport helpers; it is not a second canonical home for dataset compilation
 
 ### Error Contract
 
@@ -1117,7 +1129,7 @@ Rules for new pages:
 - Pages call `planFiltersForDataset()` directly, merge `plan.serverParams` + page-local params into `params`, and pass to `fetchDataset({ id, params })`.
 - Reference implementations: all WB pages (`office-day`, `product-analytics`, `stock-alerts`), `strategy/scorecard`, `demo`.
 
-Current status: all BI pages use the canonical path. Legacy path (deprecated, gated by `filterContext`) is still used by strategy cascade/overview/performance/scorecard_v2 and EMIS BI pages.
+Current status: all BI pages use the canonical path. Legacy path (deprecated, gated by `filterContext`) is still used by strategy cascade/overview/performance/scorecard_v2 and EMIS analytics pages.
 
 The legacy path will be removed when strategy/EMIS pages are migrated. It is not a supported pattern for new work.
 
@@ -1152,3 +1164,5 @@ Tracked migration debts in the BI vertical. Each entry has a trigger for when it
 | 5 | `assertDatasetAccess()` placeholder | Comment-only, no enforcement | When multi-tenant or role-based access is needed | Enforce `entry.access.requiredScopes` |
 | 6 | Postgres provider has no server-side caching | Only Oracle uses `providerCache` | When Postgres dataset needs caching | Use shared `providerCache` helper |
 | 7 | Dataset definitions duplicated | Compile functions in both `packages/platform-datasets/src/server/definitions/` and `apps/web/src/lib/server/datasets/definitions/` | Next cleanup pass | Single canonical location in package |
+| 8 | EMIS datasets use `emisLooseParams` | `z.record(z.unknown())` bypasses validation for all 4 EMIS datasets | When EMIS datasets are touched for any change | Explicit Zod schema per EMIS dataset |
+| 9 | `DatasetQuery.filters` field in `executeDatasetQuery` | Deprecated; merged into flat params before compile. Compile functions never see `query.filters` directly | After all pages confirmed on flat params | Remove `filters` field from `DatasetQuery` wire contract |

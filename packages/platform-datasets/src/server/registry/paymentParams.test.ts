@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { paymentDateRangeParams, paymentNoParams } from './index';
-import { getRegistryEntry } from './index';
+import { paymentDateRangeParams, paymentNoParams, getRegistryEntry } from './index';
 
 describe('paymentNoParams schema', () => {
 	it('accepts empty object', () => {

@@ -62,7 +62,7 @@ let shutdownRegistered = false;
 if (typeof process !== 'undefined' && !shutdownRegistered) {
 	shutdownRegistered = true;
 	const shutdown = async () => {
-		for (const [name, pool] of pools) {
+		for (const pool of pools.values()) {
 			try { await pool.close(0); } catch { /* ignore */ }
 		}
 		pools.clear();

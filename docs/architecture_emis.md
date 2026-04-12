@@ -7,6 +7,10 @@ For repo-wide foundation see architecture.md.
 - Covers: EMIS operational paths, emis-server/emis-contracts/emis-ui, PostGIS, ingestion, auth
 - Does not cover: BI dashboard paths (see architecture_dashboard_bi.md), repo-wide rules (see architecture.md)
 
+> **Module boundary.** This document describes the EMIS module — a self-contained domain (packages `emis-contracts`, `emis-server`, `emis-ui` + operational routes under `/emis/` and `/api/emis/`). Analytical dashboards that visualize EMIS data (`/dashboard/emis/`) are **not** part of this module; they belong to the BI platform and are covered by [architecture_dashboard_bi.md](./architecture_dashboard_bi.md). They consume EMIS data only through published mart views, never through `emis-server` modules.
+>
+> **EMIS read-model datasets** (`emis.*`) are registered in the BI dataset registry and served via the `executeDatasetQuery` pipeline (including provider-owned caching). This means EMIS analytical reads share the same middleware (params validation, compile, provider dispatch, cache, observability) as other BI datasets.
+
 ## 1. EMIS Operational Path
 
 ```

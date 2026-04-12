@@ -10,11 +10,6 @@ import { oracleProvider } from './providers/oracleProvider';
 registerProvider('postgres', postgresProvider);
 registerProvider('oracle', oracleProvider);
 
-/**
- * @deprecated Legacy family-switch compiler. Use registry-owned compile via executeDatasetQuery.
- * Retained temporarily for any non-migrated direct consumers. Will be removed in next cleanup.
- */
-export { compileDataset, isKnownDatasetId } from './compile';
 export { genericCompile } from './genericCompile';
 export { postgresProvider } from './providers/postgresProvider';
 export { oracleProvider } from './providers/oracleProvider';

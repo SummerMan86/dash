@@ -112,56 +112,10 @@ export function compileStrategyMartDataset(
 			};
 		}
 
-		case STRATEGY_MART_DATASETS.scorecardOverview: {
-			const whereParts = [];
-			if (filters.departmentCode) {
-				whereParts.push(ir.eq(ir.col('department_code'), ir.lit(filters.departmentCode)));
-			}
-			if (filters.perspectiveCode) {
-				whereParts.push(ir.eq(ir.col('perspective_code'), ir.lit(filters.perspectiveCode)));
-			}
-			if (filters.horizonCode) {
-				whereParts.push(ir.eq(ir.col('horizon_code'), ir.lit(filters.horizonCode)));
-			}
-
-			return {
-				kind: 'select',
-				from: { kind: 'dataset', id: datasetId },
-				select: [
-					{ expr: ir.col('department_code') },
-					{ expr: ir.col('department_name') },
-					{ expr: ir.col('department_order') },
-					{ expr: ir.col('perspective_code') },
-					{ expr: ir.col('perspective_name') },
-					{ expr: ir.col('perspective_order') },
-					{ expr: ir.col('horizon_code') },
-					{ expr: ir.col('horizon_name') },
-					{ expr: ir.col('horizon_order') },
-					{ expr: ir.col('total_kpi_count') },
-					{ expr: ir.col('kpi_with_target') },
-					{ expr: ir.col('kpi_with_actual') },
-					{ expr: ir.col('avg_achievement_pct') },
-					{ expr: ir.col('weighted_score') },
-					{ expr: ir.col('goal_count') },
-					{ expr: ir.col('task_count') },
-					{ expr: ir.col('gap_count') },
-					{ expr: ir.col('weight_pct') },
-					{ expr: ir.col('weight_missing_flag') },
-					{ expr: ir.col('weight_as_of_date') },
-					{ expr: ir.col('weighted_score_total') },
-					{ expr: ir.col('missing_weight_rows') }
-				],
-				...(whereParts.length
-					? { where: whereParts.length === 1 ? whereParts[0] : ir.and(whereParts) }
-					: {}),
-				orderBy: [
-					{ expr: ir.col('department_order'), dir: 'asc' },
-					{ expr: ir.col('horizon_order'), dir: 'asc' },
-					{ expr: ir.col('perspective_order'), dir: 'asc' }
-				],
-				limit: clampLimit(params.limit, 2_000)
-			};
-		}
+		case STRATEGY_MART_DATASETS.scorecardOverview:
+			// Declarative dataset — handled by genericCompile in registry (queryBindings-based).
+			// This case should never be reached at runtime; if it is, fail fast.
+			throw new Error(`${datasetId} is a declarative dataset — use genericCompile via registry`);
 
 		case STRATEGY_MART_DATASETS.performanceDetail: {
 			const whereParts = [];

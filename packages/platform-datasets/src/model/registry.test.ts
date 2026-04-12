@@ -73,7 +73,7 @@ describe('DatasetRegistryEntry', () => {
 			source: { kind: 'postgres', schema: 'mart', table: 'data' },
 			fields,
 			paramsSchema,
-			compile: (params): SelectIr => ({
+			compile: (_id, params): SelectIr => ({
 				kind: 'select',
 				from: { kind: 'dataset', id: 'test.custom' },
 				select: [{ expr: { kind: 'col', name: 'id' } }],
@@ -83,7 +83,7 @@ describe('DatasetRegistryEntry', () => {
 			}),
 		};
 
-		const ir = entry.compile!({ status: 'active' });
+		const ir = entry.compile!('test.custom', { status: 'active' });
 		expect(ir.kind).toBe('select');
 		expect(ir.where).toBeDefined();
 	});

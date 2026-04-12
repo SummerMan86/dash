@@ -16,13 +16,13 @@ import type { DatasetId, DatasetIr, DatasetFieldType } from '../../model';
 import type { SourceDescriptor, DatasetFieldDef, DatasetFilterBinding } from '../../model';
 import type { ProviderEntry } from '../../model';
 
-// Import per-family compile functions (custom compile escape hatch)
-import { compileWildberriesDataset } from '../definitions/wildberriesOfficeDay';
-import { compileProductPeriodDataset } from '../definitions/wildberriesProductPeriod';
-import { compileEmisMartDataset } from '../definitions/emisMart';
-import { compileStrategyMartDataset } from '../definitions/strategyMart';
-import { compileIftsDataset } from '../definitions/iftsMart';
-import { compilePaymentDataset } from '../definitions/paymentAnalytics';
+// Import per-family compile functions and ID types (custom compile escape hatch)
+import { compileWildberriesDataset, type WildberriesDatasetId } from '../definitions/wildberriesOfficeDay';
+import { compileProductPeriodDataset, type ProductPeriodDatasetId } from '../definitions/wildberriesProductPeriod';
+import { compileEmisMartDataset, type EmisMartDatasetId } from '../definitions/emisMart';
+import { compileStrategyMartDataset, type StrategyMartDatasetId } from '../definitions/strategyMart';
+import { compileIftsDataset, type IftsDatasetId } from '../definitions/iftsMart';
+import { compilePaymentDataset, type PaymentDatasetId } from '../definitions/paymentAnalytics';
 
 // ---------------------------------------------------------------------------
 // Registry entry — canonical type with paramsSchema
@@ -54,7 +54,7 @@ export type RegistryEntry = ProviderEntry & {
 // ---------------------------------------------------------------------------
 
 /** Loose params schema for datasets with custom compile (compile does its own parsing). */
-const looseParams = z.record(z.unknown());
+const emisLooseParams = z.record(z.unknown());
 
 // ---------------------------------------------------------------------------
 // WB param schemas — explicit typed contracts for Wildberries datasets
@@ -97,6 +97,9 @@ const strategyParams = z.object({
 	departmentCode: z.string().optional(),
 	perspectiveCode: z.string().optional(),
 	horizonCode: z.string().optional(),
+	strategyEntityId: z.string().optional(),
+	statusLabel: z.string().optional(),
+	pathStatus: z.string().optional(),
 	limit: z.coerce.number().int().positive().max(50_000).default(500),
 }).passthrough();
 
@@ -142,7 +145,7 @@ const wildberriesEntries: RegistryEntry[] = [
 		datasetId: 'wildberries.fact_product_office_day',
 		source: { kind: 'postgres', schema: 'mart_marketplace', table: 'fact_product_office_day' },
 		paramsSchema: wbOfficeDayParams,
-		compile: (id, p) => compileWildberriesDataset(id as never, p),
+		compile: (id, p) => compileWildberriesDataset(id as WildberriesDatasetId, p),
 		fields: columnsToFields({
 			seller_id: 'number', nm_id: 'number', chrt_id: 'number', office_id: 'number',
 			dt: 'date', loaded_at: 'datetime', size_name: 'string', office_name: 'string',
@@ -156,7 +159,7 @@ const wildberriesEntries: RegistryEntry[] = [
 		datasetId: 'wildberries.fact_product_period',
 		source: { kind: 'postgres', schema: 'mart_marketplace', table: 'fact_product_day' },
 		paramsSchema: wbProductPeriodParams,
-		compile: (id, p) => compileProductPeriodDataset(id as never, p),
+		compile: (id, p) => compileProductPeriodDataset(id as ProductPeriodDatasetId, p),
 		fields: columnsToFields({
 			seller_id: 'number', nm_id: 'number', dt: 'date', loaded_at: 'datetime',
 			title: 'string', vendor_code: 'string', brand_name: 'string',
@@ -184,8 +187,8 @@ const emisEntries: RegistryEntry[] = [
 	{
 		datasetId: 'emis.news_flat',
 		source: { kind: 'postgres', schema: 'mart', table: 'emis_news_flat' },
-		paramsSchema: looseParams,
-		compile: (id, p) => compileEmisMartDataset(id as never, p),
+		paramsSchema: emisLooseParams,
+		compile: (id, p) => compileEmisMartDataset(id as EmisMartDatasetId, p),
 		fields: columnsToFields({
 			id: 'string', title: 'string', summary: 'string', source_code: 'string',
 			source_name: 'string', published_at: 'datetime', country_code: 'string',
@@ -196,8 +199,8 @@ const emisEntries: RegistryEntry[] = [
 	{
 		datasetId: 'emis.object_news_facts',
 		source: { kind: 'postgres', schema: 'mart', table: 'emis_object_news_facts' },
-		paramsSchema: looseParams,
-		compile: (id, p) => compileEmisMartDataset(id as never, p),
+		paramsSchema: emisLooseParams,
+		compile: (id, p) => compileEmisMartDataset(id as EmisMartDatasetId, p),
 		fields: columnsToFields({
 			link_id: 'string', news_id: 'string', news_title: 'string', object_id: 'string',
 			object_name: 'string', object_type_code: 'string', object_type_name: 'string',
@@ -209,8 +212,8 @@ const emisEntries: RegistryEntry[] = [
 	{
 		datasetId: 'emis.objects_dim',
 		source: { kind: 'postgres', schema: 'mart', table: 'emis_objects_dim' },
-		paramsSchema: looseParams,
-		compile: (id, p) => compileEmisMartDataset(id as never, p),
+		paramsSchema: emisLooseParams,
+		compile: (id, p) => compileEmisMartDataset(id as EmisMartDatasetId, p),
 		fields: columnsToFields({
 			id: 'string', external_id: 'string', name: 'string', name_en: 'string',
 			object_type_code: 'string', object_type_name: 'string', country_code: 'string',
@@ -223,8 +226,8 @@ const emisEntries: RegistryEntry[] = [
 	{
 		datasetId: 'emis.ship_route_vessels',
 		source: { kind: 'postgres', schema: 'mart', table: 'emis_ship_route_vessels' },
-		paramsSchema: looseParams,
-		compile: (id, p) => compileEmisMartDataset(id as never, p),
+		paramsSchema: emisLooseParams,
+		compile: (id, p) => compileEmisMartDataset(id as EmisMartDatasetId, p),
 		fields: columnsToFields({
 			ship_hbk_id: 'number', ship_id: 'number', imo: 'number', mmsi: 'number',
 			vessel_name: 'string', vessel_type: 'string', flag: 'string', callsign: 'string',
@@ -246,7 +249,7 @@ const strategyEntries: RegistryEntry[] = [
 		datasetId: 'strategy.entity_overview',
 		source: { kind: 'postgres', schema: 'mart_strategy', table: 'slobi_entity_overview' },
 		paramsSchema: strategyParams,
-		compile: (id, p) => compileStrategyMartDataset(id as never, p),
+		compile: (id, p) => compileStrategyMartDataset(id as StrategyMartDatasetId, p),
 		fields: columnsToFields({
 			strategy_entity_id: 'string', source_run_id: 'string', entity_origin: 'string',
 			entity_name: 'string', entity_semantics: 'string', binding_model: 'string',
@@ -290,7 +293,7 @@ const strategyEntries: RegistryEntry[] = [
 		datasetId: 'strategy.performance_detail',
 		source: { kind: 'postgres', schema: 'mart_strategy', table: 'slobi_performance_detail' },
 		paramsSchema: strategyParams,
-		compile: (id, p) => compileStrategyMartDataset(id as never, p),
+		compile: (id, p) => compileStrategyMartDataset(id as StrategyMartDatasetId, p),
 		fields: columnsToFields({
 			performance_entity_key: 'string', source_run_id: 'string',
 			strategy_entity_id: 'string', entity_name: 'string', entity_semantics: 'string',
@@ -308,7 +311,7 @@ const strategyEntries: RegistryEntry[] = [
 		datasetId: 'strategy.cascade_detail',
 		source: { kind: 'postgres', schema: 'mart_strategy', table: 'slobi_cascade_detail' },
 		paramsSchema: strategyParams,
-		compile: (id, p) => compileStrategyMartDataset(id as never, p),
+		compile: (id, p) => compileStrategyMartDataset(id as StrategyMartDatasetId, p),
 		fields: columnsToFields({
 			path_id: 'string', source_run_id: 'string', strategy_entity_id: 'string',
 			entity_name: 'string', entity_semantics: 'string', department_code: 'string',
@@ -333,7 +336,7 @@ const paymentEntries: RegistryEntry[] = [
 		datasetId: 'payment.kpi',
 		source: { kind: 'mock', fixtureId: 'payment.kpi' },
 		paramsSchema: paymentNoParams,
-		compile: (id, p) => compilePaymentDataset(id as never, p),
+		compile: (id, p) => compilePaymentDataset(id as PaymentDatasetId, p),
 		fields: columnsToFields({
 			period_label: 'string', date_from: 'date', date_to: 'date',
 			total_amount: 'number', total_count: 'number', avg_ticket: 'number',
@@ -345,7 +348,7 @@ const paymentEntries: RegistryEntry[] = [
 		datasetId: 'payment.timeseriesDaily',
 		source: { kind: 'mock', fixtureId: 'payment.timeseriesDaily' },
 		paramsSchema: paymentDateRangeParams,
-		compile: (id, p) => compilePaymentDataset(id as never, p),
+		compile: (id, p) => compilePaymentDataset(id as PaymentDatasetId, p),
 		fields: columnsToFields({
 			date: 'date', status: 'string', trx_count: 'number', trx_amount: 'number',
 			avg_ticket: 'number', rejected_count: 'number', rejected_share_pct: 'number',
@@ -355,7 +358,7 @@ const paymentEntries: RegistryEntry[] = [
 		datasetId: 'payment.topClients',
 		source: { kind: 'mock', fixtureId: 'payment.topClients' },
 		paramsSchema: paymentNoParams,
-		compile: (id, p) => compilePaymentDataset(id as never, p),
+		compile: (id, p) => compilePaymentDataset(id as PaymentDatasetId, p),
 		fields: columnsToFields({
 			role: 'string', client_name: 'string', client_account: 'string',
 			trx_count: 'number', trx_amount: 'number', avg_ticket: 'number',
@@ -366,7 +369,7 @@ const paymentEntries: RegistryEntry[] = [
 		datasetId: 'payment.mccSummary',
 		source: { kind: 'mock', fixtureId: 'payment.mccSummary' },
 		paramsSchema: paymentNoParams,
-		compile: (id, p) => compilePaymentDataset(id as never, p),
+		compile: (id, p) => compilePaymentDataset(id as PaymentDatasetId, p),
 		fields: columnsToFields({
 			mcc: 'string', mcc_name: 'string', trx_count: 'number', trx_amount: 'number',
 			avg_ticket: 'number', rejected_count: 'number', rejected_share_pct: 'number',
@@ -383,7 +386,7 @@ const iftsEntries: RegistryEntry[] = [
 		datasetId: 'ifts.system_parameters',
 		source: { kind: 'oracle', connectionName: 'ifts', schema: 'ACH', table: 'SYSTEM_PARAMETERS' },
 		paramsSchema: iftsSystemParametersParams,
-		compile: (id, p) => compileIftsDataset(id as never, p),
+		compile: (id, p) => compileIftsDataset(id as IftsDatasetId, p),
 		fields: columnsToFields({
 			OPERDAY: 'date', SESSION_ID: 'string', SERVICE: 'string',
 			PROJECT_CODE: 'string', SYS_NAME: 'string',
@@ -395,7 +398,7 @@ const iftsEntries: RegistryEntry[] = [
 		datasetId: 'ifts.payment_stats',
 		source: { kind: 'oracle', connectionName: 'ifts', schema: 'ACH', table: 'T_PAYM_STAT' },
 		paramsSchema: iftsPaymentStatsParams,
-		compile: (id, p) => compileIftsDataset(id as never, p),
+		compile: (id, p) => compileIftsDataset(id as IftsDatasetId, p),
 		cache: { ttlMs: 15_000 },
 		execution: { timeoutMs: 5_000 },
 		fields: columnsToFields({
@@ -410,7 +413,7 @@ const iftsEntries: RegistryEntry[] = [
 		datasetId: 'ifts.message_stats',
 		source: { kind: 'oracle', connectionName: 'ifts', schema: 'ACH', table: 'T_MSGS_STAT' },
 		paramsSchema: iftsMessageStatsParams,
-		compile: (id, p) => compileIftsDataset(id as never, p),
+		compile: (id, p) => compileIftsDataset(id as IftsDatasetId, p),
 		cache: { ttlMs: 15_000 },
 		execution: { timeoutMs: 5_000 },
 		fields: columnsToFields({
@@ -426,7 +429,7 @@ const iftsEntries: RegistryEntry[] = [
 		datasetId: 'ifts.operday_state',
 		source: { kind: 'oracle', connectionName: 'ifts', schema: 'ACH', table: 'OPERDAY_STATE' },
 		paramsSchema: iftsOperdayStateParams,
-		compile: (id, p) => compileIftsDataset(id as never, p),
+		compile: (id, p) => compileIftsDataset(id as IftsDatasetId, p),
 		fields: columnsToFields({
 			OPERDAY_STATE_ID: 'number', OPERDAY_ID: 'number', STATE_ID: 'number',
 			STATUS: 'string', START_TIME: 'datetime', FINISH_TIME: 'datetime',
