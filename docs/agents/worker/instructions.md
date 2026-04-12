@@ -4,17 +4,30 @@
 
 Ты не владеешь canonical plan и не ведёшь canonical memory. Твоя задача — качественно реализовать slice, проверить его и вернуть оркестратору полный handoff с evidence.
 
+## Bootstrap (isolated subagent mode)
+
+Если ты запущен как `subagent + worktree` (default для code-writing):
+
+- `CLAUDE.md` загружен автоматически, но это redirect — не полагайся на него как на инструкции.
+- `settings.json` и user profile **не доступны** — все инструкции идут через task packet.
+- **Первым шагом** прочитай все файлы из секции `Bootstrap Reads` в task packet. Без этого не начинай реализацию.
+- `Optional References` из task packet — читай по необходимости, если столкнулся с неясностью.
+- Если `Bootstrap Reads` отсутствует в task packet, прочитай как минимум: `docs/agents/worker/instructions.md` (этот файл) и `docs/agents/invariants.md`.
+
 ## Твой цикл работы
 
-1. **Получи задачу** от `orchestrator` (формат: `docs/agents/templates.md`, секция 2)
-2. **Прочитай** handoff, локальные `AGENTS.md` в затронутых модулях и релевантный slice из `current_plan.md`
+1. **Получи задачу** от `orchestrator` (формат: `docs/agents/templates.md`, секция 2 или 2.1)
+2. **Прочитай** `Bootstrap Reads` из task packet, затем `Carry-Forward Context` (если есть — это контекст от предыдущего worker'а) и локальные `AGENTS.md` в затронутых модулях
 3. **Реализуй** задачу в рамках scope
 4. **Проверь** себя (checklist ниже)
-5. **Запусти slice review** на своём diff, если это не docs-only/trivial slice и `orchestrator` не сказал иначе
+5. **Запусти slice review** на своём diff:
+   - для любого code-writing slice это обязательно;
+   - minimum floor = `code-reviewer`, дополнительные reviewer'ы — по поверхности change;
+   - skip допустим только для docs-only / read-only / governance-closeout work без product code
 6. **Исправь** non-critical findings, если они понятны и локальны
 7. **Закоммить:**
-   - **Teammate mode (default):** коммить в integration branch `feature/<topic>`, только owned files из handoff
-   - **Subagent mode:** коммить в свою worker branch `agent/worker/<slug>`, не в integration branch
+   - **Subagent mode (default for code-writing):** коммить в свою worker branch `agent/worker/<slug>`, не в integration branch
+   - **Teammate mode (shared-checkout exception):** коммить в integration branch `feature/<topic>` только если `orchestrator` явно назначил этот mode
 8. **Сдай** результат через handoff note (формат: `docs/agents/templates.md` §3), обязательно с truthful `review disposition`
 
 В subagent mode `orchestrator` сам смержит твою worker branch в integration branch.
@@ -25,19 +38,20 @@ Canonical git/worktree protocol: `docs/agents/git-protocol.md`.
 Canonical review model: `docs/agents/review-gate.md`.
 Canonical invariants: `docs/agents/invariants.md`.
 
-### Teammate mode (default)
-
-- Работай напрямую в integration branch `feature/<topic>`.
-- Коммить только в рамках assigned scope (owned files из handoff).
-- Не трогай файлы вне owned files.
-- Если обнаружил, что твои изменения конфликтуют с другим scope — эскалируй к `orchestrator`.
-
-### Subagent mode (isolated)
+### Subagent mode (isolated, default for code-writing)
 
 - Работай только в своём `agent/worker/<slug>` branch.
 - Не коммить в integration branch.
 - Не переиспользуй чужой worktree.
 - `orchestrator` сам смержит твою ветку после handoff.
+
+### Teammate mode (shared-checkout exception)
+
+- Работай напрямую в integration branch `feature/<topic>`.
+- Используй этот mode только если `orchestrator` явно указал, что slice non-code и подпадает под `git-protocol.md` §4.
+- Коммить только в рамках assigned scope (owned files из handoff).
+- Не трогай файлы вне owned files.
+- Если обнаружил, что твои изменения конфликтуют с другим scope — эскалируй к `orchestrator`.
 
 ### Общие правила (оба режима)
 
@@ -56,6 +70,7 @@ Canonical invariants: `docs/agents/invariants.md`.
 - [ ] Нет лишних абстракций "на будущее"
 - [ ] Инварианты из `docs/agents/invariants.md` не нарушены
 - [ ] Baseline tests из handoff не уменьшились
+- [ ] Для code-writing slice minimum independent review floor закрыт (`code-reviewer` + дополнительные reviewer'ы по поверхности change)
 
 ### Documentation
 
@@ -130,7 +145,7 @@ Escalation triggers: 3+ неудачных попыток или потеря у
 Читай только то, что нужно для реализации slice. Orchestration lifecycle, governance passes и strategic review — ответственность `orchestrator`, не твоя.
 
 - `docs/agents/invariants.md` — project guardrails (обязательно)
-- `docs/agents/git-protocol.md` §1-2 и §3.1 — ветки, коммиты, teammate discipline (обязательно; §3.2 subagent mode — только если `orchestrator` назначил subagent mode)
+- `docs/agents/git-protocol.md` §1-2 и §3-6 — ветки, worktrees и branch choreography (обязательно; teammate mode используй только если `orchestrator` назначил shared-checkout exception)
 - `docs/agents/templates.md` §0 (правила заполнения) и §3 (формат Worker Handoff) — обязательно
 - Локальные `AGENTS.md` в затронутых модулях (обязательно)
 - Relevant domain bootstrap doc if applicable (e.g. `docs/emis_session_bootstrap.md` for EMIS)

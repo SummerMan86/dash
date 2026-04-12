@@ -59,15 +59,17 @@ Legacy compatibility wrappers remain at:
 3. **Проверь** нужен ли Architecture Readiness Check по `workflow.md` §2.3.1
 4. **Разбей execution** на worker-owned slices
 5. **Выбери worker mode**:
-   - `micro-worker` — trivial / bounded slice
-   - ordinary worker — обычный slice
-   - parallel workers — только для независимых ownership slices
+   - isolated worker (`subagent + worktree`) — default для любого code-writing slice
+   - teammate worker — только для docs-only / read-only / governance-closeout slice без product code
+   - parallel isolated workers — только для независимых ownership slices
+   - если одновременно живут `2+` workers, teammate mode не использовать
 6. **Сформируй task packet** по `templates.md` §2
 7. **Прими handoff** по `templates.md` §3:
    - scope соблюдён
    - change manifest понятен
    - evidence `fresh` или truthful `not run + reason`
    - review disposition правдивый
+   - для code-writing slice соблюдён minimum independent review floor (`code-reviewer` как минимум)
 8. **Если handoff неполный** — не принимай его:
    - запроси transparency request (`templates.md` §13)
    - или отправь slice на доработку / re-review
@@ -85,8 +87,11 @@ Legacy compatibility wrappers remain at:
 Разрешённые типы:
 
 - `EXPLAIN_DIFF`
+- `EXPLAIN_DECISION`
 - `SHOW_STRUCTURE`
 - `SHOW_IMPACT`
+- `ALTERNATIVE_APPROACH`
+- `DOCUMENT_RISK`
 - `VERIFY_INVARIANT`
 - `CHECK_STATUS`
 
@@ -99,9 +104,67 @@ Legacy compatibility wrappers remain at:
 
 Если ответ начинает превращаться в code dump, останови и запроси более короткий manifest/summary.
 
+## Worker Spawn Protocol
+
+При запуске worker через `Agent(isolation: "worktree")`:
+
+### Что worker получает автоматически
+
+- `CLAUDE.md` из worktree (но это только redirect на `AGENTS.md`).
+- Полную копию репозитория через worktree.
+- Tools из parent conversation.
+
+### Что worker НЕ получает
+
+- Parent conversation context, `settings.json`, `~/.claude/` profile.
+- Содержимое `current_plan.md`, `memory.md`, предыдущих handoff'ов.
+- Всё, что не передано явно через prompt.
+
+### Prompt composition
+
+- Task packet из `templates.md` §2 (или §2.1 для micro-worker) — единственный канал от orchestrator к worker.
+- `Bootstrap Reads` — обязательная секция; worker читает перечисленные файлы до начала реализации.
+- `Optional References` — документы, которые пригодятся worker'у при неясностях; не перегружай, 2-4 ссылки максимум.
+- `Carry-Forward Context` — обязательная секция для dependent slices (где `depends on: ST-N` в плане). Не отправляй worker читать весь `current_plan.md`.
+
+### Carry-Forward Context: обязанность orchestrator'а
+
+Workers не имеют shared memory. Continuity между ними — твоя ответственность.
+
+Для dependent slices ты **обязан** собрать `Carry-Forward Context` из handoff предыдущего worker'а:
+
+1. Возьми `Continuation Notes` из предыдущего handoff — вставь as-is.
+2. Возьми open findings/risks, которые переходят в текущий slice.
+3. Напиши summary: что было сделано и какие decisions/patterns текущий worker должен продолжить.
+4. Не копируй весь предыдущий handoff — worker'у нужен контекст, а не стена текста.
+
+Если предыдущий worker не оставил `Continuation Notes`, а slice dependent — реконструируй continuity из change manifest и review results сам.
+
+### Model selection
+
+- worker (code-writing, обычный slice): model не указывать (наследует parent = Opus) или явно `"sonnet"` для простых slices.
+- micro-worker: `model: "sonnet"` по умолчанию.
+- reviewer subagents: `model: "sonnet"` явно — они bounded, Opus не нужен.
+
+### Checklist перед spawn
+
+- [ ] task packet заполнен по `templates.md` §2 / §2.1
+- [ ] `Bootstrap Reads` содержит `worker/instructions.md`, `invariants.md` и локальные `AGENTS.md`
+- [ ] `Optional References` заполнен, если slice в нетривиальном контексте (domain, BI, cross-layer)
+- [ ] `Carry-Forward Context` собран из предыдущего handoff, если slice dependent
+- [ ] worker branch и base commit указаны
+- [ ] owned files и out-of-scope files указаны
+
+## Routing эскалаций
+
+- technical/governance вопросы сначала направляй в `lead-strategic`;
+- к пользователю иди только когда нужен product/scope/priority decision, явное принятие внешнего риска или стандартный approval plan/merge;
+- не перепрыгивай через `lead-strategic`, если ambiguity лежит в architecture / schema / waiver / acceptance governance.
+
 ## Review Ownership
 
 - slice review по умолчанию запускает worker на своём diff
+- для любого code-writing slice minimum floor = хотя бы `code-reviewer`; skip допустим только для non-code work
 - integration review запускаешь ты, если он нужен
 - reviewers всегда fresh subagents
 - если findings требуют правки, создавай fix-worker вместо self-fix
@@ -113,6 +176,7 @@ Legacy compatibility wrappers remain at:
 - evidence freshness по `review-gate.md` §1.6
 - scope hygiene
 - truthful review disposition
+- для code-writing handoff minimum independent review floor не отмечен как `skipped`
 - достаточно ли change manifest для acceptance без чтения кода
 - все Documentation items из Slice DoD (`definition-of-done.md` Level 1) отмечены `done` или `N/A`, а не пропущены
 

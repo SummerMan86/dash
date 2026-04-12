@@ -84,6 +84,7 @@ Claude Opus (orchestrator; legacy alias: lead-tactical)
 - `orchestrator` не реализует product code; любой implementation slice идёт через worker.
 - `worker` реализует slice в заданном scope и сдаёт truthful handoff с evidence.
 - `reviewer` — fresh pass без persistent review memory.
+- любой product-code slice должен пройти минимум один independent reviewer pass (`code-reviewer` как минимальный floor; дополнительные reviewer'ы — по поверхности change).
 - Качество важнее параллелизма; параллелизм нужен только для независимых bounded slices.
 - Пользователь — approver, а не manual relay.
 
@@ -142,23 +143,28 @@ Legacy wrappers остаются по путям `docs/agents/lead-tactical/*`.
 - при недостаточном evidence запускается transparency request, re-review или verification/fix-worker;
 - при design/boundary ambiguity эскалация идёт в `lead-strategic`, а не в self-implementation loop.
 
-### Гибридная модель: teammates + subagents
+### Гибридная модель: isolated writers + fresh reviewers
 
 | Роль | Технология | Почему |
 | --- | --- | --- |
-| `worker` | Agent Teams / teammate | полный проектный контекст и session continuity |
+| `worker` | subagent + worktree (default for code-writing); teammate only as shared-checkout exception | diff isolation, scope hygiene, reproducible handoff |
 | `reviewer` | fresh subagent | дешёвый и воспроизводимый bounded review по diff |
 
-Workers как teammates (default):
+Workers как isolated subagents (default for code-writing):
+
+- получают отдельный worktree и `agent/worker/<slug>` branch;
+- дают diff-isolated handoff и review input без shared-checkout contamination;
+- позволяют `orchestrator` проверять scope по branch/diff boundaries, не полагаясь только на manifest;
+- не ведут отдельный durable `memory.md`;
+- **контекст:** получают только prompt (task packet) + `CLAUDE.md` из worktree; `settings.json` и user profile не наследуются; протокол spawn и prompt composition — в `orchestrator/instructions.md` §Worker Spawn Protocol.
+
+Workers как teammates (shared-checkout exception):
 
 - видят `AGENTS.md`, локальные docs и репозиторий целиком;
+- допускаются только для docs-only, read-only investigation или governance-closeout slices без product code;
 - работают в том же checkout и integration branch, что и `orchestrator`; коммитят только в рамках assigned scope;
 - общаются с `orchestrator` через SendMessage;
 - не ведут отдельный durable `memory.md`.
-
-Эскалация worker в subagent:
-
-Если нужна файловая изоляция, worker создаётся как subagent через Agent tool с `isolation: "worktree"`. Получает отдельный worktree и `agent/worker/<slug>` branch. Trigger criteria: `docs/agents/git-protocol.md` §4.
 
 Reviewers как fresh subagents:
 
@@ -205,7 +211,9 @@ Dispatch heuristic:
 
 - implementation slice всегда идёт через worker;
 - если slice trivial и bounded, выбирай `micro-worker`, а не self-execution;
-- parallel workers допустимы только для независимых ownership slices.
+- parallel workers допустимы только для независимых ownership slices;
+- если workers идут параллельно, default и required mode = isolated `subagent + worktree`;
+- teammate/shared-checkout path не используется для parallel execution, даже если slices маленькие.
 
 ### 2.2. Планирование (`lead-strategic`)
 
@@ -383,15 +391,27 @@ Cost-awareness калибрует cadence strategic loop, а не отменяе
 
 ### 2.10. Эскалация
 
+Default routing:
+
+- technical/governance ambiguity сначала идёт в `lead-strategic`, а не к пользователю;
+- пользователь подключается там, где нужен product/scope/business decision или явное принятие риска.
+
+`orchestrator` эскалирует к `lead-strategic`, когда:
+
+- change вводит новый контракт, schema change или cross-module / cross-layer decision;
+- нужен новый exception / waiver;
+- reviewer'ы расходятся по technical acceptance;
+- baseline state или architecture state спорный;
+- решение упирается в documented technical governance, а не в product priority.
+
 `orchestrator` эскалирует к пользователю, когда:
 
 - найден `CRITICAL`;
 - нужен scope или priority change;
-- change вводит новый контракт, schema change или cross-module decision;
-- нужен новый exception / waiver;
-- reviewer'ы расходятся;
-- baseline state спорный, а команда хочет открыть следующую large wave;
-- решение не покрыто документацией.
+- нужен product/business tradeoff, не покрытый текущим plan state;
+- есть shared-environment side effect, destructive recovery или другой decision с внешним blast radius;
+- после strategic pass остаются несколько допустимых вариантов, и выбор между ними пользовательский;
+- план или merge ждут явного пользовательского approval по standard mode.
 
 Формат эскалации:
 
@@ -457,9 +477,9 @@ pane #2  worker B (если нужен)
 ```
 
 - `orchestrator` держит orchestration context и запускает reviewers как fresh subagents;
-- worker-teammates разделяют checkout и integration branch с `orchestrator`;
-- worker-teammates общаются с `orchestrator` через SendMessage;
-- пользователь может зайти в pane worker'а напрямую.
+- isolated code-writing workers по умолчанию живут в своих worktree/branch и не обязаны появляться как shared tmux pane;
+- teammate panes — exception path для docs-only / read-only / governance-closeout work;
+- пользователь может зайти в pane teammate-worker'а напрямую, если такой mode был выбран.
 
 ### Canonical supporting docs
 

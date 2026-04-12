@@ -113,6 +113,7 @@ Required:
 - scope
 - что не трогать
 - base branch / base checkpoint
+- bootstrap reads
 - acceptance
 - проверки
 - какие артефакты вернуть оркестратору
@@ -121,7 +122,9 @@ Optional:
 
 - отдельные ветки, если worker не работает напрямую в integration branch
 - архитектурные ограничения, если они важны для slice
+- optional references — документы, полезные worker'у, если возникнут вопросы по ходу
 - extra evidence hints, если нужны domain-specific checks
+- slice context — summary предыдущего handoff, если текущий slice зависит от предыдущего
 
 ```md
 # Task: <название>
@@ -139,8 +142,31 @@ Optional:
 ## Ветки
 
 - integration branch: feature/<topic>
-- worker branch: direct integration branch (default, teammate mode) | agent/worker/<task-slug> (subagent mode)
+- worker branch: agent/worker/<task-slug> (default for code-writing) | direct integration branch (teammate exception)
 - base commit: <commit sha / checkpoint>
+
+## Bootstrap Reads (прочитать до начала реализации)
+
+- docs/agents/worker/instructions.md
+- docs/agents/invariants.md
+- <локальные AGENTS.md в затронутых модулях — перечислить конкретные пути>
+
+## Optional References (читать при необходимости)
+
+- <docs/agents/git-protocol.md — если неясна branch discipline>
+- <docs/agents/review-gate.md — если нужны детали review model>
+- <domain bootstrap doc, e.g. docs/emis_session_bootstrap.md — если slice в EMIS-контуре>
+- <architecture doc, e.g. docs/architecture_dashboard_bi.md — если slice затрагивает BI>
+
+## Carry-Forward Context (required для dependent slices, skip для independent)
+
+Orchestrator собирает этот блок из handoff предыдущего worker'а. Worker не реконструирует continuity сам.
+
+- предыдущий slice: <ST-N>
+- summary: <что было сделано — 3-5 bullets>
+- decisions/patterns: <какой паттерн выбрал предыдущий worker, что текущий должен продолжить, а не переизобретать>
+- open findings/risks: <findings из прошлого review, которые переходят в текущий slice> или `none`
+- continuation notes от предыдущего worker'а: <вставить из Continuation Notes предыдущего handoff> или `none`
 
 ## Архитектурные ограничения
 
@@ -154,6 +180,12 @@ Optional:
 
 - TypeScript: без ошибок в затронутых файлах
 - <специфичные проверки>
+
+## Review Floor
+
+- minimum independent review: `code-reviewer` required for any code-writing slice
+- extra reviewers: `security` / `architecture` / `docs` / `ui` as applicable
+- full skip allowed only for non-code work
 
 ## Evidence
 
@@ -171,6 +203,66 @@ Optional:
 ## Формат сдачи
 
 Используй шаблон `Worker Handoff` из этого файла.
+```
+
+### 2.1. Micro-Task (orchestrator → micro-worker)
+
+Сокращённый task packet для trivial bounded slices (one-file fix, rename, config tweak).
+
+Micro-worker использует тот же worker contract, но с минимальным overhead.
+
+Required:
+
+- что сделать
+- scope
+- ветки
+- bootstrap reads
+- acceptance
+- проверки
+
+Optional:
+
+- optional references, если контекст нетривиален
+- carry-forward context, если micro-task зависит от предыдущего slice
+
+```md
+# Micro-Task: <название>
+
+## Что сделать
+
+<одно предложение>
+
+## Scope
+
+- файлы: <список>
+- НЕ трогать: <список>
+
+## Ветки
+
+- integration branch: feature/<topic>
+- worker branch: agent/worker/<task-slug>
+- base commit: <commit sha>
+
+## Bootstrap Reads
+
+- docs/agents/worker/instructions.md
+- docs/agents/invariants.md
+
+## Optional References
+
+- <только если нужны для контекста>
+
+## Acceptance
+
+- <done-when>
+
+## Проверки
+
+- <что запустить>
+
+## Формат сдачи
+
+Используй шаблон `Micro-Worker Handoff` из этого файла.
 ```
 
 ## 3. Результат worker'а (worker → orchestrator)
@@ -192,7 +284,7 @@ Optional:
 
 Skip conditions:
 
-- `Review Results` можно опустить для trivial/docs-only slice; вместо этого укажи `Review Disposition`.
+- `Review Results` можно опустить для docs-only / read-only / governance-closeout slice без product code; вместо этого укажи `Review Disposition`.
 - `Допущения` можно опустить, если их нет.
 
 ```md
@@ -223,7 +315,7 @@ Skip conditions:
 
 ## Ветки
 
-- worker branch: direct integration branch (default) | agent/worker/<slug> (subagent mode)
+- worker branch: agent/worker/<slug> (default for code-writing) | direct integration branch (teammate exception)
 - integration branch: <feature/topic>
 
 ## Допущения
@@ -240,6 +332,7 @@ Skip conditions:
 
 ## Review Disposition
 
+- minimum independent review floor: `satisfied` | `N/A — no product code`
 - slice review: `run` | `skipped` | `not applicable`
 - rationale: <почему>
 
@@ -258,9 +351,66 @@ Per `docs/agents/definition-of-done.md` Level 1. Отмечай только ite
 - docs: <done | N/A — reason | gap — what's missing>
 - baseline tests: <maintained | grew to N>
 
+## Continuation Notes (optional — для dependent slices)
+
+Что следующему worker'у нужно знать, если следующий slice зависит от этого:
+
+- decisions: <какой паттерн/подход выбран и почему — чтобы следующий worker продолжил, а не переизобретал>
+- gotchas: <неочевидные моменты, обнаруженные по ходу реализации>
+- deferred items: <что осознанно отложено в следующий slice>
+
+Если slice независим или последний в цепочке — опусти секцию целиком.
+
 ## Next Action Requested
 
 - `accept` | `re-review` | `fix-worker` | `escalate`
+
+## Риски / Эскалации
+
+- <риск, блокер, вопрос> или `none`
+```
+
+### 3.1. Micro-Worker Handoff (micro-worker → orchestrator)
+
+Сокращённый handoff для trivial bounded slices (micro-task из §2.1).
+
+Required:
+
+- что сделано
+- change manifest
+- checks evidence
+- review disposition
+- next action
+
+Optional:
+
+- риски / эскалации, если есть
+
+```md
+# Micro-Worker Handoff
+
+## Что сделано
+
+- <кратко, 1-3 bullets>
+- файлы: <список>
+
+## Change Manifest
+
+- owned files changed: <список>
+- out-of-scope files touched: `none` | <список>
+
+## Checks Evidence
+
+- <команда>: <green|red> `fresh` | `not run` — <reason>
+
+## Review Disposition
+
+- code-reviewer: <OK | findings summary>
+- rationale: <почему>
+
+## Next Action
+
+- `accept` | `fix-worker` | `escalate`
 
 ## Риски / Эскалации
 
@@ -321,6 +471,7 @@ Optional:
 
 ## Review Disposition
 
+- minimum independent review floor: `satisfied` | `N/A — no product code`
 - integration review: `run` | `skipped` | `not applicable`
 - rationale: <почему>
 
@@ -452,6 +603,7 @@ Optional:
 
 ## Review Disposition
 
+- minimum independent review floor: `satisfied` | `N/A — no product code`
 - slice/integration review: `run` | `skipped` | `not applicable`
 - rationale: <почему>
 
@@ -930,8 +1082,11 @@ Required:
 Allowed request types:
 
 - `EXPLAIN_DIFF`
+- `EXPLAIN_DECISION`
 - `SHOW_STRUCTURE`
 - `SHOW_IMPACT`
+- `ALTERNATIVE_APPROACH`
+- `DOCUMENT_RISK`
 - `VERIFY_INVARIANT`
 - `CHECK_STATUS`
 
@@ -940,7 +1095,7 @@ Allowed request types:
 
 Request Type:
 
-- `EXPLAIN_DIFF` | `SHOW_STRUCTURE` | `SHOW_IMPACT` | `VERIFY_INVARIANT` | `CHECK_STATUS`
+- `EXPLAIN_DIFF` | `EXPLAIN_DECISION` | `SHOW_STRUCTURE` | `SHOW_IMPACT` | `ALTERNATIVE_APPROACH` | `DOCUMENT_RISK` | `VERIFY_INVARIANT` | `CHECK_STATUS`
 
 Target Scope:
 
