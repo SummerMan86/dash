@@ -20,10 +20,11 @@ Convention: `AGENTS.md` canonical над `CLAUDE.md` если оба есть.
 1. **Новые exports / public API** → ближайший `AGENTS.md` может требовать обновления
 2. **Новый route / endpoint** → root `AGENTS.md` active zones
 3. **DB schema changes** → `db/current_schema.sql` И `db/applied_changes.md` оба обновлены
-4. **Новый entity/module directory** → нужен свой `AGENTS.md`
-5. **Contract changes** (types, Zod) → downstream docs не ссылаются на старое
-6. **Runtime behavior changes** → `RUNTIME_CONTRACT.md` обновлён
-7. **Schema catalog** → `db/schema_catalog.md` отражает новые/изменённые таблицы
+4. **Новая директория** (module, feature, widget, route group, package) → нужен свой `AGENTS.md` с описанием: что это, placement rules, structure, dependencies (см. `invariants.md` §4)
+5. **Изменённая структура существующей зоны** (новые/удалённые файлы, изменённые exports, новые dependencies) → ближайший `AGENTS.md` отражает текущее состояние, а не устаревшее
+6. **Contract changes** (types, Zod) → downstream docs не ссылаются на старое
+7. **Runtime behavior changes** → `RUNTIME_CONTRACT.md` обновлён
+8. **Schema catalog** → `db/schema_catalog.md` отражает новые/изменённые таблицы
 
 ## Output
 
@@ -46,7 +47,7 @@ Required follow-ups:
 Severity:
 
 - CRITICAL: DB schema changed но db/current_schema.sql не обновлён, runtime contract устарел
-- WARNING: новый route/endpoint не в docs, contract изменился но downstream docs ссылаются на старую версию
+- WARNING: новый route/endpoint не в docs, contract изменился но downstream docs ссылаются на старую версию, новая директория без `AGENTS.md`, существующий `AGENTS.md` стал stale после structural changes
 - INFO: minor docs improvement, не блокирует
 
 ## Не делай

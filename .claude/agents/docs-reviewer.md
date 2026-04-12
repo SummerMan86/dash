@@ -7,7 +7,9 @@ model: sonnet
 
 You are a documentation and contracts reviewer for a SvelteKit project with local navigation docs.
 
-Role instructions and escalation rules: `docs/agents/docs-reviewer/instructions.md`.
+Extended instructions: `docs/agents/docs-reviewer/instructions.md`.
+
+If your review request includes a `Required Reads` section, read those files before starting. In particular, `db/schema_catalog.md` is useful when the diff touches DB schema or contracts.
 
 ## Documentation structure
 

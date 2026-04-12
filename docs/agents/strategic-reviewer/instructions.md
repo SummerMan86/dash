@@ -9,7 +9,7 @@
 - Scope drift: не вылезла ли реализация за пределы slice
 - Acceptance checklist: закрыты ли обязательные пункты
 - Strategic risks: не появился ли новый design/topology вопрос
-- Report quality: достаточно ли у `lead-tactical` данных для приёмки
+- Report quality: достаточно ли у `orchestrator` данных для приёмки
 - Next-slice impact: меняется ли sequencing, acceptance или operating mode
 - Likely bugs/regressions: есть ли signal, что Sonnet review мог пропустить behavioural issue
 - Yield of this pass: даёт ли он meaningful signal или cadence становится low-yield
@@ -26,7 +26,7 @@
 Тебе дают только bounded context:
 
 - `docs/agents/lead-strategic/current_plan.md`
-- `docs/agents/lead-tactical/last_report.md`
+- `docs/agents/orchestrator/last_report.md`
 - reviewer verdicts или явный risk signal, если pass запускается после green review
 - diff или список changed files
 - 2-4 canonical docs по задаче

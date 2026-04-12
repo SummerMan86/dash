@@ -17,8 +17,8 @@ Canonical protocol для durable истории использования аг
 V1 использует `hybrid file-first`:
 
 - primary source: `runtime/agents/usage-log.ndjson`
-- human-readable current report: `docs/agents/lead-tactical/last_report.md`
-- durable context: `docs/agents/lead-strategic/memory.md` и `docs/agents/lead-tactical/memory.md`
+- human-readable current report: `docs/agents/orchestrator/last_report.md`
+- durable context: `docs/agents/lead-strategic/memory.md` и `docs/agents/orchestrator/memory.md`
 
 Ключевые правила:
 
@@ -31,7 +31,7 @@ V1 использует `hybrid file-first`:
 
 Единица telemetry — meaningful orchestration event, а не каждый tool call.
 
-По умолчанию `lead-tactical` пишет usage entry:
+По умолчанию `orchestrator` пишет usage entry:
 
 - после accepted slice в iterative mode;
 - после final task acceptance;
@@ -179,7 +179,7 @@ Minimal example:
 Usage log не живёт отдельно от current report model.
 Он собирается из `last_report.md` и orchestration state.
 
-`lead-tactical` обязан отражать в report данные, достаточные для extraction:
+`orchestrator` обязан отражать в report данные, достаточные для extraction:
 
 - `Agent Effort`
 - `Strategic Cadence`

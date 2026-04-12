@@ -33,6 +33,7 @@ Canonical checklists для определения завершённости р
 - [ ] Нет hardcoded secrets и очевидных security regressions
 - [ ] Нет лишних абстракций "на будущее"
 - [ ] Сложность файлов в пределах (< 700 строк, или waiver через `architecture pass`)
+- [ ] Для любого code-writing slice соблюдён minimum independent review floor (`code-reviewer` как минимум)
 - [ ] Security-relevant changes → `security-reviewer` запущен
 
 ### Evidence

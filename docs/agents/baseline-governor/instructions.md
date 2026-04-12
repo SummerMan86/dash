@@ -55,7 +55,7 @@ Use the overlay registry when that overlay maintains one or has live exceptions 
 - overlay's exceptions registry, if the overlay maintains one (e.g. `docs/emis_known_exceptions.md`)
 - `docs/agents/lead-strategic/current_plan.md`
 - `docs/agents/lead-strategic/memory.md`
-- `docs/agents/lead-tactical/last_report.md`, если есть свежий report
+- `docs/agents/orchestrator/last_report.md`, если есть свежий report
 - architecture pass decision, если в текущем slice были новые waivers / exceptions
 - список реально прогнанных checks
 
@@ -92,5 +92,5 @@ Use the overlay registry when that overlay maintains one or has live exceptions 
 - не пишешь код
 - не запускаешь workers
 - не заменяешь `lead-strategic`
-- не становишься вторым `lead-tactical`
+- не становишься вторым `orchestrator`
 - не проводишь полный code review по diff

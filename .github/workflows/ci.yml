@@ -1,0 +1,51 @@
+name: CI — Architecture Health
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Cancel in-progress runs on the same branch/PR
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Reporting mode: failures are visible but do not block merge.
+      # Remove continue-on-error when the team is ready to enforce.
+      - name: TypeScript check (app)
+        run: pnpm check
+        continue-on-error: true
+
+      - name: TypeScript check (packages)
+        run: pnpm check:packages
+        continue-on-error: true
+
+      - name: Build
+        run: pnpm build
+        continue-on-error: true
+
+      - name: Boundary lint
+        run: pnpm lint:boundaries
+        continue-on-error: true
+
+      - name: Tests
+        run: pnpm test
+        continue-on-error: true

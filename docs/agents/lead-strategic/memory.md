@@ -38,12 +38,15 @@
 
 ## Resume Point For The Next Chat
 
-- Start from `CA-0` (ESLint governance baseline).
-- First tactical target:
-  - separate lint commands: `pnpm lint:format`, `pnpm lint:eslint`, `pnpm lint:boundaries`
-  - establish lint policy in `docs/architecture.md` §8
-  - add rule-introduction policy to `docs/agents/invariants.md`
-  - bring `eslint.config.js` to low-noise baseline
+- Waves 0–2 (CA-0..CA-7) **done** — 6 commits on `feature/bi-clean-architecture`
+- Start from **Wave 3, CA-8** (typed custom compile contract)
+- CA-8 depends on CA-7 (done) — ready to start immediately
+- CA-12 (cache middleware) is independent — can run in parallel with CA-8
+- First tactical targets:
+  - CA-8: custom compile receives parsed/typed params, not raw `DatasetQuery`
+  - CA-9/CA-10/CA-11 (parallel after CA-8): explicit Zod paramsSchema for WB/payment/IFTS datasets
+  - CA-12 (parallel with CA-8): extract cache logic from oracleProvider into middleware
+- 228 green tests baseline (127 + 101 from Wave 1)
 - Expected wave-close evidence (per-slice):
   - `pnpm check`
   - `pnpm check:packages`

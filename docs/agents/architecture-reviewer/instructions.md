@@ -89,7 +89,7 @@ Severity:
 
 **Этот verdict блокирует merge** до выполнения протокола:
 
-1. `lead-tactical` эскалирует finding к `lead-strategic` (или architecture pass, `review-gate.md` §3.1)
+1. `orchestrator` эскалирует finding к `lead-strategic` (или architecture pass, `review-gate.md` §3.1)
 2. Решение согласуется и фиксируется в architecture doc **до merge**:
    - `architecture_dashboard_bi.md` для BI-решений
    - `architecture_emis.md` для EMIS-решений
@@ -102,7 +102,7 @@ Severity:
 
 ## Mode 2: Pre-Implementation Architecture Audit
 
-Запускается **до начала реализации** по запросу `lead-tactical` (trigger: `workflow.md` §2.3.1) или `lead-strategic` (при планировании).
+Запускается **до начала реализации** по запросу `orchestrator` (trigger: `workflow.md` §2.3.1) или `lead-strategic` (при планировании).
 
 В этом режиме вход — не diff, а **planned scope**: описание фичи, затронутые файлы/пакеты/слои, planned changes.
 

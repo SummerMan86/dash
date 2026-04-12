@@ -1,6 +1,6 @@
 # Debugging Protocol
 
-Reusable playbook for workers and lead-tactical when diagnosing and fixing bugs or unexpected behavior.
+Reusable playbook for workers and `orchestrator` when diagnosing and fixing bugs or unexpected behavior.
 
 ## When to use
 
@@ -39,7 +39,7 @@ Reusable playbook for workers and lead-tactical when diagnosing and fixing bugs 
 
 ## Escalation triggers
 
-Escalate to lead-tactical (or lead-strategic if tactical is stuck) when:
+Escalate to `orchestrator` (or `lead-strategic` if orchestration is stuck) when:
 
 - Three or more failed fix attempts on the same issue
 - Loss of confidence in the actual root cause

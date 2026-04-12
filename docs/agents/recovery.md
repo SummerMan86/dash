@@ -48,7 +48,7 @@ Canonical failure-path protocol для агентной команды.
 
 ## RP-2. Integration branch diverged from `main`
 
-> Worker branch conflict и rebase rules (шаги 5-6) применимы только к subagent workers с отдельными ветками. Teammate workers разделяют checkout с lead-tactical и не имеют отдельных веток.
+> Worker branch conflict и rebase rules (шаги 5-6) применимы к default subagent workers с отдельными ветками. Teammate workers — exception path в shared checkout и не имеют отдельных веток.
 
 Примеры:
 
@@ -61,10 +61,10 @@ Canonical failure-path protocol для агентной команды.
 1. Заморозить запуск новых workers до фикса branch state.
 2. Объявить текущий `feature/<topic>` canonical integration branch для волны восстановления.
 3. По умолчанию предпочесть `merge main -> feature/<topic>`, а не history rewrite, если work уже in progress.
-4. Разрешить конфликты только в integration branch под owner'ом `lead-tactical`.
+4. Разрешить конфликты только в integration branch под orchestration owner'ом `orchestrator`.
 5. Не заставлять существующих workers самостоятельно rebasing-ить свои ветки поверх нового состояния.
 6. Если worker handoff ещё не влит и теперь конфликтует:
-   - либо merge/replay делает `lead-tactical`;
+   - либо создаётся dedicated merge/fix-worker для merge/replay от обновлённого integration branch;
    - либо создаётся новый worker от обновлённого integration branch с узкой задачей conflict resolution.
 7. После восстановления branch state:
    - обновить memory;
@@ -86,8 +86,8 @@ Canonical failure-path protocol для агентной команды.
 
 Действия:
 
-1. Не терять текущий tactical state:
-   - сразу обновить `lead-tactical/memory.md`;
+1. Не терять текущий orchestration state:
+   - сразу обновить `docs/agents/orchestrator/memory.md`;
    - если есть свежие strategic decisions в контексте, сделать backfill в `lead-strategic/memory.md`.
 2. Довести до конца только уже начатый локальный slice, если одновременно верно:
    - acceptance для него уже понятен;
@@ -104,7 +104,7 @@ Canonical failure-path protocol для агентной команды.
 
 Жёсткое правило:
 
-- отсутствие strategic tooling не даёт `lead-tactical` права молча менять canonical plan.
+- отсутствие strategic tooling не даёт `orchestrator` права молча менять canonical plan.
 
 ## RP-4. Earlier accepted slice breaks during integration review
 
@@ -153,24 +153,24 @@ Canonical failure-path protocol для агентной команды.
 
 - 3 rejection cycles на один slice — автоматическая эскалация к пользователю.
 
-## RP-6. Teammate загрязнил integration branch за пределами scope
+## RP-6. Teammate exception загрязнил integration branch за пределами scope
 
 Примеры:
 
 - teammate закоммитил файлы вне owned scope из handoff;
-- teammate случайно изменил файлы lead-tactical или другого slice.
+- teammate случайно изменил файлы `orchestrator` scope или другого slice.
 
-Действия (все выполняет lead-tactical, не teammate):
+Действия (ownership у `orchestrator`; code changes делает cleanup-worker, а не teammate):
 
-1. Lead-tactical делает triage внутри integration branch (не discard/recreate).
+1. `orchestrator` делает triage внутри integration branch (не discard/recreate).
 2. Определить: какие коммиты вне scope, какие в scope.
-3. Если вне-scope изменения безвредны — lead-tactical делает targeted revert конкретных коммитов или hunks.
-4. Если вне-scope изменения конфликтуют с другой работой — lead-tactical эскалирует к пользователю.
-5. Lead-tactical фиксирует в memory и report: что загрязнено, как восстановлено.
+3. Если вне-scope изменения безвредны — `orchestrator` создаёт cleanup-worker на targeted revert/fix конкретных коммитов или hunks.
+4. Если вне-scope изменения конфликтуют с другой работой — `orchestrator` эскалирует к пользователю или создаёт bounded conflict-resolution worker.
+5. `orchestrator` фиксирует в memory и report: что загрязнено, как восстановлено.
 
-Recovery ownership: lead-tactical, не teammate.
+Recovery ownership: `orchestrator`, не teammate.
 Teammate не делает revert самостоятельно — это может усугубить scope contamination.
 
 Жёсткое правило:
 
-- Recovery идёт через targeted revert/fix в integration branch, не через branch discard/recreate (это уничтожит работу lead-tactical и других workers).
+- Recovery идёт через targeted revert/fix в integration branch, не через branch discard/recreate (это уничтожит работу `orchestrator` и других workers).

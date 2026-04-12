@@ -110,7 +110,7 @@ Legacy compatibility wrappers remain at:
 
 ### Что worker получает автоматически
 
-- `CLAUDE.md` из worktree (но это только redirect на `AGENTS.md`).
+- `CLAUDE.md` из worktree (содержит subagent guard, который блокирует worker от чтения корневого `AGENTS.md` и recovery-протокола; worker следует task packet, а не redirect'у).
 - Полную копию репозитория через worktree.
 - Tools из parent conversation.
 

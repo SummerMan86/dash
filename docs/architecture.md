@@ -20,7 +20,7 @@ Three architecture lenses define the system at different levels:
 
 ### 1.1. Data Flow
 
-- **Canonical paths are part of the architecture.** BI reads go `widget → fetchDataset → /api/datasets/:id → compileDataset → DatasetIr → Provider.execute`. EMIS operational flows go `route → emis-server module → parameterized SQL`. This separation exists so analytical reads and operational writes evolve independently. *In practice:* dashboard code must not call `emis-server/modules/*`; EMIS BI only consumes published read models/views.
+- **Canonical paths are part of the architecture.** BI reads go `widget → fetchDataset → /api/datasets/:id → compileDataset → DatasetIr → Provider.execute`. EMIS operational flows go `route → emis-server module → parameterized SQL`. This separation exists so analytical reads and operational writes evolve independently. *In practice:* dashboard code must not call `emis-server/modules/*`; EMIS analytics pages only consume published read models/views.
 
 - **Transport is never the domain.** Routes may parse HTTP, validate input, derive server context, and shape responses — but SQL, PostGIS logic, and business rules live in packages or `src/lib/server/*`. *In practice:* SQL in route files and HTTP objects in services/repositories are forbidden.
 
@@ -135,15 +135,19 @@ Analytical dashboards and KPI pages. Three active domain slices:
 
 - **Wildberries** (`/dashboard/wildberries/`): office-day stock, product analytics, stock alerts. Data from `mart_marketplace` (external DWH).
 - **Strategy / BSC** (`/dashboard/strategy/`): entity overview, cascade, scorecard, performance. Data from `mart_strategy` (external DWH wrappers).
-- **EMIS BI** (`/dashboard/emis/`): news provenance, ship routes, vessel positions, objects dim. Data from `mart.emis_*` and `mart_emis.*` views (app-owned).
+- **EMIS analytics** (`/dashboard/emis/`): news provenance, ship routes, vessel positions, objects dim. Data from `mart.emis_*` and `mart_emis.*` views (app-owned).
 
 All BI slices share the same execution path (see [architecture_dashboard_bi.md](./architecture_dashboard_bi.md)).
 
+> **Boundary note.** "EMIS analytics" pages are part of the **BI platform**, not part of the EMIS module. They consume EMIS data exclusively through published mart views and use BI infrastructure (datasets, providers, filters). They do not import from `emis-server/modules/*`. If EMIS is extracted into a separate repository, these BI pages remain in dashboard-builder.
+
 ### EMIS operational
 
-Operational CRUD workspace: object/news catalogs, search, map, dictionaries, manual entry, ship routes, vessel tracking, ingestion pipeline. Lives under `/emis/` (pages) and `/api/emis/` (transport).
+Operational CRUD workspace: object/news catalogs, search, map, dictionaries, manual entry, ship routes, vessel tracking, ingestion pipeline. Lives under `/emis/` (pages) and `/api/emis/` (transport). Packages: `emis-contracts`, `emis-server`, `emis-ui`.
 
 Session-based auth with role hierarchy (viewer/editor/admin), enforced in `hooks.server.ts`.
+
+> **Module boundary.** EMIS is a self-contained domain module (contracts + server + UI + operational routes) that may be extracted into a separate repository. Analytical dashboards that visualize EMIS data (`/dashboard/emis/`) are **not** part of this module — they belong to the BI platform (see above).
 
 See [architecture_emis.md](./architecture_emis.md) for execution paths.
 
@@ -224,6 +228,13 @@ For active development, placement is decided by responsibility first:
 - App-local shared UI primitives may live in neutral folders such as `src/lib/components/` or in `platform-ui`, but they must not know about concrete pages
 - `packages/*` must not import app code
 - Routes and app-local UI must not reach into package-private server internals; they use public package entrypoints and documented route/BFF seams
+
+**Server boundary and transport policy:**
+- `src/lib/server/**` is a formal server-only boundary. Allowed consumers: `src/routes/api/**`, `+page.server.ts`, `+layout.server.ts`, `hooks.server.ts`, and other `src/lib/server/**` modules.
+- `src/lib/server/**` may import server-safe packages (`@dashboard-builder/*/server`, `@dashboard-builder/db`), `@sveltejs/kit` transport APIs, and server-safe shared utilities. It must not import `widgets`, `features`, `.svelte` components, `platform-ui`, `emis-ui`, or Svelte client runtime/store modules.
+- `routes/api/**/+server.ts` and server load files stay thin adapters: parse request/params/session, derive context, call package or server entrypoints, map result/error to HTTP or load output.
+- Put code into `packages/*` when it is reusable, contract-bearing, or domain logic. Put code into `src/lib/server/**` only for app-owned server concerns and glue (`alerts`, mock provider, EMIS SvelteKit transport helpers).
+- BI dataset definitions executed at runtime live in `packages/platform-datasets/src/server/definitions/*`. `apps/web/src/lib/server/datasets/definitions/*` are migration copies/reference only and are not the runtime source of truth for `/api/datasets/:id`.
 
 ## 6. Deployment Model
 

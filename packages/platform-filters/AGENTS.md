@@ -1,6 +1,6 @@
 # @dashboard-builder/platform-filters
 
-Filter specification, planning, registry, store, and filter UI widgets. FSD-compatible package used by all dashboard workspaces.
+Filter specification, planning, registry, store, and filter UI widgets. Used by all dashboard workspaces.
 
 ## Structure
 

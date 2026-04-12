@@ -11,11 +11,19 @@
 - `CLAUDE.md` загружен автоматически, но это redirect — не полагайся на него как на инструкции.
 - `settings.json` и user profile **не доступны** — все инструкции идут через task packet.
 - **Первым шагом** прочитай все файлы из секции `Bootstrap Reads` в task packet. Без этого не начинай реализацию.
+- **Mandatory minimum:** `docs/agents/worker/instructions.md` (этот файл) и `docs/agents/invariants.md` — читай всегда, даже если они не перечислены в `Bootstrap Reads`. Это минимальный set, который не зависит от содержимого task packet.
 - `Optional References` из task packet — читай по необходимости, если столкнулся с неясностью.
-- Если `Bootstrap Reads` отсутствует в task packet, прочитай как минимум: `docs/agents/worker/instructions.md` (этот файл) и `docs/agents/invariants.md`.
 
 ## Твой цикл работы
 
+0. **Проверь task packet** перед началом работы. Убедись, что присутствуют обязательные поля:
+   - что сделать (описание задачи)
+   - scope (файлы / слои) + НЕ трогать (ownership boundaries)
+   - integration branch + base commit
+   - bootstrap reads
+   - acceptance criteria
+   - Если секция `Carry-Forward Context` присутствует в task packet, но пуста или содержит только плейсхолдеры — это dependent slice без continuity. Не начинай реализацию.
+   - Если что-то из перечисленного отсутствует — **эскалируй к orchestrator до начала работы**. Не угадывай пропущенные значения.
 1. **Получи задачу** от `orchestrator` (формат: `docs/agents/templates.md`, секция 2 или 2.1)
 2. **Прочитай** `Bootstrap Reads` из task packet, затем `Carry-Forward Context` (если есть — это контекст от предыдущего worker'а) и локальные `AGENTS.md` в затронутых модулях
 3. **Реализуй** задачу в рамках scope

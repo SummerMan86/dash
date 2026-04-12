@@ -741,6 +741,13 @@ Required:
 - architecture context
 - focus
 
+Optional (by role):
+
+- required reads — canonical docs, которые reviewer обязан прочитать до начала review. Нужны для reviewer'ов, зависящих от project-wide reference docs:
+  - **architecture-reviewer:** `docs/agents/invariants.md` + domain overlay (e.g. `docs/agents/invariants-emis.md`) + exceptions registry (e.g. `docs/emis_known_exceptions.md`) — если применимы
+  - **docs-reviewer:** `db/schema_catalog.md` — если diff затрагивает DB schema или contracts
+  - остальные reviewer'ы (code, security, ui): не требуют required reads, их `.claude/agents/` definitions самодостаточны
+
 ```md
 Changed files:
 <список файлов>
@@ -753,6 +760,12 @@ Architecture context:
 - contour: <platform/shared | domain operational | domain BI/read-side> (e.g. EMIS operational, EMIS BI/read-side)
 - expected home: <packages/... | apps/web/...>
 - exceptions / waivers touched: <none | EXC-...>
+
+Required Reads (optional — include for architecture-reviewer, docs-reviewer):
+
+- <docs/agents/invariants.md>
+- <domain overlay, e.g. docs/agents/invariants-emis.md>
+- <exceptions registry, e.g. docs/emis_known_exceptions.md>
 
 Focus: <на что обратить внимание>
 ```

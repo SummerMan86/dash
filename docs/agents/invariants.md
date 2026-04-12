@@ -27,11 +27,13 @@ For domain-specific invariants, see the relevant overlay: `invariants-emis.md`, 
 
 - `isSafeIdent()` в postgres provider не обходится
 
-## 4. Schema and contract changes
+## 4. Schema, contract and navigation doc changes
 
 - structural schema changes отражаются в `db/current_schema.sql` и `db/applied_changes.md`
 - runtime/API changes обновляют `RUNTIME_CONTRACT.md`, если это active contract
-- новые active slices получают локальный `AGENTS.md`, если без него navigation становится неочевидной
+- **новая директория** (package, module, feature, widget, route group) **получает локальный `AGENTS.md`**, если содержит больше одного файла и является осмысленной модульной единицей
+- **существующий `AGENTS.md` обновляется**, если slice меняет structure, exports, dependencies или placement rules описанной зоны; ответственность — на worker'е, проверка — на `docs-reviewer`
+- шаблон локального `AGENTS.md`: одно предложение (что это), placement rules (что сюда класть / не класть), structure (ключевые файлы), dependencies/boundaries, reading order
 
 ## 5. Complexity guardrails
 

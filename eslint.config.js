@@ -33,6 +33,52 @@ const appImportPatterns = [
 	'$widgets/**',
 	'**/apps/web/**'
 ];
+const serverImportPatterns = [
+	'$lib/server',
+	'$lib/server/*',
+	'$lib/server/**',
+	'**/server',
+	'**/server/*',
+	'**/server/**',
+	'@dashboard-builder/db',
+	'@dashboard-builder/db/*',
+	'@dashboard-builder/db/**',
+	'@dashboard-builder/*/server',
+	'@dashboard-builder/*/server/*',
+	'@dashboard-builder/*/server/**',
+	'@dashboard-builder/emis-server',
+	'@dashboard-builder/emis-server/*',
+	'@dashboard-builder/emis-server/**'
+];
+const clientUiImportPatterns = [
+	'$features',
+	'$features/*',
+	'$features/**',
+	'**/features',
+	'**/features/*',
+	'**/features/**',
+	'$widgets',
+	'$widgets/*',
+	'$widgets/**',
+	'**/widgets',
+	'**/widgets/*',
+	'**/widgets/**',
+	'$shared/ui',
+	'$shared/ui/*',
+	'$shared/ui/**',
+	'**/shared/ui',
+	'**/shared/ui/*',
+	'**/shared/ui/**',
+	'@dashboard-builder/platform-ui',
+	'@dashboard-builder/platform-ui/*',
+	'@dashboard-builder/platform-ui/**',
+	'@dashboard-builder/emis-ui',
+	'@dashboard-builder/emis-ui/*',
+	'@dashboard-builder/emis-ui/**',
+	'svelte',
+	'svelte/*',
+	'**/*.svelte'
+];
 
 export default defineConfig(
 	includeIgnoreFile(gitignorePath),
@@ -249,7 +295,7 @@ export default defineConfig(
 	// Note: ESLint matches the literal import string — path aliases ($shared, $entities, etc.)
 	// are NOT resolved before matching, so both alias forms must be listed where relevant.
 
-	// FSD: shared — no upper-layer imports, no server imports
+	// App-local layer: shared — no upper-layer imports, no server imports
 	{
 		files: [
 			'apps/web/src/lib/shared/**/*.ts',
@@ -264,26 +310,26 @@ export default defineConfig(
 					patterns: [
 						{
 							group: ['$entities/*', '$entities'],
-							message: 'shared must not import from entities (FSD)'
+							message: 'shared must not import from entities (app-local layer boundary)'
 						},
 						{
 							group: ['$features/*', '$features'],
-							message: 'shared must not import from features (FSD)'
+							message: 'shared must not import from features (app-local layer boundary)'
 						},
 						{
 							group: ['$widgets/*', '$widgets'],
-							message: 'shared must not import from widgets (FSD)'
+							message: 'shared must not import from widgets (app-local layer boundary)'
 						},
 						{
-							group: ['$lib/server/*', '$lib/server'],
-							message: 'shared must not import from server modules'
+							group: serverImportPatterns,
+							message: 'shared must not import server-only modules'
 						}
 					]
 				}
 			]
 		}
 	},
-	// FSD: entities — no features/widgets, no server
+	// App-local layer: entities — no features/widgets, no server
 	{
 		files: [
 			'apps/web/src/lib/entities/**/*.ts',
@@ -298,22 +344,22 @@ export default defineConfig(
 					patterns: [
 						{
 							group: ['$features/*', '$features'],
-							message: 'entities must not import from features (FSD)'
+							message: 'entities must not import from features (app-local layer boundary)'
 						},
 						{
 							group: ['$widgets/*', '$widgets'],
-							message: 'entities must not import from widgets (FSD)'
+							message: 'entities must not import from widgets (app-local layer boundary)'
 						},
 						{
-							group: ['$lib/server/*', '$lib/server'],
-							message: 'entities must not import from server modules'
+							group: serverImportPatterns,
+							message: 'entities must not import server-only modules'
 						}
 					]
 				}
 			]
 		}
 	},
-	// FSD: features — no widgets, no server
+	// App-local layer: features — no widgets, no server
 	{
 		files: [
 			'apps/web/src/lib/features/**/*.ts',
@@ -328,18 +374,18 @@ export default defineConfig(
 					patterns: [
 						{
 							group: ['$widgets/*', '$widgets'],
-							message: 'features must not import from widgets (FSD)'
+							message: 'features must not import from widgets (app-local layer boundary)'
 						},
 						{
-							group: ['$lib/server/*', '$lib/server'],
-							message: 'features must not import from server modules'
+							group: serverImportPatterns,
+							message: 'features must not import server-only modules'
 						}
 					]
 				}
 			]
 		}
 	},
-	// FSD: widgets — no server
+	// App-local layer: widgets — no server
 	{
 		files: [
 			'apps/web/src/lib/widgets/**/*.ts',
@@ -353,71 +399,20 @@ export default defineConfig(
 				{
 					patterns: [
 						{
-							group: ['$lib/server/*', '$lib/server'],
-							message: 'widgets must not import from server modules'
+							group: serverImportPatterns,
+							message: 'widgets must not import server-only modules'
 						}
 					]
 				}
 			]
 		}
-		},
-		// Dashboard client modules (non-EMIS) must stay route/UI-side and use HTTP/BFF seams.
-		{
-			files: [
-				'apps/web/src/routes/dashboard/**/*.ts',
-				'apps/web/src/routes/dashboard/**/*.svelte.ts',
-				'apps/web/src/routes/dashboard/**/*.svelte.js',
-				'apps/web/src/routes/dashboard/**/*.svelte'
-			],
-			ignores: [
-				'apps/web/src/routes/dashboard/emis/**',
-				'apps/web/src/routes/dashboard/**/+page.server.ts',
-				'apps/web/src/routes/dashboard/**/+server.ts'
-			],
-			rules: {
-				'no-restricted-imports': [
-					'error',
-					{
-						patterns: [
-							{
-								group: ['$lib/server/*', '$lib/server', '@dashboard-builder/*/server'],
-								message:
-									'dashboard client modules must not import server modules directly; use route/BFF seams'
-							}
-						]
-					}
-				]
-			}
-		},
-		// EMIS transport: routes/api/emis — no UI/client code (any, not just EMIS UI)
-		{
-			files: ['apps/web/src/routes/api/emis/**/*.ts'],
-		rules: {
-			'no-restricted-imports': [
-				'error',
-				{
-					patterns: [
-						{
-							group: ['$features/*', '$features'],
-							message: 'API routes must not import features (transport-only)'
-						},
-						{
-							group: ['$widgets/*', '$widgets'],
-							message: 'API routes must not import widgets (transport-only)'
-						},
-						{ group: ['$shared/ui/*'], message: 'API routes must not import UI components' }
-					]
-				}
-			]
-		}
 	},
-	// Dashboard EMIS routes — no direct EMIS operational server imports
+	// App-local server layer — no client/UI imports.
 	{
 		files: [
-			'apps/web/src/routes/dashboard/emis/**/*.ts',
-			'apps/web/src/routes/dashboard/emis/**/*.svelte.ts',
-			'apps/web/src/routes/dashboard/emis/**/*.svelte.js',
-			'apps/web/src/routes/dashboard/emis/**/*.svelte'
+			'apps/web/src/lib/server/**/*.ts',
+			'apps/web/src/lib/server/**/*.svelte.ts',
+			'apps/web/src/lib/server/**/*.svelte.js'
 		],
 		rules: {
 			'no-restricted-imports': [
@@ -425,16 +420,110 @@ export default defineConfig(
 				{
 					patterns: [
 						{
-							group: ['$lib/server/emis/*', '$lib/server/emis/**'],
-							message: 'Dashboard EMIS routes must not import app-local EMIS server shims'
-						},
+							group: clientUiImportPatterns,
+							message: 'src/lib/server must not import client/UI modules'
+						}
+					]
+				}
+			]
+		}
+	},
+	// Dashboard client modules (non-EMIS) must stay route/UI-side and use HTTP/BFF seams.
+	{
+		files: [
+			'apps/web/src/routes/dashboard/**/*.ts',
+			'apps/web/src/routes/dashboard/**/*.svelte.ts',
+			'apps/web/src/routes/dashboard/**/*.svelte.js',
+			'apps/web/src/routes/dashboard/**/*.svelte'
+		],
+		ignores: [
+			'apps/web/src/routes/dashboard/emis/**',
+			'apps/web/src/routes/dashboard/**/+page.server.ts',
+			'apps/web/src/routes/dashboard/**/+layout.server.ts',
+			'apps/web/src/routes/dashboard/**/+server.ts'
+		],
+		rules: {
+			'no-restricted-imports': [
+				'error',
+				{
+					patterns: [
 						{
-							group: [
-								'@dashboard-builder/emis-server/modules/*',
-								'@dashboard-builder/emis-server/modules/**'
-							],
+							group: serverImportPatterns,
 							message:
-								'Dashboard EMIS routes must not import EMIS operational modules (use dataset path)'
+								'dashboard client modules must not import server-only modules directly; use route/BFF seams'
+						}
+					]
+				}
+			]
+		}
+	},
+	// Dashboard EMIS client modules — BI pages stay on the dataset/BFF seam.
+	{
+		files: [
+			'apps/web/src/routes/dashboard/emis/**/*.ts',
+			'apps/web/src/routes/dashboard/emis/**/*.svelte.ts',
+			'apps/web/src/routes/dashboard/emis/**/*.svelte.js',
+			'apps/web/src/routes/dashboard/emis/**/*.svelte'
+		],
+		ignores: [
+			'apps/web/src/routes/dashboard/emis/**/+page.server.ts',
+			'apps/web/src/routes/dashboard/emis/**/+layout.server.ts',
+			'apps/web/src/routes/dashboard/emis/**/+server.ts'
+		],
+		rules: {
+			'no-restricted-imports': [
+				'error',
+				{
+					patterns: [
+						{
+							group: serverImportPatterns,
+							message:
+								'dashboard EMIS client modules must not import server-only modules directly; use dataset/BFF seams'
+						}
+					]
+				}
+			]
+		}
+	},
+	// EMIS operational client modules — no direct server imports.
+	{
+		files: [
+			'apps/web/src/routes/emis/**/*.ts',
+			'apps/web/src/routes/emis/**/*.svelte.ts',
+			'apps/web/src/routes/emis/**/*.svelte.js',
+			'apps/web/src/routes/emis/**/*.svelte'
+		],
+		ignores: [
+			'apps/web/src/routes/emis/**/+page.server.ts',
+			'apps/web/src/routes/emis/**/+layout.server.ts',
+			'apps/web/src/routes/emis/**/+server.ts'
+		],
+		rules: {
+			'no-restricted-imports': [
+				'error',
+				{
+					patterns: [
+						{
+							group: serverImportPatterns,
+							message:
+								'EMIS client modules must not import server-only modules directly; use load functions or API routes'
+						}
+					]
+				}
+			]
+		}
+	},
+	// API transport routes — no client/UI imports.
+	{
+		files: ['apps/web/src/routes/api/**/*.ts'],
+		rules: {
+			'no-restricted-imports': [
+				'error',
+				{
+					patterns: [
+						{
+							group: clientUiImportPatterns,
+							message: 'API routes must stay transport-only and must not import client/UI modules'
 						}
 					]
 				}

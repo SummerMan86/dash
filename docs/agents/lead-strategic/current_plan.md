@@ -2,7 +2,10 @@
 
 ## Status
 
-- active on `2026-04-11`
+- active on `2026-04-12`
+- Waves 0–2 (CA-0..CA-7) **done** — 6 commits on `feature/bi-clean-architecture`
+- Wave 3 (CA-8..CA-12) — **next**
+- Wave 4 (CA-13..CA-16) — pending
 - previous completed plan archived in `docs/archive/agents/lead_strategic_current_plan_2026_04_10_oracle_cache_foundation.md`
 
 ## Цель
@@ -63,8 +66,9 @@ Readiness: `CLEAR` — решения задокументированы, мож
 
 ## Подзадачи
 
-### CA-0: Establish ESLint governance baseline
+### CA-0: Establish ESLint governance baseline ✅
 
+- status: **done** (commit `64a08ea`)
 - wave: 0
 - scope: `eslint.config.js`, `package.json`, `docs/architecture.md` §8, `docs/agents/invariants.md`, `docs/agents/lead-strategic/current_plan.md`
 - depends on: —
@@ -98,8 +102,9 @@ Readiness: `CLEAR` — решения задокументированы, мож
   - slice не обязан делать весь repo lint-green
   - slice обязан сделать lint-policy однозначной для следующих волн
 
-### CA-1: Decompose product-analytics page
+### CA-1: Decompose product-analytics page ✅
 
+- status: **done** (commit `9c47e8c`, 256 lines, +56 tests)
 - wave: 1
 - scope: `apps/web/src/routes/dashboard/wildberries/product-analytics/`
 - depends on: —
@@ -117,8 +122,9 @@ Readiness: `CLEAR` — решения задокументированы, мож
 - verification mode: `prototype-pin-refactor` (UI change, проверка через dev server)
 - заметки: не добавлять новую функциональность; строго рефакторинг
 
-### CA-2: Decompose stock-alerts page
+### CA-2: Decompose stock-alerts page ✅
 
+- status: **done** (commit `42e95ec`, 281 lines, +45 tests)
 - wave: 1
 - scope: `apps/web/src/routes/dashboard/wildberries/stock-alerts/`
 - depends on: —
@@ -133,8 +139,9 @@ Readiness: `CLEAR` — решения задокументированы, мож
 - verification mode: `prototype-pin-refactor`
 - заметки: параллелен CA-1, нет зависимостей
 
-### CA-3: Migrate WB office-day to useFlatParams
+### CA-3: Migrate WB office-day to useFlatParams ✅
 
+- status: **done** (commit `ce1454b`)
 - wave: 2
 - scope: `apps/web/src/routes/dashboard/wildberries/office-day/+page.svelte`, `apps/web/src/lib/shared/api/fetchDataset.ts`
 - depends on: CA-1 (для минимизации merge conflicts)
@@ -146,8 +153,9 @@ Readiness: `CLEAR` — решения задокументированы, мож
 - verification intent: страница работает идентично через canonical path
 - verification mode: `prototype-pin-refactor`
 
-### CA-4: Migrate WB product-analytics to useFlatParams
+### CA-4: Migrate WB product-analytics to useFlatParams ✅
 
+- status: **done** (commit `ce1454b`)
 - wave: 2
 - scope: `apps/web/src/routes/dashboard/wildberries/product-analytics/+page.svelte`
 - depends on: CA-1, CA-3
@@ -155,8 +163,9 @@ Readiness: `CLEAR` — решения задокументированы, мож
 - acceptance: аналогично CA-3
 - verification mode: `prototype-pin-refactor`
 
-### CA-5: Migrate WB stock-alerts to useFlatParams
+### CA-5: Migrate WB stock-alerts to useFlatParams ✅
 
+- status: **done** (commit `ce1454b`)
 - wave: 2
 - scope: `apps/web/src/routes/dashboard/wildberries/stock-alerts/+page.svelte`
 - depends on: CA-2, CA-3
@@ -164,8 +173,9 @@ Readiness: `CLEAR` — решения задокументированы, мож
 - acceptance: аналогично CA-3
 - verification mode: `prototype-pin-refactor`
 
-### CA-6: Migrate demo dashboard to useFlatParams
+### CA-6: Migrate demo dashboard to useFlatParams ✅
 
+- status: **done** (commit `ce1454b`)
 - wave: 2
 - scope: `apps/web/src/routes/dashboard/demo/+page.svelte`
 - depends on: CA-3
@@ -173,8 +183,9 @@ Readiness: `CLEAR` — решения задокументированы, мож
 - acceptance: аналогично CA-3; demo page использует `useFlatParams: true`
 - verification mode: `prototype-pin-refactor`
 
-### CA-7: Remove legacy filter path from fetchDataset
+### CA-7: Remove legacy filter path from fetchDataset ✅
 
+- status: **done** (commit `d57e2d0`)
 - wave: 2
 - scope: `apps/web/src/lib/shared/api/fetchDataset.ts`, `@dashboard-builder/platform-filters` (getFilterSnapshot, getEffectiveFilters exports)
 - depends on: CA-3, CA-4, CA-5, CA-6 (все страницы мигрированы)
@@ -317,19 +328,22 @@ Readiness: `CLEAR` — решения задокументированы, мож
 ## Sequencing
 
 ```
-Wave 1 (parallel):
-  CA-1 (product-analytics decompose)  ─┐
-  CA-2 (stock-alerts decompose)        ─┤
-                                        │
-Wave 2 (sequential after Wave 1):       │
-  CA-3 (office-day useFlatParams)    ◄──┘
-  CA-4 (product-analytics useFlatParams) ◄── CA-1, CA-3
-  CA-5 (stock-alerts useFlatParams)      ◄── CA-2, CA-3
-  CA-6 (demo useFlatParams)              ◄── CA-3
-  CA-7 (remove legacy path)             ◄── CA-3..CA-6
+Wave 0: ✅ DONE
+  CA-0 (lint governance baseline)
 
-Wave 3:
-  CA-8  (typed custom compile contract) ◄── CA-7
+Wave 1: ✅ DONE
+  CA-1 (product-analytics decompose)
+  CA-2 (stock-alerts decompose)
+
+Wave 2: ✅ DONE
+  CA-3 (office-day useFlatParams)
+  CA-4 (product-analytics useFlatParams)
+  CA-5 (stock-alerts useFlatParams)
+  CA-6 (demo useFlatParams)
+  CA-7 (remove legacy path)
+
+Wave 3: ⏳ NEXT
+  CA-8  (typed custom compile contract) ◄── CA-7 ✅
   CA-9  (WB paramsSchema)               ◄── CA-8
   CA-10 (payment paramsSchema)          ◄── CA-8
   CA-11 (IFTS paramsSchema)             ◄── CA-8
@@ -338,12 +352,9 @@ Wave 3:
 Wave 4 (after Wave 3):
   CA-13 (remove duplicate definitions) ◄── CA-9..CA-11
   CA-14 (assertDatasetAccess)          (independent)
-  CA-15 (WB route-local/proxy tests)   ◄── CA-1, CA-2
+  CA-15 (WB route-local/proxy tests)   ◄── CA-1 ✅, CA-2 ✅
   CA-16 (wave closure)                 ◄── all
 ```
-
-Precondition:
-  CA-0 (lint governance baseline) runs before Wave 1 and becomes the verification policy for all later slices
 
 ## Ограничения
 
@@ -352,7 +363,7 @@ Precondition:
 - Не трогать EMIS datasets и routes — scope ограничен BI vertical
 - Не трогать strategy dashboard — его paramsSchema уже explicit
 - Реальная auth / tenant derivation для dataset routes не входит в этот план; CA-14 даёт access-gate scaffold, но не вводит новый auth contour
-- 127 green tests — baseline; каждый slice должен закончиться с ≥ 127 green tests
+- 228 green tests — baseline (127 original + 101 added by CA-1/CA-2); каждый slice должен закончиться с ≥ 228 green tests
 - `pnpm lint:eslint` сейчас не green repo-wide; slices не должны увеличивать lint debt в touched files и по возможности должны его уменьшать
 - `pnpm check`, `pnpm build`, `pnpm lint:boundaries` — обязательная верификация каждого slice
 - после CA-0 добавление новых blocking ESLint rules допускается только через docs-first rule-introduction policy

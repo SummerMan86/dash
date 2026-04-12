@@ -1,38 +1,26 @@
 # Library Layer Navigation
 
-`src/lib/` - это основное внутреннее пространство приложения. Здесь лежат reusable и server-side модули.
+`src/lib/` contains app-local code: server-side infrastructure, thin API facades, and a few remaining app-specific modules.
 
-## Как мыслить эту папку
+## Placement rules for new code
 
-- `shared/` - platform shared layer
-- `entities/` - контракты и базовые domain primitives
-- `features/` - крупные пользовательские функции
-- `widgets/` - composite UI widgets
-- `server/` - server-only логика, BFF и инфраструктура
+> **Default target for new code is NOT here.** New reusable logic, contracts, and data execution go into `packages/*`. New page/workspace composition goes into `src/routes/...`. This folder holds only app-local glue that is neither page-scoped nor package-worthy.
 
-## Что читать в первую очередь
+## Current structure
 
-1. `shared/AGENTS.md`
-2. `entities/AGENTS.md`
-3. `server/AGENTS.md`
-4. `features/AGENTS.md`
-5. `widgets/AGENTS.md`
+| Folder | Status | Contains |
+|--------|--------|----------|
+| `server/` | **Active** | BFF transport, legacy dataset-definition copies, providers, alerts scheduler, EMIS route infra |
+| `shared/` | **Active (thin)** | `fetchDataset.ts` (BI data facade), CSS tokens, fixtures |
+| `features/dashboard-edit/` | **Active** | Dashboard layout editor (GridStack). Single app-local consumer |
+| `features/emis-manual-entry/` | **Active** | EMIS CMS forms. Depends on `$app/forms` |
+| `widgets/stock-alerts/` | **Active** | Wildberries-specific alert widgets |
+| `widgets/emis-drawer/` | **Active** | EMIS map detail panel |
+| `entities/` | **Empty** | All re-export shims removed in TD-2. Direct package imports only |
 
-## Где сейчас центр тяжести
+## Package layer vs app layer
 
-Наиболее зрелые и реально используемые части:
-
-- `shared/`
-- `entities/dataset/`
-- `entities/filter/`
-- `server/`
-- `features/dashboard-edit/`
-- `widgets/filters/`
-- `widgets/stock-alerts/`
-
-## Package layer vs app layer (ST-8 rationalization)
-
-After ST-6/ST-7 extraction, most reusable foundation lives in `packages/`:
+Most reusable foundation lives in `packages/`:
 
 - `@dashboard-builder/platform-core` — format, useDebouncedLoader
 - `@dashboard-builder/platform-ui` — UI components, chart presets, design tokens
@@ -45,20 +33,19 @@ After ST-6/ST-7 extraction, most reusable foundation lives in `packages/`:
 
 What remains in `lib/` is **app-level composition and glue**:
 
-- `entities/` — MIGRATION re-exports from packages (temporary compatibility)
-- `features/dashboard-edit/` — dashboard editor (app feature, no second consumer)
-- `features/emis-manual-entry/` — EMIS CMS forms (app feature, depends on $app/forms)
-- `server/datasets/definitions/` — app-specific dataset IR definitions
+- `server/datasets/definitions/` — legacy migration copies/reference only; canonical runtime definitions live in `packages/platform-datasets/src/server/definitions/*`
 - `server/alerts/` — alert scheduler + Telegram (app lifecycle, hooks.server.ts)
 - `server/providers/` — mockProvider only (fixture/demo provider)
-- `server/emis/` — MIGRATION re-exports from emis-server package
+- `server/emis/` — EMIS route infra (re-exports from emis-server package)
 - `shared/api/fetchDataset.ts` — BI data access facade (filter composition)
-- `shared/` — MIGRATION re-exports from platform packages
-- `widgets/filters/` — MIGRATION re-export from platform-filters/widgets
-- `widgets/emis-*/` — MIGRATION re-exports / app-specific EMIS UI glue
+- `shared/styles/` — CSS tokens, design system guide
+- `shared/fixtures/` — mock datasets
+- `features/dashboard-edit/` — dashboard editor (app feature, no second consumer)
+- `features/emis-manual-entry/` — EMIS CMS forms (app feature, depends on $app/forms)
 - `widgets/stock-alerts/` — Wildberries-specific alert widgets
+- `widgets/emis-drawer/` — EMIS map detail panel
 
-Server-only consumers should now import these canonical packages directly:
+Server-only consumers should import canonical packages directly:
 
 - `@dashboard-builder/platform-datasets/server` — `compileDataset`, `postgresProvider`
 - `@dashboard-builder/db` — pg pool
@@ -66,5 +53,11 @@ Server-only consumers should now import these canonical packages directly:
 ## EMIS vs BI boundary
 
 - BI routes (strategy, wildberries, analytics) must NOT import EMIS operational packages
-- EMIS read-side dashboards (routes/dashboard/emis/) access data through dataset/IR layer
-- Both domains share platform-\* packages but do not cross-import
+- EMIS analytics dashboards (routes/dashboard/emis/) access data through dataset/IR layer
+- Both domains share platform-* packages but do not cross-import
+
+## What to read next
+
+1. `server/AGENTS.md` — server-side infrastructure
+2. `shared/AGENTS.md` — fetchDataset and styles
+3. `features/dashboard-edit/AGENTS.md` — layout editor details

@@ -65,7 +65,7 @@
 7. [docs/agents/roles.md](./docs/agents/roles.md) — роли и ответственности
 8. [docs/agents/templates.md](./docs/agents/templates.md) — шаблоны
 9. `docs/agents/{role}/instructions.md` — вводные для конкретной роли
-10. `docs/agents/lead-strategic/memory.md` и `docs/agents/lead-tactical/memory.md` — единственные canonical durable-memory files; worker'ы и reviewer'ы отдельную `memory.md` не ведут, см. `docs/agents/memory-protocol.md`
+10. `docs/agents/lead-strategic/memory.md` и `docs/agents/orchestrator/memory.md` — единственные canonical durable-memory files; worker'ы и reviewer'ы отдельную `memory.md` не ведут, см. `docs/agents/memory-protocol.md`
 
 EMIS-активный контур сейчас находится здесь:
 
@@ -212,19 +212,27 @@ Canonical recovery/git/memory protocols:
 ### Модель
 
 ```
-GPT-5.4 (lead-strategic) → план → Claude Opus (lead-tactical) → workers → review → report → GPT-5.4
+Пользователь
+    │
+    └─ ставит задачу Claude Opus (orchestrator; canonical entrypoint, legacy alias: lead-tactical)
+           │
+           ├─ поднимает Codex / GPT-5.4 (lead-strategic) для плана, acceptance и governance
+           ├─ dispatches isolated workers для code-writing slices
+           ├─ запускает review / собирает report
+           └─ возвращает пользователю plan approval, product escalations и merge decision
 ```
 
-- GPT-5.4 планирует и принимает результаты
+- Пользователь входит в integrated path через `orchestrator`; прямой вход в `lead-strategic` — только manual/fallback path
+- GPT-5.4 планирует, принимает результаты и владеет technical governance
 - Claude Opus управляет исполнением
-- Claude Workers реализуют подзадачи
+- Code-writing workers по умолчанию работают в isolated branch/worktree
 - Ревьюеры (субагенты) проверяют diff
 
 ### Роли и instructions
 
 - [docs/agents/roles.md](./docs/agents/roles.md) — таблица ролей
 - `docs/agents/{role}/instructions.md` — вводные для каждой роли
-- `docs/agents/lead-strategic/memory.md` и `docs/agents/lead-tactical/memory.md` — canonical durable memory; worker'ы, reviewer'ы и `strategic-reviewer` отдельную `memory.md` не ведут
+- `docs/agents/lead-strategic/memory.md` и `docs/agents/orchestrator/memory.md` — canonical durable memory; worker'ы, reviewer'ы и `strategic-reviewer` отдельную `memory.md` не ведут
 - `strategic-reviewer` — optional GPT sidecar для bounded second opinion по `plan/report/diff`; живёт внутри `lead-strategic`, не заменяет финальную приёмку и не имеет отдельной памяти
 
 ### Шаблоны
