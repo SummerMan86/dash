@@ -131,8 +131,10 @@ Scope: <что затрагивает>
 Claude:
 
 ```text
-Продолжи работу. Прочитай:
+Продолжи работу. Восстановись как orchestrator:
 - docs/agents/orchestrator/memory.md
+- docs/agents/lead-strategic/memory.md
+- docs/agents/orchestrator/instructions.md
 - docs/agents/lead-strategic/current_plan.md
 ```
 
@@ -141,8 +143,9 @@ Claude:
 ```text
 Ты — orchestrator. Восстановись:
 1. Прочитай docs/agents/orchestrator/memory.md
-2. Прочитай docs/agents/orchestrator/instructions.md
-3. Прочитай docs/agents/lead-strategic/current_plan.md
+2. Прочитай docs/agents/lead-strategic/memory.md
+3. Прочитай docs/agents/orchestrator/instructions.md
+4. Прочитай docs/agents/lead-strategic/current_plan.md
 Продолжи работу.
 ```
 
@@ -209,7 +212,7 @@ Claude:
 
 Если хочешь потом понять, какие агенты реально приносили пользу, смотри:
 
-- `docs/agents/orchestrator/last_report.md` — текущий human-readable report
+- `docs/agents/orchestrator/last_report.md` — latest checked-in human-readable report/snapshot; role contract lives in current `docs/agents/*`
 - `runtime/agents/usage-log.ndjson` — append-only local history по task/slice usage
 
 В usage log отдельно фиксируется:

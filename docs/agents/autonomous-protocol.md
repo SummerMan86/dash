@@ -5,7 +5,7 @@
 Important:
 
 - default non-autonomous model использует отдельную top-level роль `orchestrator` и worker-owned implementation slices;
-- autonomous mode — явное исключение из этой модели;
+- autonomous mode убирает user-in-the-loop, но не расширяет product-code ownership `orchestrator` сверх standard `direct-fix` boundary;
 - canonical имя Claude-роли в этом документе — `orchestrator`;
 - canonical путь для autonomous decision log: `docs/agents/orchestrator/decision-log.md`.
 
@@ -55,7 +55,7 @@ orchestrator (Claude Opus) — plan + execute + accept
     │
     ├─ читает reference implementation
     ├─ создаёт mini-plan в `docs/agents/orchestrator/decision-log.md`
-    ├─ реализует сам или через 1 worker
+    ├─ делает eligible `direct-fix` inline или создаёт 1 isolated worker
     ├─ Review Gate (code-reviewer + security-reviewer)
     ├─ self-acceptance по acceptance criteria
     │
@@ -65,7 +65,7 @@ orchestrator (Claude Opus) — plan + execute + accept
 Пользователь ревьюит постфактум
 ```
 
-**Ключевой принцип:** в lightweight autonomous mode `orchestrator` сознательно отступает от standard orchestration-only contract и совмещает все роли. Нет strategic loop, нет Codex round-trips. Review Gate — единственный внешний контроль качества.
+**Ключевой принцип:** в lightweight autonomous mode `orchestrator` убирает strategic loop и user approvals, но сохраняет standard implementation boundary: inline только для eligible `direct-fix`, весь остальной product code идёт через 1 isolated worker. Нет Codex round-trips. Review Gate — основной внешний контроль качества.
 
 ### 1.2. Full Autonomous
 
@@ -127,9 +127,9 @@ Timeout: 30 минут
 Режим: lightweight — без strategic loop, без Codex.
 1. Прочитай reference implementation
 2. Создай mini-plan в docs/agents/orchestrator/decision-log.md
-3. Реализуй сам (или через 1 worker если multi-file)
+3. Используй standard `direct-fix` только если change ему соответствует; иначе создай 1 isolated worker
 4. Запусти Review Gate (code-reviewer + security-reviewer минимум)
-5. Исправь findings
+5. Для worker path оставь fixes/checks worker-owned; inline fixes допустимы только для direct-fix path
 6. Коммит + decision-log
 
 Все решения пиши в docs/agents/orchestrator/decision-log.md.
@@ -187,14 +187,14 @@ EOF
 
 ## 3. Роли в autonomous mode
 
-### 3.1. Lightweight: `orchestrator` = единственный агент
+### 3.1. Lightweight: `orchestrator` = autonomous owner
 
-В lightweight режиме `orchestrator` **совмещает все роли**, кроме review. Это intentional override standard-role model из `workflow.md`.
+В lightweight режиме `orchestrator` совмещает planning и acceptance, но не получает более широкий self-write contract, чем в standard workflow.
 
 | Функция | Кто выполняет |
 | --- | --- |
 | Планирование | `orchestrator` (mini-plan в decision-log) |
-| Реализация | `orchestrator` сам или 1 worker (если multi-file) |
+| Реализация | `orchestrator` inline только для eligible `direct-fix`; иначе 1 isolated worker |
 | Acceptance | `orchestrator` (self-acceptance по acceptance criteria из задачи) |
 | Review | Review Gate subagents (code-reviewer + security-reviewer минимум) |
 | Strategic decisions | **Нет.** Если возникает архитектурное решение — STOP, переключиться на full или standard mode |
@@ -219,7 +219,7 @@ EOF
 
 ### 3.3. Full: `orchestrator` (Claude Opus) — autonomous executor
 
-Базируйся на `orchestrator/instructions.md`, но этот документ override'ит standard orchestration-only ограничения. Дополнительно:
+Базируйся на `orchestrator/instructions.md`. Full autonomous mode не расширяет product-code ownership: implementation slices остаются worker-owned, кроме standard `direct-fix`. Дополнительно:
 
 - **Не ждёт user input.** Вместо `AskUserQuestion` — принимает решение по framework или логирует и продолжает.
 - **Escalations → decision-log + Codex.** Вместо "эскалировать пользователю" — отправляет в Codex через `--resume`, GPT-5.4 решает.
@@ -354,15 +354,19 @@ Timeout: <заданный timeout>
    - acceptance criteria (из задачи)
    - reference file
 4. Реализует:
-   - сам, если ≤ 3 файла
-   - через 1 isolated worker (`subagent + worktree`), если > 3 файлов
+   - inline только если change подпадает под standard `direct-fix`
+   - через 1 isolated worker (`subagent + worktree`) для любого другого product-code change
 5. Запускает Review Gate:
    - code-reviewer (обязательно)
    - security-reviewer (обязательно)
    - architecture-reviewer (если новые файлы или imports)
    - docs-reviewer (если docs в scope)
-6. Исправляет CRITICAL и WARNING findings
-7. Проверяет: pnpm check && pnpm build (если TS changes)
+6. Если path = worker:
+   - findings уходят в fix-worker / worker-owned rework
+   - checks принимаются по fresh evidence из worker handoff
+7. Если path = direct-fix:
+   - `orchestrator` сам исправляет findings в рамках direct-fix
+   - сам прогоняет `pnpm check` и `pnpm build`, если change затрагивает TS/runtime
 8. Коммитит с осмысленным сообщением
 9. Финализирует decision-log
 ```

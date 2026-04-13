@@ -13,7 +13,7 @@ It is a supporting execution plan, not a replacement for the active strategic wa
 The repository keeps its current agent model as canonical:
 
 - GPT-5.4 `lead-strategic`
-- Claude `lead-tactical`
+- Claude `orchestrator` (legacy alias: `lead-tactical`)
 - worker slices
 - five reviewer types
 - Review Gate
@@ -113,7 +113,7 @@ Changes:
 
 - formalize fresh-evidence wording in worker instructions
 - formalize verification discipline in review gate
-- require `lead-tactical` to reject stale or vague evidence
+- require `orchestrator` to reject stale or vague evidence
 
 Acceptance:
 
@@ -265,7 +265,7 @@ Source inspiration:
 Useful delta for this repo:
 
 - tighten review-request inputs so reviewer context is always bounded and explicit
-- require `lead-tactical` or worker to provide:
+- require `orchestrator` or worker to provide:
   - what changed
   - plan or acceptance reference
   - changed files or diff scope
@@ -393,7 +393,7 @@ Source inspiration:
 
 Useful delta for this repo:
 
-- when `lead-strategic` or `lead-tactical` compares alternatives, require a quick check that options differ in kind, not only in degree
+- when `lead-strategic` or `orchestrator` compares alternatives, require a quick check that options differ in kind, not only in degree
 - reduce false choice between near-identical variants with cosmetic differences
 
 Why this is useful here:

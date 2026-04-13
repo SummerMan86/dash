@@ -26,6 +26,7 @@ Before touching code:
 If you are running as `subagent + worktree`:
 
 - `CLAUDE.md` is only a redirect; the task packet is the real source of truth.
+- If a worktree-local redirect is stale or conflicts with this guide, the task packet and this guide win.
 - `settings.json` and user profile are not available.
 - You work only in your assigned worker branch.
 

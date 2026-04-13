@@ -1,6 +1,6 @@
 # EMIS Review Gate
 
-Короткий approve checklist для `lead-tactical`, `architecture-reviewer` и `architecture-steward` по EMIS.
+Короткий approve checklist для `orchestrator` (legacy alias: `lead-tactical`), `architecture-reviewer` и `architecture-steward` по EMIS.
 
 Использовать вместе с:
 
@@ -24,7 +24,7 @@
    - какие риски остаются
 6. Reviewers дают findings по diff.
 7. Если нужен новый placement/waiver verdict, подключается `architecture-steward`.
-8. `lead-tactical` агрегирует findings и выносит tactical recommendation:
+8. `orchestrator` агрегирует findings и выносит tactical recommendation:
    - `approve`
    - `request changes`
    - `needs design decision`

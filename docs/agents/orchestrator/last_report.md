@@ -1,5 +1,7 @@
 # Report: BI Clean Architecture — Waves 0-2 (CA-0..CA-7)
 
+> Historical note: this checked-in snapshot predates the stricter `orchestrator`-only implementation contract. Use current `docs/agents/*` as the source of truth for role behavior.
+
 ## Report Type
 
 `full`

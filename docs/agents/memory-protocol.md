@@ -112,10 +112,18 @@ Workers не имеют shared memory и не общаются между соб
 Порядок восстановления:
 
 1. Определить роль из текущего контекста.
-2. Прочитать `docs/agents/orchestrator/memory.md`.
-3. Прочитать `docs/agents/lead-strategic/memory.md`.
-4. Прочитать role instructions.
-5. Прочитать `current_plan.md`.
-6. Продолжить execution loop.
+2. Если роль = `orchestrator`:
+   - прочитать `docs/agents/orchestrator/memory.md`;
+   - прочитать `docs/agents/lead-strategic/memory.md`;
+   - прочитать `docs/agents/orchestrator/instructions.md`;
+   - прочитать `docs/agents/lead-strategic/current_plan.md`.
+3. Если роль = `lead-strategic`:
+   - прочитать `docs/agents/lead-strategic/memory.md`;
+   - прочитать `docs/agents/lead-strategic/instructions.md`;
+   - прочитать `docs/agents/lead-strategic/current_plan.md`.
+4. Если роль = `worker` или `reviewer`:
+   - не запускать repo-wide recovery path;
+   - читать только task packet / review request и role guide, если они явно даны в bootstrap.
+5. Продолжить execution loop в рамках своей роли.
 
 Поэтому оба `memory.md` должны оставаться актуальными: это мост между auto-compact, fallback path и новыми Codex threads.

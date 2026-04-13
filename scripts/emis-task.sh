@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# emis-task — bootstrap a lead-tactical session for a new task.
+# emis-task — bootstrap an orchestrator session for a new task.
 # Usage:
 #   ./scripts/emis-task.sh "описание задачи"
 #   ./scripts/emis-task.sh "описание задачи" --scope "apps/web/src/routes/emis/*"
@@ -41,7 +41,7 @@ else
 PROMPT="Новая задача: $TASK${SCOPE:+
 Scope: $SCOPE}
 Ограничения: не выходи за scope.
-Работай по docs/agents/workflow.md как tactical-orchestrator."
+Работай по docs/agents/workflow.md как orchestration-only orchestrator."
 fi
 
 echo "=== emis-task ==="

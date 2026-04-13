@@ -6,6 +6,7 @@
 > Твой единственный источник задачи — prompt, который тебе передали при spawn.
 > Worker: начинай с секции `Bootstrap Reads` из task packet.
 > Reviewer: начинай с review request (changed files, diff, focus) из prompt.
+> Если stale worktree-local redirect конфликтует с task packet или role guide, task packet / role guide имеют приоритет.
 
 Главная входная точка по репозиторию теперь находится в [AGENTS.md](./AGENTS.md).
 
@@ -27,8 +28,9 @@
 Если в сжатом контексте есть признаки, что ты работаешь как orchestrator (упоминания "lead-tactical", "orchestrator", "план", "подзадача", "ST-N", "Review Gate", или файлы из `docs/agents/`):
 
 1. Прочитай `docs/agents/orchestrator/memory.md`
-2. Прочитай `docs/agents/orchestrator/instructions.md` — твои вводные
-3. Прочитай `docs/agents/lead-strategic/current_plan.md` — текущий план
-4. Продолжи работу с того места, где остановился
+2. Прочитай `docs/agents/lead-strategic/memory.md`
+3. Прочитай `docs/agents/orchestrator/instructions.md` — твои вводные
+4. Прочитай `docs/agents/lead-strategic/current_plan.md` — текущий план
+5. Продолжи работу с того места, где остановился
 
 Если роль неясна из контекста — спроси пользователя: "Какую роль я выполняю?"
