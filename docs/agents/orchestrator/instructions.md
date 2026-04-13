@@ -127,6 +127,8 @@ Product code по умолчанию остаётся worker-owned.
 
 Если ответ начинает превращаться в code dump, останови и запроси более короткий manifest/summary.
 
+Throttle: после 2 transparency requests по одному handoff прими решение (`accept`, `reject` или `escalate`). Третий запрос по тому же handoff запрещён — он сигнализирует, что handoff качественно неполон и worker должен переделать его целиком.
+
 ## Worker Spawn Protocol
 
 При запуске worker через `Agent(isolation: "worktree")`:

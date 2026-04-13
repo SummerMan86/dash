@@ -272,7 +272,7 @@ Bootstrap hints (`--low-risk`, legacy `--simple`) не создают sanctioned
 - фича вводит новый dataset, provider или BI-страницу;
 - фича затрагивает cross-layer boundaries (package ↔ app, server ↔ client);
 - фича затрагивает зону с известным migration debt (см. `architecture_dashboard_bi.md` §9);
-- unfamiliar code или новый домен.
+- unfamiliar code или новый домен (orchestrator оценивает по описанию в `current_plan.md` и собственной `memory.md`, а не по чтению source files).
 
 **Что проверяется:**
 

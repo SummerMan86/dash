@@ -160,7 +160,7 @@ If multiple conditions apply, combine reviewers.
 
 ### Micro-task exemption
 
-If the final change is `<= 10` changed lines in a single file and has no architectural surface:
+If the final change is `<= 20` changed lines across at most two files and has no architectural surface:
 
 - required: acceptance criteria met
 - required: scope not violated

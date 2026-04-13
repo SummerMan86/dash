@@ -1048,41 +1048,22 @@ Required:
 
 Полная схема required/optional fields: `usage-telemetry.md` §3.
 
+Core fields (always required):
+
 ```json
 {
   "timestamp": "2026-04-06T14:25:00+03:00",
   "task_id": "<task-id>",
   "wave_id": "<wave-id>",
   "stage": "slice-acceptance | final-acceptance | governance-closeout",
-  "slice_id": "<ST-N | null>",
   "report_type": "full | lightweight | governance-closeout",
   "operating_mode": "high-risk iterative / unstable wave | ordinary iterative | batch / low-risk",
-  "status": "accept | accept_with_adjustments | reject | re_slice",
-  "workers_spawned": 0,
-  "review_passes_total": 0,
-  "review_passes_by_type": {
-    "slice": 0,
-    "integration": 0,
-    "strategic": 0
-  },
-  "codex_calls_total": 0,
-  "strategic_reviewer_run": false,
-  "strategic_reviewer_model": "not_run",
-  "strategic_reviewer_reason": "none",
-  "findings_summary": {
-    "critical": 0,
-    "warning": 0,
-    "info": 0
-  },
-  "next_slice_impact": "none",
-  "mode_change": "none",
-  "agent_value": "meaningful | neutral | excessive",
-  "agent_value_reason": "<why>",
-  "orchestration_value": "efficient | acceptable | overbuilt",
-  "optimization_note": "<future tuning note>",
-  "cross_model_value": "found_likely_missed_bug | found_acceptance_or_reframe_signal | no_additional_value | not_applicable"
+  "status": "accept | accept_with_adjustments | reject | re_slice"
 }
 ```
+
+Extended и optional fields (effort, findings, usefulness, cross-model value и др.): `usage-telemetry.md` §3.
+Полный пример со всеми полями: `usage-telemetry.md` §3, Minimal example.
 
 ## 13. Transparency Request (orchestrator → worker / reviewer)
 

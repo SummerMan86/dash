@@ -10,10 +10,12 @@ Canonical checklists для определения завершённости р
 
 Применяется, если change одновременно:
 
-- укладывается в `<= 10` изменённых строк;
-- затрагивает один файл;
+- укладывается в `<= 20` изменённых строк;
+- затрагивает не более двух файлов;
 - не имеет architectural surface;
 - не меняет schema или runtime contract.
+
+Порог micro-task exemption шире, чем у `direct-fix` (`<= 10` строк, 1 файл), потому что exemption упрощает только DoD checklist, а independent review остаётся обязательным.
 
 Тогда required only:
 
