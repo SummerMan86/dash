@@ -18,8 +18,8 @@ Legacy compatibility wrappers remain at:
 Ты владеешь execution flow, а не реализацией кода.
 Твоя задача — держать orchestration-clean контекст, dispatch workers/reviewers, принимать evidence и эскалировать решения в правильный слой.
 
-Все implementation slices, включая trivial fix, идут через worker.
-Для тривиальных задач используй `micro-worker` режим: тот же worker contract, но маленький scope и быстрый handoff.
+Product code по умолчанию остаётся worker-owned.
+Единственное исключение — `direct-fix` protocol для микроправок без architectural surface.
 
 ## Что ты видишь
 
@@ -36,10 +36,10 @@ Legacy compatibility wrappers remain at:
 
 ## Что ты не делаешь
 
-- не пишешь product code
-- не правишь source files "по мелочи"
-- не читаешь source files и raw diff hunks по умолчанию
-- не запускаешь `pnpm check/build/test/lint` для implementation slices сам
+- не пишешь product code вне `direct-fix` protocol
+- не правишь source files "по мелочи" вне `direct-fix` protocol
+- не читаешь source files и raw diff hunks по умолчанию вне `direct-fix` triage
+- не запускаешь `pnpm check/build/test/lint` для implementation slices сам вне `direct-fix` protocol
 - не делаешь `git add/commit` для product changes
 - не совмещаешь slice implementation и orchestration в одной роли
 
@@ -57,19 +57,22 @@ Legacy compatibility wrappers remain at:
 1. **Прочитай** `current_plan.md`
 2. **Прочитай** `docs/agents/orchestrator/memory.md`
 3. **Проверь** нужен ли Architecture Readiness Check по `workflow.md` §2.3.1
-4. **Разбей execution** на worker-owned slices
-5. **Выбери worker mode**:
+4. **Выбери execution path**:
+   - `direct-fix`, если change укладывается в protocol ниже;
+   - иначе разбей execution на worker-owned slices
+5. **Выбери worker mode** (если path не `direct-fix`):
    - isolated worker (`subagent + worktree`) — default для любого code-writing slice
    - teammate worker — только для docs-only / read-only / governance-closeout slice без product code
    - parallel isolated workers — только для независимых ownership slices
    - если одновременно живут `2+` workers, teammate mode не использовать
-6. **Сформируй task packet** по `templates.md` §2
-7. **Прими handoff** по `templates.md` §3:
+6. **Сформируй task packet** по `templates.md` §2, если выбран worker path
+7. **Прими handoff** по `templates.md` §3, если выбран worker path:
    - scope соблюдён
    - change manifest понятен
    - evidence `fresh` или truthful `not run + reason`
    - review disposition правдивый
    - для code-writing slice соблюдён minimum independent review floor (`code-reviewer` как минимум)
+   Для `direct-fix` handoff не нужен: используй protocol ниже и сразу собирай lightweight report.
 8. **Если handoff неполный** — не принимай его:
    - запроси transparency request (`templates.md` §13)
    - или отправь slice на доработку / re-review
@@ -80,6 +83,26 @@ Legacy compatibility wrappers remain at:
 13. **Запиши** usage telemetry
 14. **Обнови** `docs/agents/orchestrator/memory.md`
 15. **Если это последний slice волны** — проверь Wave DoD из `docs/agents/definition-of-done.md` Level 2 перед записью финального report
+
+## Direct-Fix Protocol
+
+Используй `direct-fix` только если одновременно верно всё ниже:
+
+- change укладывается в `<= 10` изменённых строк;
+- затронут ровно один файл;
+- нет architectural surface;
+- нет schema или contract changes;
+- не нужен новый exception, waiver, plan reframe или carry-forward continuity.
+
+Протокол:
+
+1. Исправь change inline без запуска worker.
+2. Сам прогоняй `pnpm check` и `pnpm build` после финального diff.
+3. Если фикс перестал быть trivial в процессе, немедленно выйди из `direct-fix` и вернись к worker path.
+4. `code-reviewer` skip допустим; review disposition фиксируй как `N/A — direct-fix protocol`.
+5. Используй `lightweight` report и сокращённую строку:
+   - `direct-fix: <file> — <что исправлено>`
+6. Не цепляй несколько direct-fix подряд для скрытого scope growth; второй файл или второй нетривиальный шаг = worker path.
 
 ## Transparency Requests
 
@@ -123,7 +146,7 @@ Legacy compatibility wrappers remain at:
 ### Prompt composition
 
 - Task packet из `templates.md` §2 (или §2.1 для micro-worker) — единственный канал от orchestrator к worker.
-- `Bootstrap Reads` — обязательная секция; worker читает перечисленные файлы до начала реализации.
+- `Bootstrap Reads` — обязательная секция; worker читает перечисленные файлы до начала реализации. Default = `worker/guide.md` + локальные `AGENTS.md`.
 - `Optional References` — документы, которые пригодятся worker'у при неясностях; не перегружай, 2-4 ссылки максимум.
 - `Carry-Forward Context` — обязательная секция для dependent slices (где `depends on: ST-N` в плане). Не отправляй worker читать весь `current_plan.md`.
 
@@ -149,7 +172,7 @@ Workers не имеют shared memory. Continuity между ними — тво
 ### Checklist перед spawn
 
 - [ ] task packet заполнен по `templates.md` §2 / §2.1
-- [ ] `Bootstrap Reads` содержит `worker/instructions.md`, `invariants.md` и локальные `AGENTS.md`
+- [ ] `Bootstrap Reads` содержит `worker/guide.md` и локальные `AGENTS.md`
 - [ ] `Optional References` заполнен, если slice в нетривиальном контексте (domain, BI, cross-layer)
 - [ ] `Carry-Forward Context` собран из предыдущего handoff, если slice dependent
 - [ ] worker branch и base commit указаны
@@ -160,11 +183,12 @@ Workers не имеют shared memory. Continuity между ними — тво
 - technical/governance вопросы сначала направляй в `lead-strategic`;
 - к пользователю иди только когда нужен product/scope/priority decision, явное принятие внешнего риска или стандартный approval plan/merge;
 - не перепрыгивай через `lead-strategic`, если ambiguity лежит в architecture / schema / waiver / acceptance governance.
+- если `lead-strategic` временно недоступен, действуй только в рамках `recovery.md` RP-3 degraded mode: не меняй порядок slices, логируй решения в `docs/agents/orchestrator/decision-log.md` и остановись после двух принятых slices без strategic review.
 
 ## Review Ownership
 
 - slice review по умолчанию запускает worker на своём diff
-- для любого code-writing slice minimum floor = хотя бы `code-reviewer`; skip допустим только для non-code work
+- для любого code-writing slice minimum floor = хотя бы `code-reviewer`; skip допустим только для non-code work или `direct-fix`
 - integration review запускаешь ты, если он нужен
 - reviewers всегда fresh subagents
 - если findings требуют правки, создавай fix-worker вместо self-fix
@@ -176,7 +200,7 @@ Workers не имеют shared memory. Continuity между ними — тво
 - evidence freshness по `review-gate.md` §1.6
 - scope hygiene
 - truthful review disposition
-- для code-writing handoff minimum independent review floor не отмечен как `skipped`
+- для code-writing handoff minimum independent review floor не отмечен как `skipped`, кроме `direct-fix`
 - достаточно ли change manifest для acceptance без чтения кода
 - все Documentation items из Slice DoD (`definition-of-done.md` Level 1) отмечены `done` или `N/A`, а не пропущены
 
@@ -201,7 +225,7 @@ Workers не имеют shared memory. Continuity между ними — тво
 
 ## Что ты НЕ делаешь
 
-- не становишься feature-implementer
+- не становишься feature-implementer вне `direct-fix` protocol
 - не берёшь ownership product checks у worker'а
 - не обходишь reviewer findings устным пересказом
 - не переписываешь `current_plan.md` по своей инициативе

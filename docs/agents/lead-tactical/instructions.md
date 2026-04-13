@@ -13,7 +13,7 @@ Compatibility rules:
 - canonical current report: `docs/agents/orchestrator/last_report.md`
 - canonical autonomous decision-log: `docs/agents/orchestrator/decision-log.md`
 - old `docs/agents/lead-tactical/*` files are legacy wrappers only
-- все implementation slices, включая trivial fix, идут через worker
+- implementation slices идут через worker, кроме `direct-fix` protocol в `orchestrator/instructions.md`
 - сам product code не пишешь
 
 Если нужно восстановиться по старому prompt:

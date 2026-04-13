@@ -7,9 +7,9 @@
 | Роль | Агент | Модель | Технология | Persistence | Задача |
 | --- | --- | --- | --- | --- | --- |
 | **lead-strategic** | GPT-5.4 | GPT-5.4 | Codex thread | Между сессиями (`docs/agents/lead-strategic/memory.md`) | Планирование, декомпозиция, приёмка |
-| **strategic-reviewer** | bounded pass внутри `lead-strategic` | GPT-5.4-mini / GPT-5.4 | тот же Codex thread (mini-sidecar = `gpt-5.4-mini` call внутри thread) | Session-level внутри `lead-strategic`, без отдельного `memory.md` | Strategic acceptance/reframe safety net по `plan/report/diff` и next-slice impact |
-| **orchestrator** | Claude Opus | Opus | tmux pane #0 | Сессия + `docs/agents/orchestrator/memory.md` | Code-blind execution orchestration, worker dispatch, Review Gate, report |
-| **worker** | Claude | Opus/Sonnet | **Subagent + worktree** (default for code-writing); teammate only as shared-checkout exception per `git-protocol.md` §4 | Session context only | Реализация одного slice; trivial slice идёт тем же worker'ом в `micro-worker` режиме |
+| **strategic-reviewer** | advisory pass внутри `lead-strategic` | GPT-5.4-mini / GPT-5.4 | тот же Codex thread (mini-sidecar = `gpt-5.4-mini` call внутри thread) | Session-level внутри `lead-strategic`, без отдельного `memory.md` | Optional advisory second opinion по `plan/report/diff`; не decision-maker |
+| **orchestrator** | Claude Opus | Opus | tmux pane #0 | Сессия + `docs/agents/orchestrator/memory.md` | Code-blind execution orchestration by default, worker dispatch, Review Gate, report |
+| **worker** | Claude | Opus/Sonnet | **Subagent + worktree** (default for code-writing); teammate only as shared-checkout exception per `git-protocol.md` §4 | Session context only | Реализация одного slice; small bounded code change идёт worker'ом, если не подпадает под direct-fix |
 | **architecture-reviewer** | Claude | Sonnet | **Subagent** (fresh per review) | Нет; каждый pass с чистого листа | Diff review по package/app boundaries, domain-overlay contour split, complexity |
 | **security-reviewer** | Claude | Sonnet | **Subagent** (fresh per review) | Нет; каждый pass с чистого листа | SQL injection, XSS, secrets |
 | **docs-reviewer** | Claude | Sonnet | **Subagent** (fresh per review) | Нет; каждый pass с чистого листа | Docs/contracts sync |
@@ -19,9 +19,9 @@
 ## Коротко по ролям
 
 - `lead-strategic` — планирует, декомпозирует, принимает результат.
-- `strategic-reviewer` — bounded strategic pass внутри `lead-strategic`; помогает принять текущий slice и уточнить план следующего, но не становится отдельным plan owner.
-- `orchestrator` — top-level execution role. Он держит orchestration-clean контекст, управляет workers/reviewers, принимает evidence и пишет report, но не пишет product code.
-- `worker` — реализует одну подзадачу в рамках scope и сдаёт handoff. Любой implementation slice, включая trivial fix, идёт через worker; размер меняет только режим (`micro-worker` vs ordinary worker), а не owner роли.
+- `strategic-reviewer` — optional advisory pass внутри `lead-strategic`; помогает перепроверить acceptance/reframe, но не становится отдельным plan owner и не выносит финальный verdict.
+- `orchestrator` — top-level execution role. Он держит orchestration-clean контекст, управляет workers/reviewers, принимает evidence и пишет report; product code остаётся worker-owned, кроме `direct-fix`.
+- `worker` — реализует одну подзадачу в рамках scope и сдаёт handoff. Для trivial bounded code change worker всё ещё normal path, если change не подпадает под direct-fix у `orchestrator`.
 - `architecture-reviewer` — bounded read-only review по diff своего уровня: slice diff у worker или integrated diff у integration review; если нужен новый placement/waiver verdict, эскалирует в architecture pass у `lead-strategic`.
 - `*-reviewer` — read-only review по своей зоне ответственности на том diff scope, который им передали: slice-level или integration-level.
 
@@ -46,7 +46,7 @@ Canonical definition и lifecycle: `docs/agents/review-gate.md`.
 - `worker = isolated subagent + worktree` по умолчанию для code-writing slices; teammate — только исключение для non-code shared-checkout work по `git-protocol.md` §4.
 - parallel workers = всегда isolated subagents + worktrees; teammate path не используется для parallel execution.
 - `reviewer = fresh subagent` с минимальным review-контекстом и без persistent review memory.
-- `strategic-reviewer = bounded strategic pass` внутри того же `lead-strategic` контекста; cadence задаётся выбранным operating mode и может меняться после post-slice reframe.
+- `strategic-reviewer = optional advisory pass` внутри того же `lead-strategic` контекста; используется, когда `lead-strategic` нужен ещё один bounded strategic lens.
 - `architecture pass` и `baseline pass` — не отдельные агенты, а именованные governance modes внутри `lead-strategic`.
 
 ## Instructions и Memory

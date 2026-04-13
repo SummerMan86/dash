@@ -8,62 +8,65 @@ For domain-specific invariants, see the relevant overlay: `invariants-emis.md`, 
 
 ## 1. Архитектура (layers and boundaries)
 
-- `entities` не импортируют из `features`, `widgets`, `routes`
-- `features` не импортируют из `widgets`, `routes`
-- `shared` не импортирует из `entities`, `features`, `widgets`, `routes`
-- `$lib/server/*` не импортируется из client-side кода
-- path aliases (`$lib`, `$shared`, `$entities`, `$features`, `$widgets`) используются последовательно
+| Инвариант | Enforcement | Current enforcement / path to automation |
+| --- | --- | --- |
+| `shared` не импортирует из `entities`, `features`, `widgets` и server-only модулей | `automated` | `eslint.config.js`: `no-restricted-imports` для `apps/web/src/lib/shared/**` |
+| `entities` не импортируют из `features`, `widgets` и server-only модулей | `automated` | `eslint.config.js`: `no-restricted-imports` для `apps/web/src/lib/entities/**` |
+| `features` не импортируют из `widgets` и server-only модулей | `automated` | `eslint.config.js`: `no-restricted-imports` для `apps/web/src/lib/features/**` |
+| client-side код не импортирует `$lib/server/*` и server-only workspace modules | `automated` | `eslint.config.js`: `serverImportPatterns` для client routes/layers |
+| `entities`, `features`, `shared` не импортируют из `routes` | `review-only` | Добавить route-boundary patterns в `no-restricted-imports` для app-local layers |
+| path aliases (`$lib`, `$shared`, `$entities`, `$features`, `$widgets`) используются последовательно | `review-only` | Добавить lint rule, которая банит cross-tree relative climbs там, где есть alias |
 
 `shared/entities/features/widgets` здесь означает app-local layering discipline, а не имя всей repo-wide архитектуры.
 
 ## 2. Placement (package homes and route discipline)
 
-- SQL не в route handlers — SQL живёт в packages (`platform-datasets`, `emis-server`) или `src/lib/server/*`
-- новый код в правильном package home: reusable contracts/logic в `packages/*`, page composition в routes
-- новые reusable контракты в canonical package home per domain overlay (e.g. `packages/emis-contracts/*` для EMIS types)
-- route handler — thin transport: parse, validate, derive context, delegate, map errors; бизнес-логика не в route
+| Инвариант | Enforcement | Current enforcement / path to automation |
+| --- | --- | --- |
+| SQL не живёт в route handlers | `review-only` | Добавить AST-based lint для `+server.ts` / `+page.server.ts`, запрещающий raw SQL/query builders в transport-layer |
+| Новый reusable код живёт в правильном package home, а page composition остаётся в routes | `review-only` | Расширить path-ownership lint правила по доменам и package/app seams |
+| Новые reusable контракты живут в canonical package home домена (e.g. `packages/emis-contracts/*`) | `review-only` | Добавить rule, которая запрещает новые reusable contract definitions в legacy shim paths |
+| Route handler остаётся thin transport: parse, validate, derive context, delegate, map errors | `manual` | Добавить route-complexity/import-budget checks и banned-call patterns для business logic в routes |
 
 ## 3. Data invariants
 
-- `isSafeIdent()` в postgres provider не обходится
+| Инвариант | Enforcement | Current enforcement / path to automation |
+| --- | --- | --- |
+| `isSafeIdent()` в postgres provider не обходится | `review-only` | Добавить targeted lint/contract test, который ловит raw identifier interpolation в postgres provider code |
 
 ## 4. Schema, contract and navigation doc changes
 
-- structural schema changes отражаются в `db/current_schema.sql` и `db/applied_changes.md`
-- runtime/API changes обновляют `RUNTIME_CONTRACT.md`, если это active contract
-- **новая директория** (package, module, feature, widget, route group) **получает локальный `AGENTS.md`**, если содержит больше одного файла и является осмысленной модульной единицей
-- **существующий `AGENTS.md` обновляется**, если slice меняет structure, exports, dependencies или placement rules описанной зоны; ответственность — на worker'е, проверка — на `docs-reviewer`
-- шаблон локального `AGENTS.md`: одно предложение (что это), placement rules (что сюда класть / не класть), structure (ключевые файлы), dependencies/boundaries, reading order
+| Инвариант | Enforcement | Current enforcement / path to automation |
+| --- | --- | --- |
+| Structural schema changes отражаются в `db/current_schema.sql` и `db/applied_changes.md` | `review-only` | Добавить changed-files CI check, который связывает schema/object edits с обновлением snapshot/log docs |
+| Runtime/API changes обновляют `RUNTIME_CONTRACT.md`, если это active contract | `review-only` | Добавить touched-files check для route/contract changes с обязательным contract-doc companion diff |
+| Новая meaningful multi-file директория получает локальный `AGENTS.md` | `review-only` | Добавить repo script, который флагует новые qualifying directories без `AGENTS.md` |
+| Существующий `AGENTS.md` обновляется при изменении structure, exports, dependencies или placement rules | `review-only` | Добавить changed-dir ownership manifest и checker для directory-shape diffs |
+| Локальный `AGENTS.md` следует шаблону: purpose, placement rules, structure, dependencies/boundaries, reading order | `manual` | Добавить lightweight doc validator на обязательные секции |
 
 ## 5. Complexity guardrails
 
-- `500-700` строк — warning, обсудить декомпозицию
-- `700-900` строк — обязательная review-дискуссия и явное объяснение, если файл продолжает расти
-- `900+` строк — декомпозиция по умолчанию; временный waiver возможен только через `architecture pass`
+| Инвариант | Enforcement | Current enforcement / path to automation |
+| --- | --- | --- |
+| `500-700` строк — warning band, обсуждается декомпозиция | `review-only` | Добавить touched-files line-count reporter в CI/commentary tooling |
+| `700-900` строк — обязательная review-дискуссия и явное объяснение дальнейшего роста | `review-only` | Добавить max-lines policy script с required rationale marker в handoff/report |
+| `900+` строк — декомпозиция по умолчанию; waiver только через `architecture pass` | `review-only` | Добавить max-lines gate с waiver registry check |
 
 ## 6. Stabilization state model
 
-### `Red`
-
-- baseline not closed
-- разрешены только baseline repair, docs sync, guardrails и bounded refactor
-
-### `Yellow`
-
-- baseline под контролем, но есть managed exceptions
-- разрешены только low-risk bounded slices без расширения architectural surface
-
-### `Green`
-
-- baseline closed
-- открыт обычный feature workflow
-
-Переход между состояниями требует явного `baseline pass` verdict или эквивалентного strategic accept.
+| Инвариант | Enforcement | Current enforcement / path to automation |
+| --- | --- | --- |
+| `Red`: baseline not closed; разрешены только baseline repair, docs sync, guardrails и bounded refactor | `review-only` | Добавить plan/report linter, который сверяет тип slice с последним baseline verdict |
+| `Yellow`: baseline под контролем, но есть managed exceptions; разрешены только low-risk bounded slices без расширения architectural surface | `review-only` | Добавить wave-policy checker, который требует explicit rationale для slices в `Yellow` |
+| `Green`: baseline closed; открыт обычный feature workflow | `review-only` | Добавить merge-time check, который требует актуальный baseline artifact перед `Green` rollout |
+| Переход между состояниями требует явного `baseline pass` verdict или эквивалентного strategic accept | `review-only` | Добавить status artifact schema и validation в wave-close tooling |
 
 ## 7. Technologies
 
-- TypeScript strict
-- SvelteKit 2
+| Инвариант | Enforcement | Current enforcement / path to automation |
+| --- | --- | --- |
+| TypeScript strict | `automated` | Проверяется `tsconfig` + `pnpm check` |
+| SvelteKit 2 | `manual` | Добавить CI guard на allowed major version в `package.json` / lockfile |
 
 ## 8. Architecture-Docs-First
 
@@ -77,14 +80,14 @@ For domain-specific invariants, see the relevant overlay: `invariants-emis.md`, 
 | Перед реализацией | `architecture-reviewer` (audit mode) | Readiness verdict; `DOCS FIRST` → docs update до реализации (`review-gate.md` §3.3) |
 | После реализации (review) | `architecture-reviewer` (diff mode) | `needs design decision` → блокирует merge → согласование → docs update → re-review (`review-gate.md` §1.2) |
 
-Правила:
-
-- решение фиксируется в соответствующем architecture doc (`architecture_dashboard_bi.md`, `architecture_emis.md`, `architecture.md`)
-- если решение создаёт enforceable rule — добавляется инвариант в этот документ
-- если решение создаёт migration debt — добавляется entry в debt register соответствующего architecture doc
-- Architecture Readiness Check (`workflow.md` §2.3.1) — обязательный шаг перед реализацией фичи с architectural surface
-- Pre-Implementation Architecture Audit (`review-gate.md` §3.3) — governance pass для full audit, когда bounded check недостаточен
-- `needs design decision` verdict в diff review блокирует merge до согласования и документирования решения
+| Инвариант | Enforcement | Current enforcement / path to automation |
+| --- | --- | --- |
+| Архитектурное решение фиксируется в соответствующем architecture doc (`architecture_dashboard_bi.md`, `architecture_emis.md`, `architecture.md`) | `review-only` | Добавить architecture-pass artifact schema с обязательным target-doc field |
+| Решение, создающее enforceable rule, добавляет соответствующий инвариант | `review-only` | Добавить governance checklist linter, который требует invariant follow-up для flagged rules |
+| Решение, создающее migration debt, добавляет entry в debt register соответствующего architecture doc | `review-only` | Добавить docs diff check для debt-register update, когда review pass помечает debt impact |
+| Architecture Readiness Check обязателен для фичи с architectural surface | `manual` | Добавить pre-execution checklist validator в orchestration artifacts |
+| Pre-Implementation Architecture Audit подключается, когда bounded readiness check недостаточен | `review-only` | Добавить explicit readiness status field в plan/report artifacts |
+| `needs design decision` блокирует merge до согласования, doc updates и re-review | `review-only` | Добавить merge-readiness validator, который не пропускает open design-decision verdicts |
 
 ## 9. BI Vertical Invariants
 
@@ -92,51 +95,49 @@ Canonical reference: `docs/architecture_dashboard_bi.md` §8 (BI Code Quality Gu
 
 ### Data contract
 
-- новые datasets **не используют** `looseParams` (`z.record(z.unknown())`); обязательна явная Zod-схема с конкретными полями
-- custom compile получает `DatasetQuery`, но **не обходит** `paramsSchema` — валидация параметров обязана выполняться до compile
-- `SelectIr` — read-model only; `groupBy`, `call()`, агрегации **запрещены** в IR; аналитика — в backend views или future `AnalyticalIr`
+| Инвариант | Enforcement | Current enforcement / path to automation |
+| --- | --- | --- |
+| Новые datasets не используют `looseParams` (`z.record(z.unknown())`) | `review-only` | Добавить AST lint rule для dataset definitions, которая запрещает `looseParams` |
+| Custom compile не обходит `paramsSchema`; валидация параметров выполняется до compile | `review-only` | Добавить contract test/lint на dataset definition pipeline |
+| `SelectIr` остаётся read-model only; `groupBy`, `call()`, агрегации запрещены в IR | `review-only` | Зафиксировать API surface тестами и запретить forbidden IR builders в type-level contract tests |
 
 ### Page composition
 
-- новые BI-страницы **используют `useFlatParams: true`** в `fetchDataset()`; legacy filter merge через `getFilterSnapshot()` запрещён для нового кода
-- **операционные workflow** (управление ценами, CRUD, внешние API-вызовы) **не смешиваются** с аналитическими дашбордами в одном компоненте
-- дорогие вычисления внутри `{#each}` **пре-вычисляются** в `$derived` или `Map`; повторный вызов pure-функций per-row на каждый render — performance bug
-- агрегация и view-model логика живёт в `.ts`-модулях (`aggregation.ts`, `view-model.ts`), **не inline** в `<script>` блоке `.svelte`
+| Инвариант | Enforcement | Current enforcement / path to automation |
+| --- | --- | --- |
+| Новые BI-страницы используют `useFlatParams: true` в `fetchDataset()` | `review-only` | Добавить lint rule для `fetchDataset()` calls внутри BI routes |
+| Операционные workflow не смешиваются с аналитическими дашбордами в одном компоненте | `manual` | Добавить route/component ownership conventions и structure check для BI pages |
+| Дорогие вычисления внутри `{#each}` пре-вычисляются, а не крутятся per-row на каждый render | `manual` | Добавить Svelte performance lint/heuristics для touched files |
+| Агрегация и view-model логика живёт в `.ts`-модулях, не inline в `.svelte` | `review-only` | Добавить Svelte AST rule на heavy inline aggregation/view-model patterns |
 
 ### Provider contract
 
-- server-side caching использует shared `providerCache` helper; провайдер-специфичные кеш-реализации запрещены
-- `isSafeIdent()` в postgres provider **не обходится**
-- новые провайдеры реализуют `Provider.execute(ir, entry, ctx)` и уважают `entry.cache` и `entry.execution`
+| Инвариант | Enforcement | Current enforcement / path to automation |
+| --- | --- | --- |
+| Server-side caching использует shared `providerCache` helper; provider-local caches запрещены | `review-only` | Добавить lint rule, которая банит provider-local cache maps/helpers |
+| `isSafeIdent()` в postgres provider не обходится | `review-only` | Добавить provider-specific safety tests и lint для unsafe identifier interpolation |
+| Новые провайдеры реализуют `Provider.execute(ir, entry, ctx)` и уважают `entry.cache` и `entry.execution` | `review-only` | Добавить provider contract tests на required interface behavior |
 
 ### Extension discipline
 
-- новые датасеты добавляются через `DatasetRegistryEntry` в registry; прямой SQL в route handlers запрещён
-- расширение через добавление регистраций, **не через модификацию** центральных роутеров или switch-конструкций
-- статическая регистрация; runtime plugin discovery / dynamic import запрещены
+| Инвариант | Enforcement | Current enforcement / path to automation |
+| --- | --- | --- |
+| Новые датасеты добавляются через `DatasetRegistryEntry`; прямой SQL в route handlers запрещён | `review-only` | Добавить route lint + registry coverage tests для новых dataset ids |
+| Расширение идёт через добавление регистраций, не через модификацию центральных роутеров или switch-конструкций | `review-only` | Добавить AST rule, которая флагует router/switch growth в dataset dispatch |
+| Статическая регистрация; runtime plugin discovery / dynamic import запрещены | `review-only` | Добавить lint rule, которая запрещает `import()` в dataset registration/runtime loading |
 
 ## 10. ESLint Rule-Introduction Policy
 
 Правила для введения новых ESLint rules в `eslint.config.js`:
 
-### Prerequisites
-
-- правило должно быть **low-noise**: не создавать mass false positives на существующем коде
-- правило **не вводится repo-wide как blocking** (`error`), пока baseline по нему uncontrolled (десятки+ нарушений)
-- для red baseline допускается **`touched-files only` enforcement** (rule = `warn` repo-wide; slice policy = "не ухудшать touched files")
-- architectural guardrails (boundaries, safety, contracts) **приоритетнее** stylistic rules
-- новый blocking rule **сопровождается** remediation plan или bounded scope
-
-### Process
-
-1. **Docs-first decision**: новое правило описывается и обосновывается в PR/plan **до добавления** в config
-2. Предпочтение правилам, которые защищают:
-   - **boundaries** (import restrictions, layer discipline)
-   - **contracts** (type safety, param validation)
-   - **unsafe runtime patterns** (SQL injection, unvalidated input)
-   - **accidental complexity** (unused code, dead exports)
-3. Stylistic checks **не должны маскировать** архитектурные сигналы в lint output
-4. Если правило создаёт `>20` новых нарушений repo-wide, оно вводится как `warn` с remediation plan, а не как `error`
+| Инвариант | Enforcement | Current enforcement / path to automation |
+| --- | --- | --- |
+| Новое правило должно быть low-noise и не создавать mass false positives | `manual` | Добавить baseline-diff report для новых ESLint rules в CI |
+| Repo-wide blocking (`error`) rule не вводится, пока baseline uncontrolled; сначала `warn` или touched-files-only policy | `manual` | Добавить lint-governance script, которая сравнивает violation counts до/после rule change |
+| Architectural guardrails приоритетнее stylistic rules | `manual` | Зафиксировать PR template/checklist для `eslint.config.js` changes |
+| Новый blocking rule сопровождается remediation plan или bounded scope | `manual` | Добавить CI check на companion docs/plan update при изменении `eslint.config.js` |
+| Docs-first decision обязателен до добавления нового правила | `manual` | Добавить required doc reference field в change template для lint-governance edits |
+| Если правило создаёт `>20` новых нарушений repo-wide, оно вводится как `warn` с remediation plan, а не как `error` | `manual` | Автоматизировать violation-threshold check в CI |
 
 ### Severity assignment
 

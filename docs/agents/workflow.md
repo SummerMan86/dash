@@ -81,7 +81,7 @@ Claude Opus (orchestrator; legacy alias: lead-tactical)
 - `lead-strategic` — canonical owner плана, а не кодовой реализации.
 - initial plan — рабочая гипотеза; после каждого принятого slice он уточняется по реальному состоянию repo.
 - `orchestrator` — owner execution flow, но не semantic owner плана.
-- `orchestrator` не реализует product code; любой implementation slice идёт через worker.
+- `orchestrator` не реализует product code вне `direct-fix` protocol; остальной implementation идёт через worker.
 - `worker` реализует slice в заданном scope и сдаёт truthful handoff с evidence.
 - `reviewer` — fresh pass без persistent review memory.
 - любой product-code slice должен пройти минимум один independent reviewer pass (`code-reviewer` как минимальный floor; дополнительные reviewer'ы — по поверхности change).
@@ -108,9 +108,9 @@ Legacy wrappers остаются по путям `docs/agents/lead-tactical/*`.
 
 **Что `orchestrator` не делает:**
 
-- не пишет product code;
-- не открывает source files и raw diff hunks по умолчанию;
-- не запускает product checks (`check/build/test/lint`) для implementation slices сам;
+- не пишет product code вне `direct-fix` protocol;
+- не открывает source files и raw diff hunks по умолчанию вне `direct-fix` triage;
+- не запускает product checks (`check/build/test/lint`) для implementation slices сам вне `direct-fix`;
 - не делает `git add/commit` для product changes;
 - не исправляет reviewer findings сам;
 - не компенсирует плохой handoff тем, что "сам быстро посмотрит код".
@@ -129,17 +129,19 @@ Legacy wrappers остаются по путям `docs/agents/lead-tactical/*`.
 - сборка report;
 - обновление memory и usage telemetry;
 - strategic backfill при необходимости.
+- `direct-fix`, если change подпадает под fast path.
 
 **Когда dispatch worker обязателен:**
 
-- любой implementation slice, включая trivial local fix;
+- любой implementation slice, который не подпадает под `direct-fix`;
 - любые product checks и runtime verification;
 - любые code changes по findings;
 - любые уточнения, которые требуют открыть код или diff.
 
 **Как `orchestrator` держит контекст чистым:**
 
-- trivial implementation changes идут через `micro-worker`, а не через self-execution;
+- `direct-fix` используй только для `<= 10` строк в одном файле без architectural surface;
+- если trivial change не подпадает под `direct-fix`, он идёт через `micro-worker`, а не через self-execution;
 - при недостаточном evidence запускается transparency request, re-review или verification/fix-worker;
 - при design/boundary ambiguity эскалация идёт в `lead-strategic`, а не в self-implementation loop.
 
@@ -174,19 +176,31 @@ Reviewers как fresh subagents:
 
 ## 2. Цикл задачи
 
-Два режима: `batch` для простых задач и `iterative` для задач с частым slice-by-slice review.
+Три execution path:
+
+- `direct-fix` — inline fast path для микроправки без architectural surface;
+- `batch` — для простых задач;
+- `iterative` — для задач с частым slice-by-slice review.
 
 ### 2.1. Выбор режима
 
-| Критерий | Batch | Iterative |
-| --- | --- | --- |
-| Подзадачи независимы | да | нет |
-| Реализация может поменять следующий slice | нет | да |
-| Количество slices | 1-3 | 4+ |
-| Архитектурный риск | низкий | средний-высокий |
-| Новый домен / unfamiliar code | нет | да |
+| Критерий | Direct-fix | Batch | Iterative |
+| --- | --- | --- | --- |
+| Размер change | `<= 10` строк, 1 файл | 1-3 bounded slices | 4+ или slice-dependent |
+| Architectural surface | нет | низкий | средний-высокий |
+| Schema / contract touch | нет | нет или локальный | возможен |
+| Нужен worker handoff | нет | да | да |
+| Нужен post-slice reframe | нет | обычно в конце | да |
 
 **Default heuristic для `orchestrator`:**
+
+Выбирай `direct-fix`, если одновременно верно всё ниже:
+
+- change укладывается в `<= 10` изменённых строк;
+- затронут ровно один файл;
+- нет architectural surface;
+- нет schema changes или contract changes;
+- не нужен новый exception / waiver / `Plan Change Request`.
 
 Выбирай `iterative`, если верно хотя бы одно:
 
@@ -209,11 +223,19 @@ Reviewers как fresh subagents:
 
 Dispatch heuristic:
 
-- implementation slice всегда идёт через worker;
-- если slice trivial и bounded, выбирай `micro-worker`, а не self-execution;
+- если change подпадает под `direct-fix`, выполняй его inline;
+- любой другой implementation slice идёт через worker;
+- если slice trivial и bounded, но уже не `direct-fix`, выбирай `micro-worker`;
 - parallel workers допустимы только для независимых ownership slices;
 - если workers идут параллельно, default и required mode = isolated `subagent + worktree`;
 - teammate/shared-checkout path не используется для parallel execution, даже если slices маленькие.
+
+`direct-fix` protocol:
+
+- `orchestrator` правит change inline;
+- сам прогоняет `pnpm check` и `pnpm build`;
+- пишет `lightweight` report с короткой строкой `direct-fix: <file> — <summary>`;
+- не использует reviewer skip для более широкого scope, чем разрешает protocol.
 
 ### 2.2. Планирование (`lead-strategic`)
 
@@ -319,7 +341,7 @@ Risk signals для slice-level strategic-reviewer pass: canonical list в `revi
 ### 2.5. Batch-исполнение
 
 1. `orchestrator` читает `current_plan.md` и свою durable memory.
-2. Dispatches worker'ов на все implementation slices.
+2. Dispatches worker'ов на все implementation slices, которые не пошли через `direct-fix`.
 3. Принимает handoff packets и добирает недостающий evidence через reviewers / transparency requests / verification-workers.
 4. Запускает Review Gate, если он нужен по `review-gate.md`.
 5. Выбирает формат report и пишет `last_report.md`.
@@ -347,7 +369,7 @@ Risk signals для slice-level strategic-reviewer pass: canonical list в `revi
 `orchestrator` выбирает один из canonical report types:
 
 - `full` — multi-slice, cross-layer, risky implementation;
-- `lightweight` — docs-only или one-slice low-risk worker-owned change;
+- `lightweight` — docs-only, direct-fix или one-slice low-risk worker-owned change;
 - `governance-closeout` — verification/docs/baseline closure без нового product implementation.
 
 Правила:
@@ -364,7 +386,7 @@ Cost-awareness калибрует cadence strategic loop, а не отменяе
 
 Правила по умолчанию:
 
-- не требуй отдельный strategic pass на trivial slice, если slice review green и post-slice reframe не меняет plan semantics;
+- не требуй отдельный strategic pass на `direct-fix` или trivial slice, если review/reframe действительно не дают нового сигнала;
 - если несколько slices подряд не меняют plan, boundaries и acceptance logic, `orchestrator` может предложить снизить cadence, а `lead-strategic` — переключить operating mode;
 - если per-slice strategic pass регулярно находит important issues или меняет next-slice plan, это high-yield cadence, и его не нужно "оптимизировать away";
 - если passes становятся low-yield, cadence нужно снижать или явно объяснять, почему выбранный mode остаётся оправданным.

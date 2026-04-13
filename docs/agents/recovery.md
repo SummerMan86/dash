@@ -89,18 +89,33 @@ Canonical failure-path protocol для агентной команды.
 1. Не терять текущий orchestration state:
    - сразу обновить `docs/agents/orchestrator/memory.md`;
    - если есть свежие strategic decisions в контексте, сделать backfill в `lead-strategic/memory.md`.
-2. Довести до конца только уже начатый локальный slice, если одновременно верно:
+2. Включить degraded mode только если одновременно верно:
    - acceptance для него уже понятен;
    - не нужен new exception/waiver;
    - не нужен semantic reframe plan;
    - нет unresolved `CRITICAL`.
-3. Не стартовать следующий dependent slice без strategic owner, если нужен reframe или acceptance спорный.
-4. Подготовить один из recovery outputs:
+3. Довести до конца только уже начатый локальный slice и принять его по обычным правилам evidence/review.
+4. После этого разрешено продолжить только следующий **независимый** slice из уже зафиксированного canonical plan:
+   - `orchestrator` может принять текущий slice и пойти дальше без strategic review;
+   - `orchestrator` не может re-sequence, re-scope или skip slices;
+   - любой dependent slice остаётся заблокирован до возврата `lead-strategic`.
+5. Каждое degraded-mode решение логируется в `docs/agents/orchestrator/decision-log.md`:
+   - какой slice принят;
+   - почему он считался independent;
+   - почему continuation без strategic review допустим;
+   - на каком slice execution обязан остановиться.
+6. Threshold для user notification:
+   - после `2` принятых slices без strategic review `orchestrator` обязан остановиться и уведомить пользователя;
+   - продолжать третьим slice без user-visible pause нельзя.
+7. Подготовить один из recovery outputs:
    - draft `Plan Change Request`;
    - `last_report.md` со статусом `частично` / `blocked`;
    - список открытых вопросов для strategic review.
-5. Переключиться на fallback/manual strategic path, если он доступен.
-6. После возвращения Codex/GPT продолжить с `--resume`, если thread жив, иначе с `--fresh` + актуальные `memory.md`.
+8. Переключиться на fallback/manual strategic path, если он доступен.
+9. После возвращения Codex/GPT продолжить с `--resume`, если thread жив, иначе с `--fresh` + актуальные `memory.md`.
+10. Перед wave closure degraded mode должен быть закрыт полным strategic review:
+   - без этого wave не закрывается;
+   - финальный merge-ready verdict не выносится.
 
 Жёсткое правило:
 

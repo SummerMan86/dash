@@ -17,8 +17,8 @@
 │  Не пишет код. Владеет current_plan.md.                 │
 ├─────────────────────────────────────────────────────────┤
 │  Claude Opus (orchestrator)                             │
-│  Не пишет product code: раздаёт задачи, запускает       │
-│  review, собирает report. Владеет execution flow.       │
+│  По умолчанию не пишет product code: раздаёт задачи,    │
+│  запускает review, собирает report. Владеет flow.       │
 ├──────────────────┬──────────────────────────────────────┤
 │  Worker (Claude)  │  Reviewers (Claude, fresh subagent) │
 │  Реализует slice  │  Проверяют diff по своей зоне       │
@@ -31,7 +31,7 @@
 1. Ты ставишь задачу `orchestrator` (Claude Opus).
 2. Он сам поднимает GPT-5.4 через Codex plugin для планирования.
 3. GPT-5.4 пишет план, ты его подтверждаешь (или нет).
-4. `orchestrator` создаёт worker'ов:
+4. `orchestrator` либо делает eligible `direct-fix` inline, либо создаёт worker'ов:
    - для code-writing slices по умолчанию это isolated subagents с отдельным worktree/branch;
    - teammate mode остаётся exception для docs-only / read-only / governance-closeout work.
    - если workers запускаются параллельно, они все идут как isolated subagents; teammate mode для parallel path не используется.
@@ -49,6 +49,7 @@
 - **Handoff** — формальная сдача результата от worker'а к `orchestrator`.
 - **Escalation** — когда агент не может принять решение сам и обращается к тебе.
 - **Micro-worker** — тот же worker contract, но для trivial/bounded slice: маленький scope, быстрый handoff. Ты можешь увидеть его в report.
+- **Direct-fix** — inline fast path у `orchestrator` для правки `<= 10` строк в одном файле без architectural surface; worker и reviewer там не обязательны.
 - **Architecture Readiness Check** — bounded pre-implementation audit, который `orchestrator` может запустить перед execution, если фича затрагивает architectural surface (BI, cross-layer, новый dataset и т.д.). Может немного задержать старт execution — это нормально.
 
 Ты участвуешь только в трёх точках: **план** (approve), **эскалации** (decide), **merge** (confirm). Всё остальное автономно.
@@ -234,7 +235,7 @@ Claude:
 Если Agent Teams не работает, worker можно поднять вручную:
 
 ```text
-Ты — worker. Прочитай docs/agents/worker/instructions.md
+Ты — worker. Прочитай docs/agents/worker/guide.md
 Задача: <описание>
 Scope: <файлы>
 Integration branch: feature/<topic>

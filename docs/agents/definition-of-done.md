@@ -6,10 +6,35 @@ Canonical checklists для определения завершённости р
 
 Правило `N/A`: если пункт не применим к конкретному slice/wave/feature, исполнитель отмечает его `N/A` с одной строкой причины. Молчаливый пропуск запрещён.
 
+## 0. Micro-Task Exemption
+
+Применяется, если change одновременно:
+
+- укладывается в `<= 10` изменённых строк;
+- затрагивает один файл;
+- не имеет architectural surface;
+- не меняет schema или runtime contract.
+
+Тогда required only:
+
+- [ ] Acceptance criteria выполнены
+- [ ] Scope не нарушен
+- [ ] Checks green
+
+Все остальные пункты Slice DoD можно отметить `N/A` по умолчанию.
+
+Важно:
+
+- это упрощает DoD-отчётность, но не разрешает scope drift;
+- independent review для worker-owned product-code changes остаётся обязательным;
+- skip review допустим только если change пошёл через `direct-fix` protocol из `review-gate.md`.
+
 ## 1. Slice DoD (Level 1)
 
 **Владелец:** worker.
 **Проверяет:** orchestrator при приёмке handoff.
+
+Если применим §0, он имеет приоритет над полным перечислением Level 1.
 
 ### Implementation
 
@@ -134,7 +159,7 @@ Prerequisite: все волны feature прошли Wave DoD (Level 2).
 
 ## 6. Ссылки
 
-- Worker self-check: `docs/agents/worker/instructions.md` → "Self-check перед сдачей"
+- Worker self-check: `docs/agents/worker/guide.md` → "Slice DoD"
 - Orchestrator cycle: `docs/agents/orchestrator/instructions.md`
 - Strategic acceptance: `docs/agents/lead-strategic/instructions.md` → "Что проверять при приёмке report"
 - Review Gate: `docs/agents/review-gate.md`

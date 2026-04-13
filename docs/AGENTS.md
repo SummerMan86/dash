@@ -129,9 +129,10 @@ Historical BI archive: [archive/bi/architecture_dashboard_bi.md](./archive/bi/ar
 | `agents/architecture-steward/instructions.md` | `lead-strategic` architecture-pass checklist | как делать architecture governance pass: placement decisions и waivers   |
 | `agents/baseline-governor/instructions.md`    | `lead-strategic` baseline-pass checklist     | как делать baseline pass: baseline status, known exceptions, verdict     |
 | `agents/strategic-reviewer/instructions.md`   | strategic-reviewer instructions              | как делать bounded strategic acceptance/reframe pass и cheap cross-model second look |
-| `agents/orchestrator/instructions.md`         | Claude Opus orchestration-only instructions  | как управлять workers, review gate, report без self-execution            |
+| `agents/orchestrator/instructions.md`         | Claude Opus orchestration-only instructions  | как управлять workers, review gate, report и bounded direct-fix exception |
 | `agents/lead-tactical/instructions.md`        | compatibility alias → orchestrator           | legacy entry point для старых prompt/script flows                        |
-| `agents/worker/instructions.md`               | Claude worker instructions                   | как выполнять задачи, self-check, handoff                                |
+| `agents/worker/guide.md`                      | self-contained worker guide                  | bootstrap, worker guardrails, review triggers, evidence rules, handoff   |
+| `agents/worker/instructions.md`               | worker bootstrap compatibility shim          | pointer на canonical worker guide и isolated-subagent bootstrap          |
 | `agents/*-reviewer/instructions.md`           | reviewer role instructions                   | checks, output format, scope для каждого ревьюера                        |
 | `agents/skills/debugging.md`                  | debugging playbook                           | reproduce, compare, hypothesize, fix, escalation triggers                |
 | `agents/skills/testing-strategy.md`           | three-mode testing strategy                  | test-first, prototype-pin-refactor, verification-first, per-slice fields |
@@ -210,6 +211,7 @@ Historical BI archive: [archive/bi/architecture_dashboard_bi.md](./archive/bi/ar
 - `agents/usage-telemetry.md` - если нужен durable usage log, usefulness rubric или telemetry storage contract
 - `agents/roles.md` - если нужны роли агентов
 - `agents/templates.md` - если нужны шаблоны коммуникации между агентами
+- `agents/worker/guide.md` - если нужен self-contained worker execution guide без чтения всего generic governance stack
 - `../packages/emis-contracts/AGENTS.md` - если change касается contracts, DTO, Zod schemas
 - `../packages/emis-server/AGENTS.md` - если change касается backend modules или infra helpers
 - `../packages/emis-ui/AGENTS.md` - если change касается map/status UI package

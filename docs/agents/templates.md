@@ -18,7 +18,7 @@
 | Report type | Когда использовать | Что обязательно |
 | --- | --- | --- |
 | `full` | multi-slice, cross-layer, risky implementation, полноценный integration review | plan sync, review findings/disposition, checks evidence, readiness |
-| `lightweight` | docs-only или one-slice low-risk worker-owned change | status, done summary, checks evidence, review disposition, readiness |
+| `lightweight` | docs-only, direct-fix или one-slice low-risk worker-owned change | status, done summary, checks evidence, review disposition, readiness |
 | `governance-closeout` | verification/docs/baseline closure slice без нового product implementation | status, closure summary, baseline/architecture disposition, checks evidence, readiness |
 
 Жёсткое правило:
@@ -147,8 +147,7 @@ Optional:
 
 ## Bootstrap Reads (прочитать до начала реализации)
 
-- docs/agents/worker/instructions.md
-- docs/agents/invariants.md
+- docs/agents/worker/guide.md
 - <локальные AGENTS.md в затронутых модулях — перечислить конкретные пути>
 
 ## Optional References (читать при необходимости)
@@ -245,8 +244,8 @@ Optional:
 
 ## Bootstrap Reads
 
-- docs/agents/worker/instructions.md
-- docs/agents/invariants.md
+- docs/agents/worker/guide.md
+- <локальный AGENTS.md, если файл находится внутри зоны с локальной навигацией>
 
 ## Optional References
 
@@ -559,7 +558,7 @@ Per `docs/agents/definition-of-done.md` Level 2:
 
 ### 4.2. Lightweight Report
 
-Используется для docs-only change или low-risk one-slice worker-owned batch.
+Используется для docs-only change, direct-fix или low-risk one-slice worker-owned batch.
 
 Required:
 
@@ -594,6 +593,10 @@ Optional:
 
 - <краткий summary>
 
+Для `direct-fix` допускается одна строка:
+
+- `direct-fix: <file> — <что исправлено>`
+
 ## Plan Sync (optional — опусти, если strategic loop не задействовался)
 
 - current_plan.md: `unchanged` | `updated by lead-strategic/Codex` | `not involved`
@@ -603,7 +606,7 @@ Optional:
 
 ## Review Disposition
 
-- minimum independent review floor: `satisfied` | `N/A — no product code`
+- minimum independent review floor: `satisfied` | `N/A — no product code` | `N/A — direct-fix protocol`
 - slice/integration review: `run` | `skipped` | `not applicable`
 - rationale: <почему>
 
