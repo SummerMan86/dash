@@ -3,59 +3,64 @@
 ## Active Strategic Context
 
 - Active wave:
-  - `BI Clean Architecture — Audit-Driven Remediation`
+  - `Agent Docs Dedup Pass 2 (Medium Priority)`
 - Active plan:
-  - `docs/agents/lead-strategic/current_plan.md` (created 2026-04-11)
-- Previous completed plans archived:
-  - `docs/archive/agents/lead_strategic_current_plan_2026_04_10_oracle_cache_foundation.md`
-  - `docs/archive/agents/lead_strategic_current_plan_2026_04_10_bi_refactor_wave1_complete.md`
-- This wave is remediation-focused:
-  - god component decomposition on BI pages (Wave 1)
-  - filter path migration to useFlatParams (Wave 2)
-  - contract hardening: typed custom compile + explicit paramsSchema + cache middleware (Wave 3)
-  - cleanup: duplicate definitions, access control, route-local tests (Wave 4)
-  - no new functionality — strictly refactoring and contract hardening
+  - `docs/agents/lead-strategic/current_plan.md` (reviewed `2026-04-13`)
+- Active branch:
+  - `feature/agent-model-simplification`
+- Scope:
+  - agent-doc dedup only
+  - goal: reduce maintenance drift without breaking worker bootstrap or root navigation
 
-## Accepted Decisions (2026-04-11)
+## Accepted Strategic Decisions (2026-04-13)
 
-- Architecture audit identified 5 problem classes: god components, incomplete filter migration, looseParams bypass, implicit filter runtime, weak test coverage.
-- All architectural decisions pre-documented in `architecture_dashboard_bi.md` §8 (guardrails) and §9 (migration debt register).
-- Readiness: `CLEAR` — no new architectural decisions needed before implementation.
-- CA-0 (ESLint governance baseline) is a precondition for all later waves — establishes lint policy.
-- Wire contract (`DatasetQuery`/`DatasetResponse`) must not change until CA-7 (coordinated `.filters` removal).
-- Scope limited to BI vertical — EMIS datasets/routes and strategy dashboard are out of scope.
-- 127 green tests as baseline; every slice must end with ≥ 127 green tests.
-- `pnpm lint:eslint` not green repo-wide; slices must not increase lint debt in touched files.
+- Canonical ownership stays split as follows:
+  - `workflow.md` owns lifecycle, execution-path selection, operating-mode definitions, and cost-aware defaults
+  - `review-gate.md` owns review mechanics, strategic-reviewer cadence/risk signals, reframe protocol, and governance passes
+  - `invariants.md` remains the source of truth for guardrails
+  - `worker/guide.md` stays self-contained only via explicit derived excerpts
+  - root `AGENTS.md` stays navigation-first
+  - `autonomous-protocol.md` should keep concise scenario selectors, not become a second prompt-template spec
+- Consumer-scoped template split is accepted:
+  - `docs/agents/templates-orchestration.md` for orchestrator / governance / reporting
+  - `docs/agents/templates-handoff.md` for worker handoff
+- Bootstrap/recovery hardening is accepted:
+  - orchestrator restore path reads both durable memories before `current_plan.md`
+  - task packet / role guide override stale worktree-local redirects
+- Autonomous mode no longer widens `orchestrator` product-code ownership beyond standard `direct-fix`
+- Fresh-worktree rule is accepted:
+  - after bootstrap/recovery doc changes, new worker tasks use fresh worktrees
+  - stale worktree-local `CLAUDE.md` snapshots are not authoritative bootstrap context
 
 ## Operating Mode
 
 - Active mode:
   - `ordinary iterative`
-- Escalate immediately to `high-risk iterative / unstable wave` if implementation:
-  - changes public wire contract (`DatasetQuery`, `DatasetResponse`)
-  - requires coordinated changes in 3+ packages
-  - breaks existing tests (127 green tests as baseline)
+- Keep this mode while MP-1 / MP-4 still touch canonical workflow docs
+- Escalate / reframe if the task stops being docs-only or starts changing role semantics, worker bootstrap requirements, or runtime behavior
 
 ## Resume Point For The Next Chat
 
-- Waves 0–2 (CA-0..CA-7) **done** — 6 commits on `feature/bi-clean-architecture`
-- Start from **Wave 3, CA-8** (typed custom compile contract)
-- CA-8 depends on CA-7 (done) — ready to start immediately
-- CA-12 (cache middleware) is independent — can run in parallel with CA-8
-- First tactical targets:
-  - CA-8: custom compile receives parsed/typed params, not raw `DatasetQuery`
-  - CA-9/CA-10/CA-11 (parallel after CA-8): explicit Zod paramsSchema for WB/payment/IFTS datasets
-  - CA-12 (parallel with CA-8): extract cache logic from oracleProvider into middleware
-- 228 green tests baseline (127 + 101 from Wave 1)
-- Expected wave-close evidence (per-slice):
-  - `pnpm check`
-  - `pnpm check:packages`
-  - `pnpm build`
-  - `pnpm lint:boundaries`
-  - `pnpm test`
+- Do not resume the old CA / BI-clean-architecture wave from prior memories; that context is historical only
+- Current plan remains `docs/agents/lead-strategic/current_plan.md`
+- Practical status against the plan:
+  - MP-2 is effectively satisfied: `worker/guide.md` now uses sourced excerpts with canonical-wins / escalate-on-conflict rules
+  - MP-3 is effectively satisfied: root `AGENTS.md` §8 is now orientation-only with canonical pointers
+  - MP-1 remains open: finish ownership cleanup between `workflow.md` and `review-gate.md`
+  - MP-4 remains open: slim `autonomous-protocol.md` §12 examples
+- Template references in the plan predate the consumer-scoped split; read them through:
+  - `docs/agents/templates-orchestration.md`
+  - `docs/agents/templates-handoff.md`
+
+## Next Strategic Targets
+
+- First: MP-1 in `docs/agents/workflow.md` + `docs/agents/review-gate.md`
+- Then: MP-4 in `docs/agents/autonomous-protocol.md` §12
+- If the next dialog switches to a non-docs objective, either:
+  - close / supersede this plan explicitly, or
+  - write a new `current_plan.md` before execution
 
 ## Historical Note
 
-- OC Wave (Oracle-First LRU Cache Foundation) completed 2026-04-10 — providerCache.ts in platform-datasets, oracleProvider adopted.
-- Prior EMIS waves, BI Refactor Wave 1, and older material are archival context, not active strategic state.
-- If work re-enters EMIS governance or historical BI rationale, consult the archived plan/doc set explicitly.
+- Earlier EMIS and BI implementation waves, including `BI Clean Architecture`, are no longer active strategic state
+- Historical rationale for those waves lives in archived plans, reports, and `git log`
