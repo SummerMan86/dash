@@ -1040,11 +1040,12 @@ Append-only telemetry entry для optimization analytics.
 Required:
 
 - timestamp
-- task/wave identity
+- task_id
+- wave_id
 - stage
+- report_type
 - operating mode
-- effort summary
-- usefulness summary
+- status
 
 Полная схема required/optional fields: `usage-telemetry.md` §3.
 

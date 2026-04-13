@@ -338,6 +338,8 @@ Bootstrap hints (`--low-risk`, legacy `--simple`) не создают sanctioned
 
 Risk signals для slice-level strategic-reviewer pass: canonical list в `review-gate.md` §2.1.
 
+Transparency request throttle applies in any execution path: after 2 transparency requests for the same handoff, `orchestrator` must choose `accept`, `reject`, or `escalate`. A third request for the same handoff is prohibited and means the handoff is materially incomplete.
+
 ### 2.5. Batch-исполнение
 
 1. `orchestrator` читает `current_plan.md` и свою durable memory.
