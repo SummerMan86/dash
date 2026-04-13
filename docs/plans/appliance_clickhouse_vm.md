@@ -400,7 +400,7 @@ Rationale:
 ### Workflow expectations
 
 - `lead-strategic` owns the plan and any reframe
-- `lead-tactical` executes slice-by-slice
+- `orchestrator` executes slice-by-slice
 - after each slice: self-check -> slice review -> report -> reframe
 - before implementation: bounded architecture readiness check
 - before merge: integration review with docs/security/architecture coverage
