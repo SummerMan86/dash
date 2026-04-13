@@ -390,10 +390,18 @@ tmux kill-session -t agents
 Сработай по Recovery Protocol: teammate закоммитил файлы вне своего scope.
 ```
 
+```text
+Сработай по Recovery Protocol: worker упал посреди реализации slice.
+```
+
+```text
+Сработай по Recovery Protocol: конфликт при merge параллельных worker branches.
+```
+
 ## Короткие ответы
 
 - GPT-5.4 нужен для новой фичи, архитектурного решения, cross-module change.
 - Только Claude обычно хватает для локального бага, стилистики, небольшого рефакторинга.
-- `worker = teammate` (default, shared checkout); subagent+worktree когда нужна файловая изоляция. `reviewer = fresh subagent`.
+- `worker = subagent + worktree` (default для code-writing); teammate только для docs-only / read-only / governance-closeout. `reviewer = fresh subagent`.
 - Если Claude завис: проверь tmux pane, затем `Enter` и `продолжай`; если нужно, `Ctrl+C` и восстановление через `memory.md`.
 - Если GPT-5.4 и Claude расходятся, стратегический приоритет у GPT-5.4, но финальное решение остаётся за пользователем.

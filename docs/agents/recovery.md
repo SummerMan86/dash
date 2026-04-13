@@ -189,3 +189,56 @@ Teammate не делает revert самостоятельно — это мож
 Жёсткое правило:
 
 - Recovery идёт через targeted revert/fix в integration branch, не через branch discard/recreate (это уничтожит работу `orchestrator` и других workers).
+
+## RP-7. Worker crash / death mid-slice
+
+Примеры:
+
+- worker context overflow (контекстное окно исчерпано);
+- process kill, timeout, network disconnect;
+- worktree осталась в partial state с незакоммиченными изменениями.
+
+Действия:
+
+1. Не пытаться "продолжить" упавший worker; всегда создавать нового.
+2. Проверить state worker branch:
+   - есть ли коммиты;
+   - консистентен ли partial state (checks passable или нет).
+3. Если worker оставил осмысленные коммиты и state консистентен:
+   - создать нового worker на тот же slice;
+   - передать carry-forward context из partial branch: коммиты, diff summary, что было сделано и что осталось;
+   - новый worker продолжает от partial state, а не с нуля.
+4. Если worker не оставил коммитов или state неконсистентный:
+   - чистый retry: новый worker от того же base commit;
+   - partial worktree можно удалить.
+5. Если slice дважды крашит worker'а:
+   - эскалировать к пользователю;
+   - вероятная причина: slice слишком большой для одного worker'а и нужна дальнейшая декомпозиция.
+6. В memory и report зафиксировать: какой worker упал, на каком этапе, сколько retry потребовалось.
+
+Жёсткое правило:
+
+- retry на один slice ограничен двумя попытками; после второго crash — автоматическая эскалация к пользователю.
+
+## RP-8. Merge conflict between parallel worker branches
+
+Примеры:
+
+- два parallel isolated worker'а оба succeeded;
+- при merge их веток в integration branch возник конфликт (оба добавили export в один index file, оба тронули shared type и т.д.).
+
+Действия:
+
+1. Merge первый worker branch, который был принят раньше (или по порядку в плане, если приняты одновременно).
+2. Для второго worker branch создать conflict-resolution worker от обновлённого integration branch с задачей:
+   - replay / merge второй worker branch;
+   - разрешить конфликты;
+   - прогнать canonical checks;
+   - вернуть handoff.
+3. Если конфликт чисто текстовый (merge markers) — conflict-resolution worker резолвит и возвращает handoff.
+4. Если конфликт semantic (несовместимые design decisions, overlapping logic) — `orchestrator` запрашивает re-review на integrated diff и при необходимости эскалирует к `lead-strategic`.
+5. В report зафиксировать: какие branches конфликтовали, как resolved, потребовался ли re-review.
+
+Жёсткое правило:
+
+- оригинальные worker'ы не делают rebase/merge сами; conflict resolution — отдельный bounded worker или `orchestrator` scope (если подпадает под `direct-fix`).
