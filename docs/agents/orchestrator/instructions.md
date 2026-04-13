@@ -118,7 +118,7 @@ Product code по умолчанию остаётся worker-owned.
 - `VERIFY_INVARIANT`
 - `CHECK_STATUS`
 
-Формат: `docs/agents/templates.md` §13.
+Canonical list and format: `docs/agents/templates.md` §13.
 
 Цель transparency request:
 

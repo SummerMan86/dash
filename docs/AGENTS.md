@@ -131,7 +131,7 @@ Historical BI archive: [archive/bi/architecture_dashboard_bi.md](./archive/bi/ar
 | `agents/strategic-reviewer/instructions.md`   | strategic-reviewer instructions              | как делать bounded strategic acceptance/reframe pass и cheap cross-model second look |
 | `agents/orchestrator/instructions.md`         | Claude Opus orchestration-only instructions  | как управлять workers, review gate, report и bounded direct-fix exception |
 | `agents/lead-tactical/instructions.md`        | compatibility alias → orchestrator           | legacy entry point для старых prompt/script flows                        |
-| `agents/worker/guide.md`                      | self-contained worker guide                  | bootstrap, worker guardrails, review triggers, evidence rules, handoff   |
+| `agents/worker/guide.md`                      | worker bootstrap and guardrails guide        | bootstrap, guardrails, review triggers, evidence rules, DoD checklist    |
 | `agents/worker/instructions.md`               | worker bootstrap compatibility shim          | pointer на canonical worker guide и isolated-subagent bootstrap          |
 | `agents/*-reviewer/instructions.md`           | reviewer role instructions                   | checks, output format, scope для каждого ревьюера                        |
 | `agents/skills/debugging.md`                  | debugging playbook                           | reproduce, compare, hypothesize, fix, escalation triggers                |

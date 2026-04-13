@@ -199,17 +199,9 @@ Compatibility shims at old app paths (`apps/web/src/lib/entities/emis-*`, `apps/
 - audit trail, actor attribution и provenance входят в target contract
 - FK behavior и vocabulary boundaries должны фиксироваться явно
 
-## 8. Agent Workflow и Review Gate
+## 8. Agent Docs Map
 
-Canonical core process: [docs/agents/workflow.md](./docs/agents/workflow.md)
-Canonical review/governance model: [docs/agents/review-gate.md](./docs/agents/review-gate.md)
-Canonical recovery/git/memory protocols:
-
-- [docs/agents/recovery.md](./docs/agents/recovery.md)
-- [docs/agents/git-protocol.md](./docs/agents/git-protocol.md)
-- [docs/agents/memory-protocol.md](./docs/agents/memory-protocol.md)
-
-### Модель
+> This section is orientation-only. Canonical definitions live in `docs/agents/*`.
 
 ```
 Пользователь
@@ -222,22 +214,16 @@ Canonical recovery/git/memory protocols:
            └─ возвращает пользователю plan approval, product escalations и merge decision
 ```
 
-- Пользователь входит в integrated path через `orchestrator`; прямой вход в `lead-strategic` — только manual/fallback path
-- GPT-5.4 планирует, принимает результаты и владеет technical governance
-- Claude Opus управляет исполнением
-- Code-writing workers по умолчанию работают в isolated branch/worktree
-- Ревьюеры (субагенты) проверяют diff
+Canonical docs:
 
-### Роли и instructions
-
-- [docs/agents/roles.md](./docs/agents/roles.md) — таблица ролей
-- `docs/agents/{role}/instructions.md` — вводные для каждой роли
-- `docs/agents/lead-strategic/memory.md` и `docs/agents/orchestrator/memory.md` — canonical durable memory; worker'ы, reviewer'ы и `strategic-reviewer` отдельную `memory.md` не ведут
-- `strategic-reviewer` — optional GPT sidecar для bounded second opinion по `plan/report/diff`; живёт внутри `lead-strategic`, не заменяет финальную приёмку и не имеет отдельной памяти
-
-### Шаблоны
-
-Все шаблоны коммуникации: [docs/agents/templates.md](./docs/agents/templates.md)
+- [workflow.md](./docs/agents/workflow.md) — lifecycle, execution paths, operating modes
+- [roles.md](./docs/agents/roles.md) — role semantics, instructions, compatibility notes
+- [review-gate.md](./docs/agents/review-gate.md) — review model, governance passes
+- [memory-protocol.md](./docs/agents/memory-protocol.md) — durable memory ownership
+- [templates.md](./docs/agents/templates.md) — communication and handoff templates
+- [recovery.md](./docs/agents/recovery.md) — failure-path protocols
+- [git-protocol.md](./docs/agents/git-protocol.md) — branches, worktrees, integration
+- [invariants.md](./docs/agents/invariants.md) — project guardrails
 
 ## 9. Git Checkpoints
 

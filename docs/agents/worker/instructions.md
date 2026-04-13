@@ -35,4 +35,4 @@ Canonical worker doc:
 
 - `direct-fix` — это путь `orchestrator`, не worker.
 - Отдельного `docs/agents/worker/memory.md` нет.
-- Если нужен полный handoff или self-check, используй шаблоны и checklist из `worker/guide.md`.
+- Handoff templates: `docs/agents/templates.md` §3, §3.1. Self-check and DoD checklist: `worker/guide.md`.

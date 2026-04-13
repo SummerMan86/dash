@@ -2,10 +2,10 @@
 
 Canonical durable memory для top-level execution роли `orchestrator`.
 
-Compatibility note:
+`lead-tactical` — legacy alias; `docs/agents/lead-tactical/memory.md` — wrapper only.
 
-- `lead-tactical` остаётся legacy alias;
-- старый путь `docs/agents/lead-tactical/memory.md` теперь только wrapper;
+Writing rules:
+
 - новые записи должны быть state-oriented и orchestration-only;
 - подробный implementation log должен жить в worker handoff, `last_report.md` и `git log`, а не здесь.
 

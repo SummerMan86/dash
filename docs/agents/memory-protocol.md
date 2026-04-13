@@ -19,9 +19,7 @@ Usage telemetry вынесена отдельно в `docs/agents/usage-telemetr
 
 Compatibility note:
 
-- `lead-tactical` — legacy alias роли `orchestrator`.
-- Canonical durable artifacts живут в `docs/agents/orchestrator/*`.
-- Старые `docs/agents/lead-tactical/*` файлы оставлены как compatibility wrappers.
+Compatibility note: `lead-tactical` — legacy alias `orchestrator`; см. `docs/agents/roles.md`.
 
 Ключевое разграничение:
 

@@ -80,6 +80,8 @@ Exception for docs-only, read-only, or governance-closeout work without product 
 
 ## 5. Guardrails You Enforce
 
+> Derived from `docs/agents/invariants.md` §1-5, §9. If this excerpt and the canonical source diverge, the canonical source wins. If a slice appears to require changing or waiving one of these rules, stop and escalate to `orchestrator`.
+
 ### Architecture and boundaries
 
 | Rule | Worker action |
@@ -133,6 +135,8 @@ Apply these when the slice touches datasets, providers, filters, or BI pages.
 | New datasets and providers extend via registration | Add registrations; do not poke holes in central routers/switches. |
 
 ## 6. Review Trigger Table
+
+> Derived from `docs/agents/review-gate.md` §1.1. Canonical source wins on divergence.
 
 Run reviewers on your slice diff after implementation.
 
@@ -206,114 +210,13 @@ It does **not** waive independent review for worker-owned product-code changes; 
 
 ## 9. Handoff Templates
 
-### Worker Handoff
+Canonical handoff templates: `docs/agents/templates.md`.
 
-```md
-# Worker Handoff
+- Worker Handoff: §3
+- Micro-Worker Handoff: §3.1
 
-## Задача
+The task packet specifies which template to use. Key handoff contract:
 
-<что было поручено>
-
-## Что сделано
-
-- <что реализовано>
-- ключевые файлы: <список>
-- placement notes: <только если решение неочевидно>
-
-## Change Manifest
-
-- owned files changed: <список>
-- out-of-scope files touched: `none` | <список>
-- contracts / schema / boundaries touched: `none` | <кратко>
-- short diff summary for orchestrator: <1-5 bullets>
-
-## Verification
-
-- verification intent: <что проверялось>
-- verification mode: `test-first` | `prototype-pin` | `verification-first`
-- waiver rationale: <если verification deferred или skipped>
-
-## Ветки
-
-- worker branch: agent/worker/<slug> (default for code-writing) | direct integration branch (teammate exception)
-- integration branch: <feature/topic>
-
-## Допущения
-
-- <опционально>
-
-## Проверки
-
-- <команда>: <результат>
-
-## Checks Evidence
-
-- <команда>: <green|red> `fresh` | `not run` — <reason>
-
-## Review Disposition
-
-- minimum independent review floor: `satisfied` | `N/A — no product code`
-- slice review: `run` | `skipped` | `not applicable`
-- rationale: <почему>
-
-## Review Results
-
-- code-reviewer: <OK | findings summary>
-- security-reviewer: <OK | findings summary>
-- architecture-reviewer: <OK | findings summary>
-- docs-reviewer: <OK | findings summary>
-- ui-reviewer: <OK | findings summary>
-
-## Slice DoD Status
-
-- docs: <done | N/A — reason | gap — what's missing>
-- baseline tests: <maintained | grew to N>
-
-## Continuation Notes (optional — для dependent slices)
-
-- decisions: <какой паттерн/подход выбран и почему>
-- gotchas: <неочевидные моменты>
-- deferred items: <что осознанно отложено>
-
-## Next Action Requested
-
-- `accept` | `re-review` | `fix-worker` | `escalate`
-
-## Риски / Эскалации
-
-- <риск, блокер, вопрос> или `none`
-```
-
-### Micro-Worker Handoff
-
-```md
-# Micro-Worker Handoff
-
-## Что сделано
-
-- <кратко, 1-3 bullets>
-- файлы: <список>
-
-## Change Manifest
-
-- owned files changed: <список>
-- out-of-scope files touched: `none` | <список>
-
-## Checks Evidence
-
-- <команда>: <green|red> `fresh` | `not run` — <reason>
-
-## Review Disposition
-
-- code-reviewer: <OK | findings summary>
-- rationale: <почему>
-
-## Next Action
-
-- `accept` | `fix-worker` | `escalate`
-
-## Риски / Эскалации
-
-- <риск, блокер, вопрос> или `none`
-```
+- **Required:** task summary, change manifest, checks evidence, review disposition, next action requested
+- **Micro-worker:** shortened format — what changed, manifest, checks, review, next action
+- If a field is not applicable, mark it `N/A` with a reason; do not silently omit

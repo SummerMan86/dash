@@ -148,7 +148,7 @@ Canonical список: `docs/agents/invariants.md`.
 | **Планирование** | Декомпозиция задачи → slices с acceptance criteria, sequencing, dependency graph |
 | **Архитектура** | Выбор слоя, паттерна, контракта. Placement decisions. Exception/waiver |
 | **Risk assessment** | Выбор operating mode, оценка blast radius каждого slice |
-| **Acceptance** | Принятие/отклонение slice по report + review verdicts + diff analysis |
+| **Acceptance** | Принятие/отклонение slice по report + review verdicts + transparency evidence |
 | **Reframe** | Пересмотр следующего slice на основе реального результата текущего |
 | **Conflict resolution** | Арбитраж, когда reviewers расходятся или worker оспаривает scope |
 | **Knowledge management** | Обновление `memory.md`, фиксация canonical decisions в plan |
@@ -176,6 +176,7 @@ Canonical список: `docs/agents/invariants.md`.
 | `ALTERNATIVE_APPROACH` | Текущий подход вызывает сомнения | Spike с альтернативой + comparison report |
 | `DOCUMENT_RISK` | Принятое решение несёт risk | Что может пойти не так + mitigation |
 | `VERIFY_INVARIANT` | Подозрение на нарушение инварианта | Evidence: invariant соблюдён / нарушен |
+| `CHECK_STATUS` | Нужен текущий статус процесса, branch или checks | Status summary: что ready, что blocked |
 
 Пример использования в acceptance:
 

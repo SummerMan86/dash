@@ -7,8 +7,7 @@ Important:
 - default non-autonomous model использует отдельную top-level роль `orchestrator` и worker-owned implementation slices;
 - autonomous mode — явное исключение из этой модели;
 - canonical имя Claude-роли в этом документе — `orchestrator`;
-- canonical путь для autonomous decision log: `docs/agents/orchestrator/decision-log.md`;
-- если старый prompt всё ещё говорит `lead-tactical` или `docs/agents/lead-tactical/decision-log.md`, читай это как legacy alias и используй canonical имя/путь выше.
+- canonical путь для autonomous decision log: `docs/agents/orchestrator/decision-log.md`.
 
 ## Два уровня автономности
 
@@ -231,112 +230,7 @@ EOF
 
 Работают так же, как в standard workflow. Workers не знают, что режим автономный.
 
-## 3.1. CTO-модель lead-strategic
-
-`lead-strategic` работает как **технический директор / tech-lead**: не пишет код, не запускает команды, но владеет всеми ключевыми решениями и управляет качеством через запросы к execution-слою.
-
-### Что делает сам (без делегирования)
-
-| Зона | Действия |
-| --- | --- |
-| **Планирование** | Декомпозиция задачи → slices с acceptance criteria, sequencing, dependency graph |
-| **Архитектура** | Выбор слоя, паттерна, контракта. Placement decisions. Exception/waiver |
-| **Risk assessment** | Выбор operating mode, оценка blast radius каждого slice |
-| **Acceptance** | Принятие/отклонение slice по report + review verdicts + transparency evidence |
-| **Reframe** | Пересмотр следующего slice на основе реального результата текущего |
-| **Conflict resolution** | Арбитраж, когда reviewers расходятся или worker оспаривает scope |
-| **Knowledge management** | Обновление `memory.md`, фиксация canonical decisions в plan |
-
-### Что делегирует (через orchestrator → workers)
-
-| Зона | Делегируется кому | Как |
-| --- | --- | --- |
-| **Весь код** | workers | Slice handoff с чётким scope и acceptance criteria |
-| **Команды** (build, test, lint, git) | `orchestrator` / workers | Не запускает сам, читает результаты из report |
-| **Review execution** | reviewer subagents | Запускает `orchestrator`, results идут в report |
-| **Исследование кода** | `orchestrator` | "Покажи текущую структуру X", "Какие паттерны используются в Y" |
-| **Proof of concept** | workers | "Реализуй minimal spike для Z, верни findings без merge" |
-
-### Что запрашивает (transparency requests)
-
-`lead-strategic` не видит код напрямую, но может запрашивать прозрачность через `orchestrator`. Это ключевой механизм управления без прямого доступа к коду.
-
-**Запросы к orchestrator:**
-
-| Запрос | Когда | Формат ответа |
-| --- | --- | --- |
-| `EXPLAIN_DIFF` | Непрозрачный diff, неочевидные изменения | Summary по каждому файлу: что изменено, зачем |
-| `EXPLAIN_DECISION` | Worker принял неочевидное решение | Rationale + альтернативы + почему отвергнуты |
-| `SHOW_STRUCTURE` | Нужно понять текущее состояние модуля | File tree + key interfaces + data flow |
-| `SHOW_IMPACT` | Оценка blast radius перед acceptance | Какие модули затронуты, что может сломаться |
-| `ALTERNATIVE_APPROACH` | Текущий подход вызывает сомнения | Worker реализует альтернативу (spike), comparison report |
-| `DOCUMENT_RISK` | Принятое решение несёт risk | Worker/`orchestrator` описывает: что может пойти не так, mitigation |
-| `VERIFY_INVARIANT` | Подозрение на нарушение инварианта | `orchestrator` проверяет конкретный invariant, возвращает evidence |
-
-**Примеры в Codex-промптах:**
-
-```text
-# lead-strategic → orchestrator (через Codex --resume)
-
-ACCEPT WITH ADJUSTMENTS for SLICE-3.
-
-Adjustments:
-1. EXPLAIN_DECISION: worker выбрал inline SQL вместо repository pattern —
-   задокументируй rationale в decision-log.
-2. SHOW_IMPACT: slice добавил новый тип геометрии — покажи,
-   какие существующие queries это затрагивает.
-3. DOCUMENT_RISK: soft-delete для imported objects — опиши edge cases
-   при re-import того же объекта.
-
-После выполнения adjustments — continue to SLICE-4.
-```
-
-```text
-# lead-strategic: rejection с запросом альтернативы
-
-REJECT SLICE-5.
-
-Причина: подход через monolithic adapter не масштабируется.
-
-ALTERNATIVE_APPROACH: реализуй adapter как strategy pattern
-(один interface, отдельные implementations per source).
-Покажи оба варианта в spike, без merge.
-Верни comparison: LOC, complexity, extensibility.
-```
-
-### Информационная асимметрия и как lead-strategic с ней работает
-
-`lead-strategic` принципиально не видит:
-- Raw diff (только summaries и review verdicts)
-- Runtime output (только reported results)
-- File contents (только запрошенные excerpts)
-
-Это **дизайн, а не ограничение.** Преимущества:
-
-1. **Фокус на "что" и "зачем", а не "как"** — стратегические решения не загрязняются implementation details.
-2. **Масштабируемость** — lead-strategic может управлять несколькими parallel waves, не читая каждую строку.
-3. **Quality through review** — вместо "я прочитал код и он ок" → "review прошёл, evidence есть, acceptance criteria закрыты".
-4. **Forced transparency** — если что-то непрозрачно, lead-strategic явно запрашивает объяснение, что создаёт документированный trail.
-
-Компенсация информационной асимметрии:
-
-| Канал | Что даёт |
-| --- | --- |
-| Review verdicts | Объективная оценка качества от независимых reviewers |
-| Worker handoff | Structured summary с evidence и self-check |
-| Decision-log | Trail всех нетривиальных решений |
-| Transparency requests | On-demand deep-dive в конкретный аспект |
-| Memory | Accumulated context из прошлых сессий |
-
-### Anti-patterns
-
-Чего lead-strategic **не должен** делать:
-
-- **Микроменеджмент кода** — "переименуй переменную X в Y" → это scope worker'а или code-reviewer'а.
-- **Запрашивать полный diff** — читать его всё равно не нужно; запрашивай `EXPLAIN_DIFF` или `SHOW_IMPACT` если что-то непрозрачно.
-- **Дублировать review** — не повторяй работу code/security/arch reviewers; если не доверяешь verdict — запроси re-review с уточнённым scope.
-- **Принимать решения без evidence** — если report неполон или review skipped без rationale, запроси дополнение, а не принимай вслепую.
-- **Блокировать execution запросами** — transparency requests не должны превращаться в bottleneck. Батчи запросы, не выдавай их по одному.
+CTO-модель `lead-strategic`, transparency requests и информационная асимметрия: см. `docs/agents/lead-strategic/instructions.md` §CTO-модель.
 
 ## 4. Decision Framework
 
@@ -600,6 +494,37 @@ Guardrail status: <clean / warnings>
 6. Не жди user input
 ```
 
+### Transparency request examples (Codex prompts)
+
+```text
+# lead-strategic → orchestrator (через Codex --resume)
+
+ACCEPT WITH ADJUSTMENTS for SLICE-3.
+
+Adjustments:
+1. EXPLAIN_DECISION: worker выбрал inline SQL вместо repository pattern —
+   задокументируй rationale в decision-log.
+2. SHOW_IMPACT: slice добавил новый тип геометрии — покажи,
+   какие существующие queries это затрагивает.
+3. DOCUMENT_RISK: soft-delete для imported objects — опиши edge cases
+   при re-import того же объекта.
+
+После выполнения adjustments — continue to SLICE-4.
+```
+
+```text
+# lead-strategic: rejection с запросом альтернативы
+
+REJECT SLICE-5.
+
+Причина: подход через monolithic adapter не масштабируется.
+
+ALTERNATIVE_APPROACH: реализуй adapter как strategy pattern
+(один interface, отдельные implementations per source).
+Покажи оба варианта в spike, без merge.
+Верни comparison: LOC, complexity, extensibility.
+```
+
 ## 9. Post-Execution User Review
 
 После автономного выполнения пользователь получает:
@@ -697,87 +622,22 @@ git reset --soft HEAD~N  # откатить коммиты автономной 
 
 ## 12. Примеры запуска
 
-### Пример 1: Wikimapia adapter — Lightweight
+Один пример на каждый уровень автономности. Entry protocol и headless templates: §2.
 
-**Почему lightweight:** задача по аналогии, reference есть (OSM + GEM), scope = 1 модуль, нет архитектурных решений.
-
-**Промпт (interactive):**
+### Lightweight: Bug fix
 
 ```text
-Автономная задача (lightweight): добавить Wikimapia source adapter
-для EMIS ingestion по аналогии с OSM и GEM.
+Автономная задача (lightweight): при GEM ingestion дублируются записи
+если source_ref уже есть в stg_emis.obj_import_candidate.
 
-Reference: packages/emis-server/src/modules/ingestion/adapters/osmAdapter.ts
-Scope: packages/emis-server/src/modules/ingestion/adapters/
-Ограничения:
-- Не трогать существующие adapters, service.ts, repository.ts
-- Не менять DB schema, не добавлять npm-зависимости
-- API key через env var WIKIMAPIA_API_KEY
-- Формат API: scripts/test-wikimapia-api.ts
-Timeout: 30 минут
+Reference: packages/emis-server/src/modules/ingestion/repository.ts
+Воспроизведение: запустить GEM ingestion дважды подряд.
+Ожидание: второй запуск должен обновлять (upsert), а не дублировать.
+Scope: packages/emis-server/src/modules/ingestion/
+Timeout: 20 минут
 ```
 
-**Headless (fire-and-forget):**
-
-```bash
-claude -p "$(cat <<'EOF'
-## Autonomous Task (Lightweight)
-
-Ты — orchestrator в lightweight autonomous mode.
-Прочитай docs/agents/autonomous-protocol.md, секцию 1.1 и 7.1.
-
-### Задача
-Добавить Wikimapia source adapter для EMIS ingestion.
-
-### Reference (читай первым)
-- packages/emis-server/src/modules/ingestion/adapters/osmAdapter.ts — main pattern
-- packages/emis-server/src/modules/ingestion/adapters/gemAdapter.ts — second reference
-- packages/emis-server/src/modules/ingestion/adapters/types.ts — SourceAdapter interface
-- packages/emis-server/src/modules/ingestion/adapters/registry.ts — регистрация
-- scripts/test-wikimapia-api.ts — формат Wikimapia API
-
-### Scope
-- packages/emis-server/src/modules/ingestion/adapters/ — новый файл + registry + index
-
-### Ограничения
-- Не трогать существующие adapters, service.ts, repository.ts
-- Не менять DB schema, не добавлять npm-зависимости
-- API key через env var WIKIMAPIA_API_KEY
-
-### Режим
-Lightweight autonomous — без Codex, без strategic loop.
-1. Прочитай reference, создай mini-plan в docs/agents/orchestrator/decision-log.md
-2. Реализуй wikimapiaAdapter.ts по паттерну osmAdapter
-3. Зарегистрируй в registry.ts, экспортируй из index.ts
-4. Review Gate: code-reviewer + security-reviewer
-5. Исправь findings, pnpm check && pnpm build
-6. Коммит + финализируй decision-log
-Timeout: 30 минут.
-EOF
-)" --allowedTools "Edit,Write,Bash,Glob,Grep,Read,Agent" \
-   --max-turns 100
-```
-
-**Что произойдёт:**
-
-```text
-1. Читает osmAdapter.ts + gemAdapter.ts + types.ts       (~2 мин)
-2. Создаёт decision-log с mini-plan                       (~1 мин)
-3. Пишет wikimapiaAdapter.ts:                             (~8 мин)
-   - WIKIMAPIA_TYPE_MAP (categories → EMIS codes)
-   - geometry mapping (polygon → GeoJSON)
-   - fetch logic (Wikimapia API → NormalizedCandidate[])
-4. Обновляет registry.ts + index.ts                       (~2 мин)
-5. Review Gate: code + security                           (~4 мин)
-6. Fix findings                                           (~3 мин)
-7. pnpm check && pnpm build                               (~2 мин)
-8. Коммит + decision-log                                  (~1 мин)
-                                                   Total: ~23 мин
-```
-
-**Нет Codex round-trips = экономия ~10 мин и токенов GPT-5.4.**
-
-### Пример 2: Новый ingestion source с нестандартным API — Full
+### Full: Нестандартный API source adapter
 
 **Почему full:** API нестандартный (пагинация, rate limits, auth flow), нужны архитектурные решения (retry strategy, data normalization), cross-file impact.
 
@@ -792,48 +652,6 @@ Scope: packages/emis-server/src/modules/ingestion/
 Ограничения: не менять DB schema
 Режим: autonomous full (docs/agents/autonomous-protocol.md)
 Timeout: 60 минут
-```
-
-### Пример 3: Рефакторинг по правилам — Lightweight
-
-```text
-Автономная задача (lightweight): переименовать objectTypeCode → categoryCode
-в packages/emis-server/ и packages/emis-contracts/.
-
-Reference: найти все uses через grep, переименовать
-Scope: packages/emis-server/, packages/emis-contracts/
-Ограничения: не трогать DB columns, только TS code и types.
-Timeout: 20 минут
-```
-
-### Пример 4: Bug fix — Lightweight
-
-```text
-Автономная задача (lightweight): при GEM ingestion дублируются записи
-если source_ref уже есть в stg_emis.obj_import_candidate.
-
-Reference: packages/emis-server/src/modules/ingestion/repository.ts
-Воспроизведение: запустить GEM ingestion дважды подряд.
-Ожидание: второй запуск должен обновлять (upsert), а не дублировать.
-Scope: packages/emis-server/src/modules/ingestion/
-Timeout: 20 минут
-```
-
-### Пример 5: Cross-layer feature — Full
-
-```text
-Автономная задача (full): добавить фильтр по source в Review UI.
-Контекст:
-- /emis/ingestion/conflicts показывает все конфликты
-- Нужен dropdown фильтр по source (osm, gem, wikimapia)
-- Затрагивает: API route, server query, UI component
-
-Scope:
-- apps/web/src/routes/api/emis/ingestion/
-- packages/emis-server/src/modules/ingestion/
-- apps/web/src/routes/emis/
-Режим: autonomous full
-Timeout: 45 минут
 ```
 
 ## 13. Связь с другими документами

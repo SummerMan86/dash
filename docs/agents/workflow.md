@@ -39,7 +39,7 @@ Claude Opus (orchestrator; legacy alias: lead-tactical)
 | `lead-strategic` | Codex / GPT-5.4 | canonical owner `current_plan.md`, strategic acceptance, architecture-docs-first при планировании |
 | `strategic-reviewer` | bounded pass внутри `lead-strategic` thread | strategic acceptance/reframe safety net по `plan/report/diff` |
 | `orchestrator` | Claude Opus | code-blind execution flow, worker dispatch, Review Gate, Architecture Readiness Check, report |
-| `worker` | Claude teammate | реализация одного slice |
+| `worker` | Claude subagent + worktree (default); teammate exception | реализация одного slice |
 | `*-reviewer` | fresh Claude subagent | diff review по своей зоне |
 | `architecture-reviewer` (audit mode) | fresh Claude subagent | pre-implementation readiness assessment по planned scope |
 
@@ -91,9 +91,7 @@ Claude Opus (orchestrator; legacy alias: lead-tactical)
 ### Протокол оркестрации (`orchestrator`)
 
 `orchestrator` — отдельная top-level execution role.
-`lead-tactical` остаётся только compatibility alias в старых prompt/script flows.
-Canonical durable artifacts живут в `docs/agents/orchestrator/*`.
-Legacy wrappers остаются по путям `docs/agents/lead-tactical/*`.
+Compatibility note: `lead-tactical` — legacy alias; см. `docs/agents/roles.md`.
 
 **Что `orchestrator` читает по умолчанию:**
 
