@@ -63,7 +63,7 @@ Use the overlay registry when that overlay maintains one or has live exceptions 
 
 ## Output
 
-Используй шаблон `Baseline Verdict` из `docs/agents/templates.md`.
+Используй шаблон `Baseline Verdict` из `docs/agents/templates-orchestration.md` §8.
 Отдельный artifact создавай только если verdict должен пережить текущий `last_report.md`; иначе достаточно краткого inline summary для orchestration/report loop.
 
 ## Жёсткие правила

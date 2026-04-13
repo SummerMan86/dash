@@ -124,7 +124,9 @@ Historical BI archive: [archive/bi/architecture_dashboard_bi.md](./archive/bi/ar
 | `agents/memory-protocol.md`                   | memory ownership                             | кто и когда пишет `memory.md`, auto-compact recovery                     |
 | `agents/usage-telemetry.md`                   | agent usage telemetry                        | durable usage history, usefulness rubric, file-first telemetry contract  |
 | `agents/roles.md`                             | agent role map                               | все роли, dispatch names, кто что делает                                 |
-| `agents/templates.md`                         | agent communication templates                | план, задача, handoff, report, review request/result                     |
+| `agents/templates.md`                         | agent communication templates (hub/index)    | routing table, правила заполнения, ссылки на дочерние файлы              |
+| `agents/templates-handoff.md`                 | worker handoff templates                     | Worker Handoff, Micro-Worker Handoff (worker-facing)                     |
+| `agents/templates-orchestration.md`           | orchestration & governance templates         | план, задача, reports, review, governance, telemetry (orchestrator-facing) |
 | `agents/lead-strategic/instructions.md`       | GPT-5.4 lead instructions                    | как планировать, декомпозировать, принимать результаты                   |
 | `agents/architecture-steward/instructions.md` | `lead-strategic` architecture-pass checklist | как делать architecture governance pass: placement decisions и waivers   |
 | `agents/baseline-governor/instructions.md`    | `lead-strategic` baseline-pass checklist     | как делать baseline pass: baseline status, known exceptions, verdict     |

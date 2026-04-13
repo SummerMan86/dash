@@ -16,7 +16,7 @@ Domain-specific contours (e.g. EMIS) live as overlays inside the same modular mo
 1. **Получи задачу** от пользователя
 2. **Прочитай** свой `memory.md` для контекста прошлых сессий
 3. **Уточни** требования, если задача нечёткая
-4. **Декомпозируй** задачу на подзадачи (формат: `docs/agents/templates.md`, секция 1)
+4. **Декомпозируй** задачу на подзадачи (формат: `docs/agents/templates-orchestration.md`, секция 1)
 5. **Architecture-docs-first** (`invariants.md` §8): если декомпозиция выявила потребность в новом архитектурном решении (новый паттерн, контракт, расширение IR, placement decision, новый scope фильтров):
    - зафиксируй решение в соответствующем architecture doc **как часть плана**, до передачи на исполнение
    - если решение создаёт enforceable rule — включи в plan обновление `invariants.md`
@@ -121,7 +121,7 @@ Canonical список: `docs/agents/invariants.md`.
 
 ## Формат плана
 
-См. `docs/agents/templates.md`, секция 1 "План задачи".
+См. `docs/agents/templates-orchestration.md`, секция 1 "План задачи".
 
 ## Формат приёмки
 

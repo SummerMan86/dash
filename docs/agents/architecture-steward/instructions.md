@@ -48,7 +48,7 @@
 
 ## Output
 
-Используй шаблон `Architecture Pass Decision` из `docs/agents/templates.md`.
+Используй шаблон `Architecture Pass Decision` из `docs/agents/templates-orchestration.md` §9.
 Отдельный artifact создавай только если decision нужен как durable governance trail; иначе достаточно краткого inline summary для orchestration/report loop.
 
 ## Жёсткие правила

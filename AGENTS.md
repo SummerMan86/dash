@@ -63,7 +63,9 @@
 5. [docs/agents/git-protocol.md](./docs/agents/git-protocol.md) — branches, worktrees, checkpoints
 6. [docs/agents/memory-protocol.md](./docs/agents/memory-protocol.md) — memory ownership
 7. [docs/agents/roles.md](./docs/agents/roles.md) — роли и ответственности
-8. [docs/agents/templates.md](./docs/agents/templates.md) — шаблоны
+8. [docs/agents/templates.md](./docs/agents/templates.md) — шаблоны (hub: правила + routing на дочерние файлы)
+   - [docs/agents/templates-handoff.md](./docs/agents/templates-handoff.md) — worker handoff templates
+   - [docs/agents/templates-orchestration.md](./docs/agents/templates-orchestration.md) — orchestration & governance templates
 9. `docs/agents/{role}/instructions.md` — вводные для конкретной роли
 10. `docs/agents/lead-strategic/memory.md` и `docs/agents/orchestrator/memory.md` — единственные canonical durable-memory files; worker'ы и reviewer'ы отдельную `memory.md` не ведут, см. `docs/agents/memory-protocol.md`
 

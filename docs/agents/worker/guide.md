@@ -211,10 +211,10 @@ It does **not** waive independent review for worker-owned product-code changes; 
 
 ## 9. Handoff Templates
 
-Canonical handoff templates: `docs/agents/templates.md`.
+Canonical handoff templates: `docs/agents/templates-handoff.md`.
 
-- Worker Handoff: §3
-- Micro-Worker Handoff: §3.1
+- Worker Handoff: §1
+- Micro-Worker Handoff: §2
 
 The task packet specifies which template to use. Key handoff contract:
 
