@@ -242,6 +242,9 @@ importers:
 
   packages/platform-datasets:
     dependencies:
+      '@clickhouse/client':
+        specifier: ^1.18.2
+        version: 1.18.2
       '@dashboard-builder/db':
         specifier: workspace:*
         version: link:../db
@@ -293,6 +296,13 @@ importers:
         version: 2.6.0
 
 packages:
+
+  '@clickhouse/client-common@1.18.2':
+    resolution: {integrity: sha512-J0SG6q9V31ydxonglpj9xhNRsUxCsF71iEZ784yldqMYwsHixj/9xHFDgBDX3DuMiDx/kPDfXnf+pimp08wIBA==}
+
+  '@clickhouse/client@1.18.2':
+    resolution: {integrity: sha512-fuquQswRSHWM6D079ZeuGqkMOsqtcUPL06UdTnowmoeeYjVrqisfVmvnw8pc3OeKS4kVb91oygb/MfLDiMs0TQ==}
+    engines: {node: '>=16'}
 
   '@esbuild/aix-ppc64@0.25.12':
     resolution: {integrity: sha512-Hhmwd6CInZ3dwpuGTF8fJG6yoWmsToE+vYgD4nytZVxcu1ulHpUQRAB1UJ8+N1Am3Mz4+xOByoQoSZf4D+CpkA==}
@@ -2099,6 +2109,12 @@ packages:
     resolution: {integrity: sha512-41dFXEEXuJpNecuUQq6JlbybmnHaqqpGlbH1yxnA5V9MMP4SbohSVZsJIwz+zdjQXSSlR1Vc34EgH1zxyTDvhg==}
 
 snapshots:
+
+  '@clickhouse/client-common@1.18.2': {}
+
+  '@clickhouse/client@1.18.2':
+    dependencies:
+      '@clickhouse/client-common': 1.18.2
 
   '@esbuild/aix-ppc64@0.25.12':
     optional: true

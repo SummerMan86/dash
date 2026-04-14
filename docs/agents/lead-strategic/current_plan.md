@@ -1,10 +1,12 @@
-# Plan: Agent Docs Dedup Pass 2 (Medium Priority)
+# Plan: Agent Docs Dedup Pass 2 (Medium Priority, Closed)
 
 ## Status
 
 - reviewed on `2026-04-13`
+- completed on `2026-04-13`
 - scope: agent-doc dedup only
 - goal: reduce maintenance drift without breaking worker bootstrap or root navigation
+- wave status: closed; supersede this plan before the next execution wave
 
 ## Canonical ownership decisions
 
@@ -23,6 +25,19 @@
 4. Slim `autonomous-protocol.md` §12 last.
 
 This order avoids pruning derivative docs before their source-of-truth boundaries are clear.
+
+## Completion Summary
+
+- MP-1 completed:
+  - `workflow.md` remains the only home for mode definitions, selection heuristic, and cost-aware defaults; `review-gate.md` now points back to it while keeping cadence/risk/reframe ownership.
+- MP-2 completed:
+  - `worker/guide.md` keeps self-contained guardrails and review triggers as explicit derived excerpts with canonical-wins and escalate-on-waiver rules.
+- MP-3 completed:
+  - root `AGENTS.md` §8 is orientation-only, keeps the ASCII diagram, and points to canonical docs instead of restating them.
+- MP-4 completed:
+  - `autonomous-protocol.md` §12 now keeps one concise `Lightweight` example and one concise `Full` example instead of a second prompt-template block.
+- Carry-forward inside this pass:
+  - none
 
 ## MP-1: Operating-mode ownership cleanup
 

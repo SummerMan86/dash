@@ -1,8 +1,8 @@
-import type { DatasetField, DatasetFieldType, DatasetResponse, JsonValue } from '../../model';
+import type { DatasetFieldType, DatasetResponse, JsonValue } from '../../model';
 import type { DatasetIr, IrExpr, IrOrderBy, IrSelectItem } from '../../model';
 import type { Provider, ProviderEntry, ServerContext } from '../../model';
-import type { DatasetFieldDef } from '../../model';
 import { CONTRACT_VERSION } from '../../model';
+import { qIdent, safeSortDir, buildColumnIndex, inferFields, serializeOrderBy } from './shared';
 
 import pg from 'pg';
 import { getPgPool } from '@dashboard-builder/db';
@@ -12,29 +12,11 @@ import { getPgPool } from '@dashboard-builder/db';
 pg.types.setTypeParser(20, (val: string) => parseFloat(val));
 pg.types.setTypeParser(1700, (val: string) => parseFloat(val));
 
-function isSafeIdent(name: string): boolean {
-	// Conservative SQL identifier rule: letters/underscore, then letters/numbers/underscore.
-	// We use this for schema/table/column/alias names.
-	return /^[A-Za-z_][A-Za-z0-9_]*$/.test(name);
-}
-
-function qIdent(name: string): string {
-	if (!isSafeIdent(name)) throw new Error(`postgresProvider: unsafe identifier: ${name}`);
-	return `"${name}"`;
-}
-
-/** Build a column type index from registry entry fields. */
-function buildColumnIndex(fields: DatasetFieldDef[]): Record<string, DatasetFieldType> {
-	const index: Record<string, DatasetFieldType> = {};
-	for (const field of fields) {
-		index[field.name] = field.type;
-	}
-	return index;
-}
+const PROVIDER = 'postgresProvider';
 
 function colTypeFor(columns: Record<string, DatasetFieldType>, colName: string): DatasetFieldType {
 	const t = columns[colName];
-	if (!t) throw new Error(`postgresProvider: unknown column "${colName}" for dataset`);
+	if (!t) throw new Error(`${PROVIDER}: unknown column "${colName}" for dataset`);
 	return t;
 }
 
@@ -57,12 +39,14 @@ function castParam(param: string, colType: DatasetFieldType): string {
 	}
 }
 
+const SAFE_OPS = new Set(['=', '!=', '<', '<=', '>', '>=', 'in', 'like']);
+
 function exprToSql(expr: IrExpr, b: SqlBuilder, columns: Record<string, DatasetFieldType>): string {
 	switch (expr.kind) {
 		case 'col': {
 			if (!columns[expr.name])
-				throw new Error(`postgresProvider: unknown column "${expr.name}"`);
-			return qIdent(expr.name);
+				throw new Error(`${PROVIDER}: unknown column "${expr.name}"`);
+			return qIdent(expr.name, PROVIDER);
 		}
 		case 'lit': {
 			return b.addParam(expr.value);
@@ -79,27 +63,28 @@ function exprToSql(expr: IrExpr, b: SqlBuilder, columns: Record<string, DatasetF
 			return `(NOT ${exprToSql(expr.item, b, columns)})`;
 		}
 		case 'bin': {
-			const SAFE_OPS = new Set(['=', '!=', '<', '<=', '>', '>=', 'in', 'like']);
 			if (!SAFE_OPS.has(expr.op)) {
-				throw new Error(`postgresProvider: unsupported operator: ${expr.op}`);
+				throw new Error(`${PROVIDER}: unsupported operator: ${expr.op}`);
 			}
 
 			if (expr.left.kind === 'col' && expr.right.kind === 'lit') {
+				if (expr.op === 'in') {
+					if (!Array.isArray(expr.right.value)) {
+						throw new Error(`${PROVIDER}: IN requires array literal on the right side`);
+					}
+					const left = exprToSql(expr.left, b, columns);
+					const rawParam = b.addParam(expr.right.value);
+					return `(${left} = ANY(${rawParam}))`;
+				}
 				const t = colTypeFor(columns, expr.left.name);
 				const left = exprToSql(expr.left, b, columns);
 				const rawParam = b.addParam(expr.right.value);
 				const right = castParam(rawParam, t);
-				if (expr.op === 'in') {
-					if (!Array.isArray(expr.right.value)) {
-						throw new Error(`postgresProvider: IN requires array literal on the right side`);
-					}
-					return `(${left} = ANY(${rawParam}))`;
-				}
 				return `(${left} ${expr.op} ${right})`;
 			}
 
 			if (expr.op === 'in') {
-				throw new Error(`postgresProvider: IN is only supported as col IN (arrayLiteral)`);
+				throw new Error(`${PROVIDER}: IN is only supported as col IN (arrayLiteral)`);
 			}
 
 			const left = exprToSql(expr.left, b, columns);
@@ -115,19 +100,14 @@ function selectItemSql(
 	columns: Record<string, DatasetFieldType>,
 ): { sql: string; name?: string } {
 	if (item.expr.kind !== 'col')
-		throw new Error(`postgresProvider: only column select items supported in MVP`);
+		throw new Error(`${PROVIDER}: only column select items supported in MVP`);
 
 	const colName = item.expr.name;
-	if (!columns[colName]) throw new Error(`postgresProvider: unknown column "${colName}"`);
+	if (!columns[colName]) throw new Error(`${PROVIDER}: unknown column "${colName}"`);
 
-	const base = qIdent(colName);
-	const as = item.as ? qIdent(item.as) : undefined;
+	const base = qIdent(colName, PROVIDER);
+	const as = item.as ? qIdent(item.as, PROVIDER) : undefined;
 	return { sql: as ? `${base} AS ${as}` : base, name: item.as ?? colName };
-}
-
-function safeSortDir(dir: string): string {
-	if (dir === 'asc' || dir === 'desc') return dir.toUpperCase();
-	throw new Error(`postgresProvider: invalid sort direction: ${dir}`);
 }
 
 function orderBySql(
@@ -138,51 +118,31 @@ function orderBySql(
 	if (!orderBy?.length) return '';
 	const parts = orderBy.map((rule) => {
 		if (rule.expr.kind !== 'col')
-			throw new Error(`postgresProvider: ORDER BY supports only columns in MVP`);
+			throw new Error(`${PROVIDER}: ORDER BY supports only columns in MVP`);
 		if (!columns[rule.expr.name])
-			throw new Error(`postgresProvider: unknown ORDER BY column "${rule.expr.name}"`);
-		return `${qIdent(rule.expr.name)} ${safeSortDir(rule.dir)}`;
+			throw new Error(`${PROVIDER}: unknown ORDER BY column "${rule.expr.name}"`);
+		return `${qIdent(rule.expr.name, PROVIDER)} ${safeSortDir(rule.dir, PROVIDER)}`;
 	});
 	return ` ORDER BY ${parts.join(', ')}`;
 }
 
-function inferFields(
-	columns: Record<string, DatasetFieldType>,
-	items: Array<{ outputName: string; sourceCol: string }>,
-): DatasetField[] {
-	return items.map(({ outputName, sourceCol }) => ({
-		name: outputName,
-		type: columns[sourceCol] ?? 'unknown',
-	}));
-}
-
-function serializeOrderBy(orderBy: IrOrderBy[] | undefined) {
-	if (!orderBy?.length) return undefined;
-
-	return orderBy.flatMap((rule) =>
-		rule.expr.kind === 'col' ? [{ field: rule.expr.name, dir: rule.dir }] : [],
-	);
-}
-
 export const postgresProvider: Provider = {
 	async execute(irQuery: DatasetIr, entry: ProviderEntry, ctx: ServerContext): Promise<DatasetResponse> {
-		if (irQuery.kind !== 'select') throw new Error(`postgresProvider: unsupported IR kind`);
-		if (irQuery.from.kind !== 'dataset') throw new Error(`postgresProvider: unsupported source`);
+		if (irQuery.kind !== 'select') throw new Error(`${PROVIDER}: unsupported IR kind`);
+		if (irQuery.from.kind !== 'dataset') throw new Error(`${PROVIDER}: unsupported source`);
 
 		if (entry.source.kind !== 'postgres') {
-			throw new Error(`postgresProvider: expected postgres source, got ${entry.source.kind}`);
+			throw new Error(`${PROVIDER}: expected postgres source, got ${entry.source.kind}`);
 		}
 
 		const datasetId = irQuery.from.id;
-
-
 
 		// Use registry-owned metadata
 		const columns = buildColumnIndex(entry.fields);
 		const { schema, table } = entry.source;
 
 		const b = new SqlBuilder();
-		const rel = `${qIdent(schema)}.${qIdent(table)}`;
+		const rel = `${qIdent(schema, PROVIDER)}.${qIdent(table, PROVIDER)}`;
 		const selectParts: string[] = [];
 		const selectedFields: Array<{ outputName: string; sourceCol: string }> = [];
 		for (const item of irQuery.select) {
@@ -192,7 +152,7 @@ export const postgresProvider: Provider = {
 				selectedFields.push({ outputName: name, sourceCol: item.expr.name });
 			}
 		}
-		if (!selectParts.length) throw new Error(`postgresProvider: empty select list`);
+		if (!selectParts.length) throw new Error(`${PROVIDER}: empty select list`);
 
 		const whereSql = irQuery.where ? ` WHERE ${exprToSql(irQuery.where, b, columns)}` : '';
 		const orderBy = orderBySql(irQuery.orderBy, b, columns);
@@ -205,7 +165,7 @@ export const postgresProvider: Provider = {
 		}
 
 		let offsetSql = '';
-		if (typeof irQuery.offset === 'number') {
+		if (typeof irQuery.offset === 'number' && irQuery.offset > 0) {
 			const offset = Math.max(0, Math.floor(irQuery.offset));
 			const p = b.addParam(offset);
 			offsetSql = ` OFFSET ${p}`;

@@ -17,5 +17,25 @@ services:
       timeout: 5s
       retries: 20
 
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.3-alpine
+    container_name: dashboard-builder-clickhouse
+    restart: unless-stopped
+    environment:
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-analytics}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-default}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+    ports:
+      - '127.0.0.1:${CLICKHOUSE_PORT:-8123}:8123'
+      - '127.0.0.1:${CLICKHOUSE_NATIVE_PORT:-9000}:9000'
+    volumes:
+      - dashboard-builder-clickhouse-data:/var/lib/clickhouse
+    healthcheck:
+      test: ['CMD-SHELL', 'clickhouse-client --password $$CLICKHOUSE_PASSWORD --query "SELECT 1"']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
 volumes:
   dashboard-builder-postgres-data:
+  dashboard-builder-clickhouse-data:

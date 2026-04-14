@@ -27,7 +27,7 @@ Writing rules:
   - `docs/agents/templates-orchestration.md` for orchestrator-facing templates
   - `docs/agents/templates-handoff.md` for worker handoff
 
-## Active Wave: AD2 — Agent Docs Dedup Pass 2 (2026-04-13)
+## Most Recent Closed Wave: AD2 — Agent Docs Dedup Pass 2 (2026-04-13)
 
 Plan: `docs/agents/lead-strategic/current_plan.md`
 
@@ -42,14 +42,14 @@ Integration branch: `feature/agent-model-simplification`
 
 ### Plan-derived status
 
-- MP-2 effectively done:
+- MP-1 done:
+  - ownership cleanup between `workflow.md` and `review-gate.md` is reflected in the integrated docs state
+- MP-2 done:
   - `worker/guide.md` uses sourced excerpts with canonical-wins / escalate-on-conflict rules
-- MP-3 effectively done:
+- MP-3 done:
   - root `AGENTS.md` §8 is orientation-only and pointer-based
-- MP-1 still open:
-  - finish ownership cleanup between `workflow.md` and `review-gate.md`
-- MP-4 still open:
-  - slim `autonomous-protocol.md` §12 examples without reintroducing prompt-template duplication
+- MP-4 done:
+  - `autonomous-protocol.md` §12 examples are slimmed without reintroducing prompt-template duplication
 
 ### Key Constraints
 
@@ -61,12 +61,7 @@ Integration branch: `feature/agent-model-simplification`
 
 ## Notes For The Next Session
 
-- Start from MP-1:
-  - `docs/agents/workflow.md`
-  - `docs/agents/review-gate.md`
-- Then move to MP-4:
-  - `docs/agents/autonomous-protocol.md` §12
-- `current_plan.md` predates the consumer-scoped template split; interpret old `templates.md` references through the new split docs
-- No pending reviewer passes recorded for this docs wave yet
-- Before wave close, run at least bounded docs / architecture sanity on the integrated docs diff
-- If the next task is not this docs dedup wave, stop and request strategic reframe instead of reusing this orchestration state blindly
+- This wave is closed; do not resume it as active execution state
+- `current_plan.md` now serves as closed historical context until a new plan supersedes it
+- Template references in the closed plan predate the consumer-scoped template split; interpret old `templates.md` references through the new split docs
+- If the next task is not historical review of this docs pass, request a new strategic reframe instead of reusing this orchestration state blindly

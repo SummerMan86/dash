@@ -1,6 +1,6 @@
 # @dashboard-builder/platform-datasets
 
-Canonical dataset runtime for the app: registry-driven compile → provider execute pipeline, providers (Postgres, Oracle), and shared cache infrastructure.
+Canonical dataset runtime for the app: registry-driven compile → provider execute pipeline, providers (Postgres, Oracle, ClickHouse), and shared cache infrastructure.
 
 This package is intentionally framework-agnostic: no SvelteKit imports, no route handlers, no UI.
 
@@ -17,8 +17,10 @@ src/
     providerCache.ts     — shared bounded LRU cache helper (internal, not exported from ./server)
     definitions/         — domain dataset definitions (IR builders)
     providers/
-      postgresProvider.ts — Postgres executor
-      oracleProvider.ts   — Oracle executor (Thin mode, LRU cache, multi-pool)
+      shared.ts             — shared provider utilities (isSafeIdent, qIdent, safeSortDir, field helpers)
+      postgresProvider.ts   — Postgres executor
+      oracleProvider.ts     — Oracle executor (Thin mode, LRU cache, multi-pool)
+      clickhouseProvider.ts — ClickHouse executor (HTTP client, parameterized {name:Type} queries)
     registry/
       index.ts           — canonical registry assembly & lookup
 ```
@@ -37,8 +39,10 @@ src/
   - `src/server/definitions/wildberriesOfficeDay.ts`
   - `src/server/definitions/wildberriesProductPeriod.ts`
   - `src/server/definitions/paymentAnalytics.ts`
+- Shared provider utilities: `src/server/providers/shared.ts` (single source of truth for `isSafeIdent`/`qIdent`)
 - Postgres provider: `src/server/providers/postgresProvider.ts`
 - Oracle provider: `src/server/providers/oracleProvider.ts`
+- ClickHouse provider: `src/server/providers/clickhouseProvider.ts`
 - Registry assembly: `src/server/registry/index.ts`
 
 ## Public exports
@@ -46,7 +50,7 @@ src/
 | Entrypoint | What | Consumers |
 |---|---|---|
 | `.` (`src/index.ts`) | Contract types, IR types, client helpers | App routes, UI components |
-| `./server` (`src/server/index.ts`) | executeDatasetQuery, providers, registry, getDatasetSchema | App server routes, API handlers |
+| `./server` (`src/server/index.ts`) | executeDatasetQuery, providers, registry, getDatasetSchema, `_closeClickHouseForTesting` | App server routes, API handlers |
 
 `providerCache.ts` is intentionally NOT exported from `./server` — it is internal to the provider layer.
 
@@ -56,7 +60,8 @@ src/
 - Provider owns SQL execution + mapping to physical relations (`schema.table`) + column typing.
 - If a published view changes columns, provider mapping must be updated in the same change set.
 - Cache helper is provider-internal — do not import it from routes or UI.
-- `isSafeIdent()` validates SQL identifiers in providers — do not bypass.
+- `isSafeIdent()` in `providers/shared.ts` is the single source of truth for SQL identifier validation — all providers import from there, do not duplicate or bypass.
+- Current providers support only `expr.kind === 'col'` in SELECT and ORDER BY positions — computed expressions and aggregations will throw. New providers must either match this constraint or explicitly document the extension.
 
 ## Migration note
 

@@ -12,6 +12,7 @@
 		"check": "tsc --noEmit"
 	},
 	"dependencies": {
+		"@clickhouse/client": "^1.18.2",
 		"@dashboard-builder/db": "workspace:*",
 		"@dashboard-builder/platform-core": "workspace:*",
 		"lru-cache": "^11.1.0",

@@ -3,17 +3,18 @@
  *
  * Uses node-oracledb Thin mode (no Instant Client needed).
  * Lazy pool initialization on first use.
- * Bounded LRU cache via shared providerCache helper.
  * Timeout + best-effort statement cancellation.
  *
  * Canonical reference: docs/architecture_dashboard_bi.md §7
  */
 import oracledb from 'oracledb';
-import type { DatasetField, DatasetFieldType, DatasetResponse, JsonValue } from '../../model';
-import type { DatasetIr, IrExpr, IrOrderBy } from '../../model';
+import type { DatasetFieldType, DatasetResponse, JsonValue } from '../../model';
+import type { DatasetIr, IrExpr } from '../../model';
 import type { Provider, ProviderEntry, ServerContext } from '../../model';
-import type { DatasetFieldDef } from '../../model';
 import { CONTRACT_VERSION } from '../../model';
+import { qIdent, safeSortDir, buildColumnIndex, inferFields, serializeOrderBy } from './shared';
+
+const PROVIDER = 'oracleProvider';
 
 // ---------------------------------------------------------------------------
 // Pool lifecycle — lazy init, graceful shutdown
@@ -31,7 +32,7 @@ function getOracleConfig(connectionName: string) {
 	const password = process.env[`${prefix}PASSWORD`] ?? process.env.ORACLE_PASSWORD;
 	const connectString = process.env[`${prefix}CONNECT_STRING`] ?? process.env.ORACLE_CONNECT_STRING;
 	if (!user || !password || !connectString) {
-		throw new Error(`oracleProvider: Oracle connection '${connectionName}' not configured`);
+		throw new Error(`${PROVIDER}: Oracle connection '${connectionName}' not configured`);
 	}
 	return { user, password, connectString };
 }
@@ -76,28 +77,13 @@ if (typeof process !== 'undefined' && !shutdownRegistered) {
 // SQL generation (Oracle dialect)
 // ---------------------------------------------------------------------------
 
-function isSafeIdent(name: string): boolean {
-	return /^[A-Za-z_][A-Za-z0-9_]*$/.test(name);
-}
-
-function qIdent(name: string): string {
-	if (!isSafeIdent(name)) throw new Error(`oracleProvider: unsafe identifier: ${name}`);
-	return `"${name}"`;
-}
-
-function buildColumnIndex(fields: DatasetFieldDef[]): Record<string, DatasetFieldType> {
-	const index: Record<string, DatasetFieldType> = {};
-	for (const f of fields) index[f.name] = f.type;
-	return index;
-}
-
 const SAFE_OPS = new Set(['=', '!=', '<', '<=', '>', '>=', 'in', 'like']);
 
 function exprToSql(expr: IrExpr, binds: unknown[], columns: Record<string, DatasetFieldType>): string {
 	switch (expr.kind) {
 		case 'col': {
-			if (!(expr.name in columns)) throw new Error(`oracleProvider: unknown column "${expr.name}"`);
-			return qIdent(expr.name);
+			if (!(expr.name in columns)) throw new Error(`${PROVIDER}: unknown column "${expr.name}"`);
+			return qIdent(expr.name, PROVIDER);
 		}
 		case 'lit': {
 			binds.push(expr.value);
@@ -114,11 +100,11 @@ function exprToSql(expr: IrExpr, binds: unknown[], columns: Record<string, Datas
 		case 'not':
 			return `(NOT ${exprToSql(expr.item, binds, columns)})`;
 		case 'bin': {
-			if (!SAFE_OPS.has(expr.op)) throw new Error(`oracleProvider: unsupported operator: ${expr.op}`);
+			if (!SAFE_OPS.has(expr.op)) throw new Error(`${PROVIDER}: unsupported operator: ${expr.op}`);
 			if (expr.op === 'in') {
 				// IN requires col on left and literal array on right
 				if (expr.right.kind !== 'lit' || !Array.isArray(expr.right.value)) {
-					throw new Error('oracleProvider: IN requires a literal array on the right side');
+					throw new Error(`${PROVIDER}: IN requires a literal array on the right side`);
 				}
 				const left = exprToSql(expr.left, binds, columns);
 				const items = (expr.right.value as unknown[]).map(v => {
@@ -135,37 +121,32 @@ function exprToSql(expr: IrExpr, binds: unknown[], columns: Record<string, Datas
 	}
 }
 
-function safeSortDir(dir: string): string {
-	if (dir === 'asc' || dir === 'desc') return dir.toUpperCase();
-	throw new Error(`oracleProvider: invalid sort direction: ${dir}`);
-}
-
 function buildSelectSql(
 	irQuery: DatasetIr & { kind: 'select' },
 	entry: ProviderEntry,
 	columns: Record<string, DatasetFieldType>,
 ): { text: string; binds: unknown[]; selectedFields: Array<{ outputName: string; sourceCol: string }> } {
 	if (entry.source.kind !== 'oracle') {
-		throw new Error(`oracleProvider: expected oracle source, got ${entry.source.kind}`);
+		throw new Error(`${PROVIDER}: expected oracle source, got ${entry.source.kind}`);
 	}
 
 	const { schema, table } = entry.source;
 	const binds: unknown[] = [];
-	const rel = `${qIdent(schema)}.${qIdent(table)}`;
+	const rel = `${qIdent(schema, PROVIDER)}.${qIdent(table, PROVIDER)}`;
 
 	// SELECT
 	const selectParts: string[] = [];
 	const selectedFields: Array<{ outputName: string; sourceCol: string }> = [];
 	for (const item of irQuery.select) {
-		if (item.expr.kind !== 'col') throw new Error('oracleProvider: only column select items supported');
+		if (item.expr.kind !== 'col') throw new Error(`${PROVIDER}: only column select items supported`);
 		const colName = item.expr.name;
-		if (!columns[colName]) throw new Error(`oracleProvider: unknown column "${colName}"`);
-		const base = qIdent(colName);
-		const alias = item.as ? qIdent(item.as) : undefined;
+		if (!columns[colName]) throw new Error(`${PROVIDER}: unknown column "${colName}"`);
+		const base = qIdent(colName, PROVIDER);
+		const alias = item.as ? qIdent(item.as, PROVIDER) : undefined;
 		selectParts.push(alias ? `${base} AS ${alias}` : base);
 		selectedFields.push({ outputName: item.as ?? colName, sourceCol: colName });
 	}
-	if (!selectParts.length) throw new Error('oracleProvider: empty select list');
+	if (!selectParts.length) throw new Error(`${PROVIDER}: empty select list`);
 
 	// WHERE
 	const whereSql = irQuery.where ? ` WHERE ${exprToSql(irQuery.where, binds, columns)}` : '';
@@ -174,9 +155,9 @@ function buildSelectSql(
 	let orderBySql = '';
 	if (irQuery.orderBy?.length) {
 		const parts = irQuery.orderBy.map(rule => {
-			if (rule.expr.kind !== 'col') throw new Error('oracleProvider: ORDER BY supports only columns');
-			if (!columns[rule.expr.name]) throw new Error(`oracleProvider: unknown ORDER BY column "${rule.expr.name}"`);
-			return `${qIdent(rule.expr.name)} ${safeSortDir(rule.dir)}`;
+			if (rule.expr.kind !== 'col') throw new Error(`${PROVIDER}: ORDER BY supports only columns`);
+			if (!columns[rule.expr.name]) throw new Error(`${PROVIDER}: unknown ORDER BY column "${rule.expr.name}"`);
+			return `${qIdent(rule.expr.name, PROVIDER)} ${safeSortDir(rule.dir, PROVIDER)}`;
 		});
 		orderBySql = ` ORDER BY ${parts.join(', ')}`;
 	}
@@ -197,32 +178,14 @@ function buildSelectSql(
 	return { text, binds, selectedFields };
 }
 
-function inferFields(
-	columns: Record<string, DatasetFieldType>,
-	items: Array<{ outputName: string; sourceCol: string }>,
-): DatasetField[] {
-	return items.map(({ outputName, sourceCol }) => ({
-		name: outputName,
-		type: columns[sourceCol] ?? 'unknown',
-	}));
-}
-
-function serializeOrderBy(orderBy: IrOrderBy[] | undefined) {
-	if (!orderBy?.length) return undefined;
-	return orderBy.flatMap(rule =>
-		rule.expr.kind === 'col' ? [{ field: rule.expr.name, dir: rule.dir }] : [],
-	);
-}
-
 // ---------------------------------------------------------------------------
 // Oracle Provider
 // ---------------------------------------------------------------------------
 
 export const oracleProvider: Provider = {
 	async execute(irQuery: DatasetIr, entry: ProviderEntry, ctx: ServerContext): Promise<DatasetResponse> {
-		if (irQuery.kind !== 'select') throw new Error('oracleProvider: unsupported IR kind');
-		if (irQuery.from.kind !== 'dataset') throw new Error('oracleProvider: unsupported source');
-
+		if (irQuery.kind !== 'select') throw new Error(`${PROVIDER}: unsupported IR kind`);
+		if (irQuery.from.kind !== 'dataset') throw new Error(`${PROVIDER}: unsupported source`);
 
 		const datasetId = irQuery.from.id;
 		const columns = buildColumnIndex(entry.fields);
@@ -233,7 +196,7 @@ export const oracleProvider: Provider = {
 		// Execution hints
 		const timeoutMs = entry.execution?.timeoutMs ?? 10_000;
 
-		if (entry.source.kind !== 'oracle') throw new Error('oracleProvider: expected oracle source');
+		if (entry.source.kind !== 'oracle') throw new Error(`${PROVIDER}: expected oracle source`);
 		const connectionName = entry.source.connectionName;
 		const oraPool = await getPool(connectionName);
 		let connection: oracledb.Connection | null = null;
