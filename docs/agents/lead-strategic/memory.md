@@ -3,16 +3,17 @@
 ## Active Strategic Context
 
 - Active wave:
-  - none
+  - `Agent Model Runtime Validation — opus-orchestrated-codex-workers` — opened `2026-04-15`
 - Last closed wave:
   - `Agent Docs Dedup Pass 2 (Medium Priority)` — closed `2026-04-13`
 - Current plan state:
-  - `docs/agents/lead-strategic/current_plan.md` is historical/closed and must be superseded before the next execution wave
+  - `docs/agents/lead-strategic/current_plan.md` is the active canonical plan for runtime validation
 - Active branch:
-  - `feature/agent-model-simplification`
+  - `feature/agent-model-runtime-validation`
 - Current strategic state:
-  - no active execution wave is open in canonical artifacts
-  - the next task must start from the integrated repo state, not from old MP-1 / MP-4 assumptions
+  - runtime validation wave is open
+  - no slices accepted yet
+  - no slices dispatched yet
 
 ## Durable Strategic Decisions
 
@@ -42,9 +43,11 @@
 
 ## Resume Point For The Next Chat
 
-- Do not resume old CA / BI-clean-architecture context from prior memories; that is historical only
-- `current_plan.md` is closed historical context until a new plan supersedes it
-- Before any new execution wave:
-  - write a new `current_plan.md`
-  - choose the execution profile explicitly
-  - if `opus-orchestrated-codex-workers` is selected, use `execution-profiles.md` as the canonical runtime contract
+- Resume `Agent Model Runtime Validation — opus-orchestrated-codex-workers`
+- Read `current_plan.md` first; it is active, not historical
+- Start with ST-1 worker lane validation
+- Treat the most recent observed `codex-plugin-cc` symptom as a real risk signal:
+  - `[Tool result missing due to internal error]`
+  - no stable run ID
+  - no matching `/codex:result`
+  - this must classify the lane as `blocked` or `unverified`, never as silent success

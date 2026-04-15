@@ -12,14 +12,17 @@ Writing rules:
 ## Current Orchestration State
 
 - Active wave:
-  - none
+  - `Agent Model Runtime Validation — opus-orchestrated-codex-workers` — opened `2026-04-15`
 - Current plan state:
-  - `docs/agents/lead-strategic/current_plan.md` is closed historical context until a new plan supersedes it
+  - `docs/agents/lead-strategic/current_plan.md` is active and owns the runtime-validation wave
 - Active branch:
-  - `feature/agent-model-simplification`
+  - `feature/agent-model-runtime-validation`
 - Current orchestration state:
-  - no active execution wave is open in canonical artifacts
-  - do not dispatch a new wave until `lead-strategic` writes a new plan
+  - plan ready for dispatch
+  - ST-1 pending
+  - ST-2 pending, blocked by ST-1
+  - ST-3 pending, blocked by ST-1/ST-2 outcome
+  - ST-4 pending, blocked by earlier validation evidence
 
 ## Durable Operational Knowledge
 
@@ -41,11 +44,13 @@ Writing rules:
   - `/codex:review` / `/codex:adversarial-review` for reviewer lanes
   - `lead-strategic` / `strategic-reviewer` are not implicitly mapped to those commands
 - If no dedicated strategic plugin lane exists on the active surface, do not silently reuse worker/reviewer slash commands; classify it truthfully as per-role exception, alternative documented runtime path, or blocker/fallback
+- Observed failure mode from the first blind trial:
+  - plugin dispatch can return `[Tool result missing due to internal error]`
+  - no recoverable run ID may be exposed
+  - if that happens, stop waiting and classify the lane `blocked` or `unverified`
 
 ## Notes For The Next Session
 
-- Do not resume old waves as active execution state; recover product history from plans/reports and `git log` instead
-- Before any new wave:
-  - wait for a new `current_plan.md`
-  - choose the execution profile explicitly
-  - if `opus-orchestrated-codex-workers` is selected, verify proof tuple for any claimed plugin-mapped Codex worker/reviewer lane
+- Resume the active runtime-validation wave from slice status above
+- Dispatch ST-1 first
+- If a Codex lane hangs without proof tuple, close it as `blocked` or `unverified`; do not leave the wave nominally waiting forever
