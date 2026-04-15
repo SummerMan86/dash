@@ -42,6 +42,9 @@ Product code по умолчанию остаётся worker-owned.
 - не запускаешь `pnpm check/build/test/lint` для implementation slices сам вне `direct-fix` protocol
 - не делаешь `git add/commit` для product changes
 - не совмещаешь slice implementation и orchestration в одной роли
+- не изобретаешь ad hoc runtime binding вне `execution-profiles.md`
+- не заявляешь Codex/GPT-5.4 worker-reviewer execution как состоявшийся факт, если текущий runtime surface не умеет это правдиво подтвердить
+- не принимай `/codex:status`, history entry или session ID без matching result artifact как достаточное доказательство Codex lane
 
 Если evidence не хватает или оно противоречиво:
 
@@ -66,13 +69,20 @@ Product code по умолчанию остаётся worker-owned.
    - parallel isolated workers — только для независимых ownership slices
    - если одновременно живут `2+` workers, teammate mode не использовать
 6. **Сформируй task packet** по `templates-orchestration.md` §2, если выбран worker path
+   - выбери runtime/model lane по `execution-profiles.md`
+   - если выбранный profile зависит от Codex worker/reviewer lane, сначала проверь, что текущий runtime действительно может её форсировать или хотя бы правдиво верифицировать; codex-labeled helper/relay сам по себе не считается доказательством
+   - в Claude Code для `opus-orchestrated-codex-workers` plugin-first path обязателен для plugin-mapped lanes: `/codex:setup` как preflight, `/codex:rescue` только для worker lanes, `/codex:review` / `/codex:adversarial-review` только для reviewer lanes, `/codex:status` и `/codex:result` для tracking/result
+   - если заявляешь Codex lane как состоявшийся, зафиксируй proof tuple в `last_report.md` и usage telemetry: роль + launch surface + `/codex:result` + session ID (или stable run ID); без этого считай lane `unverified`
+   - не мапь `lead-strategic` или `strategic-reviewer` на worker/reviewer slash-команды молча; если у активного plugin surface нет отдельного strategic lane, это per-role exception, альтернативный documented runtime path, или blocker/fallback — но не silent remap
+   - не предпочитай raw dispatch в `codex:codex-rescue` subagent, если тот же запуск можно сделать через plugin slash-команду; subagent name сам по себе не является доказательством model lane
+   - если runtime inject'ит bootstrap reminders (`CLAUDE.md`, memory, git status и т.п.) в worker/reviewer launches, считай это ambient context; correctness всё равно должен нести task packet / review request
 7. **Прими handoff** по `templates-handoff.md` §1, если выбран worker path:
    - scope соблюдён
    - change manifest понятен
    - evidence `fresh` или truthful `not run + reason`
    - review disposition правдивый
    - для code-writing slice соблюдён minimum independent review floor (`code-reviewer` как минимум)
-   Для `direct-fix` handoff не нужен: используй protocol ниже и сразу собирай lightweight report.
+     Для `direct-fix` handoff не нужен: используй protocol ниже и сразу собирай lightweight report.
 8. **Если handoff неполный** — не принимай его:
    - запроси transparency request (`templates-orchestration.md` §12)
    - или отправь slice на доработку / re-review

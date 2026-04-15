@@ -6,6 +6,7 @@ Core process для работы агентной команды.
 Поддерживающие протоколы вынесены в отдельные canonical docs:
 
 - `review-gate.md` — review model, strategic acceptance/reframe loop, governance passes
+- `execution-profiles.md` — runtime/model binding for supported execution profiles
 - `recovery.md` — failure-path и recovery protocols
 - `invariants.md` — generic repo-wide project invariants (domain overlays: `invariants-emis.md`, etc.)
 - `git-protocol.md` — branches, worktrees, integration choreography
@@ -14,7 +15,7 @@ Core process для работы агентной команды.
 
 ## 1. Модель работы
 
-### 1.1. Интегрированная модель (primary, с codex-plugin-cc)
+### 1.1. Интегрированная модель (primary)
 
 ```text
 Пользователь
@@ -23,25 +24,34 @@ Core process для работы агентной команды.
     ▼
 Claude Opus (orchestrator; legacy alias: lead-tactical)
     │
-    ├─ /codex:rescue --write "создай/обнови план"
+    ├─ поднимает `lead-strategic` по runtime/model binding из `execution-profiles.md`
+    ├─ dispatches workers/reviewers по выбранному execution profile
     ├─ ведёт execution loop: workers, review, report
-    ├─ /codex:rescue --resume "strategic review report"
-    ├─ post-slice reframe и strategic acceptance loop по выбранному operating mode
+    ├─ возвращает план на approval, эскалации и merge decision
     │
     ▼
 Пользователь: подтверждает merge / эскалации
 ```
 
-**Маппинг ролей:**
+Runtime/model binding for supported profiles lives in
+`docs/agents/execution-profiles.md`.
 
-| Роль workflow | Реализация | Основная ответственность |
-| --- | --- | --- |
-| `lead-strategic` | Codex / GPT-5.4 | canonical owner `current_plan.md`, strategic acceptance, architecture-docs-first при планировании |
-| `strategic-reviewer` | bounded pass внутри `lead-strategic` thread | strategic acceptance/reframe safety net по `plan/report/diff` |
-| `orchestrator` | Claude Opus | code-blind execution flow, worker dispatch, Review Gate, Architecture Readiness Check, report |
-| `worker` | Claude subagent + worktree (default); teammate exception | реализация одного slice |
-| `*-reviewer` | fresh Claude subagent | diff review по своей зоне |
-| `architecture-reviewer` (audit mode) | fresh Claude subagent | pre-implementation readiness assessment по planned scope |
+In Claude Code for `opus-orchestrated-codex-workers`, plugin-first slash mapping
+applies only to worker/reviewer lanes. `lead-strategic` and
+`strategic-reviewer` are not silently remapped to worker/reviewer slash
+commands; if the active surface has no dedicated strategic lane, record a
+truthful per-role exception, documented alternative runtime path, or blocker.
+
+**Role map:**
+
+| Роль workflow                        | Реализация                                   | Основная ответственность                                                                          |
+| ------------------------------------ | -------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `lead-strategic`                     | profile-selected Codex lane                  | canonical owner `current_plan.md`, strategic acceptance, architecture-docs-first при планировании |
+| `strategic-reviewer`                 | bounded pass внутри `lead-strategic` context | strategic acceptance/reframe safety net по `plan/report/diff`                                     |
+| `orchestrator`                       | Claude Opus                                  | code-blind execution flow, worker dispatch, Review Gate, Architecture Readiness Check, report     |
+| `worker`                             | profile-selected implementation lane         | реализация одного slice                                                                           |
+| `*-reviewer`                         | profile-selected review lane                 | diff review по своей зоне                                                                         |
+| `architecture-reviewer` (audit mode) | profile-selected reviewer lane               | pre-implementation readiness assessment по planned scope                                          |
 
 **Правило `--write`:**
 
@@ -50,11 +60,11 @@ Claude Opus (orchestrator; legacy alias: lead-tactical)
 
 **Thread continuity (`--resume` / `--fresh`):**
 
-| Флаг | Поведение |
-| --- | --- |
-| `--resume` | продолжить последний Codex thread в этом repo |
-| `--fresh` | начать новый thread |
-| без флага | tooling спрашивает, продолжать thread или открыть новый |
+| Флаг       | Поведение                                               |
+| ---------- | ------------------------------------------------------- |
+| `--resume` | продолжить последний Codex thread в этом repo           |
+| `--fresh`  | начать новый thread                                     |
+| без флага  | tooling спрашивает, продолжать thread или открыть новый |
 
 **Когда `resume`, когда `fresh`:**
 
@@ -145,10 +155,10 @@ Compatibility note: `lead-tactical` — legacy alias; см. `docs/agents/roles.m
 
 ### Гибридная модель: isolated writers + fresh reviewers
 
-| Роль | Технология | Почему |
-| --- | --- | --- |
-| `worker` | subagent + worktree (default for code-writing); teammate only as shared-checkout exception | diff isolation, scope hygiene, reproducible handoff |
-| `reviewer` | fresh subagent | дешёвый и воспроизводимый bounded review по diff |
+| Роль       | Технология                                                                                 | Почему                                              |
+| ---------- | ------------------------------------------------------------------------------------------ | --------------------------------------------------- |
+| `worker`   | subagent + worktree (default for code-writing); teammate only as shared-checkout exception | diff isolation, scope hygiene, reproducible handoff |
+| `reviewer` | fresh subagent                                                                             | дешёвый и воспроизводимый bounded review по diff    |
 
 Workers как isolated subagents (default for code-writing):
 
@@ -182,13 +192,13 @@ Reviewers как fresh subagents:
 
 ### 2.1. Выбор режима
 
-| Критерий | Direct-fix | Batch | Iterative |
-| --- | --- | --- | --- |
-| Размер change | `<= 10` строк, 1 файл | 1-3 bounded slices | 4+ или slice-dependent |
-| Architectural surface | нет | низкий | средний-высокий |
-| Schema / contract touch | нет | нет или локальный | возможен |
-| Нужен worker handoff | нет | да | да |
-| Нужен post-slice reframe | нет | обычно в конце | да |
+| Критерий                 | Direct-fix            | Batch              | Iterative              |
+| ------------------------ | --------------------- | ------------------ | ---------------------- |
+| Размер change            | `<= 10` строк, 1 файл | 1-3 bounded slices | 4+ или slice-dependent |
+| Architectural surface    | нет                   | низкий             | средний-высокий        |
+| Schema / contract touch  | нет                   | нет или локальный  | возможен               |
+| Нужен worker handoff     | нет                   | да                 | да                     |
+| Нужен post-slice reframe | нет                   | обычно в конце     | да                     |
 
 **Default heuristic для `orchestrator`:**
 
@@ -240,7 +250,7 @@ Dispatch heuristic:
 **Интегрированная модель:**
 
 1. `orchestrator` получает задачу от пользователя.
-2. Поднимает strategic loop через `/codex:rescue --fresh --write`.
+2. Поднимает strategic loop через selected Codex runtime path per `execution-profiles.md`.
 3. `lead-strategic` создаёт или обновляет `current_plan.md`.
 4. Пользователь подтверждает план, если задача нетривиальна или меняет scope.
 
@@ -403,7 +413,7 @@ Cost-awareness калибрует cadence strategic loop, а не отменяе
 
 **Интегрированная модель:**
 
-1. `orchestrator` запускает `/codex:rescue --resume`.
+1. `orchestrator` запускает strategic acceptance через selected Codex runtime path per `execution-profiles.md`.
 2. `lead-strategic` сверяет report, plan fit, scope, architecture и review discipline.
 3. Делает post-slice or final reframe и запускает bounded `strategic-reviewer` pass, если этого требует current operating mode или risk signals.
 4. Выносит `ACCEPT`, `ACCEPT WITH NOTES` или `REJECT`.
@@ -439,12 +449,14 @@ Default routing:
 
 ```md
 ## Эскалация
+
 Причина: <почему нужно решение>
 Контекст: <что произошло>
 Варианты:
+
 1. <вариант A> — <последствия>
 2. <вариант B> — <последствия>
-Рекомендация: вариант <N>, потому что <причина>
+   Рекомендация: вариант <N>, потому что <причина>
 ```
 
 Failure-path после эскалации описан в `docs/agents/recovery.md`.
@@ -474,14 +486,14 @@ Baseline number из wave closure становится минимальным п
 
 ### Файловый протокол
 
-| Файл | Кто пишет | Кто читает |
-| --- | --- | --- |
-| `docs/agents/lead-strategic/current_plan.md` | `lead-strategic` | `orchestrator`, workers по need-to-know |
-| `docs/agents/orchestrator/last_report.md` | `orchestrator` | `lead-strategic`, пользователь |
-| `docs/agents/lead-strategic/memory.md` | `lead-strategic` | следующий strategic thread |
-| `docs/agents/orchestrator/memory.md` | `orchestrator` | следующий orchestration session |
-| `runtime/agents/usage-log.ndjson` | `orchestrator` | локальная optimization analytics / future DB import |
-| domain-specific exceptions registry (e.g. `emis_known_exceptions.md` per overlay) | `lead-strategic` governance loop | все роли по необходимости |
+| Файл                                                                              | Кто пишет                        | Кто читает                                          |
+| --------------------------------------------------------------------------------- | -------------------------------- | --------------------------------------------------- |
+| `docs/agents/lead-strategic/current_plan.md`                                      | `lead-strategic`                 | `orchestrator`, workers по need-to-know             |
+| `docs/agents/orchestrator/last_report.md`                                         | `orchestrator`                   | `lead-strategic`, пользователь                      |
+| `docs/agents/lead-strategic/memory.md`                                            | `lead-strategic`                 | следующий strategic thread                          |
+| `docs/agents/orchestrator/memory.md`                                              | `orchestrator`                   | следующий orchestration session                     |
+| `runtime/agents/usage-log.ndjson`                                                 | `orchestrator`                   | локальная optimization analytics / future DB import |
+| domain-specific exceptions registry (e.g. `emis_known_exceptions.md` per overlay) | `lead-strategic` governance loop | все роли по необходимости                           |
 
 Правила хранения:
 

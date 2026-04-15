@@ -9,18 +9,33 @@ Important:
 - canonical имя Claude-роли в этом документе — `orchestrator`;
 - canonical путь для autonomous decision log: `docs/agents/orchestrator/decision-log.md`.
 
+Runtime/model binding for supported execution styles lives in
+`docs/agents/execution-profiles.md`.
+Этот документ autonomy-first: concrete runtime examples below describe the
+current practical autonomous surface, а не единственно возможный runtime combo.
+Если autonomous run claims `opus-orchestrated-codex-workers` в Claude Code,
+каждый Codex-routed pass должен оставить reviewable proof artifact
+(`/codex:result` + session ID/run ID, либо документированный fallback) в
+`decision-log`/`last_report`; иначе lane считается `unverified` и truthfully
+downgrades or blocks.
+
+Important scope note:
+
+- ordinary orchestrated plugin mapping still belongs to worker/reviewer lanes only;
+- the `/codex:rescue --write` planning examples below are autonomous-specific documented exceptions while the plugin surface has no dedicated strategic slash lane.
+
 ## Два уровня автономности
 
-| Аспект | **Lightweight** | **Full** |
-| --- | --- | --- |
-| Когда | Задача по аналогии, чёткий scope, нет архитектурных решений | Cross-layer, schema changes, архитектурные решения |
-| Strategic loop | **Нет.** autonomous `orchestrator` сам планирует и принимает | **Да.** GPT-5.4 = lead-strategic, plan owner, decision-maker |
-| Codex required | Нет | Да (`/codex:setup` green) |
-| Plan | Mini-plan inline в decision-log | Полный `current_plan.md` через Codex |
-| Review Gate | Обязателен (code + security минимум) | Полный (все applicable reviewers) |
-| Decision-log | Обязателен | Обязателен |
-| Типичное время | 10-30 мин | 30-90 мин |
-| Типичная стоимость | Низкая (только Claude) | Высокая (Claude + GPT-5.4 + workers) |
+| Аспект             | **Lightweight**                                              | **Full**                                                     |
+| ------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| Когда              | Задача по аналогии, чёткий scope, нет архитектурных решений  | Cross-layer, schema changes, архитектурные решения           |
+| Strategic loop     | **Нет.** autonomous `orchestrator` сам планирует и принимает | **Да.** GPT-5.4 = lead-strategic, plan owner, decision-maker |
+| Codex required     | Нет                                                          | Да (`/codex:setup` green)                                    |
+| Plan               | Mini-plan inline в decision-log                              | Полный `current_plan.md` через Codex                         |
+| Review Gate        | Обязателен (code + security минимум)                         | Полный (все applicable reviewers)                            |
+| Decision-log       | Обязателен                                                   | Обязателен                                                   |
+| Типичное время     | 10-30 мин                                                    | 30-90 мин                                                    |
+| Типичная стоимость | Низкая (только Claude)                                       | Высокая (Claude + GPT-5.4 + workers)                         |
 
 ### Критерий выбора
 
@@ -78,6 +93,7 @@ orchestrator (Claude Opus) — plan + execute + accept
 orchestrator (Claude Opus) — autonomous executor
     │
     ├─ /codex:rescue --fresh --write "autonomous plan"
+    │   (documented autonomous exception: no dedicated strategic slash lane)
     │       ↓
     │   lead-strategic (GPT-5.4) — autonomous decision-maker
     │       ├─ создаёт plan
@@ -164,7 +180,7 @@ claude -p "$(cat <<'EOF'
 Scope: <файлы/модули>
 Timeout: 60 минут
 
-Используй /codex:rescue --fresh --write для планирования.
+Используй /codex:rescue --fresh --write для планирования как documented autonomous exception.
 GPT-5.4 — твой lead-strategic и decision-maker.
 Все решения пиши в docs/agents/orchestrator/decision-log.md.
 По завершении — коммит + docs/agents/orchestrator/last_report.md.
@@ -175,15 +191,15 @@ EOF
 
 ### 2.5. Autonomy parameters
 
-| Параметр | Default (lightweight) | Default (full) | Описание |
-| --- | --- | --- | --- |
-| `timeout` | 30m | 60m | Максимальное время выполнения |
-| `scope` | обязателен | обязателен | Ограничение по файлам/модулям |
-| `guardrails` | `default` | `default` | Набор ограничений (см. §5) |
-| `operating-mode` | n/a | решает `lead-strategic` | Можно зафиксировать заранее |
-| `max-slices` | 3 | 9 | Максимум подзадач |
-| `escalation-policy` | `stop` | `log-and-continue` | Что делать при спорных решениях |
-| `reference` | рекомендуется | опционально | Файл-образец для паттерна |
+| Параметр            | Default (lightweight) | Default (full)          | Описание                        |
+| ------------------- | --------------------- | ----------------------- | ------------------------------- |
+| `timeout`           | 30m                   | 60m                     | Максимальное время выполнения   |
+| `scope`             | обязателен            | обязателен              | Ограничение по файлам/модулям   |
+| `guardrails`        | `default`             | `default`               | Набор ограничений (см. §5)      |
+| `operating-mode`    | n/a                   | решает `lead-strategic` | Можно зафиксировать заранее     |
+| `max-slices`        | 3                     | 9                       | Максимум подзадач               |
+| `escalation-policy` | `stop`                | `log-and-continue`      | Что делать при спорных решениях |
+| `reference`         | рекомендуется         | опционально             | Файл-образец для паттерна       |
 
 ## 3. Роли в autonomous mode
 
@@ -191,12 +207,12 @@ EOF
 
 В lightweight режиме `orchestrator` совмещает planning и acceptance, но не получает более широкий self-write contract, чем в standard workflow.
 
-| Функция | Кто выполняет |
-| --- | --- |
-| Планирование | `orchestrator` (mini-plan в decision-log) |
-| Реализация | `orchestrator` inline только для eligible `direct-fix`; иначе 1 isolated worker |
-| Acceptance | `orchestrator` (self-acceptance по acceptance criteria из задачи) |
-| Review | Review Gate subagents (code-reviewer + security-reviewer минимум) |
+| Функция             | Кто выполняет                                                                                 |
+| ------------------- | --------------------------------------------------------------------------------------------- |
+| Планирование        | `orchestrator` (mini-plan в decision-log)                                                     |
+| Реализация          | `orchestrator` inline только для eligible `direct-fix`; иначе 1 isolated worker               |
+| Acceptance          | `orchestrator` (self-acceptance по acceptance criteria из задачи)                             |
+| Review              | Review Gate subagents (code-reviewer + security-reviewer минимум)                             |
 | Strategic decisions | **Нет.** Если возникает архитектурное решение — STOP, переключиться на full или standard mode |
 
 **Escalation rule для lightweight:**
@@ -238,31 +254,31 @@ CTO-модель `lead-strategic`, transparency requests и информацио
 
 ### 4.1. Архитектурные решения
 
-| Ситуация | Решение |
-| --- | --- |
-| Неясно, в какой слой положить код | Следуй существующим паттернам в соседних модулях |
-| Два подхода равноценны | Выбирай проще, логируй альтернативу |
-| Нужна новая зависимость | Только если аналог уже в `package.json`; новую — в decision-log как `DEFERRED` |
-| Нужен новый shared utility | Inline first, extract only if 3+ call sites |
-| Неясна схема БД | Читай миграции + relevant domain bootstrap doc (e.g. `emis_session_bootstrap.md`) |
+| Ситуация                          | Решение                                                                           |
+| --------------------------------- | --------------------------------------------------------------------------------- |
+| Неясно, в какой слой положить код | Следуй существующим паттернам в соседних модулях                                  |
+| Два подхода равноценны            | Выбирай проще, логируй альтернативу                                               |
+| Нужна новая зависимость           | Только если аналог уже в `package.json`; новую — в decision-log как `DEFERRED`    |
+| Нужен новый shared utility        | Inline first, extract only if 3+ call sites                                       |
+| Неясна схема БД                   | Читай миграции + relevant domain bootstrap doc (e.g. `emis_session_bootstrap.md`) |
 
 ### 4.2. Scope decisions
 
-| Ситуация | Решение |
-| --- | --- |
-| Задача оказалась больше, чем ожидалось | Реализовать core scope, отложить extras в `DEFERRED` секцию decision-log |
-| Найден баг, не связанный с задачей | Логировать в decision-log, не чинить |
-| Нужен рефакторинг для выполнения задачи | Минимальный, только если блокирует; логировать |
-| Code вне scope сломан и мешает | Minimal fix + логировать, не рефакторить |
+| Ситуация                                | Решение                                                                  |
+| --------------------------------------- | ------------------------------------------------------------------------ |
+| Задача оказалась больше, чем ожидалось  | Реализовать core scope, отложить extras в `DEFERRED` секцию decision-log |
+| Найден баг, не связанный с задачей      | Логировать в decision-log, не чинить                                     |
+| Нужен рефакторинг для выполнения задачи | Минимальный, только если блокирует; логировать                           |
+| Code вне scope сломан и мешает          | Minimal fix + логировать, не рефакторить                                 |
 
 ### 4.3. Конфликты и неоднозначности
 
-| Ситуация | Решение |
-| --- | --- |
-| Reviewers расходятся | `lead-strategic` выбирает позицию с лучшим rationale, логирует |
-| Slice rejected 3+ раза | `lead-strategic` решает: simplify scope, skip slice, или accept-with-known-limitation |
-| Invariant violation | **STOP.** Не может быть resolved автономно. Это guardrail break. |
-| Новый contract / schema нужен | Допустимо только если в scope задачи. Логировать как `SIGNIFICANT DECISION` |
+| Ситуация                      | Решение                                                                               |
+| ----------------------------- | ------------------------------------------------------------------------------------- |
+| Reviewers расходятся          | `lead-strategic` выбирает позицию с лучшим rationale, логирует                        |
+| Slice rejected 3+ раза        | `lead-strategic` решает: simplify scope, skip slice, или accept-with-known-limitation |
+| Invariant violation           | **STOP.** Не может быть resolved автономно. Это guardrail break.                      |
+| Новый contract / schema нужен | Допустимо только если в scope задачи. Логировать как `SIGNIFICANT DECISION`           |
 
 ### 4.4. Fallback rule
 
@@ -317,6 +333,7 @@ Timeout: <заданный timeout>
 ## Decisions
 
 ### D-1: <краткое описание>
+
 - **Тип:** SCOPE | ARCHITECTURE | CONFLICT | JUDGMENT_CALL | SIGNIFICANT | DEFERRED
 - **Контекст:** <что произошло>
 - **Решение:** <что решили>
@@ -383,7 +400,7 @@ Timeout: <заданный timeout>
 1. `orchestrator` получает full autonomous task
 2. Читает autonomous-protocol.md
 3. Создаёт `docs/agents/orchestrator/decision-log.md`
-4. /codex:rescue --fresh --write:
+4. /codex:rescue --fresh --write (documented autonomous exception):
    "Autonomous mode. Создай plan для: <задача>.
     Scope: <scope>. Guardrails: <guardrails>.
     Ты — autonomous decision-maker. Утверди план сам.
@@ -400,7 +417,7 @@ For each slice:
   1. Dispatch worker (как обычно)
   2. Worker: implement + slice review + handoff
   3. `orchestrator`: проверить handoff, запустить review gate
-  4. /codex:rescue --resume:
+  4. /codex:rescue --resume (documented autonomous exception):
      "Autonomous acceptance. Slice N result: <summary>.
       Review verdict: <verdict>.
       Decision-log entries: <new entries>.
@@ -416,7 +433,7 @@ For each slice:
 
 ```text
 1. Integration review (если нужен)
-2. /codex:rescue --resume "final autonomous acceptance"
+2. /codex:rescue --resume "final autonomous acceptance" (documented autonomous exception)
 3. lead-strategic: final verdict
 4. `orchestrator`: собрать `docs/agents/orchestrator/last_report.md` + финализировать decision-log
 5. Коммит всех изменений
@@ -604,25 +621,25 @@ git reset --soft HEAD~N  # откатить коммиты автономной 
 
 ### Когда какой уровень эффективен
 
-| Задача | Уровень | Почему |
-| --- | --- | --- |
-| Adapter по аналогии | **Lightweight** | Reference есть, scope чёткий |
-| Bug fix с воспроизведением | **Lightweight** | Scope узкий, acceptance однозначен |
-| Batch rename / migrate pattern | **Lightweight** | Механическая трансформация |
-| Расширение existing feature | **Lightweight** | Паттерн очевиден |
-| Новый модуль с нестандартным API | **Full** | Архитектурные решения |
-| Cross-layer feature | **Full** | Координация между слоями |
-| Schema change + downstream | **Full** | Sequencing зависит от результата |
-| Задача с неочевидным acceptance | **Full** | Нужен strategic judgment |
+| Задача                           | Уровень         | Почему                             |
+| -------------------------------- | --------------- | ---------------------------------- |
+| Adapter по аналогии              | **Lightweight** | Reference есть, scope чёткий       |
+| Bug fix с воспроизведением       | **Lightweight** | Scope узкий, acceptance однозначен |
+| Batch rename / migrate pattern   | **Lightweight** | Механическая трансформация         |
+| Расширение existing feature      | **Lightweight** | Паттерн очевиден                   |
+| Новый модуль с нестандартным API | **Full**        | Архитектурные решения              |
+| Cross-layer feature              | **Full**        | Координация между слоями           |
+| Schema change + downstream       | **Full**        | Sequencing зависит от результата   |
+| Задача с неочевидным acceptance  | **Full**        | Нужен strategic judgment           |
 
 ### Известные риски
 
-| Риск | Lightweight | Full | Mitigation |
-| --- | --- | --- | --- |
-| **Decision drift** | Низкий (мало решений) | Средний | decision-log + postfactum review |
-| **Cost** | Низкий (только Claude) | Высокий (Claude + GPT-5.4) | Выбирай lightweight, когда можно |
-| **Partial completion** | Редко (короткие задачи) | Возможно | Atomic commits, partial reports |
-| **Over-engineering** | Невозможно (нет strategic loop) | Возможно | Timeout + scope limits |
+| Риск                   | Lightweight                     | Full                       | Mitigation                       |
+| ---------------------- | ------------------------------- | -------------------------- | -------------------------------- |
+| **Decision drift**     | Низкий (мало решений)           | Средний                    | decision-log + postfactum review |
+| **Cost**               | Низкий (только Claude)          | Высокий (Claude + GPT-5.4) | Выбирай lightweight, когда можно |
+| **Partial completion** | Редко (короткие задачи)         | Возможно                   | Atomic commits, partial reports  |
+| **Over-engineering**   | Невозможно (нет strategic loop) | Возможно                   | Timeout + scope limits           |
 
 ## 12. Примеры запуска
 
@@ -660,13 +677,13 @@ Timeout: 60 минут
 
 ## 13. Связь с другими документами
 
-| Документ | Связь |
-| --- | --- |
-| `workflow.md` | Autonomous — надстройка над standard workflow. Все роли, review gate, report formats остаются |
-| `review-gate.md` | Review model без изменений. Strategic acceptance loop работает, но без user pauses |
-| `recovery.md` | RP-1..RP-6 действуют. ARP-1..ARP-3 расширяют для autonomous-specific cases |
-| `invariants.md` | Инварианты = hard guardrails. Нарушение = STOP |
-| `lead-strategic/instructions.md` | Расширяется autonomous decision-maker ответственностью |
-| `orchestrator/instructions.md` | Расширяется autonomous executor ответственностью |
-| `memory-protocol.md` | Без изменений. Decision-log — дополнительный артефакт |
-| `user-guide.md` | Может ссылаться на этот документ как entry point для autonomous mode |
+| Документ                         | Связь                                                                                         |
+| -------------------------------- | --------------------------------------------------------------------------------------------- |
+| `workflow.md`                    | Autonomous — надстройка над standard workflow. Все роли, review gate, report formats остаются |
+| `review-gate.md`                 | Review model без изменений. Strategic acceptance loop работает, но без user pauses            |
+| `recovery.md`                    | RP-1..RP-6 действуют. ARP-1..ARP-3 расширяют для autonomous-specific cases                    |
+| `invariants.md`                  | Инварианты = hard guardrails. Нарушение = STOP                                                |
+| `lead-strategic/instructions.md` | Расширяется autonomous decision-maker ответственностью                                        |
+| `orchestrator/instructions.md`   | Расширяется autonomous executor ответственностью                                              |
+| `memory-protocol.md`             | Без изменений. Decision-log — дополнительный артефакт                                         |
+| `user-guide.md`                  | Может ссылаться на этот документ как entry point для autonomous mode                          |

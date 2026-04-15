@@ -2,19 +2,23 @@
 
 Инструкции для пользователя: [user-guide.md](./user-guide.md)
 
+Runtime/model binding for supported profiles lives in
+`docs/agents/execution-profiles.md`.
+This file defines role semantics, persistence, and responsibility boundaries.
+
 ## Role Map
 
-| Роль | Агент | Модель | Технология | Persistence | Задача |
-| --- | --- | --- | --- | --- | --- |
-| **lead-strategic** | GPT-5.4 | GPT-5.4 | Codex thread | Между сессиями (`docs/agents/lead-strategic/memory.md`) | Планирование, декомпозиция, приёмка |
-| **strategic-reviewer** | advisory pass внутри `lead-strategic` | GPT-5.4-mini / GPT-5.4 | тот же Codex thread (mini-sidecar = `gpt-5.4-mini` call внутри thread) | Session-level внутри `lead-strategic`, без отдельного `memory.md` | Optional advisory second opinion по `plan/report/diff`; не decision-maker |
-| **orchestrator** | Claude Opus | Opus | tmux pane #0 | Сессия + `docs/agents/orchestrator/memory.md` | Code-blind execution orchestration by default, worker dispatch, Review Gate, report |
-| **worker** | Claude | Opus/Sonnet | **Subagent + worktree** (default for code-writing); teammate only as shared-checkout exception per `git-protocol.md` §4 | Session context only | Реализация одного slice; small bounded code change идёт worker'ом, если не подпадает под direct-fix |
-| **architecture-reviewer** | Claude | Sonnet | **Subagent** (fresh per review) | Нет; каждый pass с чистого листа | Diff review по package/app boundaries, domain-overlay contour split, complexity |
-| **security-reviewer** | Claude | Sonnet | **Subagent** (fresh per review) | Нет; каждый pass с чистого листа | SQL injection, XSS, secrets |
-| **docs-reviewer** | Claude | Sonnet | **Subagent** (fresh per review) | Нет; каждый pass с чистого листа | Docs/contracts sync |
-| **code-reviewer** | Claude | Sonnet | **Subagent** (fresh per review) | Нет; каждый pass с чистого листа | Naming, conventions |
-| **ui-reviewer** | Claude | Sonnet/Opus | **Subagent** (fresh per review) | Нет; каждый pass с чистого листа | Smoke / deep UX (Chrome) |
+| Роль                      | Runtime                               | Default model lane                                      | Surface / transport                                                              | Persistence                                                       | Задача                                                                                              |
+| ------------------------- | ------------------------------------- | ------------------------------------------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| **lead-strategic**        | profile-selected Codex lane           | `gpt-5.4` default; see `execution-profiles.md`          | Codex runtime surface per selected profile                                       | Между сессиями (`docs/agents/lead-strategic/memory.md`)           | Планирование, декомпозиция, приёмка                                                                 |
+| **strategic-reviewer**    | advisory pass внутри `lead-strategic` | `gpt-5.4-mini` / `gpt-5.4`; see `execution-profiles.md` | тот же Codex context или equivalent runtime path per profile                     | Session-level внутри `lead-strategic`, без отдельного `memory.md` | Optional advisory second opinion по `plan/report/diff`; не decision-maker                           |
+| **orchestrator**          | Claude Opus                           | Opus                                                    | primary Claude orchestration surface                                             | Сессия + `docs/agents/orchestrator/memory.md`                     | Code-blind execution orchestration by default, worker dispatch, Review Gate, report                 |
+| **worker**                | profile-selected implementation lane  | see `execution-profiles.md`                             | isolated execution lane; worktree/branch ownership остаётся по `git-protocol.md` | Session context only                                              | Реализация одного slice; small bounded code change идёт worker'ом, если не подпадает под direct-fix |
+| **architecture-reviewer** | profile-selected reviewer lane        | see `execution-profiles.md`                             | fresh review surface per pass                                                    | Нет; каждый pass с чистого листа                                  | Diff review по package/app boundaries, domain-overlay contour split, complexity                     |
+| **security-reviewer**     | profile-selected reviewer lane        | see `execution-profiles.md`                             | fresh review surface per pass                                                    | Нет; каждый pass с чистого листа                                  | SQL injection, XSS, secrets                                                                         |
+| **docs-reviewer**         | profile-selected reviewer lane        | see `execution-profiles.md`                             | fresh review surface per pass                                                    | Нет; каждый pass с чистого листа                                  | Docs/contracts sync                                                                                 |
+| **code-reviewer**         | profile-selected reviewer lane        | see `execution-profiles.md`                             | fresh review surface per pass                                                    | Нет; каждый pass с чистого листа                                  | Naming, conventions                                                                                 |
+| **ui-reviewer**           | profile-selected reviewer lane        | see `execution-profiles.md`                             | fresh review surface per pass; deep lane may differ by profile                   | Нет; каждый pass с чистого листа                                  | Smoke / deep UX (Chrome)                                                                            |
 
 ## Коротко по ролям
 

@@ -9,11 +9,17 @@ Writing rules:
 - новые записи должны быть state-oriented и orchestration-only;
 - подробный implementation log должен жить в worker handoff, `last_report.md` и `git log`, а не здесь.
 
-## Historical Baseline
+## Current Orchestration State
 
-- Earlier EMIS / BI implementation waves are historical context only for the current session
-- The previously active `CA — BI Clean Architecture` wave is no longer the live orchestration target
-- If historical product context is needed, recover it from archived plans/reports and `git log`, not from this memory file
+- Active wave:
+  - none
+- Current plan state:
+  - `docs/agents/lead-strategic/current_plan.md` is closed historical context until a new plan supersedes it
+- Active branch:
+  - `feature/agent-model-simplification`
+- Current orchestration state:
+  - no active execution wave is open in canonical artifacts
+  - do not dispatch a new wave until `lead-strategic` writes a new plan
 
 ## Durable Operational Knowledge
 
@@ -26,42 +32,20 @@ Writing rules:
 - Consumer-scoped template split is active:
   - `docs/agents/templates-orchestration.md` for orchestrator-facing templates
   - `docs/agents/templates-handoff.md` for worker handoff
-
-## Most Recent Closed Wave: AD2 — Agent Docs Dedup Pass 2 (2026-04-13)
-
-Plan: `docs/agents/lead-strategic/current_plan.md`
-
-Integration branch: `feature/agent-model-simplification`
-
-### Progress
-
-- Agent-model simplification baseline landed in prior commits (`961dce4`, `42fd793`, `7e8f31b`, `5e9a3d1`)
-- Consumer-scoped template split landed (`e8d8f41`)
-- Bootstrap/recovery hardening landed (`4d9cf32`)
-- Fresh worktree bootstrap rules landed (`6e9463b`)
-
-### Plan-derived status
-
-- MP-1 done:
-  - ownership cleanup between `workflow.md` and `review-gate.md` is reflected in the integrated docs state
-- MP-2 done:
-  - `worker/guide.md` uses sourced excerpts with canonical-wins / escalate-on-conflict rules
-- MP-3 done:
-  - root `AGENTS.md` §8 is orientation-only and pointer-based
-- MP-4 done:
-  - `autonomous-protocol.md` §12 examples are slimmed without reintroducing prompt-template duplication
-
-### Key Constraints
-
-- docs-only scope; no runtime behavior changes
-- do not broaden the role model while deduplicating docs
-- do not make `invariants.md` a mandatory default bootstrap read in this pass
-- keep root `AGENTS.md` navigation-first
-- after bootstrap/recovery doc changes, use fresh worktrees for new worker tasks
+- Runtime/model binding stays canonical in `docs/agents/execution-profiles.md`
+- For `opus-orchestrated-codex-workers`, Codex lane claims need a proof tuple in report/telemetry:
+  - launch surface + matching `/codex:result` + stable session/run ID
+  - `/codex:status`, Codex history alone, helper names, or bare session IDs are not sufficient
+- In Claude Code, plugin-first mapping stays role-specific:
+  - `/codex:rescue` for worker / micro-worker lanes
+  - `/codex:review` / `/codex:adversarial-review` for reviewer lanes
+  - `lead-strategic` / `strategic-reviewer` are not implicitly mapped to those commands
+- If no dedicated strategic plugin lane exists on the active surface, do not silently reuse worker/reviewer slash commands; classify it truthfully as per-role exception, alternative documented runtime path, or blocker/fallback
 
 ## Notes For The Next Session
 
-- This wave is closed; do not resume it as active execution state
-- `current_plan.md` now serves as closed historical context until a new plan supersedes it
-- Template references in the closed plan predate the consumer-scoped template split; interpret old `templates.md` references through the new split docs
-- If the next task is not historical review of this docs pass, request a new strategic reframe instead of reusing this orchestration state blindly
+- Do not resume old waves as active execution state; recover product history from plans/reports and `git log` instead
+- Before any new wave:
+  - wait for a new `current_plan.md`
+  - choose the execution profile explicitly
+  - if `opus-orchestrated-codex-workers` is selected, verify proof tuple for any claimed plugin-mapped Codex worker/reviewer lane

@@ -6,30 +6,47 @@
 
 Прямой prompt в `lead-strategic` — только manual/fallback path или узкий strategic pass, а не основной user entrypoint.
 
+Runtime/model binding for supported profiles lives only in
+`docs/agents/execution-profiles.md`.
+
+## Practical Runtime Summary
+
+- `mixed-claude-workers` — current practical default: user-facing `orchestrator` stays in Claude; Codex/GPT-5.4 remains available for strategic work; ordinary worker/reviewer execution may stay on Claude lanes.
+- `opus-orchestrated-codex-workers` — supported target profile for waves where worker/reviewer execution should move to Codex/GPT-5.4 lanes without changing role ownership.
+- В Claude Code для `opus-orchestrated-codex-workers` primary operational path для worker/reviewer execution должен идти через `codex-plugin-cc`, а не через ad hoc codex-labeled subagent names.
+- Practical plugin-first path in Claude Code for worker/reviewer execution:
+  - `/codex:setup` — preflight
+  - `/codex:rescue` — worker / micro-worker only
+  - `/codex:review` / `/codex:adversarial-review` — reviewer lanes only
+  - `/codex:status` / `/codex:result` — tracking and result retrieval
+- `lead-strategic` and `strategic-reviewer` are not implicitly mapped to those worker/reviewer slash commands. If the active plugin surface does not expose a dedicated strategic lane, treat that as explicit exception/fallback territory, not as silent remap.
+- Если runtime surface не может truthfully показать, что worker/reviewer run действительно ушёл в Codex lane, не считай это validated `opus-orchestrated-codex-workers` execution; оставайся на `mixed-claude-workers` или фиксируй blocker truthfully.
+- Minimum proof artifact for that claim in Claude Code = `/codex:result` + returned session ID/run ID tied to the specific worker/reviewer role; `/codex:status` tracks progress, а history alone only corroborates an already identified run.
+
 ## 5-Minute Overview
 
 Агентная команда работает в три слоя:
 
 ```text
 ┌─────────────────────────────────────────────────────────┐
-│  GPT-5.4 (lead-strategic)                               │
+│  Lead-Strategic (profile-selected Codex lane)           │
 │  Планирует, декомпозирует, принимает результат.         │
 │  Не пишет код. Владеет current_plan.md.                 │
 ├─────────────────────────────────────────────────────────┤
 │  Claude Opus (orchestrator)                             │
 │  По умолчанию не пишет product code: раздаёт задачи,    │
 │  запускает review, собирает report. Владеет flow.       │
-├──────────────────┬──────────────────────────────────────┤
-│  Worker (Claude)  │  Reviewers (Claude, fresh subagent) │
-│  Реализует slice  │  Проверяют diff по своей зоне       │
-│  в заданном scope │  (security, architecture, code, UI) │
-└──────────────────┴──────────────────────────────────────┘
+├─────────────────────────────────────────────────────────┤
+│  Workers / Reviewers (profile-selected runtime)         │
+│  Реализуют slice и проверяют diff по своей зоне         │
+│  по выбранному execution profile                        │
+└─────────────────────────────────────────────────────────┘
 ```
 
 **Как это работает на практике:**
 
 1. Ты ставишь задачу `orchestrator` (Claude Opus).
-2. Он сам поднимает GPT-5.4 через Codex plugin для планирования.
+2. Он сам поднимает `lead-strategic` через selected Codex lane по `execution-profiles.md`.
 3. GPT-5.4 пишет план, ты его подтверждаешь (или нет).
 4. `orchestrator` либо делает eligible `direct-fix` inline, либо создаёт worker'ов:
    - для code-writing slices по умолчанию это isolated subagents с отдельным worktree/branch;
@@ -75,11 +92,11 @@
 
 ### Что нужно
 
-| Компонент                   | Где                          | Как использовать                                                                |
-| --------------------------- | ---------------------------- | ------------------------------------------------------------------------------- |
-| GPT-5.4 (`lead-strategic`)  | Codex plugin                 | Вызывается из `orchestrator` через Codex                                        |
-| Claude Opus (`orchestrator`) | tmux pane #0               | `tmux` → `claude`                                                               |
-| Claude Worker (isolated / teammate) | isolated branch/worktree by default; tmux pane #1+ only in teammate mode | Orchestrator создаёт через Agent Teams, или вручную |
+| Компонент                    | Где                                                                                   | Как использовать                                         |
+| ---------------------------- | ------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `lead-strategic`             | profile-selected Codex surface                                                        | Вызывается из `orchestrator` через selected runtime path |
+| Claude Opus (`orchestrator`) | tmux pane #0                                                                          | `tmux` → `claude`                                        |
+| Workers / reviewers          | profile-selected runtime; isolated branch/worktree by default for code-writing slices | Orchestrator создаёт через selected execution profile    |
 
 ### Предусловия
 
@@ -318,16 +335,16 @@ Pane layout ниже относится именно к teammate mode:
 
 ### Навигация между panes
 
-| Действие                          | Клавиша       |
-| --------------------------------- | ------------- |
-| Следующий pane (teammate вниз)    | `Shift+Down`  |
-| Предыдущий pane (teammate вверх)  | `Shift+Up`    |
-| Новое окно                        | `Ctrl+B, C`   |
-| Следующее окно                    | `Ctrl+B, N`   |
-| Предыдущее окно                   | `Ctrl+B, P`   |
-| Список окон                       | `Ctrl+B, W`   |
-| Отсоединиться (сессия живёт)      | `Ctrl+B, D`   |
-| Вернуться к сессии                | `tmux attach -t agents` |
+| Действие                         | Клавиша                 |
+| -------------------------------- | ----------------------- |
+| Следующий pane (teammate вниз)   | `Shift+Down`            |
+| Предыдущий pane (teammate вверх) | `Shift+Up`              |
+| Новое окно                       | `Ctrl+B, C`             |
+| Следующее окно                   | `Ctrl+B, N`             |
+| Предыдущее окно                  | `Ctrl+B, P`             |
+| Список окон                      | `Ctrl+B, W`             |
+| Отсоединиться (сессия живёт)     | `Ctrl+B, D`             |
+| Вернуться к сессии               | `tmux attach -t agents` |
 
 `Shift+Down` / `Shift+Up` — основной способ перехода между orchestrator и worker panes.
 

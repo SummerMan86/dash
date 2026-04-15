@@ -1,6 +1,7 @@
 # Lead-Tactical Memory
 
 Legacy wrapper.
+No durable state should be written here.
 
 Canonical file:
 

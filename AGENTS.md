@@ -54,20 +54,21 @@
 
 ### Agent workflow (работа в команде агентов)
 
-Если задача выполняется через GPT-5.4 lead + Claude workers:
+Если задача выполняется через agent workflow stack:
 
 1. [docs/agents/user-guide.md](./docs/agents/user-guide.md) — **для пользователя: промпты и сценарии**
 2. [docs/agents/workflow.md](./docs/agents/workflow.md) — core process и lifecycle
-3. [docs/agents/review-gate.md](./docs/agents/review-gate.md) — Review Gate, governance passes
-4. [docs/agents/invariants.md](./docs/agents/invariants.md) — project guardrails
-5. [docs/agents/git-protocol.md](./docs/agents/git-protocol.md) — branches, worktrees, checkpoints
-6. [docs/agents/memory-protocol.md](./docs/agents/memory-protocol.md) — memory ownership
-7. [docs/agents/roles.md](./docs/agents/roles.md) — роли и ответственности
-8. [docs/agents/templates.md](./docs/agents/templates.md) — шаблоны (hub: правила + routing на дочерние файлы)
+3. [docs/agents/execution-profiles.md](./docs/agents/execution-profiles.md) — supported runtime/model bindings without changing role semantics
+4. [docs/agents/review-gate.md](./docs/agents/review-gate.md) — Review Gate, governance passes
+5. [docs/agents/invariants.md](./docs/agents/invariants.md) — project guardrails
+6. [docs/agents/git-protocol.md](./docs/agents/git-protocol.md) — branches, worktrees, checkpoints
+7. [docs/agents/memory-protocol.md](./docs/agents/memory-protocol.md) — memory ownership
+8. [docs/agents/roles.md](./docs/agents/roles.md) — роли и ответственности
+9. [docs/agents/templates.md](./docs/agents/templates.md) — шаблоны (hub: правила + routing на дочерние файлы)
    - [docs/agents/templates-handoff.md](./docs/agents/templates-handoff.md) — worker handoff templates
    - [docs/agents/templates-orchestration.md](./docs/agents/templates-orchestration.md) — orchestration & governance templates
-9. `docs/agents/{role}/instructions.md` — вводные для конкретной роли
-10. `docs/agents/lead-strategic/memory.md` и `docs/agents/orchestrator/memory.md` — единственные canonical durable-memory files; worker'ы и reviewer'ы отдельную `memory.md` не ведут, см. `docs/agents/memory-protocol.md`
+10. `docs/agents/{role}/instructions.md` — вводные для конкретной роли
+11. `docs/agents/lead-strategic/memory.md` и `docs/agents/orchestrator/memory.md` — единственные canonical durable-memory files; worker'ы и reviewer'ы отдельную `memory.md` не ведут, см. `docs/agents/memory-protocol.md`
 
 EMIS-активный контур сейчас находится здесь:
 

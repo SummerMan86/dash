@@ -61,10 +61,14 @@ Core fields (always required):
 
 Extended fields (recommended; optional for lightweight/trivial tasks):
 
+- `execution_profile`
 - `workers_spawned`
 - `review_passes_total`
 - `review_passes_by_type`
 - `codex_calls_total`
+- `codex_lane_verification`
+- `codex_proof_refs`
+- `execution_profile_exception`
 - `strategic_reviewer_run`
 - `strategic_reviewer_model`
 - `strategic_reviewer_reason`
@@ -87,46 +91,55 @@ Optional fields:
 Recommended enums:
 
 - `status`: `accept` | `accept_with_adjustments` | `reject` | `re_slice`
+- `codex_lane_verification`: `verified` | `unverified` | `blocked` | `not_applicable`
 - `strategic_reviewer_model`: `gpt-5.4-mini` | `gpt-5.4` | `not_run`
 - `agent_value`: `meaningful` | `neutral` | `excessive`
 - `orchestration_value`: `efficient` | `acceptable` | `overbuilt`
 - `cross_model_value`: `found_likely_missed_bug` | `found_acceptance_or_reframe_signal` | `no_additional_value` | `not_applicable`
 
+Execution-profile tracing:
+
+- If the wave or slice runs under `opus-orchestrated-codex-workers`, include `execution_profile`.
+- If the slice claims a plugin-mapped Codex worker/reviewer lane, include `codex_lane_verification` plus `codex_proof_refs` or an explicit `execution_profile_exception`.
+- If the run fell back because the requested Codex lane was not truthfully verifiable, record that as `unverified` or `blocked`, not as silent success.
+
 Minimal example:
 
 ```json
 {
-  "timestamp": "2026-04-06T14:25:00+03:00",
-  "task_id": "NW-4",
-  "wave_id": "phase-2-closeout",
-  "stage": "slice-acceptance",
-  "slice_id": "ST-2",
-  "report_type": "full",
-  "operating_mode": "high-risk iterative / unstable wave",
-  "status": "accept",
-  "workers_spawned": 1,
-  "review_passes_total": 4,
-  "review_passes_by_type": {
-    "slice": 3,
-    "integration": 1,
-    "strategic": 1
-  },
-  "codex_calls_total": 2,
-  "strategic_reviewer_run": true,
-  "strategic_reviewer_model": "gpt-5.4-mini",
-  "strategic_reviewer_reason": "green Sonnet review but low confidence in acceptance",
-  "findings_summary": {
-    "critical": 0,
-    "warning": 1,
-    "info": 2
-  },
-  "next_slice_impact": "local reframe",
-  "mode_change": "none",
-  "agent_value": "meaningful",
-  "agent_value_reason": "mini-pass found likely regression not surfaced by prior review",
-  "orchestration_value": "acceptable",
-  "optimization_note": "keep mini-pass for risky slices, but not for stable docs-only slices",
-  "cross_model_value": "found_likely_missed_bug"
+	"timestamp": "2026-04-06T14:25:00+03:00",
+	"task_id": "NW-4",
+	"wave_id": "phase-2-closeout",
+	"stage": "slice-acceptance",
+	"slice_id": "ST-2",
+	"report_type": "full",
+	"operating_mode": "high-risk iterative / unstable wave",
+	"execution_profile": "mixed-claude-workers",
+	"status": "accept",
+	"workers_spawned": 1,
+	"review_passes_total": 4,
+	"review_passes_by_type": {
+		"slice": 3,
+		"integration": 1,
+		"strategic": 1
+	},
+	"codex_calls_total": 2,
+	"codex_lane_verification": "not_applicable",
+	"strategic_reviewer_run": true,
+	"strategic_reviewer_model": "gpt-5.4-mini",
+	"strategic_reviewer_reason": "green Sonnet review but low confidence in acceptance",
+	"findings_summary": {
+		"critical": 0,
+		"warning": 1,
+		"info": 2
+	},
+	"next_slice_impact": "local reframe",
+	"mode_change": "none",
+	"agent_value": "meaningful",
+	"agent_value_reason": "mini-pass found likely regression not surfaced by prior review",
+	"orchestration_value": "acceptable",
+	"optimization_note": "keep mini-pass for risky slices, but not for stable docs-only slices",
+	"cross_model_value": "found_likely_missed_bug"
 }
 ```
 

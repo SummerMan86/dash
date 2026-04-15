@@ -253,6 +253,7 @@ Required:
 
 Optional:
 
+- execution profile summary, если выбран non-default profile или был Codex lane claim / exception / fallback
 - findings by severity, если review запускался или были исправления по findings
 - strategic cadence summary, если slice или wave требуют reframe/mode decision
 - usage telemetry summary, если нужен durable optimization signal
@@ -284,6 +285,14 @@ Optional:
 - plan change requests: `none` | `PCR-...`
 - operating mode at handoff: `high-risk iterative / unstable wave` | `ordinary iterative` | `batch / low-risk` | `not involved`
 - mode change signal: `none` | `consider <from> -> <to>`
+
+## Execution Profile
+
+- selected profile: `mixed-claude-workers` | `opus-orchestrated-codex-workers`
+- per-role / per-slice exceptions: `none` | `<role/slice> -> <fallback/runtime path> — <reason>`
+- codex lane verification: `verified` | `unverified` | `blocked` | `not applicable`
+- proof refs: `<launch surface + /codex:result + session/run ID>` | `none`
+- rationale: <кратко> | `none`
 
 ## Review Disposition
 
@@ -870,13 +879,13 @@ Core fields (always required):
 
 ```json
 {
-  "timestamp": "2026-04-06T14:25:00+03:00",
-  "task_id": "<task-id>",
-  "wave_id": "<wave-id>",
-  "stage": "slice-acceptance | final-acceptance | governance-closeout",
-  "report_type": "full | lightweight | governance-closeout",
-  "operating_mode": "high-risk iterative / unstable wave | ordinary iterative | batch / low-risk",
-  "status": "accept | accept_with_adjustments | reject | re_slice"
+	"timestamp": "2026-04-06T14:25:00+03:00",
+	"task_id": "<task-id>",
+	"wave_id": "<wave-id>",
+	"stage": "slice-acceptance | final-acceptance | governance-closeout",
+	"report_type": "full | lightweight | governance-closeout",
+	"operating_mode": "high-risk iterative / unstable wave | ordinary iterative | batch / low-risk",
+	"status": "accept | accept_with_adjustments | reject | re_slice"
 }
 ```
 
