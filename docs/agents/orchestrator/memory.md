@@ -1,60 +1,36 @@
 # Orchestrator Memory
 
-Canonical durable memory для top-level execution роли `orchestrator`.
+Canonical durable memory for `orchestrator`.
 
-`lead-tactical` — legacy alias; `docs/agents/lead-tactical/memory.md` — wrapper only.
-
-Writing rules:
-
-- новые записи должны быть state-oriented и orchestration-only;
-- подробный implementation log должен жить в worker handoff, `last_report.md` и `git log`, а не здесь.
+`lead-tactical` remains a legacy alias until the simplification wave removes or shrinks that compatibility surface.
 
 ## Current Orchestration State
 
-- Active wave:
-  - `Agent Model Runtime Validation — opus-orchestrated-codex-workers` — opened `2026-04-15`
-- Current plan state:
-  - `docs/agents/lead-strategic/current_plan.md` is active and owns the runtime-validation wave
-- Active branch:
+- active wave:
+  - `Agent Workflow Simplification Wave 1`
+- current plan:
+  - `docs/agents/lead-strategic/current_plan.md`
+- active branch:
   - `feature/agent-model-runtime-validation`
-- Current orchestration state:
-  - plan ready for dispatch
-  - ST-0 pending
-  - ST-1 pending, blocked by ST-0
-  - ST-2 pending, blocked by ST-1
-  - ST-3 pending, blocked by ST-0/ST-1/ST-2 outcome
-  - ST-4 pending, blocked by earlier validation evidence
+- current orchestration focus:
+  - start with `ST-0: Memory Policy And Prune Pass`
+  - do not trust old append-only memory as bootstrap truth
 
-## Durable Operational Knowledge
+## Still-Useful Operational Knowledge
 
-- `pnpm lint` (Prettier) not green repo-wide — non-blocking unless a slice claims formatting cleanup
-- ESLint `no-restricted-imports` flat config — each scope needs one combined block
-- `lint-boundaries.mjs` must use temp file (`-o`) for stdout buffer reliability
-- `export { X } from 'Y'` does not bring `X` into local scope; import separately if used locally
-- Worker bootstrap source of truth = task packet + `docs/agents/worker/guide.md`
-- Worktree-local `CLAUDE.md` is snapshot-based redirect only; if bootstrap docs changed after worktree creation, spawn a fresh worktree
-- Consumer-scoped template split is active:
-  - `docs/agents/templates-orchestration.md` for orchestrator-facing templates
-  - `docs/agents/templates-handoff.md` for worker handoff
-- Runtime/model binding stays canonical in `docs/agents/execution-profiles.md`
-- For `opus-orchestrated-codex-workers`, Codex lane claims need a proof tuple in report/telemetry:
-  - launch surface + matching `/codex:result` + stable session/run ID
-  - `/codex:status`, Codex history alone, helper names, or bare session IDs are not sufficient
-- In Claude Code, plugin-first mapping stays role-specific:
-  - `/codex:rescue` for worker / micro-worker lanes
-  - `/codex:review` / `/codex:adversarial-review` for reviewer lanes
-  - `lead-strategic` / `strategic-reviewer` are not implicitly mapped to those commands
-- If no dedicated strategic plugin lane exists on the active surface, do not silently reuse worker/reviewer slash commands; classify it truthfully as per-role exception, alternative documented runtime path, or blocker/fallback
-- Observed failure mode from the first blind trial:
-  - plugin dispatch can return `[Tool result missing due to internal error]`
-  - no recoverable run ID may be exposed
-  - if that happens, stop waiting and classify the lane `blocked` or `unverified`
-- Repeated signal now observed:
-  - more than one worker-lane attempt has blocked before exposing a run ID or `/codex:result`
-  - real slice dispatch is now gated behind ST-0 micro-diagnostic
+- Worker bootstrap source of truth is the task packet plus the canonical worker guide/instructions.
+- Worktree-local `CLAUDE.md` is redirect-only snapshot context, not canonical truth.
+- `mixed-claude-workers` remains the practical default for ordinary waves.
+- The previous runtime-validation wave is closed; detailed Codex lane findings belong to archived plan/report artifacts, not to active orchestration state unless that profile becomes the task again.
 
-## Notes For The Next Session
+## Memory Problem To Resolve In This Wave
 
-- Resume the active runtime-validation wave from slice status above
-- Dispatch ST-0 first
-- If a Codex lane hangs without proof tuple, close it as `blocked` or `unverified`; do not leave the wave nominally waiting forever
+- Current durable memory is carrying too much closed-wave detail.
+- Wave 1 must choose whether default bootstrap should keep tiny durable memory or stop depending on it.
+- Until that decision is made, keep this file short, state-oriented, and limited to what changes the next orchestration step.
+
+## Resume Point
+
+- Read `current_plan.md`.
+- Execute `ST-0`.
+- After ST-0, continue with the migration-map slice and use the chosen memory policy consistently.

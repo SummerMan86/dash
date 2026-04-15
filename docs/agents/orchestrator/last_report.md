@@ -1,6 +1,4 @@
-# Report: BI Clean Architecture — Waves 0-2 (CA-0..CA-7)
-
-> Historical note: this checked-in snapshot predates the stricter `orchestrator`-only implementation contract. Use current `docs/agents/*` as the source of truth for role behavior.
+# Report: Agent Model Runtime Validation — `opus-orchestrated-codex-workers`
 
 ## Report Type
 
@@ -8,92 +6,129 @@
 
 ## Статус
 
-Выполнено. Waves 0, 1, 2 (CA-0 через CA-7) завершены. 5 commits на `feature/bi-clean-architecture`.
-
-## Plan Sync
-
-Active plan: `docs/agents/lead-strategic/current_plan.md`
-- Wave 0 (CA-0): done
-- Wave 1 (CA-1, CA-2): done
-- Wave 2 (CA-3..CA-7): done
-- Wave 3 (CA-8..CA-12): next
-- Wave 4 (CA-13..CA-16): pending
-
-No plan changes requested. Operating mode: `ordinary iterative`.
+Выполнено. All validation targets (ST-0 through ST-4) completed.
 
 ## Что сделано
 
-### CA-0: ESLint Governance Baseline (self-executed)
+- ST-0 (plugin surface micro-diagnostic): verified — read-only and write-capable lanes both produce valid proof tuples
+- ST-1 (worker lane validation): verified — real implementation slice (route-level tests) completed by Codex worker with write mode
+- ST-2 (reviewer lane validation): verified — Codex reviewer found real defect ([P1] SvelteKit `+` prefix naming)
+- ST-3 (failure semantics): verified — no silent fallback, no silent success; API errors surfaced clearly
+- ST-4 (closeout): verdict below
 
-- Separated lint commands: `lint:format`, `lint:eslint`, `lint:boundaries`
-- Added lint governance policy: `docs/architecture.md` §8.1
-- Added ESLint rule-introduction policy: `docs/agents/invariants.md` §10
-- Svelte 5 migration rules downgraded to `warn` (91+66+29 false-positive errors → warnings)
-- Baseline captured: 46 errors, 187 warnings
+### Implementation Artifact
 
-### CA-1: Decompose product-analytics (worker, worktree)
+- Created: `apps/web/src/routes/api/datasets/[id]/server.test.ts` — 15 route-level tests for dataset query endpoint
+- Direct-fix: renamed from `+server.test.ts` to `server.test.ts` (reviewer finding), added `as unknown as` cast (svelte-check finding), added `as const` for field type literal
 
-- `+page.svelte`: 778 → **256 lines** (target ≤300)
-- Extracted: `PriceEditor.svelte` (210), `ProductTable.svelte` (202), `ProductDetail.svelte` (203), `view-model.ts` (96)
-- Performance fix: `analyzeProduct()` pre-computed as `Map<nm_id, Recommendation[]>` in single `$derived`
-- 56 new tests (aggregation, recommendations, view-model)
-- `vitest.config.ts` extended with route-level test discovery
+## Plan Sync
 
-### CA-2: Decompose stock-alerts (worker, worktree)
+- current_plan.md: `unchanged` (wave completed per plan)
+- plan change requests: `none`
+- operating mode at handoff: `high-risk iterative / unstable wave`
+- mode change signal: `consider high-risk iterative -> ordinary iterative` (profile validated, runtime surface is stable)
 
-- `+page.svelte`: 417 → **281 lines** (target ≤350)
-- Extracted: `OfficeSkuPanel.svelte` (87), `OfficesTable.svelte` (108)
-- 45 new tests (aggregation, utils)
+## Execution Profile
 
-### CA-3..CA-6: Filter Path Migration (self-executed)
+- selected profile: `opus-orchestrated-codex-workers`
+- per-role / per-slice exceptions:
+  - worker (code-writing): `/codex:rescue` skill dispatches `write: false` by default → used companion `task --write` (documented fallback path)
+  - `--effort minimal` not usable with current Codex tool set (API rejects `web_search` at minimal effort)
+- codex lane verification: `verified`
+- proof refs:
+  - ST-0 read-only: `/codex:rescue` → run `task-mo04kbys-yn1ow3`, session `ec4d18ce-bb0a-4a42-9abc-a2899954c541`, `write=false`
+  - ST-0 write: companion `task --write` → run `task-mo04nwl9-aucr5l`, same session, `write=true`
+  - ST-1 worker: companion `task --write --fresh --effort medium` → run `task-mo04pdsl-q6zdsq`, same session, `write=true`
+  - ST-2 reviewer: companion `review --scope working-tree` → run `review-mo04s6cn-55g40o`, thread `019d917d-94c1-7db2-9bd4-74be6b08555c`
+- rationale: all four runs completed with matching result artifacts and stable identifiers; proof tuple satisfied for both worker and reviewer lanes
 
-- All 4 BI pages migrated to explicit planner call + `useFlatParams: true`
-- Pages: office-day, product-analytics, stock-alerts, demo
-- Pattern: `planFiltersForDataset()` called in page, serverParams merged into params
-- Strategy/EMIS pages explicitly out of scope (per plan constraints)
+## ST-4 Closeout Verdict
 
-### CA-7: Remove Legacy Filter Path (self-executed)
+**`opus-orchestrated-codex-workers`: usable with known exceptions.**
 
-- `useFlatParams` flag removed from `FetchDatasetArgs`
-- Canonical flat-params path is now the default in `fetchDataset()`
-- Legacy path retained as deprecated fallback, gated by `filterContext` presence (for non-migrated strategy/EMIS pages)
-- All custom compile `dateRangeWhere`/`publishedRangeWhere` updated to read from `params` (canonical) with `filters` fallback
-- Deprecated annotations added to `filterContext`, `filters`, `skipClientFilter`
+### What works
 
-## Checks Evidence (fresh, after final commit d57e2d0)
+1. Worker lane (Codex `gpt-5.4`): real code generation, reads repo, runs commands, produces test code of good quality
+2. Reviewer lane (Codex `gpt-5.4`): real diff review, finds actionable defects (naming convention, type safety)
+3. Session continuity: shared session across multiple runs, stable identifiers
+4. Companion `status --json` and `result`: reliable tracking and proof retrieval
+5. Failure semantics: API errors are clear, no silent fallback
 
-| Check | Result |
-|---|---|
-| `pnpm check` | 0 errors, 0 warnings |
-| `pnpm build` | success |
-| `pnpm test` | **228 passed** (127 baseline + 101 new) |
-| `pnpm lint:boundaries` | no violations |
+### Known exceptions
+
+1. **Write mode not available via `/codex:rescue` skill** — the skill dispatches `write: false`. Code-writing worker slices must use companion `task --write` (documented fallback). This is the most significant operational gap.
+2. **`--effort minimal` incompatible with current Codex tool set** — API rejects due to `web_search` tool constraint. Use `medium` (default) or higher.
+3. **`/codex:result` and `/codex:status` not available as Claude Code skills** — must use companion CLI directly for proof retrieval. The skill-level surface covers only `/codex:setup` and `/codex:rescue`.
+
+### Recommendation
+
+- Keep `opus-orchestrated-codex-workers` as `supported; not default` with the documented exceptions above
+- For code-writing worker slices: request `/codex:rescue --fresh --write` first when the active plugin surface supports it; if the surface still dispatches `write: false`, use companion `task --write --fresh` as the documented fallback
+- For reviewer slices: companion `review` / `adversarial-review` works as expected
+- Keep `mixed-claude-workers` as practical default on surfaces where the write-mode gap is unacceptable
 
 ## Review Disposition
 
-Slice reviews: not run during execution (workers ran self-checks, tactical verified after integration).
-Integration review: **pending** — code-reviewer and architecture-reviewer requested by user.
+- minimum independent review floor: `N/A — direct-fix protocol` (rename + type fix were orchestrator direct-fix on Codex-generated test file)
+- integration review: `not applicable` (validation wave, single new test file)
+- rationale: ST-2 Codex reviewer served as the independent review; findings were actioned via direct-fix
 
-## Architectural Decisions
+## Findings по severity
 
-1. **Svelte migration rules as warnings** (CA-0): 3 Svelte 5 recommended rules downgraded from `error` to `warn` to reduce noise. Documented in `architecture.md` §8.1.
+**CRITICAL**:
 
-2. **Legacy path isolation, not removal** (CA-7): Plan called for full removal of legacy path. EMIS and strategy pages still use `filterContext` (out of scope). Compromise: canonical path is default; legacy path retained as deprecated, gated by `filterContext` presence. `useFlatParams` flag removed as planned.
+- none
 
-3. **Custom compile backward-compat** (CA-7): `dateRangeWhere` functions changed from `query.filters` to `{ ...query.filters, ...query.params }` merge. Prevents date range regression for migrated pages while maintaining compatibility for non-migrated EMIS/strategy paths.
+**WARNING**:
 
-## Risks / Escalations
+- Codex reviewer: `+server.test.ts` naming violates SvelteKit reserved prefix — fixed (renamed to `server.test.ts`)
+- svelte-check: `as Parameters<typeof POST>[0]` cast insufficient — fixed (`as unknown as`)
+- svelte-check: `'number'` string literal inferred as `string` — fixed (`as const`)
 
-1. **CA-7 partial vs plan**: Plan specifies `DatasetQuery.filters` field removal and complete legacy path elimination. Actual: filters field kept (deprecated) and legacy path isolated. Reason: EMIS/strategy pages out of scope. **Recommend**: lead-strategic acknowledge this as accepted trade-off, update debt register.
+**INFO**:
 
-2. **No visual verification**: Pages verified by type-checking + build + tests only. Dev server is running; visual verification deferred. `prototype-pin-refactor` verification mode prescribed for CA-1/CA-2.
+- Codex worker ran 10m21s for read-only test generation attempt (earlier interrupted run); 1m16s for write-capable successful run
+- Reviewer ran 5m1s for single-file diff review
 
-## Branch
+## Checks Evidence
 
-- `feature/bi-clean-architecture` (5 commits ahead of `main`)
-- Clean merge path (no conflicts expected)
+- `pnpm check`: green `fresh`
+- `pnpm build`: green `fresh`
+- `vitest run datasets/[id]/server.test.ts`: 15 passed `fresh`
 
-## Readiness
+## Ветки
 
-- Wave 3 can start immediately (CA-8 depends on CA-7, which is done)
-- Operating mode remains `ordinary iterative`
+- integration branch: `feature/agent-model-runtime-validation`
+- worker branches merged: `none` (companion ran in integration branch)
+- review diff: staged `server.test.ts` + direct-fix edits
+
+## Agent Effort
+
+- workers spawned: 0 (Codex runs via companion, not Agent subagents)
+- codex runs: 4 (ST-0 read: 1, ST-0 write: 1, ST-1 worker: 1, ST-2 reviewer: 1)
+- direct-fixes: 2 (rename, type cast)
+- review passes: 1 (ST-2 Codex reviewer)
+
+## Usage Telemetry
+
+- agent value: `meaningful` — validated runtime surface truthfully, produced real implementation artifact (15 tests), reviewer found real defect
+- agent value reason: the wave answered a concrete question about profile viability with evidence instead of assumptions
+- orchestration value: `efficient` — ST-0 micro-diagnostic caught the write-mode gap before wasting time on a full worker dispatch without write access
+- optimization note: future code-writing Codex dispatches should request `/codex:rescue --fresh --write` first and fall back to `task --write --fresh --effort medium` only when the surface still resolves to `write: false`
+
+## Wave DoD Status
+
+Per `docs/agents/definition-of-done.md` Level 2:
+
+- all slices accepted: yes (ST-0, ST-1, ST-2, ST-3, ST-4)
+- docs sync: done — `execution-profiles.md` remains canonical; known exceptions are recorded both here and in canonical docs
+- governance: architecture pass: N/A (no architectural changes); baseline pass: N/A
+- test baseline: +15 (route-level dataset endpoint tests)
+
+## Готовность
+
+Готово к commit и merge. Решения по update `execution-profiles.md` с known exceptions — на усмотрение `lead-strategic`.
+
+## Вопросы к lead-strategic
+
+- none

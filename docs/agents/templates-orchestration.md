@@ -76,6 +76,13 @@ Before handing off the plan, verify:
 
 Передаётся через Agent spawn или SendMessage.
 
+Codex worker dispatch note (for `opus-orchestrated-codex-workers` profile):
+
+- For code-writing slices, launch via `/codex:rescue --fresh --write`.
+  Do not dispatch a bare `/codex:rescue` for implementation work — it defaults to `write: false`.
+- If the active surface ignores/rejects `--write`, use companion `task --write --fresh` as a documented per-slice fallback and record the exception in report/telemetry.
+- See `execution-profiles.md` for the full runtime verification contract.
+
 Required:
 
 - что сделать
@@ -291,7 +298,7 @@ Optional:
 - selected profile: `mixed-claude-workers` | `opus-orchestrated-codex-workers`
 - per-role / per-slice exceptions: `none` | `<role/slice> -> <fallback/runtime path> — <reason>`
 - codex lane verification: `verified` | `unverified` | `blocked` | `not applicable`
-- proof refs: `<launch surface + /codex:result + session/run ID>` | `none`
+- proof refs: `<launch surface + /codex:result + session/run ID [+ write=true/false for code-writing]>` | `none`
 - rationale: <кратко> | `none`
 
 ## Review Disposition

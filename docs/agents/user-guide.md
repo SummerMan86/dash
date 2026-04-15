@@ -18,7 +18,9 @@ Runtime/model binding for supported profiles lives only in
   - `/codex:setup` — preflight
   - `/codex:rescue` — worker / micro-worker only
   - `/codex:review` / `/codex:adversarial-review` — reviewer lanes only
-  - `/codex:status` / `/codex:result` — tracking and result retrieval
+  - `/codex:status` / `/codex:result` — logical tracking/result surfaces; in current observed runtime, reliable proof retrieval is via companion CLI (`status --json`, `result`)
+- For code-writing worker slices in that profile, request `/codex:rescue --fresh --write` by default; a bare `/codex:rescue` is read-only in current observed runtime behavior.
+- For proof/recovery on that surface, expect to use companion CLI for `status/result`, not the skill surface.
 - `lead-strategic` and `strategic-reviewer` are not implicitly mapped to those worker/reviewer slash commands. If the active plugin surface does not expose a dedicated strategic lane, treat that as explicit exception/fallback territory, not as silent remap.
 - Если runtime surface не может truthfully показать, что worker/reviewer run действительно ушёл в Codex lane, не считай это validated `opus-orchestrated-codex-workers` execution; оставайся на `mixed-claude-workers` или фиксируй blocker truthfully.
 - Minimum proof artifact for that claim in Claude Code = `/codex:result` + returned session ID/run ID tied to the specific worker/reviewer role; `/codex:status` tracks progress, а history alone only corroborates an already identified run.

@@ -101,6 +101,7 @@ Execution-profile tracing:
 
 - If the wave or slice runs under `opus-orchestrated-codex-workers`, include `execution_profile`.
 - If the slice claims a plugin-mapped Codex worker/reviewer lane, include `codex_lane_verification` plus `codex_proof_refs` or an explicit `execution_profile_exception`.
+- For code-writing worker slices under `opus-orchestrated-codex-workers`, record write capability inside `codex_proof_refs` (`write=true|false` or equivalent); a read-only proof does not satisfy a code-writing worker claim.
 - If the run fell back because the requested Codex lane was not truthfully verifiable, record that as `unverified` or `blocked`, not as silent success.
 
 Minimal example:
