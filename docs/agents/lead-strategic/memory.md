@@ -13,7 +13,8 @@
 - Current strategic state:
   - runtime validation wave is open
   - no slices accepted yet
-  - no slices dispatched yet
+  - no slices accepted yet
+  - worker-lane attempts already produced blocked outcomes without recoverable run IDs
 
 ## Durable Strategic Decisions
 
@@ -40,14 +41,16 @@
   - `lead-strategic` is not implicitly mapped to `/codex:rescue`
   - if no dedicated strategic plugin lane exists, use a documented alternative runtime path or record an explicit per-role exception
   - a plugin-mapped Codex lane claim needs a proof tuple: launch surface + matching `/codex:result` + stable session/run ID
+  - after repeated blocked worker-lane attempts without a run ID, insert a micro-diagnostic gate before any further real slice dispatch
 
 ## Resume Point For The Next Chat
 
 - Resume `Agent Model Runtime Validation — opus-orchestrated-codex-workers`
 - Read `current_plan.md` first; it is active, not historical
-- Start with ST-1 worker lane validation
+- Start with ST-0 plugin micro-diagnostic, not a real slice
 - Treat the most recent observed `codex-plugin-cc` symptom as a real risk signal:
   - `[Tool result missing due to internal error]`
   - no stable run ID
   - no matching `/codex:result`
   - this must classify the lane as `blocked` or `unverified`, never as silent success
+  - this has now happened more than once on the same surface

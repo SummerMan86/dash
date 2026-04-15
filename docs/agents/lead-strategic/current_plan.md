@@ -20,17 +20,46 @@
 
 ## Validation Targets
 
-1. Worker lane happy path
-2. Reviewer lane happy path
-3. Failure semantics and truthful recovery
-4. Closeout decision on whether the profile is operationally usable, usable with known exceptions, or still blocked
+1. Plugin micro-diagnostic on the current surface
+2. Worker lane happy path
+3. Reviewer lane happy path
+4. Failure semantics and truthful recovery
+5. Closeout decision on whether the profile is operationally usable, usable with known exceptions, or still blocked
 
 ## Execution Order
 
-1. ST-1 — validate worker lane on one bounded real implementation slice.
-2. ST-2 — validate reviewer lane on the resulting diff.
-3. ST-3 — validate blocked/unverified behavior and truthful recovery semantics.
-4. ST-4 — decide keep / constrain / suspend the profile, and apply only minimal canonical doc adjustments if runtime evidence requires them.
+1. ST-0 — run a micro-diagnostic on `/codex:rescue` with a trivial prompt and verify that the plugin surface can produce a recoverable run.
+2. ST-1 — validate worker lane on one bounded real implementation slice, but only if ST-0 is verified.
+3. ST-2 — validate reviewer lane on the resulting diff, but only if ST-1 is verified.
+4. ST-3 — validate blocked/unverified behavior and truthful recovery semantics.
+5. ST-4 — decide keep / constrain / suspend the profile, and apply only minimal canonical doc adjustments if runtime evidence requires them.
+
+## ST-0: Plugin Surface Micro-Diagnostic
+
+**Scope**
+
+- Minimal trivial `/codex:rescue` prompt.
+- Not a real implementation slice.
+- Goal: isolate plugin/runtime viability from task-packet or repo-specific complexity.
+
+**Required runtime path**
+
+- `/codex:setup` preflight
+- `/codex:rescue` with a trivial prompt
+
+**Required artifacts**
+
+- stable session ID or run ID
+- matching `/codex:result`
+
+**Acceptance**
+
+- Claim `verified` only if the proof tuple exists:
+  - launch surface
+  - matching `/codex:result`
+  - stable session/run ID bound to ST-0
+- If ST-0 also fails with internal error, no run ID, no result artifact, or hanging initialization, classify the current plugin surface as runtime-blocked for `opus-orchestrated-codex-workers`.
+- If ST-0 is blocked, do not dispatch a real worker or reviewer slice on this surface in this wave; proceed directly to ST-3 and ST-4.
 
 ## ST-1: Worker Lane Validation
 
@@ -39,6 +68,7 @@
 - One bounded real repo slice.
 - Current preferred candidate: route-level tests for `apps/web/src/routes/api/datasets/[id]/+server.ts`.
 - Strategic reframe may choose another bounded slice only if it is materially better for runtime observability.
+- Start only after ST-0 is verified.
 
 **Required runtime path**
 
@@ -58,12 +88,14 @@
   - matching `/codex:result`
   - stable session/run ID bound to ST-1
 - If the plugin surface returns internal error, no run ID, or no result artifact, classify ST-1 as `blocked` or `unverified`; do not leave it hanging as nominally in progress.
+- Do not retry ST-1 repeatedly on the same surface after a blocked ST-0 or repeated blocked ST-1 without a new runtime signal.
 
 ## ST-2: Reviewer Lane Validation
 
 **Scope**
 
 - One reviewer pass on the ST-1 diff.
+- Start only after ST-1 is verified.
 
 **Required runtime path**
 
@@ -85,6 +117,7 @@
 **Scope**
 
 - Truthful handling of missing run ID, missing result artifact, internal plugin error, or hanging dispatch.
+- Explicit gating behavior when ST-0 blocks the surface before any real slice starts.
 
 **Acceptance**
 
@@ -92,6 +125,7 @@
 - No silent success.
 - If fallback to `mixed-claude-workers` is used, it must be explicit, per-slice, and justified in report/telemetry.
 - A hanging Codex dispatch without proof must be closed as `blocked` or `unverified`, not left as indefinite `in_progress`.
+- If ST-0 is blocked, the truthful next step is profile-level runtime diagnosis or profile suspension, not another real slice dispatch on the same path.
 
 ## ST-4: Closeout Decision
 
@@ -111,5 +145,6 @@
 ## Expected Outputs
 
 - Verified runtime evidence for successful Codex worker/reviewer lanes, or a truthful blocked diagnosis.
+- A separate ST-0 verdict that distinguishes plugin/runtime failure from task-specific failure.
 - `last_report.md` and `runtime/agents/usage-log.ndjson` entries that record selected profile, lane verification status, proof refs, and any explicit exception/fallback.
 - A keep / constrain / suspend decision for `opus-orchestrated-codex-workers` on the current surface.

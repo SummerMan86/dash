@@ -19,9 +19,10 @@ Writing rules:
   - `feature/agent-model-runtime-validation`
 - Current orchestration state:
   - plan ready for dispatch
-  - ST-1 pending
+  - ST-0 pending
+  - ST-1 pending, blocked by ST-0
   - ST-2 pending, blocked by ST-1
-  - ST-3 pending, blocked by ST-1/ST-2 outcome
+  - ST-3 pending, blocked by ST-0/ST-1/ST-2 outcome
   - ST-4 pending, blocked by earlier validation evidence
 
 ## Durable Operational Knowledge
@@ -48,9 +49,12 @@ Writing rules:
   - plugin dispatch can return `[Tool result missing due to internal error]`
   - no recoverable run ID may be exposed
   - if that happens, stop waiting and classify the lane `blocked` or `unverified`
+- Repeated signal now observed:
+  - more than one worker-lane attempt has blocked before exposing a run ID or `/codex:result`
+  - real slice dispatch is now gated behind ST-0 micro-diagnostic
 
 ## Notes For The Next Session
 
 - Resume the active runtime-validation wave from slice status above
-- Dispatch ST-1 first
+- Dispatch ST-0 first
 - If a Codex lane hangs without proof tuple, close it as `blocked` or `unverified`; do not leave the wave nominally waiting forever
