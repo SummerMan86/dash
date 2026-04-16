@@ -1,75 +1,80 @@
-# Report: Agent Docs Radical Simplification — Wave 2
+# Report: Restructure src/lib/ — dissolve FSD-named buckets
 
 ## Report Type
-
-`governance-closeout`
+`full`
 
 ## Status
-
-Complete. Wave closed after live-state cleanup and final repoint.
+done — all 8 slices accepted, integration review resolved, wave closure checks green
 
 ## What Was Done
 
-- ST-0 through ST-4 executed.
-- Support docs were slimmed and aligned to the new canon.
-- Navigation and bootstrap docs were repointed to `workflow.md`, `docs/codex-integration.md`, and `docs/QUICKSTART.md`.
-- Telemetry was moved to `docs/ops/usage-telemetry.md`.
-- Legacy agent-doc paths were removed from live navigation/bootstrap surfaces.
-- Live-state files were rewritten to the closed-wave state.
+| Slice | Commit | Summary |
+|---|---|---|
+| ST-1 | `5102bb3` | Direct-fix: removed 4 unused SvelteKit starter assets |
+| ST-2 | `a360fdf` | Codex worker: dissolved `shared/` into `api/`, `fixtures/`, `styles/` |
+| ST-3 | `afb63cc` | Codex worker: route-localized `stock-alerts` (inlined implementation) |
+| ST-4 | `2308994` | Codex worker: promoted `dashboard-edit` to `src/lib/dashboard-edit/` |
+| ST-5 | `e221ca9` | Codex worker: promoted `emis-manual-entry` to `src/lib/emis-manual-entry/` |
+| ST-6 | `8033bb0` | Codex worker: route-localized `EmisDrawer` to vessel-positions |
+| ST-7 | `9222d37` | Codex worker: removed aliases, updated ESLint boundaries, deleted FSD dirs |
+| ST-8 | `c9c0385` | Codex worker: docs close-out (15 files) |
+| Fix  | `b940d92` | Codex fix-worker: fixed stale FSD refs from integration review |
 
-## Final Verification
-
-| Metric | Target | Actual | Status |
-|---|---|---|---|
-| Canonical doc count | 18 | 18 | PASS |
-| Canonical line budget | ~1850-2050 | 3464 | GAP |
-| Live refs to retired agent-doc paths outside archive | 0 | 0 | PASS |
-| Model names outside execution-profiles.md | 0 | 0 | PASS |
-
-The structural closeout is complete. The remaining gap is the canonical line budget and requires a separate slimming pass if that target remains mandatory.
+Total: 9 commits, ~100 files changed (626+ ins, 941+ del)
 
 ## Plan Sync
-
-- current_plan.md: `closed summary`
+- current_plan.md: all slices accepted by lead-strategic
 - plan change requests: `none`
-- operating mode at close: `high-risk iterative / unstable wave`
+- operating mode: `high-risk iterative / unstable wave` (held throughout)
+- mode change signal: `none`
 
 ## Execution Profile
-
-- selected profile: `mixed-claude-workers`
-- per-role exceptions: none
+- selected: `opus-orchestrated-codex-workers` (user-confirmed)
+- orchestrator: Claude/Opus
+- workers: Codex/GPT-5.4 via companion CLI `task --write --fresh`
+- reviewers (slice): Codex (run by workers)
+- reviewers (integration): Claude subagents (3 parallel — Codex CLI can't parallelize)
+- strategic: Codex/GPT-5.4 via companion CLI
 
 ## Review Disposition
-
-- minimum independent review floor: `N/A — docs-only governance-closeout`
-- integration review: `not applicable` (no product code changes)
+- minimum independent review floor: `satisfied` for all code-writing slices
+- integration review: `run` — architecture-reviewer, code-reviewer, docs-reviewer
+- integration review findings: 4 WARNING resolved in fix commit `b940d92`
+- ui-reviewer: waived (structural moves, no UI behavior change)
 
 ## Findings by Severity
+- CRITICAL: `none`
+- WARNING: all resolved
+- INFO:
+  - barrel vs direct import inconsistency in product-analytics page (non-blocking)
+  - ESLint glob breadth for peer isolation (non-blocking)
+  - emis/+page.svelte at 583 lines (monitoring, pre-existing)
+  - pnpm lint:eslint pre-existing baseline errors (229 problems in packages/scripts, not from this wave)
 
-**CRITICAL**: none
+## Reviewer Verdicts
+- architecture-reviewer (integration): OK after fix
+- code-reviewer (integration): OK
+- docs-reviewer (integration): OK after fix
 
-**WARNING**:
-- Canonical line budget exceeded. Keep a dedicated slimming follow-up if the target is enforced.
+## Checks Evidence (wave closure)
+- `pnpm check`: green `fresh`
+- `pnpm build`: green `fresh`
+- `pnpm test`: green `fresh` (19 files, 309 tests)
+- `pnpm lint:boundaries`: green `fresh`
+- `pnpm lint:eslint`: pre-existing baseline errors only (not from this wave)
 
-**INFO**:
-- Stale worktrees may still be pruned with `git worktree prune`.
+## Wave DoD Status (§6.2)
+- All slices: ACCEPT verdict ✓
+- Plan change requests: none ✓
+- Integration review: green (after fix) ✓
+- Architecture pass: done (pre-implementation audit + per-slice architecture-reviewer) ✓
+- Baseline status: Yellow (pre-existing lint:eslint baseline errors)
+- Architecture docs: reflect wave decisions ✓
+- invariants.md: updated for post-wave structure ✓
+- current_plan.md: all slices marked done by lead-strategic ✓
+- Operating mode: valid for next wave ✓
+- memory.md files: pending rewrite ✓
+- Test baseline: 309 tests (19 files) ✓
 
-## Checks Evidence
-
-- canonical count command: green (`18`)
-- canonical line-count command: measured (`3464 total`)
-- retired-path grep over live docs: green (`0`)
-- model-name guardrail outside `execution-profiles.md`: green (`0`)
-- `pnpm check`: `not run` — no product code changes
-- `pnpm build`: `not run` — no product code changes
-
-## Branches
-
-- integration branch: `feature/agent-workflow-simplification-wave1`
-- worker branches merged: `none` (direct execution, docs-only)
-
-## Agent Effort
-
-- workers spawned: 0
-- direct-fixes: all
-- review passes: 0
+## Readiness
+ready for final strategic acceptance and merge approval

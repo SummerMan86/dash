@@ -2,16 +2,14 @@
 
 ## Active State
 
-- wave: Agent Docs Radical Simplification (Wave 2)
+- wave: Restructure `src/lib/` — dissolve FSD-named buckets
 - plan: `docs/agents/lead-strategic/current_plan.md`
-- branch: `feature/agent-workflow-simplification-wave1`
-- current slice: `none — wave closed`
+- branch: `feature/src-lib-dissolve-fsd-buckets`
+- current slice: `wave closure — awaiting strategic acceptance`
 - mode: high-risk iterative / unstable wave
-- profile: mixed-claude-workers
-
-## Context
-
-Wave 2 is closed. Structural closeout is complete: canonical count met, navigation/bootstrap refreshed, telemetry repointed, and stale live refs removed. Remaining open issue is the canonical line-budget overshoot (`3464` vs `~1850-2050`), which needs a separate slimming pass only if that target remains enforced.
+- profile: opus-orchestrated-codex-workers
+- test baseline: 309 tests (19 files)
+- baseline status: Yellow (pre-existing lint:eslint errors)
 
 ## Pruning Rule
 
