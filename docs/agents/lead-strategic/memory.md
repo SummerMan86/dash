@@ -2,25 +2,21 @@
 
 ## Active State
 
-- active wave: `none`
-- last closed wave: Restructure `src/lib/` app-local surface and remove FSD-named buckets
-- closed on: `2026-04-16`
-- final verdict: `ACCEPT`
-- plan snapshot: `docs/agents/lead-strategic/current_plan.md`
-- branch at close: `feature/src-lib-dissolve-fsd-buckets`
-- execution profile at close: `opus-orchestrated-codex-workers`
-- baseline status: `Yellow` (`pnpm lint:eslint` pre-existing baseline errors only)
+- active wave: Agent Model — bounded doc/code improvements (High Priority)
+- plan: `docs/agents/lead-strategic/current_plan.md`
+- branch: `claude/review-agent-model-tAKki` (pushed)
+- profile: `opus-orchestrated-codex-workers`
+- operating mode (recommended): `ordinary iterative` for B/C/E; `high-risk iterative / unstable wave` for D and F
+- awaiting: strategic pickup — verify plan per `current_plan.md` §Для лид-стратега
+- last closed wave: Restructure `src/lib/` app-local surface and remove FSD-named buckets (closed `2026-04-16`, archived as `archive/plan_src_lib_dissolve_fsd_buckets_closed_2026-04-16.md`)
+- baseline status: `Yellow` (`pnpm lint:eslint` pre-existing)
 - test baseline: `309` tests (`19` files)
 
 ## Carry Forward
 
-- canonical app-local model is route-local first, then flat first-level `src/lib/<module>/`; FSD-named buckets are no longer live
-- `src/lib/api/`, `src/lib/fixtures/`, and `src/lib/styles/` are the canonical app-local homes for the former `shared/` surface
-- `apps/web/src/lib/dashboard-edit/` and `apps/web/src/lib/emis-manual-entry/` are the promoted first-level app-local modules from this wave
-- `stock-alerts` and vessel-positions `EmisDrawer` are route-local, not shared widgets
-- `$shared`, `$features`, and `$widgets` aliases are removed; post-wave guardrails live in ESLint boundaries plus `docs/agents/invariants.md`
-- integration review is closed `OK` after fix commit `b940d92`; no open PCRs or unresolved review findings
-- carry forward only the existing non-blocking baseline debt: `pnpm lint:eslint` in packages/scripts, barrel/direct import inconsistency, broad peer-isolation glob, and oversized `routes/emis/+page.svelte`
+- Slice A landed as `78b1cd8` (structured Carry-Forward fields); fresh docs-reviewer `OK`; strategic verification pending
+- Wave invariants (do not revert): single SoT for worker mode is `git-protocol.md` §3-4; `invariants.md` §8 first table stays removed; four structured Carry-Forward fields canonical; `in-place` default / `isolated` opt-in terminology
+- Prior-wave non-blocking baseline debt carries over: `pnpm lint:eslint` in packages/scripts, barrel/direct import inconsistency, broad peer-isolation glob, oversized `routes/emis/+page.svelte`
 
 ## Pruning Rule
 

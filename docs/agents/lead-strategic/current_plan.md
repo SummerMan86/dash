@@ -1,59 +1,156 @@
-# Plan: Restructure `src/lib/` app-local surface and remove FSD-named buckets (Closed)
+# Plan: Agent Model — bounded doc/code improvements (Active, High Priority)
 
 ## Status
 
 - opened on `2026-04-16`
-- completed on `2026-04-16`
-- wave status: `closed`
-- closeout verdict: `ACCEPT`
-- branch: `feature/src-lib-dissolve-fsd-buckets`
-- selected execution profile: `opus-orchestrated-codex-workers`
-- operating mode at close: `high-risk iterative / unstable wave`
-- next slice: `none — wave closed`
-- baseline status: `Yellow` (`pnpm lint:eslint` has pre-existing baseline errors only)
+- wave status: `active`
+- priority: `high` — picks up directly where the `src/lib/` wave closed; aligns agent-docs with real operating practice before larger product waves
+- branch: `claude/review-agent-model-tAKki` (pushed)
+- recommended execution profile: `opus-orchestrated-codex-workers`
+- recommended operating mode at open: `ordinary iterative` for A/B/C/E (low-risk doc slices), `high-risk iterative / unstable wave` for D (touches a core invariant) and F (code + baseline)
+- baseline status: `Yellow` (`pnpm lint:eslint` pre-existing baseline errors only; inherited from prior wave)
+- test baseline: `309` tests (`19` files)
 - canonical live plan path: `docs/agents/lead-strategic/current_plan.md`
 
 ## Goal
 
-Remove the remaining FSD-named buckets from `apps/web/src/lib/`, land the flat app-local `src/lib/*` model, and close the config/docs sweep so the repo reflects the actual post-wave structure.
+Land bounded, high-leverage improvements to the agent workflow documentation and tooling identified after the `in-place default` and `architecture-docs-first` consolidation. Keep the doc footprint minimal (net-delta ≤ 0 where possible), one slice per commit, fresh reviewer per slice.
+
+## Context carried into this wave
+
+### Already landed on this branch
+
+- `d32133e` — worker default flipped to `in-place`; `isolated` (subagent + worktree) is now opt-in only. Six files touched; net −2 lines.
+- `80540d6` — collapsed duplicated "three detection points" table in `invariants.md` §8 to a stage-labeled cross-ref. Net −6 lines.
+- `78b1cd8` — structured Carry-Forward Context fields (Slice A). Worker Handoff §1 "Continuation Notes" renamed to "Carry-Forward Context"; Task Packet §4 aligned; required on every code-writing handoff (not just dependent slices); cross-refs in `orchestrator/instructions.md` updated. Net −1 line.
+
+### Invariants established by this wave (do not revert)
+
+- `git-protocol.md` §3-4 is the single source of truth for worker mode selection. Do not re-embed mode rules in `workflow.md` or `orchestrator/instructions.md`.
+- `invariants.md` §8 first table was removed because it duplicated `workflow.md` §2.3.1 / §3.3 / §5.1. The second table (enforcement rows) is preserved and is the canonical invariant content.
+- Active terminology: `in-place` (default), `isolated` (opt-in). Do not reintroduce `teammate mode` / `subagent mode as default`.
+- Worker Handoff §1 and Task Packet §4 share the same four structured Carry-Forward fields: `carried_decisions`, `open_findings`, `next_slice_assumptions`, `patterns_established`. Do not reintroduce the old free-form `Continuation Notes` shape.
+
+## Guiding principles
+
+- Minimal docs footprint; prefer net-delta ≤ 0 where possible.
+- One slice per commit; do not batch unrelated changes.
+- Fresh `docs-reviewer` subagent on the diff before every doc-only commit.
+- `code-reviewer` floor for any code slice.
+- Slice D requires a `strategic-reviewer` pass before merge (touches "code-blind orchestrator" invariant).
+- Slice F requires a real code baseline and an ESLint rule-introduction run per `invariants.md` §10.
 
 ## Slice Status
 
-- `ST-1` `done` — `5102bb3` — removed unused tracked starter assets from `apps/web/src/lib/images/*`
-- `ST-2` `done` — `a360fdf` — dissolved `shared/` into `src/lib/api/`, `src/lib/fixtures/`, and `src/lib/styles/`
-- `ST-3` `done` — `afb63cc` — route-localized Wildberries `stock-alerts` and deleted `src/lib/widgets/stock-alerts/`
-- `ST-4` `done` — `2308994` — promoted `dashboard-edit` to `apps/web/src/lib/dashboard-edit/`
-- `ST-5` `done` — `e221ca9` — promoted `emis-manual-entry` to `apps/web/src/lib/emis-manual-entry/`
-- `ST-6` `done` — `8033bb0` — route-localized `EmisDrawer` to `routes/dashboard/emis/vessel-positions/`
-- `ST-7` `done` — `9222d37` — removed `$shared/$features/$widgets`, updated ESLint boundaries, and deleted empty FSD directories
-- `ST-8` `done` — `c9c0385` — closed docs across current-state architecture, navigation, and workflow surfaces
-- `Fix` `done` — `b940d92` — resolved stale FSD references found during integration review
+- `ST-A` `done` — `78b1cd8` — structured Carry-Forward Context fields across templates.md §1/§4, worker/guide.md §7, orchestrator/instructions.md
 
-## Governance Closeout
+### Pending slices (in recommended execution order)
 
-- final strategic verdict: `ACCEPT`
-- plan change requests: `none`
-- integration review: `green after fix` (`architecture-reviewer`, `code-reviewer`, `docs-reviewer`)
-- architecture pass: `done` (pre-implementation audit + per-slice architecture-reviewer coverage)
-- architecture docs: synced to the post-wave `src/lib/*` structure
-- `docs/agents/invariants.md`: updated in `ST-7`
-- `docs/agents/orchestrator/memory.md` and `docs/agents/lead-strategic/memory.md`: rewritten to active state
-- ready state for next wave: flat app-local model is canonical; choose operating mode fresh from a `Yellow` baseline
+#### ST-B: Wave DoD docs WARNING escalation scope (recommended next)
 
-## Verification Baseline
+- scope: `docs/agents/workflow.md` §3.8 and §6.2
+- change: `WARNING → CRITICAL` auto-escalation at wave closure applies only to contract-touching docs (`RUNTIME_CONTRACT.md`, `db/schema_catalog.md`, `db/current_schema.sql`, new invariants). Navigation `AGENTS.md` drift is allowed to carry over with recorded owner + expiry.
+- estimated delta: ~+3 lines
+- risk: low; relaxes rather than tightens governance
+- size: S
+- acceptance: §3.8 escalation matrix and §6.2 Wave DoD both carry the new carve-out; cross-refs consistent; fresh `docs-reviewer` verdict `OK`
+- verification intent: re-read §3.8 and §6.2 after edit; ensure no new contradiction with `worker/guide.md` "docs: <done | N/A | gap>" field or with the Docs Completeness table
+- verification mode: `verification-first`
 
-- `pnpm check`: green
-- `pnpm build`: green
-- `pnpm test`: green (`19` files, `309` tests)
-- `pnpm lint:boundaries`: green
-- `pnpm lint:eslint`: baseline-only pre-existing errors
+#### ST-C: Strategic-reviewer adaptive cadence
 
-## Carry Forward
+- scope: `docs/agents/workflow.md` §4.1
+- change: `high-risk iterative` starts per-slice strategic-reviewer pass, auto-downshifts to `by signal` after two consecutive `ACCEPT` verdicts without new findings or plan changes; upshifts on reappearance of a risk signal from §4.1
+- estimated delta: ~+5 / −3 lines (net +2)
+- risk: low
+- size: S
+- acceptance: §4.1 cadence table carries the downshift/upshift rule; operating-mode definitions in §2.4 still consistent; fresh `docs-reviewer` verdict `OK`
+- verification intent: cross-check §2.4 operating-mode table, §4.1 cadence table, and `lead-strategic/instructions.md` §strategic-reviewer cadence are mutually consistent
+- verification mode: `verification-first`
 
-- Non-blocking baseline debt remains outside this wave: existing `pnpm lint:eslint` failures in packages/scripts.
-- Monitoring-only items from integration review remain non-blocking: barrel/direct import inconsistency in product analytics, broad peer-isolation glob, and `apps/web/src/routes/emis/+page.svelte` size.
-- Next wave should assume the canonical app-local placement model is route-local first, then first-level `src/lib/<module>/` only for app-specific cross-route code.
+#### ST-E: wave-journal.md split from memory.md
+
+- scope: new file `docs/agents/orchestrator/wave-journal.md`; update `docs/agents/orchestrator/instructions.md` §Memory Discipline; register in `docs/AGENTS.md`
+- change: `memory.md` retains only active state (~20 lines); `wave-journal.md` is append-only (one line per accepted slice outcome) and is moved to `docs/agents/orchestrator/archive/waves/<id>.md` at wave closure. Intent: survive auto-compact without bloating durable memory
+- estimated delta: one new file + ~+4 instruction lines
+- risk: low; net improvement for recovery
+- size: S
+- acceptance: new file exists with template shape; `memory.md` protocol in workflow.md §8 still consistent; docs-reviewer `OK`
+- verification intent: confirm the new wave-journal shape does not drift from `workflow.md` §8 memory protocol; confirm pruning rule still says "rewrite memory.md on new wave"
+- verification mode: `verification-first`
+
+#### ST-D: Orchestrator bounded diff-read for acceptance triage (separate batch)
+
+- scope: `docs/agents/orchestrator/instructions.md` §Transparency Requests and §Evidence Acceptance
+- change: after the first transparency request and before the second, orchestrator is allowed a bounded read: `git diff --stat` plus up to 200 lines on one file. Explicitly scoped to acceptance triage only, not to making or revising writes
+- estimated delta: ~+6 lines
+- risk: `medium` — touches the "code-blind orchestrator" invariant
+- size: S
+- acceptance: bounded-read carve-out in orchestrator/instructions.md; invariant wording in workflow.md §1 "что `orchestrator` не делает" updated to carry the carve-out with explicit scope-limit; fresh `strategic-reviewer` pass before merge; docs-reviewer `OK`
+- verification intent: confirm the carve-out does not leak into worker code-writing territory; confirm `direct-fix` boundary is unchanged
+- verification mode: `verification-first`
+- gate: requires strategic acceptance before merge even if docs-reviewer is green
+
+#### ST-F: Automated ESLint rules (last)
+
+- scope: `eslint.config.js` plus CI configuration
+- rules:
+  1. Verify and, if missing, enforce ban on `$lib/server/*` imports from client routes/layers.
+  2. Ban retired aliases: `$shared`, `$entities`, `$features`, `$widgets`.
+  3. CI check (not ESLint): edits to `db/*.sql` require a companion touch to `db/applied_changes.md`.
+- must follow `invariants.md` §10 (ESLint rule-introduction policy): baseline-diff report, rule severity assignment, remediation plan for any rule that would produce >20 new violations.
+- estimated delta: code change + CI config
+- risk: `higher` — actual code change; test baseline impact; may create noise
+- size: M
+- acceptance: three rules landed with baseline-diff report attached; `pnpm lint:boundaries` remains green; `pnpm check` and `pnpm build` green; fresh `code-reviewer` + `architecture-reviewer` verdicts `OK`
+- verification intent: run baseline-diff before adoption; record Red/Yellow/Green transition explicitly
+- verification mode: `test-first`
+
+### Deferred
+
+- `ST-G` — Cross-runtime plan versioning (`plan_version`, `hash`, append-only log sidecar, `Plan Change Request` as only canonical write-path). Likely over-engineering for current scale. Defer until a real race or drift incident is observed.
+
+## Recommended execution order
+
+1. **B → C → E** as low-risk doc shrinkers. Each a separate commit with a fresh `docs-reviewer` pass.
+2. **D** separately — requires `strategic-reviewer` pass before merge.
+3. **F** last — needs real code baseline and ESLint governance run per `invariants.md` §10.
+4. **G** — skip until demonstrated need.
+
+## Constraints
+
+- Do not re-embed `git-protocol.md` §3-4 content into `workflow.md` or `orchestrator/instructions.md`.
+- Do not restore the first table in `invariants.md` §8 (duplicate of `workflow.md` §2.3.1 / §3.3 / §5.1).
+- Do not reintroduce the old free-form `Continuation Notes` shape; the four structured Carry-Forward fields are canonical.
+- Do not treat `teammate mode` or `subagent mode as default` as current terminology.
+- One slice per commit; no batched commits across slices.
 
 ## Expected Result
 
-Achieved: `src/lib/` no longer advertises `shared/`, `features/`, or `widgets/` as live FSD buckets; app-local ownership is flattened; docs, config, and review guardrails match the codebase; the wave is closed and ready for merge approval.
+Agent workflow docs reflect real operating practice: structured carry-forward, calibrated docs-severity escalation, adaptive strategic-reviewer cadence, explicit wave-journal recovery path, and (for D/F) a bounded code-blind orchestrator carve-out plus automated lint guardrails. Wave closes with baseline still at or better than `Yellow`, test baseline not shrunk, and no doc duplication regressions.
+
+## Для лид-стратега: что проверить перед pickup
+
+1. **Ownership plan**: подтвердить, что порядок `B → C → E → D → F → (G deferred)` остаётся валидным — или оформить `Plan Change Request`, если после pre-pickup reframe order меняется.
+2. **Operating mode per slice**: подтвердить `ordinary iterative` для B/C/E и `high-risk iterative / unstable wave` для D/F. Для D это обязательно из-за "code-blind orchestrator" invariant touch.
+3. **Slice A verification** (already landed as `78b1cd8`):
+   - diff coherent across `templates.md` §1, §4; `worker/guide.md` §7; `orchestrator/instructions.md` §Prompt composition, §Carry-Forward subsection, §Checklist перед spawn
+   - fresh docs-reviewer verdict was `OK` after one round of follow-up fixes (CRITICAL + 2 WARNING from first pass resolved in the same commit)
+   - four structured fields (`carried_decisions`, `open_findings`, `next_slice_assumptions`, `patterns_established`) appear consistently in all three files; no stale "Continuation Notes" / "gotchas" / "deferred items" / "decisions/patterns" references in `docs/agents/`
+   - `workflow.md` §8 line 789 ("Continuity between dependent workers ...") left intentionally as-is; scoped to dependent-worker continuity, not to the task-packet requirement rule
+4. **Slice D readiness**: если `lead-strategic` считает, что "code-blind orchestrator" не должен приобретать carve-out даже для triage — D отклонить до F/G; иначе включить `strategic-reviewer` per-slice gate в operating mode для D.
+5. **Slice F readiness**: подтвердить или отклонить интеграцию CI check для `db/*.sql` ↔ `db/applied_changes.md` как часть этой волны (альтернатива — выделить отдельной волной, если baseline-diff показывает неприемлемый noise).
+6. **Baseline carry-forward**: принять `Yellow` (`pnpm lint:eslint` pre-existing errors) как стартовую точку этой волны без попытки закрыть его внутри волны.
+
+## Carry Forward (at wave close, to seed next wave)
+
+- Non-blocking baseline debt remains: `pnpm lint:eslint` in packages/scripts, barrel/direct import inconsistency in product analytics, broad peer-isolation glob, oversized `routes/emis/+page.svelte`. These are explicitly out of scope for this wave.
+- If F lands, record the final rule-introduction Red/Yellow/Green transition for next-wave planning.
+
+## References
+
+- Prior wave (closed): `docs/agents/lead-strategic/archive/plan_src_lib_dissolve_fsd_buckets_closed_2026-04-16.md`
+- Operating-mode definitions: `docs/agents/workflow.md` §2.4
+- Strategic-reviewer cadence and risk signals: `docs/agents/workflow.md` §4.1
+- Worker mode selection (single SoT): `docs/agents/git-protocol.md` §3-4
+- ESLint rule-introduction policy: `docs/agents/invariants.md` §10

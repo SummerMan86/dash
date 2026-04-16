@@ -143,7 +143,6 @@ Historical BI archive: [archive/bi/architecture_dashboard_bi.md](./archive/bi/ar
 | Документ                                          | Владеет                       | Source of truth для                                                                  |
 | ------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------ |
 | `plans/agent_workflow_superpowers_adaptation.md`  | agent workflow rollout plan   | hybrid adoption waves, testing strategy, execution split for Superpowers adaptation  |
-| `plans/agent_model_next.md`                       | agent model next-slice plan   | bounded doc/code improvements after in-place default + architecture-docs-first collapse |
 
 ### Archive
 
