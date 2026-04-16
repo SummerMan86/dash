@@ -9,7 +9,7 @@ and memory ownership stay canonical in:
 - `docs/agents/workflow.md`
 - `docs/agents/review-gate.md`
 - `docs/agents/git-protocol.md`
-- `docs/agents/memory-protocol.md`
+- `docs/agents/workflow.md` §4 (memory protocol)
 
 This file answers only this question:
 
@@ -45,6 +45,13 @@ canonical for supported-profile mapping.
 - If a role has no safe fallback in the selected profile, pause and escalate instead of inventing an ad hoc binding.
 - `ui-reviewer` stays the role name in every profile; deep UI review is a stronger lane, not a new reviewer role.
 
+Claude Code strategic-lane note:
+
+- On the current Claude Code surface, `lead-strategic` and `strategic-reviewer` use companion CLI `task` as the documented Codex runtime path; plugin-first slash mapping remains worker/reviewer-only.
+- Use `task --write --fresh` when the strategic pass must write `current_plan.md`, `memory.md`, or a governance artifact.
+- Use `task --resume` for bounded follow-up in the same strategic thread; use `task --fresh` for a new wave or when the strategic context is polluted.
+- Record this truthfully in report/telemetry as a per-role exception with the command path plus a stable run/session identifier; the plugin-first proof tuple below applies only to worker/reviewer lanes.
+
 ## Profile: `mixed-claude-workers`
 
 Status: supported; current practical default until another default is announced.
@@ -60,7 +67,7 @@ Status: supported; current practical default until another default is announced.
 | `docs-reviewer`         | Claude  | `Sonnet`                                                             | runtime-managed                                                        | Escalate to `Opus` when the doc diff changes active contracts and the first pass cannot resolve the contradiction                     |
 | `security-reviewer`     | Claude  | `Sonnet`                                                             | runtime-managed                                                        | Escalate to `Opus` on auth/SQL/secret-handling ambiguity or high-impact data-flow risk                                                |
 | `architecture-reviewer` | Claude  | `Sonnet`                                                             | runtime-managed                                                        | Escalate to `Opus` when the review surface becomes boundary/schema/package-risk heavy or needs broader synthesis                      |
-| `ui-reviewer`           | Claude  | `Sonnet` for smoke; `Opus` preferred for the deep lane               | runtime-managed                                                        | If visual confidence is low or the issue spans multiple flows, rerun the deep lane on `Opus` via `ui-reviewer-deep/instructions.md`   |
+| `ui-reviewer`           | Claude  | `Sonnet` for smoke; `Opus` preferred for deep mode                   | runtime-managed                                                        | If visual confidence is low or the issue spans multiple flows, rerun deep mode on `Opus` per `ui-reviewer/instructions.md` § "Deep Mode" |
 
 ## Profile: `opus-orchestrated-codex-workers`
 
@@ -97,7 +104,7 @@ Runtime verification contract for Claude Code:
 - A bare session ID, codex-labeled subagent/helper name, or Claude-side relay acknowledgement is not sufficient proof.
 - If the active plugin/runtime surface cannot expose `/codex:result` plus a stable Codex run identifier, treat that lane as `unverified` for this profile.
 - For direct wrapper/debug runs outside plugin surface, `scripts/codex-exec-prompt.sh --json-file ...` is the fallback proof artifact; record the JSONL path plus the run identifier in report/telemetry if you rely on that path.
-- Operationally critical duplication of this rule is allowed only in docs that choose the profile, launch the lane, or record acceptance evidence: `orchestrator/instructions.md`, `templates-orchestration.md`, `usage-telemetry.md`, `autonomous-protocol.md`, `user-guide.md`, and `scripts/AGENTS.md`. Elsewhere refer back here.
+- Operationally critical duplication of this rule is allowed only in docs that choose the profile, launch the lane, or record acceptance evidence: `orchestrator/instructions.md`, `templates.md`, `usage-telemetry.md`, `autonomous-protocol.md`, `user-guide.md`, and `scripts/AGENTS.md`. Elsewhere refer back here.
 
 | Role                    | Runtime                                       | Default model                                                        | Effort                                                           | Fallback / escalation                                                                                                                                                                                                                                                                                                                                                                     |
 | ----------------------- | --------------------------------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -110,7 +117,7 @@ Runtime verification contract for Claude Code:
 | `docs-reviewer`         | Codex                                         | `gpt-5.4-mini`                                                       | `medium`                                                         | Escalate to `gpt-5.4` when active contracts or cross-doc contradictions need broader synthesis                                                                                                                                                                                                                                                                                            |
 | `security-reviewer`     | Codex                                         | `gpt-5.4-mini`                                                       | `medium`                                                         | Escalate to `gpt-5.4` on risk-heavy slices                                                                                                                                                                                                                                                                                                                                                |
 | `architecture-reviewer` | Codex                                         | `gpt-5.4-mini`                                                       | `medium`                                                         | Escalate to `gpt-5.4` for boundary/schema/package-risk slices                                                                                                                                                                                                                                                                                                                             |
-| `ui-reviewer`           | `Codex` for smoke; `Claude` for the deep lane | `gpt-5.4-mini` for smoke; `Opus` preferred for the deep lane         | `medium` in Codex lane; runtime-managed in Claude deep lane      | If smoke review finds a likely UX issue or confidence is low, rerun a deep pass on `Opus` via `ui-reviewer-deep/instructions.md`                                                                                                                                                                                                                                                          |
+| `ui-reviewer`           | `Codex` for smoke; `Claude` for deep mode      | `gpt-5.4-mini` for smoke; `Opus` preferred for deep mode             | `medium` in Codex lane; runtime-managed in Claude deep lane      | If smoke review finds a likely UX issue or confidence is low, rerun deep mode on `Opus` per `ui-reviewer/instructions.md` § "Deep Mode"                                                                                                                                                                                                                                                   |
 
 ## Escalation Rules
 

@@ -169,7 +169,7 @@ If the final change is `<= 20` changed lines across at most two files, has no ar
 
 - required: acceptance criteria met
 - required: scope not violated
-- required: checks green
+- required: checks satisfy current baseline policy
 - everything else may be marked `N/A`
 
 This exemption reduces checklist overhead.
@@ -182,7 +182,7 @@ It does **not** waive independent review for worker-owned product-code changes; 
 - [ ] Acceptance criteria from the task packet are met
 - [ ] Scope is not violated
 - [ ] Applicable invariants are not violated
-- [ ] Required checks are green
+- [ ] Required checks satisfy current baseline policy
 - [ ] Baseline tests did not shrink
 
 #### Documentation
@@ -211,7 +211,7 @@ It does **not** waive independent review for worker-owned product-code changes; 
 
 ## 9. Handoff Templates
 
-Canonical handoff templates: `docs/agents/templates-handoff.md`.
+Canonical handoff templates: `docs/agents/templates.md` §1-§2.
 
 - Worker Handoff: §1
 - Micro-Worker Handoff: §2
@@ -221,3 +221,9 @@ The task packet specifies which template to use. Key handoff contract:
 - **Required:** task summary, change manifest, checks evidence, review disposition, next action requested
 - **Micro-worker:** shortened format — what changed, manifest, checks, review, next action
 - If a field is not applicable, mark it `N/A` with a reason; do not silently omit
+
+## 10. Compatibility Notes
+
+- `direct-fix` is an `orchestrator`-only path, not a worker path.
+- Workers do not maintain a separate `memory.md`.
+- This file (`worker/guide.md`) is the canonical worker doc. `worker/instructions.md` is a redirect.

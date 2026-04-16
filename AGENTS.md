@@ -57,18 +57,15 @@
 Если задача выполняется через agent workflow stack:
 
 1. [docs/agents/user-guide.md](./docs/agents/user-guide.md) — **для пользователя: промпты и сценарии**
-2. [docs/agents/workflow.md](./docs/agents/workflow.md) — core process и lifecycle
-3. [docs/agents/execution-profiles.md](./docs/agents/execution-profiles.md) — supported runtime/model bindings without changing role semantics
-4. [docs/agents/review-gate.md](./docs/agents/review-gate.md) — Review Gate, governance passes
-5. [docs/agents/invariants.md](./docs/agents/invariants.md) — project guardrails
-6. [docs/agents/git-protocol.md](./docs/agents/git-protocol.md) — branches, worktrees, checkpoints
-7. [docs/agents/memory-protocol.md](./docs/agents/memory-protocol.md) — memory ownership
-8. [docs/agents/roles.md](./docs/agents/roles.md) — роли и ответственности
-9. [docs/agents/templates.md](./docs/agents/templates.md) — шаблоны (hub: правила + routing на дочерние файлы)
-   - [docs/agents/templates-handoff.md](./docs/agents/templates-handoff.md) — worker handoff templates
-   - [docs/agents/templates-orchestration.md](./docs/agents/templates-orchestration.md) — orchestration & governance templates
-10. `docs/agents/{role}/instructions.md` — вводные для конкретной роли
-11. `docs/agents/lead-strategic/memory.md` и `docs/agents/orchestrator/memory.md` — единственные canonical durable-memory files; worker'ы и reviewer'ы отдельную `memory.md` не ведут, см. `docs/agents/memory-protocol.md`
+2. [docs/agents/workflow.md](./docs/agents/workflow.md) — core process, lifecycle, memory protocol
+3. [docs/agents/roles.md](./docs/agents/roles.md) — role map
+4. [docs/agents/execution-profiles.md](./docs/agents/execution-profiles.md) — runtime/model binding per profile
+5. [docs/agents/review-gate.md](./docs/agents/review-gate.md) — Review Gate, governance passes, definition of done
+6. [docs/agents/templates.md](./docs/agents/templates.md) — all templates (plan, task, handoff, report, governance)
+7. [docs/agents/invariants.md](./docs/agents/invariants.md) — project guardrails
+8. [docs/agents/git-protocol.md](./docs/agents/git-protocol.md) — branches, worktrees, checkpoints
+9. `docs/agents/{role}/instructions.md` — role-specific instructions
+10. `docs/agents/lead-strategic/memory.md` и `docs/agents/orchestrator/memory.md` — durable memory (see workflow.md §4)
 
 EMIS-активный контур сейчас находится здесь:
 
@@ -209,7 +206,7 @@ Compatibility shims at old app paths (`apps/web/src/lib/entities/emis-*`, `apps/
 ```
 Пользователь
     │
-    └─ ставит задачу Claude Opus (orchestrator; canonical entrypoint, legacy alias: lead-tactical)
+    └─ ставит задачу Claude Opus (orchestrator)
            │
            ├─ поднимает Codex / GPT-5.4 (lead-strategic) для плана, acceptance и governance
            ├─ dispatches isolated workers для code-writing slices
@@ -219,14 +216,14 @@ Compatibility shims at old app paths (`apps/web/src/lib/entities/emis-*`, `apps/
 
 Canonical docs:
 
-- [workflow.md](./docs/agents/workflow.md) — lifecycle, execution paths, operating modes
-- [roles.md](./docs/agents/roles.md) — role semantics, instructions, compatibility notes
-- [review-gate.md](./docs/agents/review-gate.md) — review model, governance passes
-- [memory-protocol.md](./docs/agents/memory-protocol.md) — durable memory ownership
-- [templates.md](./docs/agents/templates.md) — communication and handoff templates
-- [recovery.md](./docs/agents/recovery.md) — failure-path protocols
-- [git-protocol.md](./docs/agents/git-protocol.md) — branches, worktrees, integration
+- [workflow.md](./docs/agents/workflow.md) — lifecycle, execution paths, memory protocol
+- [roles.md](./docs/agents/roles.md) — role map
+- [execution-profiles.md](./docs/agents/execution-profiles.md) — runtime/model binding per profile
+- [review-gate.md](./docs/agents/review-gate.md) — review model, governance passes, definition of done
+- [templates.md](./docs/agents/templates.md) — all templates
 - [invariants.md](./docs/agents/invariants.md) — project guardrails
+- [git-protocol.md](./docs/agents/git-protocol.md) — branches, worktrees, integration
+- [recovery.md](./docs/agents/recovery.md) — failure-path protocols
 
 ## 9. Git Checkpoints
 

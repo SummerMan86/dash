@@ -1,66 +1,39 @@
 # Agent Roles
 
-Инструкции для пользователя: [user-guide.md](./user-guide.md)
-
-Runtime/model binding for supported profiles lives in
-`docs/agents/execution-profiles.md`.
-This file defines role semantics, persistence, and responsibility boundaries.
+User guide: [user-guide.md](./user-guide.md).
+Runtime/model binding: `docs/agents/execution-profiles.md`.
 
 ## Role Map
 
-| Роль                      | Runtime                               | Default model lane                                      | Surface / transport                                                              | Persistence                                                       | Задача                                                                                              |
-| ------------------------- | ------------------------------------- | ------------------------------------------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| **lead-strategic**        | profile-selected Codex lane           | `gpt-5.4` default; see `execution-profiles.md`          | Codex runtime surface per selected profile                                       | Между сессиями (`docs/agents/lead-strategic/memory.md`)           | Планирование, декомпозиция, приёмка                                                                 |
-| **strategic-reviewer**    | advisory pass внутри `lead-strategic` | `gpt-5.4-mini` / `gpt-5.4`; see `execution-profiles.md` | тот же Codex context или equivalent runtime path per profile                     | Session-level внутри `lead-strategic`, без отдельного `memory.md` | Optional advisory second opinion по `plan/report/diff`; не decision-maker                           |
-| **orchestrator**          | Claude Opus                           | Opus                                                    | primary Claude orchestration surface                                             | Сессия + `docs/agents/orchestrator/memory.md`                     | Code-blind execution orchestration by default, worker dispatch, Review Gate, report                 |
-| **worker**                | profile-selected implementation lane  | see `execution-profiles.md`                             | isolated execution lane; worktree/branch ownership остаётся по `git-protocol.md` | Session context only                                              | Реализация одного slice; small bounded code change идёт worker'ом, если не подпадает под direct-fix |
-| **architecture-reviewer** | profile-selected reviewer lane        | see `execution-profiles.md`                             | fresh review surface per pass                                                    | Нет; каждый pass с чистого листа                                  | Diff review по package/app boundaries, domain-overlay contour split, complexity                     |
-| **security-reviewer**     | profile-selected reviewer lane        | see `execution-profiles.md`                             | fresh review surface per pass                                                    | Нет; каждый pass с чистого листа                                  | SQL injection, XSS, secrets                                                                         |
-| **docs-reviewer**         | profile-selected reviewer lane        | see `execution-profiles.md`                             | fresh review surface per pass                                                    | Нет; каждый pass с чистого листа                                  | Docs/contracts sync                                                                                 |
-| **code-reviewer**         | profile-selected reviewer lane        | see `execution-profiles.md`                             | fresh review surface per pass                                                    | Нет; каждый pass с чистого листа                                  | Naming, conventions                                                                                 |
-| **ui-reviewer**           | profile-selected reviewer lane        | see `execution-profiles.md`                             | fresh review surface per pass; deep lane may differ by profile                   | Нет; каждый pass с чистого листа                                  | Smoke / deep UX (Chrome)                                                                            |
+| Role | Runtime | Default model | Responsibility |
+| --- | --- | --- | --- |
+| **lead-strategic** | profile-selected Codex lane | `gpt-5.4` | Planning, decomposition, acceptance, governance passes |
+| **strategic-reviewer** | bounded pass inside `lead-strategic` context | see profiles | Strategic acceptance/reframe second pass |
+| **orchestrator** | Claude Opus | Opus | Code-blind execution flow, worker dispatch, review gate, report |
+| **worker** | profile-selected lane | see profiles | Implement one slice, run checks, return truthful handoff |
+| **micro-worker** | profile-selected lane | see profiles | Implement one trivial bounded slice under the worker contract |
+| **architecture-reviewer** | fresh subagent | see profiles | Diff review: boundaries, placement, complexity |
+| **code-reviewer** | fresh subagent | see profiles | Diff review: naming, conventions, maintainability |
+| **security-reviewer** | fresh subagent | see profiles | Diff review: SQL injection, XSS, secrets, SSRF |
+| **docs-reviewer** | fresh subagent | see profiles | Docs/contracts sync |
+| **ui-reviewer** | fresh subagent | see profiles | Smoke-test + optional deep UX audit |
 
-## Коротко по ролям
+## Key properties
 
-- `lead-strategic` — планирует, декомпозирует, принимает результат.
-- `strategic-reviewer` — optional advisory pass внутри `lead-strategic`; помогает перепроверить acceptance/reframe, но не становится отдельным plan owner и не выносит финальный verdict.
-- `orchestrator` — top-level execution role. Он держит orchestration-clean контекст, управляет workers/reviewers, принимает evidence и пишет report; product code остаётся worker-owned, кроме `direct-fix`.
-- `worker` — реализует одну подзадачу в рамках scope и сдаёт handoff. Для trivial bounded code change worker всё ещё normal path, если change не подпадает под direct-fix у `orchestrator`.
-- `architecture-reviewer` — bounded read-only review по diff своего уровня: slice diff у worker или integrated diff у integration review; если нужен новый placement/waiver verdict, эскалирует в architecture pass у `lead-strategic`.
-- `*-reviewer` — read-only review по своей зоне ответственности на том diff scope, который им передали: slice-level или integration-level.
+- `lead-strategic` — canonical owner of the plan. Governance passes (architecture pass, baseline pass, strategic review) are modes within lead-strategic, not separate agents.
+- `orchestrator` — execution-only, no product code outside `direct-fix`. `lead-tactical` is a legacy alias.
+- `worker` / `micro-worker` — isolated subagent + worktree (default for code-writing); teammate mode only for docs-only/read-only.
+- Reviewers — fresh subagent per pass, no persistent review memory.
 
-Compatibility note:
+## Persistence
 
-- `lead-tactical` — legacy alias роли `orchestrator`.
-- Canonical durable artifacts живут по путям `docs/agents/orchestrator/memory.md` и `docs/agents/orchestrator/last_report.md`.
-- Старые `docs/agents/lead-tactical/*` файлы оставлены как compatibility wrappers.
-- Если prompt или doc всё ещё говорит `lead-tactical`, читать это как `orchestrator`, если не сказано иное.
+| Role | Durable state |
+| --- | --- |
+| `lead-strategic` | `docs/agents/lead-strategic/memory.md` |
+| `orchestrator` | `docs/agents/orchestrator/memory.md` + `last_report.md` |
+| `worker` | none (session context + handoff) |
+| reviewers | none (fresh per pass) |
 
-## Governance Passes
-
-Это не отдельные decision owners, а режимы `lead-strategic`.
-Canonical definition и lifecycle: `docs/agents/review-gate.md`.
-
-- `architecture pass` — placement, exception/waiver, cross-layer pre-approval
-- `baseline pass` — baseline status, truthful checks, open/close следующей wave
-
-Гибридная модель такая:
-
-- `orchestrator = отдельная top-level execution role`, не feature-implementer.
-- `worker = isolated subagent + worktree` по умолчанию для code-writing slices; teammate — только исключение для non-code shared-checkout work по `git-protocol.md` §4.
-- parallel workers = всегда isolated subagents + worktrees; teammate path не используется для parallel execution.
-- `reviewer = fresh subagent` с минимальным review-контекстом и без persistent review memory.
-- `strategic-reviewer = optional advisory pass` внутри того же `lead-strategic` контекста; используется, когда `lead-strategic` нужен ещё один bounded strategic lens.
-- `architecture pass` и `baseline pass` — не отдельные агенты, а именованные governance modes внутри `lead-strategic`.
-
-## Instructions и Memory
-
-- `instructions.md` — role-specific правила и чеклисты.
-- `memory.md` — персистентная память роли между сессиями там, где роль действительно держит durable context. В текущей модели canonical durable memory есть у `lead-strategic` и `orchestrator`; orchestrator memory хранится в `docs/agents/orchestrator/memory.md`.
-
-Canonical процесс: `docs/agents/workflow.md`.
-Canonical review/governance model: `docs/agents/review-gate.md`.
-Canonical invariants: `docs/agents/invariants.md`.
-Canonical git/worktree protocol: `docs/agents/git-protocol.md`.
-Canonical memory ownership: `docs/agents/memory-protocol.md`.
-Canonical шаблоны plan/handoff/report/review: `docs/agents/templates.md`.
+Canonical process: `docs/agents/workflow.md`.
+Canonical review model: `docs/agents/review-gate.md`.
+Canonical memory ownership: `docs/agents/workflow.md` §4.

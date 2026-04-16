@@ -1,235 +1,392 @@
-# Plan: Agent Workflow Simplification Wave 1
+# Plan: Agent Docs Radical Simplification (Wave 2)
 
 ## Status
 
-- opened on `2026-04-15`
+- opened on `2026-04-16`
 - wave status: ready for execution
-- priority: high-risk docs refactor
-- goal: shrink the agent-doc surface area without breaking role ownership, review discipline, or truthful reporting
-- scope: `docs/agents/*`, root navigation links that point into `docs/agents/*`, and only the minimum compatibility redirects needed during the transition
+- priority: docs restructure — match process model to reality
+- previous wave: Wave 1 (completed 2026-04-15, branch `feature/agent-workflow-simplification-wave1`)
 - selected execution profile: `mixed-claude-workers`
 - operating mode: `high-risk iterative / unstable wave`
-- model policy for this wave:
-  - `lead-strategic` = `gpt-5.4`
-  - `strategic-reviewer` = `gpt-5.4` on every slice
-  - `orchestrator` = `Opus`
-  - `worker` = `Opus`
-  - `docs-reviewer` = strongest available lane, prefer `Opus`
-- user-directed review exception:
-  - do not dispatch `architecture-reviewer`
-  - do not dispatch `code-reviewer`
-  - this is an explicit user instruction, not a claim that those passes became unnecessary
 
-## Goal
+## Introduction: What Our Agent Model Actually Is
 
-Reduce agent-model bureaucracy by collapsing duplicate docs and legacy surfaces into a smaller canonical set, while keeping the working execution contract intact enough that a later wave can simplify semantics without losing safety.
+The agent model exists so that an AI agent doesn't immediately jump into writing code. Instead, it follows a structured workflow:
 
-## Guardrails
+1. **Brainstorming and spec refinement** — clarify requirements before any code is written
+2. **Planning** — decompose the task into subtasks with acceptance criteria (`current_plan.md`)
+3. **Subagent-driven development with TDD** — red-green-refactor cycle, one slice at a time
+4. **Code review between tasks** — multi-aspect quality gates (security, code, architecture, docs, UI)
+5. **Branch finalization** — verify, accept, merge
 
-- Keep `lead-strategic` as the canonical owner of `current_plan.md`.
-- Keep `orchestrator` as execution-only; do not expand product-code ownership.
-- Keep the minimum independent review floor as a canonical rule for code-writing work.
-- Keep `direct-fix` as a narrow exception, not a generic convenience path.
-- Keep truthful evidence rules; if the wording is simplified, the enforcement meaning must survive.
-- Do not silently keep append-only durable memory. Wave 1 must either shrink it to a minimal current-state snapshot or remove it from the default bootstrap path by explicit decision.
-- Treat this wave as docs-first for the agent model itself: if a slice changes role semantics or lifecycle wording, the canonical doc home must be clear in the same slice.
-- No big-bang rewrite. Each slice must leave the docs set internally coherent before the next one starts.
-- Do not silently remove advanced modes just to hit a file-count target. Archive or explicitly defer them instead.
+### Roles
 
-## Review And Verification Policy
+| Role | What it does | Runtime |
+|---|---|---|
+| **lead-strategic** | High-level planning and acceptance only. Does NOT explore code. | GPT-5.4 via Codex |
+| **orchestrator** | Enforces rules between agents, dispatches workers, collects evidence | Claude Opus |
+| **worker** | Implements one slice via subagent + isolated worktree | Claude Opus/Sonnet |
+| **reviewers** | Quality gates: code-reviewer, security-reviewer, architecture-reviewer, docs-reviewer, ui-reviewer | Claude Sonnet (fresh per pass) |
 
-- `docs-reviewer` is required after every slice.
-- `strategic-reviewer` is required after every accepted slice because this wave changes canonical governance wording.
-- `architecture-reviewer` and `code-reviewer` are intentionally skipped by explicit user instruction.
-- `security-reviewer` is optional and should run only if a slice materially changes executable command guidance, shell snippets, or runtime invocation contracts.
-- Every slice must end with:
-  - link check for touched docs via targeted `rg`
-  - truthful review disposition
-  - concise note on whether bootstrap reads became shorter, stayed flat, or accidentally grew
+### Quality philosophy
 
-## Wave-1 Non-Goals
+The goal is **quality, extensible, maintainable code** — understandable by both humans and AI despite project growth. We develop deliberately, with checks and cross-checks, including different models (Opus, GPT-5.4) to catch blind spots for each model.
 
-- Do not redesign role ownership.
-- Do not invent a new runtime model beyond the supported profiles already documented.
-- Do not fully rewrite `autonomous-protocol.md` unless a slice explicitly targets it.
-- Do not decide keep/delete for `docs/agents/skills/*` in this wave without explicit evidence.
-- Do not optimize for a headline file count at the cost of burying important invariants.
+### Inspiration
 
-## Expected Result
+The workflow is inspired by [superpowers](https://github.com/obra/superpowers): self-contained skills for TDD, systematic debugging, brainstorming, planning, and parallel subagents. Each skill tells one agent what to do without needing other files.
 
-- The main orchestration spine reads from fewer canonical docs.
-- Modes and passes stop masquerading as fully separate agents.
-- Legacy alias surface is either removed or reduced to one obvious compatibility pointer.
-- Templates stop requiring navigation across multiple files for ordinary execution.
-- Durable memory becomes either:
-  - a tiny active-state bootstrap artifact,
-  - or an opt-in/advanced recovery artifact instead of a default always-read document.
-- The resulting state is simpler enough that a later wave can safely simplify semantics further.
+### The problem this wave solves
 
-## Initial Migration Map
+After Wave 1 simplification, we still have **28 active files and 5,600 lines** of agent docs. Only ~25% is about the core workflow above. The rest is Codex runtime plumbing (~450 lines), autonomous mode overlay (689 lines), governance formalism (~400 lines), tmux ops manual (~280 lines), and telemetry schema (~223 lines).
 
-- `docs/agents/memory-protocol.md` -> merge into `docs/agents/workflow.md`
-- `docs/agents/lead-strategic/memory.md` -> keep only if ST-0 proves a minimal durable-memory bootstrap is still worth the cost
-- `docs/agents/orchestrator/memory.md` -> keep only if ST-0 proves a minimal durable-memory bootstrap is still worth the cost
-- `docs/agents/definition-of-done.md` -> merge into `docs/agents/review-gate.md`
-- `docs/agents/templates-handoff.md` -> merge into `docs/agents/templates.md`
-- `docs/agents/templates-orchestration.md` -> merge into `docs/agents/templates.md`
-- `docs/agents/strategic-reviewer/instructions.md` -> inline into `docs/agents/lead-strategic/instructions.md`
-- `docs/agents/baseline-governor/instructions.md` -> inline into `docs/agents/lead-strategic/instructions.md`
-- `docs/agents/architecture-steward/instructions.md` -> inline into `docs/agents/lead-strategic/instructions.md`
-- `docs/agents/worker/guide.md` -> merge into `docs/agents/worker/instructions.md`
-- `docs/agents/ui-reviewer-deep/instructions.md` -> merge into `docs/agents/ui-reviewer/instructions.md`
-- `docs/agents/lead-tactical/*` -> remove in ST-4, unless one compatibility pointer proves necessary during repointing
-- `docs/agents/recovery.md` -> target merge into `docs/agents/workflow.md`, but allow defer if the merged spine becomes unreadable
-- `docs/agents/usage-telemetry.md` -> likely delete or move out of the core workflow; final decision deferred to ST-5
-- `docs/agents/execution-profiles.md` -> keep as an advanced appendix in wave 1 unless ST-5 proves a safe collapse
-- `docs/agents/autonomous-protocol.md` -> keep separate in wave 1 unless the main flow still depends on it as a bootstrap-required document
+This wave restructures docs to match the mental model: process-centric, not governance-centric.
 
-## Success Heuristics For ST-1
+## What this wave is optimizing for
 
-- Every file in the map has one of four states: `merge`, `delete`, `keep`, or `defer`.
-- If a file is marked `merge`, the destination canonical home is explicit.
-- If a file is marked `delete`, link cleanup is part of a later slice acceptance.
-- If a file is marked `keep` or `defer`, the plan says why it survives wave 1.
-- Durable memory is not exempt from this map; it must end ST-0 with an explicit status and rationale.
+- One obvious bootstrap path per role.
+- Process truth separated from runtime truth.
+- No deletion before repoint.
+- No live file should depend on a deleted canonical source.
+- The rewrite must also fix three semantic conflicts, not just shorten docs:
+  1. `micro-task` / `direct-fix` never waive the review floor.
+  2. Integration review trigger is single-sourced.
+  3. Slice DoD documentation fields are explicit `done` / `N/A`, not implicit green.
 
-## Subtasks
+## User decisions already locked
 
-### ST-0: Memory Policy And Prune Pass
+- Autonomous protocol → slim appendix: `docs/agents/autonomous-mode.md`
+- Codex runtime plumbing → external runtime doc: `docs/codex-integration.md`
 
-- scope:
-  - `docs/agents/lead-strategic/memory.md`
-  - `docs/agents/orchestrator/memory.md`
-  - `docs/agents/memory-protocol.md`
-  - `docs/agents/workflow.md`
-  - `docs/agents/lead-strategic/current_plan.md`
-- depends on: —
-- size: S
-- acceptance:
-  - the wave chooses one explicit default:
-    - `keep-minimal durable memory`
-    - or `remove memory from default bootstrap`
-  - both existing `memory.md` files are rewritten so they no longer carry closed-wave detail that belongs in `last_report.md`, archived plans, or `git log`
-  - if durable memory survives, there is a simple pruning rule for opening a new wave:
-    - rewrite, do not append
-    - keep only active state, still-valid durable decisions, and resume point
-    - drop closed-wave narrative unless it is still action-guiding
-  - if durable memory does not survive as default bootstrap, the replacement recovery path is stated explicitly
-- verification intent: stop the simplification wave from inheriting stale bootstrap state
-- verification mode: `verification-first`
-- notes:
-  - new-dialog-heavy usage is a valid argument against rich durable memory, but not against having a tiny recovery snapshot if interruptions still happen
+## Success metrics
 
-### ST-1: Freeze The Migration Map
+Measure core docs separately from state/history files.
 
-- scope: `docs/agents/lead-strategic/current_plan.md` and, if useful, one durable planning artifact under `docs/agents/lead-strategic/archive/`
-- depends on: ST-0
-- size: S
-- acceptance:
-  - there is an explicit old->new/keep/delete map for the current `docs/agents/*` surface
-  - wave-1 non-goals are written down
-  - exceptions to default review coverage are written down truthfully
-- verification intent: prevent scope drift before file merges start
-- verification mode: `verification-first`
-- notes:
-  - this slice can refine sequencing, but it must not yet rewrite the agent docs corpus
+### Canonical docs target
 
-### ST-2: Collapse Role Surface Without Changing Ownership
+- **Scope:** `docs/agents/**/*.md`, excluding `*/archive/*` and excluding live state files:
+  - `lead-strategic/current_plan.md`
+  - `lead-strategic/memory.md`
+  - `orchestrator/last_report.md`
+  - `orchestrator/memory.md`
+  - `orchestrator/decision-log.md`
+- **Target:** **17 canonical docs**
+- **Target lines:** **~1,750–1,950**
 
-- scope:
-  - `docs/agents/lead-strategic/instructions.md`
-  - `docs/agents/strategic-reviewer/instructions.md`
-  - `docs/agents/baseline-governor/instructions.md`
-  - `docs/agents/architecture-steward/instructions.md`
-  - `docs/agents/worker/instructions.md`
-  - `docs/agents/worker/guide.md`
-  - `docs/agents/ui-reviewer/instructions.md`
-  - `docs/agents/ui-reviewer-deep/instructions.md`
-  - `docs/agents/roles.md`
-- depends on: ST-1
-- size: M
-- acceptance:
-  - governance passes live inline under `lead-strategic` instead of looking like separate decision-owner roles
-  - worker bootstrap has one canonical instructions file
-  - deep UI review is expressed as a mode/lane of `ui-reviewer`, not as a separate role directory
-  - `roles.md` no longer implies that pass-like helpers are standalone agents
-- verification intent: remove the most confusing role/mode duplication first
-- verification mode: `prototype-pin`
-- notes:
-  - keep enough compatibility breadcrumbs that older prompts fail soft, not hard
+### Runtime / ops docs target
 
-### ST-3: Collapse Protocol And Template Surface
+Outside `docs/agents/`:
+- `docs/codex-integration.md`
+- `docs/QUICKSTART.md`
+- optional `docs/ops/usage-telemetry.md` only if a repo-wide grep proves there is still an active consumer
 
-- scope:
-  - `docs/agents/workflow.md`
-  - `docs/agents/review-gate.md`
-  - `docs/agents/memory-protocol.md`
-  - `docs/agents/definition-of-done.md`
-  - `docs/agents/templates.md`
-  - `docs/agents/templates-handoff.md`
-  - `docs/agents/templates-orchestration.md`
-- depends on: ST-2
-- size: L
-- acceptance:
-  - each major concept has one obvious canonical home
-  - memory ownership, if it survives, lives in `workflow.md` or another single canonical home, not a separate bootstrap-required file
-  - DoD and evidence rules live with review/governance, not as a parallel protocol tree
-  - ordinary task execution no longer requires navigating three template files
-- verification intent: cut the navigation cost that currently dominates bootstrap
-- verification mode: `prototype-pin`
-- notes:
-  - simplify wording aggressively, but preserve the actual safety rules around review floor, truthful evidence, and governance ownership
+### Hard acceptance rules
 
-### ST-4: Remove Legacy And Repoint Navigation
+- Zero live refs to deleted docs.
+- `workflow.md` contains no runtime/model/plugin-command details.
+- `docs/codex-integration.md` is the only runtime truth.
+- Historical refs to old docs are allowed only inside archived files.
 
-- scope:
-  - `docs/agents/lead-tactical/*`
-  - `docs/agents/user-guide.md`
-  - `docs/agents/roles.md`
-  - `docs/agents/workflow.md`
-  - `docs/AGENTS.md`
+## Canonical ownership after the rewrite
+
+| File | Owns |
+|---|---|
+| `workflow.md` | End-to-end process, role responsibilities, execution paths, review floor, reviewer selection, acceptance, operating modes, DoD, escalation, memory protocol |
+| `docs/codex-integration.md` | Runtime profiles, model defaults, plugin commands, proof tuples, companion CLI, runtime caveats |
+| `docs/agents/autonomous-mode.md` | Autonomous-only deltas relative to `workflow.md`; no duplicated lifecycle |
+| `templates.md` | Handoff/report shapes only |
+| `git-protocol.md` | Worktree / branch / merge mechanics only |
+| `recovery.md` | Recovery procedures only |
+| `invariants.md`, `invariants-emis.md` | Project-specific constraints only |
+| Role docs | Role-local execution detail only |
+
+## Files to REWRITE (7 files)
+
+| File | Now | Target | Key change |
+|---|---:|---:|---|
+| `workflow.md` | 553 | ~240–280 | Full rewrite. Process truth only. Absorbs role map, review model core, DoD, memory protocol. **Does not absorb runtime/model tables.** |
+| `orchestrator/instructions.md` | 248 | ~110–130 | Keep work cycle, direct-fix rules, escalation, evidence discipline. Runtime details move to `docs/codex-integration.md`. |
+| `lead-strategic/instructions.md` | 290 | ~110–130 | Keep planning cadence, acceptance, governance passes. Remove autonomous/runtime prompt surface. |
+| `worker/guide.md` | 229 | ~120–140 | Remove duplicated BI guardrails and duplicated DoD. Keep worker loop only. |
+| `templates.md` | 410 | ~150–180 | Artifact shapes only. Remove routing table, governance prose, telemetry schema. |
+| `git-protocol.md` | 158 | ~80–100 | Keep spawn/worktree/merge rules only. Drop diagrams and repeated policy. |
+| `recovery.md` | 244 | ~120–140 | Keep recovery only. Absorb small autonomous-specific deltas by reference, not by duplicate protocol. |
+
+## Files to TOUCH-LIGHT / REPOINT (4 files)
+
+| File | Why |
+|---|---|
+| `architecture-reviewer/instructions.md` | Replace `review-gate.md` pointers with `workflow.md` / `recovery.md` pointers. |
+| `invariants.md` | Replace `review-gate.md` pointers with the new `workflow.md` ownership. |
+| `lead-strategic/current_plan.md` | Refresh to the new canon, or archive the old one and create a new active plan. Live state must not point at deleted canon. |
+| `orchestrator/last_report.md` | Refresh or archive for the same reason. Live report must not point at deleted canon. |
+
+## Files to CREATE (3 guaranteed + 1 conditional)
+
+| File | Lines | What |
+|---|---:|---|
+| `docs/agents/autonomous-mode.md` | ~80–100 | Delta-only appendix: when autonomous mode is allowed, lightweight vs full, decision framework, guardrails, decision log, recovery deltas. |
+| `docs/codex-integration.md` | ~100–140 | Runtime truth: profile tables, plugin commands, proof tuples, companion CLI, runtime caveats. Outside `docs/agents/`. |
+| `docs/QUICKSTART.md` | ~80–120 | Human/operator runbook extracted from `user-guide.md`. Outside `docs/agents/`. |
+| `docs/ops/usage-telemetry.md` | ~40–80 | **Conditional.** Create only if repo-wide grep shows a real consumer remains after the simplification. Otherwise delete telemetry doc completely. |
+
+## Files to DELETE from `docs/agents/` (14 guaranteed + 1 conditional)
+
+### Guaranteed canonical deletions (5)
+
+- `review-gate.md`
+- `roles.md`
+- `execution-profiles.md`
+- `autonomous-protocol.md`
+- `user-guide.md`
+
+### Guaranteed redirect-stub deletions (9)
+
+- `architecture-steward/instructions.md`
+- `baseline-governor/instructions.md`
+- `definition-of-done.md`
+- `memory-protocol.md`
+- `strategic-reviewer/instructions.md`
+- `templates-handoff.md`
+- `templates-orchestration.md`
+- `ui-reviewer-deep/instructions.md`
+- `worker/instructions.md`
+
+### Conditional deletion / move (1)
+
+- `usage-telemetry.md` → delete if no active consumer remains; otherwise move it out of `docs/agents/` to `docs/ops/usage-telemetry.md`
+
+## Files unchanged (content-stable)
+
+These should stay content-stable unless repointing is absolutely required:
+
+- `code-reviewer/instructions.md`
+- `docs-reviewer/instructions.md`
+- `security-reviewer/instructions.md`
+- `ui-reviewer/instructions.md`
+- `skills/debugging.md`
+- `skills/testing-strategy.md`
+- `invariants-emis.md`
+- `lead-strategic/memory.md`
+- `orchestrator/memory.md`
+- `orchestrator/decision-log.md`
+
+## New `workflow.md` structure (~240–280 lines)
+
+```
+# Agent Workflow
+
+## Overview
+Mental model paragraph. Role table with responsibility only.
+Runtime pointer goes to docs/codex-integration.md.
+
+## 1. Roles and entrypoints
+Who starts what. Which role owns which decision.
+
+## 2. Planning
+lead-strategic decomposes into current_plan.md. User approval boundary.
+
+## 3. Execution paths
+direct-fix / batch / iterative. Worker loop.
+Isolated subagent + worktree default. Teammate only for docs-only work.
+
+## 4. Review model
+Single canonical owner for:
+- minimum code review floor
+- reviewer selection matrix
+- integration review trigger
+- severity semantics
+- when skip is allowed
+- rule: orchestrator-authored code changes after review require re-review
+- rule: micro-task exemption shortens packet only; it does not change reviewer requirements
+
+## 5. Acceptance and operating modes
+Strategic pass triggers, reframe, lightweight / standard / full modes.
+Runtime details are only a pointer to docs/codex-integration.md.
+
+## 6. Finalize
+Wave close, report, merge.
+
+## 7. Memory protocol
+Who writes what, pruning, compact recovery.
+
+## 8. Escalation
+orchestrator → lead-strategic vs → user.
+
+## 9. Definition of Done
+Slice / wave / feature DoD. Documentation items must be explicit done or N/A.
+
+## 10. Pointers
+templates.md, docs/codex-integration.md, autonomous-mode.md,
+git-protocol.md, recovery.md, invariants.md.
+```
+
+## Execution plan
+
+### Preflight (no merge)
+
+- Run a repo-wide grep for external references to:
+  - `review-gate.md`
+  - `roles.md`
+  - `execution-profiles.md`
+  - `autonomous-protocol.md`
+  - `user-guide.md`
+  - `usage-telemetry.md`
+- Check whether `AGENTS.md`, `docs/AGENTS.md`, and `CLAUDE.md` exist in the repo; if present, add them to repoint scope. If absent, do not count them in acceptance.
+- Create a migration ledger that lists every file as one of: `rewrite`, `touch-light`, `create`, `delete`, `move`, `state/archive`.
+
+**Preflight acceptance:**
+- Scope locked.
+- Counts refer only to canonical docs, not state/history.
+- Telemetry decision path is explicit before deletion.
+
+### Slice 1: establish the new canon
+
+- Create `docs/codex-integration.md`
+- Rewrite `workflow.md` from scratch
+- Create `docs/agents/autonomous-mode.md`
+- If Slice 1 is merged before legacy deletion, add one-line deprecation headers to:
+  - `review-gate.md`
+  - `execution-profiles.md`
+  - `autonomous-protocol.md`
+  - `roles.md`
+  - `user-guide.md`
+
+**Slice 1 acceptance:**
+- `workflow.md` contains **no** plugin commands, model defaults, proof retrieval details, or companion CLI usage.
+- `workflow.md` single-sources all of these:
+  - review floor
+  - integration review trigger
+  - post-review re-review rule
+  - DoD explicitness rule
+- `autonomous-mode.md` is delta-only and points back to `workflow.md`, `docs/codex-integration.md`, and `recovery.md`.
+
+### Slice 2: repoint bootstrap docs
+
+- Rewrite `orchestrator/instructions.md`
+- Rewrite `lead-strategic/instructions.md`
+- Rewrite `worker/guide.md`
+- Rewrite `templates.md`
+- Touch-light:
+  - `architecture-reviewer/instructions.md`
+  - `invariants.md`
+- Create `docs/QUICKSTART.md` from the operational subset of `user-guide.md`
+
+**Slice 2 acceptance:**
+- No default bootstrap doc points to `review-gate.md`, `roles.md`, `execution-profiles.md`, `autonomous-protocol.md`, or `user-guide.md`.
+- `templates.md` contains only artifact shapes.
+- Role docs point runtime questions only to `docs/codex-integration.md`.
+
+### Slice 3: slim support docs + refresh live state
+
+- Rewrite `git-protocol.md`
+- Rewrite `recovery.md`
+- Refresh or archive:
+  - `lead-strategic/current_plan.md`
+  - `orchestrator/last_report.md`
+- Update repo navigation files if they exist:
   - `AGENTS.md`
-  - any remaining files that still point to removed agent docs
-- depends on: ST-3
-- size: M
-- acceptance:
-  - `lead-tactical` no longer exists as a parallel directory surface, or is reduced to a single explicit compatibility pointer if hard deletion proves unsafe
-  - root and docs navigation point to the new canonical set without dangling references
-  - primary bootstrap for `orchestrator` and `lead-strategic` is shorter than before
-- verification intent: ensure the simplified model is actually navigable in practice
-- verification mode: `verification-first`
-- notes:
-  - use targeted search to prove that deleted paths are no longer referenced outside archive or compatibility notes
+  - `docs/AGENTS.md`
+  - `CLAUDE.md`
+- Decide `usage-telemetry.md` using the preflight grep result:
+  - delete, or
+  - move to `docs/ops/usage-telemetry.md`
 
-### ST-5: Optional Advanced-Mode Follow-Up Gate
+**Slice 3 acceptance:**
+- Live state docs do not cite deleted canon.
+- Any telemetry note that remains lives outside `docs/agents/`.
+- Navigation points to `workflow.md`, `docs/codex-integration.md`, and `docs/QUICKSTART.md`.
 
-- scope:
-  - `docs/agents/autonomous-protocol.md`
-  - `docs/agents/execution-profiles.md`
-  - `docs/agents/usage-telemetry.md`
-- depends on: ST-4
-- size: M
-- acceptance:
-  - either these files are explicitly kept as advanced appendices with slimmer references from the main flow
-  - or one narrowly scoped simplification is applied with no spillover into the core workflow
-- verification intent: stop wave 1 from accidentally becoming an unbounded rewrite
-- verification mode: `verification-first`
-- notes:
-  - default outcome for ST-5 is `defer with explicit rationale` unless ST-4 reveals a blocking contradiction
+### Slice 4: delete legacy docs + final verify
 
-## Slice Order
+- Delete the guaranteed 14 legacy files
+- Remove any temporary deprecation headers by removing the legacy files entirely
+- Record final counts/results in live state docs
 
-1. ST-0 — decide memory policy and prune stale memory
-2. ST-1 — freeze migration map and review exceptions
-3. ST-2 — collapse role surface
-4. ST-3 — collapse protocol/template surface
-5. ST-4 — remove legacy and repoint navigation
-6. ST-5 — decide defer vs narrow advanced-mode cleanup
+**Slice 4 acceptance:**
+- Zero live refs to deleted docs.
+- Canonical file count and line budget pass.
+- Historical refs to old docs exist only in archived files.
 
-## Merge Criteria For The Whole Wave
+## Verification
 
-- The simplified doc set still makes `lead-strategic`, `orchestrator`, `worker`, and reviewer ownership unambiguous.
-- The main bootstrap path for `orchestrator` and `lead-strategic` is materially shorter than before.
-- The fate of durable memory is explicit: either small and disciplined, or removed from the default bootstrap path.
-- No deleted doc path remains a hidden canonical dependency.
-- The wave closes with an explicit note on what still feels overbuilt and should move to wave 2.
+### Quantitative verification
+
+Canonical docs count:
+```bash
+find docs/agents -name '*.md' -not -path '*/archive/*' \
+| grep -vE 'lead-strategic/current_plan.md|lead-strategic/memory.md|orchestrator/last_report.md|orchestrator/memory.md|orchestrator/decision-log.md' \
+| wc -l
+```
+Target: `17`
+
+Canonical lines:
+```bash
+find docs/agents -name '*.md' -not -path '*/archive/*' \
+| grep -vE 'lead-strategic/current_plan.md|lead-strategic/memory.md|orchestrator/last_report.md|orchestrator/memory.md|orchestrator/decision-log.md' \
+| xargs wc -l
+```
+Target: `~1,750–1,950`
+
+### Structural verification
+
+- `rg` for deleted docs returns no hits outside `archive/`
+- `workflow.md` contains no:
+  - `/codex:`
+  - companion CLI command recipes
+  - model-default tables
+  - proof tuple retrieval mechanics
+- `docs/codex-integration.md` owns runtime/profile/proof details
+
+### Semantic verification
+
+These are mandatory, not optional:
+- Any product code change still requires `code-reviewer`.
+- `micro-task` / `direct-fix` do not weaken reviewer requirements.
+- Integration review trigger is single-sourced and impact-based.
+- `orchestrator` code changes after review trigger re-review.
+- Slice DoD documentation fields are explicit `done` / `N/A`, not omitted.
+
+### Bootstrap verification
+
+Use realistic bootstrap, not one-file fantasy:
+- `lead-strategic` bootstrap: `workflow.md` + `lead-strategic/instructions.md` (+ `docs/codex-integration.md` when runtime details matter)
+- `orchestrator` bootstrap: `workflow.md` + `orchestrator/instructions.md` + `templates.md` (+ `docs/codex-integration.md` when runtime details matter)
+- `worker` bootstrap: `workflow.md` + `worker/guide.md` + `invariants.md`
+
+## Non-goals
+
+- No runtime behavior changes.
+- No tool/plugin redesign.
+- No substantial reviewer-policy rewrite outside the three conflicts explicitly fixed above.
+- No editing of archive history except to move old live docs into archive.
+
+## Critical path files
+
+### Rewrite first
+- `workflow.md`
+- `orchestrator/instructions.md`
+- `lead-strategic/instructions.md`
+- `worker/guide.md`
+- `templates.md`
+
+### Then support
+- `git-protocol.md`
+- `recovery.md`
+- `architecture-reviewer/instructions.md`
+- `invariants.md`
+
+### Create
+- `docs/agents/autonomous-mode.md`
+- `docs/codex-integration.md`
+- `docs/QUICKSTART.md`
+- optional `docs/ops/usage-telemetry.md`
+
+### Delete last
+- `review-gate.md`
+- `roles.md`
+- `execution-profiles.md`
+- `autonomous-protocol.md`
+- `user-guide.md`
+- 9 redirect stubs
+- optional `usage-telemetry.md`

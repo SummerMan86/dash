@@ -2,16 +2,15 @@
 
 Core process для работы агентной команды.
 
-`workflow.md` теперь держит только lifecycle и ownership процесса.
-Поддерживающие протоколы вынесены в отдельные canonical docs:
+Lifecycle, ownership, and memory protocol.
+Supporting docs:
 
-- `review-gate.md` — review model, strategic acceptance/reframe loop, governance passes
-- `execution-profiles.md` — runtime/model binding for supported execution profiles
-- `recovery.md` — failure-path и recovery protocols
-- `invariants.md` — generic repo-wide project invariants (domain overlays: `invariants-emis.md`, etc.)
+- `review-gate.md` — review model, governance passes, definition of done
+- `execution-profiles.md` — runtime/model binding
+- `recovery.md` — failure-path protocols
+- `invariants.md` — project invariants (domain overlays: `invariants-emis.md`, etc.)
 - `git-protocol.md` — branches, worktrees, integration choreography
-- `memory-protocol.md` — ownership и timing для `memory.md`
-- `usage-telemetry.md` — append-only usage history и optimization analytics contract
+- `usage-telemetry.md` — usage history and optimization analytics
 
 ## 1. Модель работы
 
@@ -22,7 +21,7 @@ Core process для работы агентной команды.
     │
     ├─ ставит задачу
     ▼
-Claude Opus (orchestrator; legacy alias: lead-tactical)
+Claude Opus (orchestrator)
     │
     ├─ поднимает `lead-strategic` по runtime/model binding из `execution-profiles.md`
     ├─ dispatches workers/reviewers по выбранному execution profile
@@ -41,6 +40,9 @@ applies only to worker/reviewer lanes. `lead-strategic` and
 `strategic-reviewer` are not silently remapped to worker/reviewer slash
 commands; if the active surface has no dedicated strategic lane, record a
 truthful per-role exception, documented alternative runtime path, or blocker.
+On the current Claude Code surface, that documented alternative path for
+strategic roles is companion CLI `task`; plugin-first slash mapping remains
+worker/reviewer-only.
 
 **Role map:**
 
@@ -101,7 +103,6 @@ truthful per-role exception, documented alternative runtime path, or blocker.
 ### Протокол оркестрации (`orchestrator`)
 
 `orchestrator` — отдельная top-level execution role.
-Compatibility note: `lead-tactical` — legacy alias; см. `docs/agents/roles.md`.
 
 **Что `orchestrator` читает по умолчанию:**
 
@@ -186,7 +187,7 @@ Reviewers как fresh subagents:
 
 Три execution path:
 
-- `direct-fix` — inline fast path для микроправки без architectural surface;
+- `direct-fix` — inline fast path для локальной механической микроправки без architectural surface;
 - `batch` — для простых задач;
 - `iterative` — для задач с частым slice-by-slice review.
 
@@ -207,6 +208,7 @@ Reviewers как fresh subagents:
 - change укладывается в `<= 10` изменённых строк;
 - затронут ровно один файл;
 - нет architectural surface;
+- change purely local/mechanical; нет import-home, branching, data-flow, auth/query/persistence или business-rule changes;
 - нет schema changes или contract changes;
 - не нужен новый exception / waiver / `Plan Change Request`.
 
@@ -467,7 +469,7 @@ Failure-path после эскалации описан в `docs/agents/recovery
 
 **Кто:** `orchestrator` выполняет, `lead-strategic` верифицирует.
 
-**Checklist:** `docs/agents/definition-of-done.md` Level 2 (Wave DoD).
+**Checklist:** `docs/agents/review-gate.md` §4.2 (Wave DoD).
 
 **Порядок:**
 
@@ -517,12 +519,39 @@ pane #2  worker B (если нужен)
 
 ### Canonical supporting docs
 
-- `docs/agents/definition-of-done.md` — composable DoD checklists (Slice → Wave → Feature)
-- `docs/agents/review-gate.md` — Review Gate, strategic acceptance/reframe loop, governance passes
-- `docs/agents/recovery.md` — failure-path и recovery protocols
-- `docs/agents/invariants.md` — generic repo-wide invariants (domain overlays: `invariants-emis.md`, etc.)
+- `docs/agents/review-gate.md` — Review Gate, governance passes, definition of done
+- `docs/agents/recovery.md` — failure-path protocols
+- `docs/agents/invariants.md` — project invariants (domain overlays: `invariants-emis.md`, etc.)
 - `docs/agents/git-protocol.md` — branch/worktree discipline
-- `docs/agents/memory-protocol.md` — кто и когда пишет `memory.md`
-- `docs/agents/usage-telemetry.md` — durable usage log и usefulness rubric
-- `docs/agents/roles.md` — role map и role ownership
-- `docs/agents/templates.md` — templates для plan, task, handoff, report, governance verdicts
+- `docs/agents/usage-telemetry.md` — usage log and optimization analytics
+- `docs/agents/roles.md` — role map
+- `docs/agents/templates.md` — all templates (plan, task, handoff, report, governance, transparency)
+
+## 4. Memory Protocol
+
+### Who writes what
+
+| Role | File | When |
+| --- | --- | --- |
+| `lead-strategic` | `lead-strategic/memory.md` | after plan decisions, acceptance, reframe |
+| `orchestrator` | `orchestrator/memory.md` | after each accepted slice, before session end |
+| `worker` | none | session context only, continuity via handoff |
+
+### What to store
+
+Active wave, branch, current/next slice, operating mode, still-valid decisions. Not: closed-wave narratives, implementation logs, diff summaries (these belong in `last_report.md`, `archive/`, or `git log`).
+
+### Pruning rule
+
+On every new wave: **rewrite, don't append**. Keep only active state, still-valid durable decisions, and resume point. If memory exceeds ~20 lines, it is too long.
+
+### Recovery after auto-compact
+
+1. Determine role from context.
+2. `orchestrator`: read `orchestrator/memory.md` then `current_plan.md`.
+3. `lead-strategic`: read `lead-strategic/memory.md` then `current_plan.md`.
+4. `worker` / `reviewer`: do not run recovery; follow task packet / review request only.
+
+### Inter-worker continuity
+
+Workers have no shared memory. Continuity between dependent workers is orchestrator's responsibility via `Carry-Forward Context` in the task packet.

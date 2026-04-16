@@ -2,7 +2,7 @@
 
 Практический runbook для пользователя.
 
-По умолчанию используйте **integrated orchestration path**: вы ставите задачу `orchestrator` (legacy alias: `lead-tactical`), а не напрямую `lead-strategic`. `orchestrator` сам тянет Codex/GPT-5.4, workers и reviewers по workflow.
+По умолчанию используйте **integrated orchestration path**: вы ставите задачу `orchestrator`, а не напрямую `lead-strategic`. `orchestrator` сам тянет Codex/GPT-5.4, workers и reviewers по workflow.
 
 Прямой prompt в `lead-strategic` — только manual/fallback path или узкий strategic pass, а не основной user entrypoint.
 
@@ -22,6 +22,7 @@ Runtime/model binding for supported profiles lives only in
 - For code-writing worker slices in that profile, request `/codex:rescue --fresh --write` by default; a bare `/codex:rescue` is read-only in current observed runtime behavior.
 - For proof/recovery on that surface, expect to use companion CLI for `status/result`, not the skill surface.
 - `lead-strategic` and `strategic-reviewer` are not implicitly mapped to those worker/reviewer slash commands. If the active plugin surface does not expose a dedicated strategic lane, treat that as explicit exception/fallback territory, not as silent remap.
+- На текущем Claude Code surface стратегические Codex-pass'ы (`lead-strategic`, `strategic-reviewer`) идут через documented companion `task` path; plugin-first slash mapping остаётся только для worker/reviewer lanes.
 - Если runtime surface не может truthfully показать, что worker/reviewer run действительно ушёл в Codex lane, не считай это validated `opus-orchestrated-codex-workers` execution; оставайся на `mixed-claude-workers` или фиксируй blocker truthfully.
 - Minimum proof artifact for that claim in Claude Code = `/codex:result` + returned session ID/run ID tied to the specific worker/reviewer role; `/codex:status` tracks progress, а history alone only corroborates an already identified run.
 
@@ -68,8 +69,8 @@ Runtime/model binding for supported profiles lives only in
 - **Handoff** — формальная сдача результата от worker'а к `orchestrator`.
 - **Escalation** — когда агент не может принять решение сам и обращается к тебе.
 - **Micro-worker** — тот же worker contract, но для trivial/bounded slice: маленький scope, быстрый handoff. Ты можешь увидеть его в report.
-- **Direct-fix** — inline fast path у `orchestrator` для правки `<= 10` строк в одном файле без architectural surface; worker и reviewer там не обязательны.
-- **Architecture Readiness Check** — bounded pre-implementation audit, который `orchestrator` может запустить перед execution, если фича затрагивает architectural surface (BI, cross-layer, новый dataset и т.д.). Может немного задержать старт execution — это нормально.
+- **Direct-fix** — inline fast path у `orchestrator` только для локальной механической правки `<= 10` строк в одном файле без architectural surface и без behavior-sensitive logic; worker и reviewer там не обязательны.
+- **Architecture Readiness Check** — обязательный bounded pre-implementation audit для фич с architectural surface (BI, cross-layer, новый dataset и т.д.); для trivial/no-surface work не нужен. Может немного задержать старт execution — это нормально.
 
 Ты участвуешь только в трёх точках: **план** (approve), **эскалации** (decide), **merge** (confirm). Всё остальное автономно.
 

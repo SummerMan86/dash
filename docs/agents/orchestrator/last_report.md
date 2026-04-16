@@ -118,7 +118,7 @@
 
 ## Wave DoD Status
 
-Per `docs/agents/definition-of-done.md` Level 2:
+Per `docs/agents/review-gate.md` §4.2 (Wave DoD):
 
 - all slices accepted: yes (ST-0, ST-1, ST-2, ST-3, ST-4)
 - docs sync: done — `execution-profiles.md` remains canonical; known exceptions are recorded both here and in canonical docs

@@ -685,5 +685,5 @@ Timeout: 60 минут
 | `invariants.md`                  | Инварианты = hard guardrails. Нарушение = STOP                                                |
 | `lead-strategic/instructions.md` | Расширяется autonomous decision-maker ответственностью                                        |
 | `orchestrator/instructions.md`   | Расширяется autonomous executor ответственностью                                              |
-| `memory-protocol.md`             | Без изменений. Decision-log — дополнительный артефакт                                         |
+| `workflow.md` §4 (memory)        | Без изменений. Decision-log — дополнительный артефакт                                         |
 | `user-guide.md`                  | Может ссылаться на этот документ как entry point для autonomous mode                          |

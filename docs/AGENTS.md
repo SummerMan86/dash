@@ -114,28 +114,20 @@ Historical BI archive: [archive/bi/architecture_dashboard_bi.md](./archive/bi/ar
 
 | Документ                                      | Владеет                                      | Source of truth для                                                      |
 | --------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------ |
-| `agents/definition-of-done.md`                | composable DoD checklists                    | Slice/Wave/Feature DoD, responsibility matrix, docs severity escalation   |
-| `agents/workflow.md`                          | core agent lifecycle                         | процесс GPT-5.4 → Claude, plan ownership, execution loop, escalation     |
-| `agents/review-gate.md`                       | review и governance model                    | slice/integration review, strategic acceptance/reframe pass, architecture/baseline pass  |
-| `agents/recovery.md`                          | failure-path protocol                        | recovery rules для rejected slices, branch divergence и tooling outage   |
+| `agents/workflow.md`                          | core agent lifecycle + memory protocol       | процесс, plan ownership, execution loop, escalation, durable memory     |
+| `agents/review-gate.md`                       | review, governance, definition of done       | slice/integration review, governance passes, DoD checklists              |
+| `agents/roles.md`                             | agent role map                               | все роли и ответственности                                               |
+| `agents/templates.md`                         | all agent communication templates            | plan, task, handoff, report, governance, transparency templates          |
 | `agents/invariants.md`                        | generic project invariants                   | repo-wide architecture/data/schema/complexity guardrails                 |
-| `agents/autonomous-protocol.md`               | autonomous execution protocol                | autonomous mode lifecycle, decision framework, guardrails, recovery      |
 | `agents/git-protocol.md`                      | branch и worktree protocol                   | ветки, worktrees, merge choreography, checkpoints                        |
-| `agents/memory-protocol.md`                   | memory ownership                             | кто и когда пишет `memory.md`, auto-compact recovery                     |
+| `agents/recovery.md`                          | failure-path protocol                        | recovery rules для rejected slices, branch divergence и tooling outage   |
+| `agents/autonomous-protocol.md`               | autonomous execution protocol                | autonomous mode lifecycle, decision framework, guardrails, recovery      |
 | `agents/usage-telemetry.md`                   | agent usage telemetry                        | durable usage history, usefulness rubric, file-first telemetry contract  |
-| `agents/roles.md`                             | agent role map                               | все роли, dispatch names, кто что делает                                 |
-| `agents/templates.md`                         | agent communication templates (hub/index)    | routing table, правила заполнения, ссылки на дочерние файлы              |
-| `agents/templates-handoff.md`                 | worker handoff templates                     | Worker Handoff, Micro-Worker Handoff (worker-facing)                     |
-| `agents/templates-orchestration.md`           | orchestration & governance templates         | план, задача, reports, review, governance, telemetry (orchestrator-facing) |
-| `agents/lead-strategic/instructions.md`       | GPT-5.4 lead instructions                    | как планировать, декомпозировать, принимать результаты                   |
-| `agents/architecture-steward/instructions.md` | `lead-strategic` architecture-pass checklist | как делать architecture governance pass: placement decisions и waivers   |
-| `agents/baseline-governor/instructions.md`    | `lead-strategic` baseline-pass checklist     | как делать baseline pass: baseline status, known exceptions, verdict     |
-| `agents/strategic-reviewer/instructions.md`   | strategic-reviewer instructions              | как делать bounded strategic acceptance/reframe pass и cheap cross-model second look |
-| `agents/orchestrator/instructions.md`         | Claude Opus orchestration-only instructions  | как управлять workers, review gate, report и bounded direct-fix exception |
-| `agents/lead-tactical/instructions.md`        | compatibility alias → orchestrator           | legacy entry point для старых prompt/script flows                        |
-| `agents/worker/guide.md`                      | worker bootstrap and guardrails guide        | bootstrap, guardrails, review triggers, evidence rules, DoD checklist    |
-| `agents/worker/instructions.md`               | worker bootstrap compatibility shim          | pointer на canonical worker guide и isolated-subagent bootstrap          |
-| `agents/*-reviewer/instructions.md`           | reviewer role instructions                   | checks, output format, scope для каждого ревьюера                        |
+| `agents/lead-strategic/instructions.md`       | GPT-5.4 lead + governance passes             | planning, acceptance, architecture/baseline/strategic review passes      |
+| `agents/orchestrator/instructions.md`         | Claude Opus orchestration instructions       | worker dispatch, review gate, report, direct-fix exception               |
+| `agents/worker/guide.md`                      | worker bootstrap and guardrails              | bootstrap, guardrails, review triggers, evidence rules, DoD checklist    |
+| `agents/*-reviewer/instructions.md`           | reviewer role instructions                   | checks, output format, scope for each reviewer                           |
+| `agents/ui-reviewer/instructions.md`          | UI smoke + deep mode                         | smoke-test checks and deep UX audit mode                                 |
 | `agents/skills/debugging.md`                  | debugging playbook                           | reproduce, compare, hypothesize, fix, escalation triggers                |
 | `agents/skills/testing-strategy.md`           | three-mode testing strategy                  | test-first, prototype-pin-refactor, verification-first, per-slice fields |
 | `agents/user-guide.md`                        | user-facing agent workflow runbook           | как ставить задачи команде агентов, integrated orchestration path        |
@@ -209,7 +201,7 @@ Historical BI archive: [archive/bi/architecture_dashboard_bi.md](./archive/bi/ar
 - `agents/invariants.md` - если нужны generic project invariants и guardrails
 - `agents/invariants-emis.md` - если нужны EMIS-specific domain invariants
 - `agents/git-protocol.md` - если нужны branches, worktrees и merge choreography
-- `agents/memory-protocol.md` - если нужно понять ownership `memory.md`
+- `agents/workflow.md` §4 - если нужно понять memory ownership
 - `agents/usage-telemetry.md` - если нужен durable usage log, usefulness rubric или telemetry storage contract
 - `agents/roles.md` - если нужны роли агентов
 - `agents/templates.md` - если нужны шаблоны коммуникации между агентами

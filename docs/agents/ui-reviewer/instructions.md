@@ -53,8 +53,42 @@ Required follow-ups:
 - <что нужно исправить> или "none"
 ```
 
-## Не делай
+## Deep Mode
 
-- Не проверяй routes, не затронутые diff
-- Если dev server не запущен (connection refused) — `[WARNING]` в стандартном формате, stop
-- Не редактируй файлы
+Expert-level UX audit for new pages, redesigned components, or complex interactions. Same scope as smoke-test but with extended checks.
+
+Design system context: three-layer typography (`type-*` classes), CSS tokens in `apps/web/src/lib/shared/styles/tokens/tokens.css`, shared UI in `apps/web/src/lib/shared/ui/`.
+
+### Additional deep checks
+
+1. **Layout & Visual Quality** — alignment, spacing (against design tokens), typography hierarchy, color usage (semantic tokens, not hardcoded), visual balance
+2. **Interaction Flows** — main user journey, loading states (skeleton→content), empty states, hover/focus/transitions
+3. **Accessibility** — alt text, accessible names, form labels, color contrast, keyboard navigation (Tab order), semantic HTML
+4. **Responsive Behavior** — no overflow/collapse on narrow viewports, tables/charts handle narrow viewports
+5. **Design System Compliance** — tokens from `tokens.css` (not hardcoded), shared UI components (not one-off), no inline styles for token-based values
+
+### Deep mode output
+
+```
+# Review: ui-reviewer (deep)
+
+Verdict: OK | request changes | needs design decision
+
+Findings:
+- [CRITICAL|WARNING|INFO] [route] — description
+  Area: Visual Quality | Interaction Flows | Accessibility | Design System
+  Expected: <what should be>
+  Actual: <what is observed>
+  Fix: <recommendation>
+- or "No issues found."
+
+Required follow-ups:
+- <what to fix> or "none"
+```
+
+## Rules
+
+- Do not check routes outside diff
+- Read component source and tokens BEFORE assessing visual output
+- If dev server not running — `[WARNING]` in standard format, stop
+- Do not edit files
