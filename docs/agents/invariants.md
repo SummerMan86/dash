@@ -71,13 +71,7 @@ For domain-specific invariants, see the relevant overlay: `invariants-emis.md`, 
 
 Архитектурные решения согласуются и документируются **до merge**. Ни одно архитектурное решение не мержится "задним числом".
 
-Три точки выявления архитектурных решений:
-
-| Этап | Кто выявляет | Протокол |
-| --- | --- | --- |
-| Планирование | `lead-strategic` | Фиксирует в architecture doc как часть плана (шаг 5 `lead-strategic/instructions.md`) |
-| Перед реализацией | `architecture-reviewer` (audit mode) | Readiness verdict; `DOCS FIRST` → docs update до реализации (`workflow.md` §2.3.1) |
-| После реализации (review) | `architecture-reviewer` (diff mode) | `needs design decision` → блокирует merge → согласование → docs update → re-review (`workflow.md` §3.3) |
+Три точки выявления архитектурных решений — canonical определение по стадиям: планирование — `lead-strategic/instructions.md` (step 5 "Plan"); перед реализацией — `workflow.md` §2.3.1 (Architecture Readiness Check); на review — `workflow.md` §3.3 ("needs design decision" protocol). Governance pass для cross-contour decisions — `workflow.md` §5.1 (Architecture Pass).
 
 | Инвариант | Enforcement | Current enforcement / path to automation |
 | --- | --- | --- |
