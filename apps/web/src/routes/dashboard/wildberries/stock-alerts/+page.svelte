@@ -14,7 +14,6 @@
 		hasFiltersForTarget
 	} from '@dashboard-builder/platform-filters';
 	import { FilterPanel } from '@dashboard-builder/platform-filters/widgets';
-	import { ScenarioParams } from '$widgets/stock-alerts';
 
 	import { stockAlertFilters, DEFAULT_PRESET, getPresetParams, type PresetName } from './filters';
 	import type { OfficeAggregation, StockAlertKpi } from './types';
@@ -30,6 +29,7 @@
 
 	import OfficesTable from './OfficesTable.svelte';
 	import OfficeSkuPanel from './OfficeSkuPanel.svelte';
+	import ScenarioParams from './ScenarioParams.svelte';
 
 	const datasetId = 'wildberries.fact_product_office_day';
 	const filterRuntime = useFilterWorkspace({

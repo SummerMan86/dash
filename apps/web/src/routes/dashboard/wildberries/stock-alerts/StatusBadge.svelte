@@ -1,14 +1,6 @@
-<!--
-  StatusBadge Component
-  Displays stock status with color-coded badge
-
-  Usage:
-    <StatusBadge status="DEFICIT" />
-    <StatusBadge status="RISK" size="sm" />
--->
-
 <script lang="ts">
 	import { cn } from '@dashboard-builder/platform-ui';
+
 	import type { StockStatus } from './types';
 	import { getStatusColor, getStatusLabel } from './utils';
 

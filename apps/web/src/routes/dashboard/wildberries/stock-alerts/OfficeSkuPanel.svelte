@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { Button } from '@dashboard-builder/platform-ui';
 	import { Card, CardContent, CardHeader, CardTitle } from '@dashboard-builder/platform-ui';
-	import { StatusBadge } from '$widgets/stock-alerts';
 	import { formatNumber } from '@dashboard-builder/platform-core';
 
+	import StatusBadge from './StatusBadge.svelte';
 	import type { OfficeAggregation, SkuDetail } from './types';
 
 	let {

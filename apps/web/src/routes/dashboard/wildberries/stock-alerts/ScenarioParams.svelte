@@ -1,20 +1,8 @@
-<!--
-  ScenarioParams Component
-  Collapsible panel for scenario parameters selection
-
-  Usage:
-    <ScenarioParams
-      selectedPreset="balanced"
-      onPresetChange={(name) => selectedPreset = name}
-    />
--->
-
 <script lang="ts">
-	import { cn } from '@dashboard-builder/platform-ui';
-	import { Button } from '@dashboard-builder/platform-ui';
-	import { Card, CardContent } from '@dashboard-builder/platform-ui';
+	import { Button, Card, CardContent, cn } from '@dashboard-builder/platform-ui';
+
 	import type { PresetName } from './filters';
-	import { SCENARIO_PRESETS, PRESET_LIST, getPresetParams } from './filters';
+	import { SCENARIO_PRESETS, PRESET_LIST } from './filters';
 
 	interface Props {
 		/** Currently selected preset */
@@ -27,15 +15,12 @@
 
 	let { selectedPreset, onPresetChange, class: className }: Props = $props();
 
-	// Collapsible state
 	let isOpen = $state(false);
 
-	// Current preset info
 	let currentPreset = $derived(SCENARIO_PRESETS[selectedPreset]);
 	let params = $derived(currentPreset.params);
 	let threshold = $derived(params.L + params.S);
 
-	// Parameter definitions with labels and tooltips
 	const paramDefs = {
 		L: {
 			label: 'Срок поставки',
@@ -77,7 +62,6 @@
 </script>
 
 <Card class={cn('overflow-hidden', className)}>
-	<!-- Collapsible Header -->
 	<button
 		type="button"
 		class="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-muted/50"
@@ -101,10 +85,8 @@
 		</div>
 	</button>
 
-	<!-- Collapsible Content -->
 	{#if isOpen}
 		<CardContent class="space-y-4 border-t border-border/50 pt-4">
-			<!-- Preset Buttons -->
 			<div class="flex flex-wrap gap-2">
 				{#each PRESET_LIST as preset (preset.name)}
 					<Button
@@ -118,9 +100,7 @@
 				{/each}
 			</div>
 
-			<!-- Parameters Display -->
 			<div class="grid grid-cols-2 gap-3 sm:grid-cols-5">
-				<!-- L: Срок поставки -->
 				<div
 					class="cursor-help rounded-md border border-border/50 p-3 text-center"
 					title={paramDefs.L.tooltip}
@@ -130,7 +110,6 @@
 					<div class="type-caption text-muted-foreground">({paramDefs.L.code})</div>
 				</div>
 
-				<!-- S: Страховой запас -->
 				<div
 					class="cursor-help rounded-md border border-border/50 p-3 text-center"
 					title={paramDefs.S.tooltip}
@@ -140,7 +119,6 @@
 					<div class="type-caption text-muted-foreground">({paramDefs.S.code})</div>
 				</div>
 
-				<!-- R: Интервал поставок -->
 				<div
 					class="cursor-help rounded-md border border-border/50 p-3 text-center"
 					title={paramDefs.R.tooltip}
@@ -150,7 +128,6 @@
 					<div class="type-caption text-muted-foreground">({paramDefs.R.code})</div>
 				</div>
 
-				<!-- W: Окно анализа -->
 				<div
 					class="cursor-help rounded-md border border-border/50 p-3 text-center"
 					title={paramDefs.W.tooltip}
@@ -160,7 +137,6 @@
 					<div class="type-caption text-muted-foreground">({paramDefs.W.code})</div>
 				</div>
 
-				<!-- Threshold: Мин. запас -->
 				<div
 					class="col-span-2 cursor-help rounded-md border border-warning/30 bg-warning-muted p-3 text-center sm:col-span-1"
 					title={paramDefs.threshold.tooltip}
@@ -171,7 +147,6 @@
 				</div>
 			</div>
 
-			<!-- Description -->
 			<p class="type-caption text-muted-foreground">
 				{currentPreset.description}
 			</p>

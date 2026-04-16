@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { cn } from '@dashboard-builder/platform-ui';
 	import { Card, CardContent, CardHeader, CardTitle } from '@dashboard-builder/platform-ui';
-	import { StatusBadge } from '$widgets/stock-alerts';
 	import { formatNumber, formatCompact } from '@dashboard-builder/platform-core';
 
+	import StatusBadge from './StatusBadge.svelte';
 	import type { OfficeAggregation } from './types';
 	import { getStatusTextColor } from './utils';
 
