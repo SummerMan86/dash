@@ -48,7 +48,7 @@
 Default expectation для новых задач:
 
 - не добавлять еще один большой inline block, если его можно вынести
-- extract reusable or stateful UI slices into `src/lib/widgets/*` or route-local subcomponents
+- extract reusable UI slices as route-local subcomponents first; if used by 2+ routes, promote to `src/lib/<module>/`; if reusable across domains, extract to `packages/*`
 - extract non-trivial view-model shaping into route-local helpers or dedicated model files
 
 Хороший кандидат на extraction:
@@ -58,15 +58,15 @@ Default expectation для новых задач:
 - isolated selection/loading/runtime logic
 - map-related logic, не относящаяся к page composition
 
-## 5. Route vs widget boundary
+## 5. Route vs map-runtime boundary
 
 В `src/routes/emis/*` оставляем:
 
-- какой слой workspace активен
+- page composition и workspace orchestration
 - какой endpoint / query нужен текущей странице
-- какой selection state синхронизируется с URL
+- selection state и URL sync
 
-В `src/lib/widgets/emis-map/*` выносим:
+В `packages/emis-ui/` (`@dashboard-builder/emis-ui`) выносим:
 
 - maplibre lifecycle
 - layer/source wiring

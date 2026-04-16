@@ -23,8 +23,8 @@ Key routes to check based on changed files:
 - `apps/web/src/routes/dashboard/+page.svelte` → `http://localhost:5173/dashboard`
 - `apps/web/src/routes/dashboard/wildberries/*` → `http://localhost:5173/dashboard/wildberries/...`
 - `apps/web/src/routes/emis/*` → `http://localhost:5173/emis`
-- `apps/web/src/lib/shared/ui/*` → check any page that uses the changed component
-- `apps/web/src/lib/widgets/*` → check the page that hosts the widget
+- `apps/web/src/lib/dashboard-edit/*` → `http://localhost:5173/dashboard`
+- `apps/web/src/lib/emis-manual-entry/*` → соответствующий `/emis/...` create/edit route
 
 ## What to check
 

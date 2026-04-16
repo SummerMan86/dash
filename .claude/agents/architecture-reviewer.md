@@ -28,11 +28,10 @@ Do not skip these. The inline rules below cover the common checks, but invariant
 
 ## Project structure
 
-> Reusable logic lives in `packages/*`. App layers below are UI composition only. `entities/` was deleted — its content migrated to packages.
+> Reusable logic lives in `packages/*`. App-local `src/lib/` is flat by responsibility, and `$lib/*` is the only active app alias.
 
-- `$features` = `apps/web/src/lib/features/` — user-facing features (app-local)
-- `$widgets` = `apps/web/src/lib/widgets/` — composite UI blocks (app-local)
-- `$shared` = `apps/web/src/lib/shared/` — UI kit, utils, API facade
+- `$lib/*` = `apps/web/src/lib/*` — app-local modules and thin glue
+- first-level app-local modules under `apps/web/src/lib/`: `api/`, `fixtures/`, `styles/`, `dashboard-edit/`, `emis-manual-entry/`
 - `$lib/server/` = `apps/web/src/lib/server/` — server-only BFF layer (NOT importable from client)
 - `packages/*` — reusable contracts, server logic, UI (canonical homes for business logic)
 - `apps/web/src/routes/` — pages and API endpoints
@@ -40,8 +39,9 @@ Do not skip these. The inline rules below cover the common checks, but invariant
 ## Architecture rules to check
 
 1. **App-layer boundaries**:
-   - features MUST NOT import from widgets or routes
-   - shared MUST NOT import from features, widgets, or routes
+   - app-local `src/lib/<module>/*` peer modules MUST NOT become hidden dependency layers for one another
+   - route-owned UI and workspace composition MUST stay in `apps/web/src/routes/*`
+   - reusable logic that outgrows app-local glue MUST move to `packages/*`
 
 2. **Server isolation**:
    - `$lib/server/*` MUST NOT be imported from client-side code (components, stores, client utils)
@@ -58,7 +58,7 @@ Do not skip these. The inline rules below cover the common checks, but invariant
    - Operational flows do not leak into dataset/IR abstraction without a real BI reason
 
 5. **Import aliases**:
-   - Use `$lib`, `$shared`, `$features`, `$widgets` — not relative `../../` paths crossing layer boundaries
+   - Use `$lib/*`; removed aliases (`$shared`, `$features`, `$widgets`) must not reappear
 
 6. **Complexity guardrails**:
    - 500-700 lines: warning, ask whether decomposition is overdue

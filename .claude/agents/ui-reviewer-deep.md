@@ -18,7 +18,7 @@ You are used for **important changes**: new pages, redesigned components, comple
 
 ## Design system context
 
-This project uses a three-layer typography system (`type-*` classes), CSS custom properties in `apps/web/src/lib/shared/styles/tokens/tokens.css`, and shared UI components in `apps/web/src/lib/shared/ui/`. Read the design tokens and component source before evaluating.
+This project uses a three-layer typography system (`type-*` classes), CSS custom properties in `apps/web/src/lib/styles/tokens/tokens.css`, and reusable UI components in `@dashboard-builder/platform-ui`. Read the design tokens and component source before evaluating.
 
 ## What to check
 
@@ -59,9 +59,9 @@ This project uses a three-layer typography system (`type-*` classes), CSS custom
 
 ### 5. Design System Compliance
 
-- Read `src/lib/shared/styles/tokens/tokens.css` for current tokens
+- Read `src/lib/styles/tokens/tokens.css` for current tokens
 - Verify changed components use tokens, not hardcoded values
-- Check that shared UI components (`$shared/ui/*`) are used instead of one-off implementations
+- Check that reusable UI components from `@dashboard-builder/platform-ui` are used instead of one-off implementations
 - Flag any inline styles that should be token-based
 
 ## Execution approach
