@@ -1,3 +1,5 @@
+> **DEPRECATED.** This document's content has been absorbed into `workflow.md` §3–§6. All canonical review, governance, and DoD ownership is now in `workflow.md`. This file will be deleted after repointing is complete (ST-4).
+
 # Review Gate
 
 Canonical decision model for review passes, governance passes, and definition of done.

@@ -1,4 +1,4 @@
-# Orchestrator Instructions (Claude Opus)
+# Orchestrator Instructions
 
 Ты — top-level execution orchestrator.
 
@@ -37,8 +37,7 @@ Product code по умолчанию остаётся worker-owned.
 - не делаешь `git add/commit` для product changes
 - не совмещаешь slice implementation и orchestration в одной роли
 - не изобретаешь ad hoc runtime binding вне `execution-profiles.md`
-- не заявляешь Codex/GPT-5.4 worker-reviewer execution как состоявшийся факт, если текущий runtime surface не умеет это правдиво подтвердить
-- не принимай `/codex:status`, history entry или session ID без matching result artifact как достаточное доказательство Codex lane
+- не заявляешь Codex worker-reviewer execution как состоявшийся факт без proof per `docs/codex-integration.md` §4
 
 Если evidence не хватает или оно противоречиво:
 
@@ -64,17 +63,7 @@ Product code по умолчанию остаётся worker-owned.
    - если одновременно живут `2+` workers, teammate mode не использовать
 6. **Сформируй task packet** по `templates.md` §4, если выбран worker path
    - выбери runtime/model lane по `execution-profiles.md`
-   - если выбранный profile зависит от Codex worker/reviewer lane, сначала проверь, что текущий runtime действительно может её форсировать или хотя бы правдиво верифицировать; codex-labeled helper/relay сам по себе не считается доказательством
-   - в Claude Code для `opus-orchestrated-codex-workers` plugin-first path обязателен для plugin-mapped lanes: `/codex:setup` как preflight, `/codex:rescue` только для worker lanes, `/codex:review` / `/codex:adversarial-review` только для reviewer lanes; если нужен proof/recovery, `status/result` забирай через companion CLI (`status --json`, `result`)
-   - для code-writing worker slice в этом profile обязательно запрашивай worker launch как `/codex:rescue --fresh --write`; голый `/codex:rescue` для implementation slice не используй. Если текущая surface всё ещё возвращает `write: false` или игнорирует/отклоняет эти флаги, используй companion `task --write --fresh` только как documented per-slice exception
-   - не запрашивай `--effort minimal` для Codex worker/reviewer launches на текущем Claude Code surface этого profile; используй profile default `medium`, повышай до `high` только по risk signal
-   - если заявляешь Codex lane как состоявшийся, зафиксируй proof tuple в `last_report.md` и usage telemetry: роль + launch surface + `/codex:result` + session ID (или stable run ID); без этого считай lane `unverified`
-   - для proof retrieval и hanging-run recovery не жди, что skill surface truthfully отдаст `status/result`; на текущем surface используй companion CLI как canonical operational path
-   - для code-writing worker slice proof tuple должен явно показывать write capability (`write: true` или эквивалентный artifact); read-only result можно считать verified Codex run, но не verified implementation lane
-   - не мапь `lead-strategic` или `strategic-reviewer` на worker/reviewer slash-команды молча; если у активного plugin surface нет отдельного strategic lane, это per-role exception, альтернативный documented runtime path, или blocker/fallback — но не silent remap
-   - на текущем Claude Code surface documented alternative path для `lead-strategic` / `strategic-reviewer` = companion `task`: `task --write --fresh` для записи canonical artifacts, `task --resume` для bounded follow-up в том же strategic thread, `task --fresh` для новой strategic wave
-   - не предпочитай raw dispatch в `codex:codex-rescue` subagent, если тот же запуск можно сделать через plugin slash-команду; subagent name сам по себе не является доказательством model lane
-   - если runtime inject'ит bootstrap reminders (`CLAUDE.md`, memory, git status и т.п.) в worker/reviewer launches, считай это ambient context; correctness всё равно должен нести task packet / review request
+   - для Codex plugin commands, proof tuples, companion CLI, and verification contract: `docs/codex-integration.md`
 7. **Прими handoff** по `templates.md` §1, если выбран worker path:
    - scope соблюдён
    - change manifest понятен
@@ -91,7 +80,7 @@ Product code по умолчанию остаётся worker-owned.
 12. **Выбери формат report** и запиши `docs/agents/orchestrator/last_report.md`
 13. **Запиши** usage telemetry
 14. **Обнови** `docs/agents/orchestrator/memory.md`
-15. **Если это последний slice волны** — проверь Wave DoD из `docs/agents/review-gate.md` §4.2 перед записью финального report
+15. **Если это последний slice волны** — проверь Wave DoD из `workflow.md` §6.2 перед записью финального report
 
 ## Direct-Fix Protocol
 
@@ -178,9 +167,7 @@ Workers не имеют shared memory. Continuity между ними — тво
 
 ### Model selection
 
-- worker (code-writing, обычный slice): model не указывать (наследует parent = Opus) или явно `"sonnet"` для простых slices.
-- micro-worker: `model: "sonnet"` по умолчанию.
-- reviewer subagents: `model: "sonnet"` явно — они bounded, Opus не нужен.
+Model defaults per `execution-profiles.md`. When spawning workers/reviewers, use the selected profile's model for each role.
 
 ### Checklist перед spawn
 
@@ -210,12 +197,12 @@ Workers не имеют shared memory. Continuity между ними — тво
 
 При приёмке handoff проверяй:
 
-- evidence freshness по `review-gate.md` §1.6
+- evidence freshness по `workflow.md` §3.7
 - scope hygiene
 - truthful review disposition
 - для code-writing handoff minimum independent review floor не отмечен как `skipped`, кроме `direct-fix`
 - достаточно ли change manifest для acceptance без чтения кода
-- все Documentation items из Slice DoD (`review-gate.md` §4.1 (Slice DoD)) отмечены `done` или `N/A`, а не пропущены
+- все Documentation items из Slice DoD (`workflow.md` §6.1) отмечены `done` или `N/A`, а не пропущены
 
 Недостаточный handoff = `request changes`, а не "принять и додумать самому".
 
@@ -242,9 +229,9 @@ Closed-wave detail, per-slice logs, diff summaries — в `last_report.md`, `arc
 ## Ключевые документы
 
 - `docs/agents/workflow.md`
-- `docs/agents/review-gate.md`
 - `docs/agents/templates.md`
 - `docs/agents/git-protocol.md`
 - `docs/agents/invariants.md`
+- `docs/codex-integration.md`
 - `docs/agents/lead-strategic/current_plan.md`
 - `docs/agents/orchestrator/memory.md`

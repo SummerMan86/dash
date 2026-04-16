@@ -1,3 +1,5 @@
+> **DEPRECATED.** Role map and key properties are now in `workflow.md` §1. Runtime/model binding: `execution-profiles.md`. This file will be deleted after repointing is complete (ST-4).
+
 # Agent Roles
 
 User guide: [user-guide.md](./user-guide.md).

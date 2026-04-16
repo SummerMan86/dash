@@ -89,7 +89,7 @@ Severity:
 
 **Этот verdict блокирует merge** до выполнения протокола:
 
-1. `orchestrator` эскалирует finding к `lead-strategic` (или architecture pass, `review-gate.md` §3.1)
+1. `orchestrator` эскалирует finding к `lead-strategic` (или architecture pass, `workflow.md` §5.1)
 2. Решение согласуется и фиксируется в architecture doc **до merge**:
    - `architecture_dashboard_bi.md` для BI-решений
    - `architecture_emis.md` для EMIS-решений
@@ -160,7 +160,7 @@ Readiness levels:
 - `CLEAR` — compliance OK, нет debt zones, нет new decisions → начинаем реализацию
 - `CLEAR WITH DEBT` — compliance OK, но scope пересекается с debt zone → debt resolution добавляется в plan
 - `DOCS FIRST` — нужны doc updates до начала реализации → обновить docs → потом реализовать
-- `ESCALATE` — нужен architecture pass (`review-gate.md` §3.1) или strategic decision → эскалация к `lead-strategic`
+- `ESCALATE` — нужен architecture pass (`workflow.md` §5.1) или strategic decision → эскалация к `lead-strategic`
 
 ## Не делай
 

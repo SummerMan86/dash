@@ -2,15 +2,16 @@
 
 Core process для работы агентной команды.
 
-Lifecycle, ownership, and memory protocol.
+Lifecycle, ownership, review model, governance, and memory protocol.
 Supporting docs:
 
-- `review-gate.md` — review model, governance passes, definition of done
 - `execution-profiles.md` — runtime/model binding
 - `recovery.md` — failure-path protocols
 - `invariants.md` — project invariants (domain overlays: `invariants-emis.md`, etc.)
 - `git-protocol.md` — branches, worktrees, integration choreography
-- `usage-telemetry.md` — usage history and optimization analytics
+- `autonomous-mode.md` — autonomous execution delta
+- `templates.md` — all templates (plan, task, handoff, report, governance, transparency)
+- `docs/codex-integration.md` — Codex runtime integration, plugin commands, proof tuples
 
 ## 1. Модель работы
 
@@ -21,9 +22,9 @@ Supporting docs:
     │
     ├─ ставит задачу
     ▼
-Claude Opus (orchestrator)
+orchestrator
     │
-    ├─ поднимает `lead-strategic` по runtime/model binding из `execution-profiles.md`
+    ├─ поднимает lead-strategic по runtime/model binding из execution-profiles.md
     ├─ dispatches workers/reviewers по выбранному execution profile
     ├─ ведёт execution loop: workers, review, report
     ├─ возвращает план на approval, эскалации и merge decision
@@ -33,60 +34,36 @@ Claude Opus (orchestrator)
 ```
 
 Runtime/model binding for supported profiles lives in
-`docs/agents/execution-profiles.md`.
+`execution-profiles.md`.
 
-In Claude Code for `opus-orchestrated-codex-workers`, plugin-first slash mapping
-applies only to worker/reviewer lanes. `lead-strategic` and
-`strategic-reviewer` are not silently remapped to worker/reviewer slash
-commands; if the active surface has no dedicated strategic lane, record a
-truthful per-role exception, documented alternative runtime path, or blocker.
-On the current Claude Code surface, that documented alternative path for
-strategic roles is companion CLI `task`; plugin-first slash mapping remains
-worker/reviewer-only.
+Codex plugin integration, thread continuity (`--resume` / `--fresh`), and companion CLI guidance: `docs/codex-integration.md`.
 
 **Role map:**
 
-| Роль workflow                        | Реализация                                   | Основная ответственность                                                                          |
-| ------------------------------------ | -------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `lead-strategic`                     | profile-selected Codex lane                  | canonical owner `current_plan.md`, strategic acceptance, architecture-docs-first при планировании |
-| `strategic-reviewer`                 | bounded pass внутри `lead-strategic` context | strategic acceptance/reframe safety net по `plan/report/diff`                                     |
-| `orchestrator`                       | Claude Opus                                  | code-blind execution flow, worker dispatch, Review Gate, Architecture Readiness Check, report     |
-| `worker`                             | profile-selected implementation lane         | реализация одного slice                                                                           |
-| `*-reviewer`                         | profile-selected review lane                 | diff review по своей зоне                                                                         |
-| `architecture-reviewer` (audit mode) | profile-selected reviewer lane               | pre-implementation readiness assessment по planned scope                                          |
+| Роль workflow | Реализация | Основная ответственность |
+|---|---|---|
+| `lead-strategic` | profile-selected Codex lane | canonical owner `current_plan.md`, strategic acceptance, architecture-docs-first при планировании |
+| `strategic-reviewer` | bounded pass внутри `lead-strategic` context | strategic acceptance/reframe safety net по `plan/report/diff` |
+| `orchestrator` | profile-selected orchestration lane | code-blind execution flow, worker dispatch, Review Gate, Architecture Readiness Check, report |
+| `worker` | profile-selected implementation lane | реализация одного slice |
+| `micro-worker` | profile-selected implementation lane | реализация одного trivial bounded slice под worker contract |
+| `*-reviewer` | profile-selected review lane | diff review по своей зоне |
+| `architecture-reviewer` (audit mode) | profile-selected reviewer lane | pre-implementation readiness assessment по planned scope |
 
-**Правило `--write`:**
+**Persistence:**
 
-- если `lead-strategic` должен записать `current_plan.md`, `memory.md` или governance artifact, нужен `--write`;
-- без `--write` Codex читает и анализирует, но не фиксирует canonical state.
-
-**Thread continuity (`--resume` / `--fresh`):**
-
-| Флаг       | Поведение                                               |
-| ---------- | ------------------------------------------------------- |
-| `--resume` | продолжить последний Codex thread в этом repo           |
-| `--fresh`  | начать новый thread                                     |
-| без флага  | tooling спрашивает, продолжать thread или открыть новый |
-
-**Когда `resume`, когда `fresh`:**
-
-- `resume` — iterative review/fix/re-review cycle;
-- `resume` — follow-up к уже открытому plan/report thread;
-- `fresh` — новая задача или новый plan owner context;
-- `fresh` — governance-heavy pass, если текущий thread уже загрязнён.
-
-**Ограничения интеграции:**
-
-1. `--resume` экономит токены внутри одного thread, но не заменяет durable `memory.md`.
-2. Codex не видит navigation docs автоматически; нужные файлы нужно явно включать в task или prompt.
-3. Пользователь остаётся decision owner для merge, scope changes и CRITICAL escalations.
-4. Долгие Codex-задачи можно запускать в background, но execution ownership остаётся у `orchestrator`.
+| Role | Durable state |
+|---|---|
+| `lead-strategic` | `lead-strategic/memory.md` |
+| `orchestrator` | `orchestrator/memory.md` + `last_report.md` |
+| `worker` | none (session context + handoff) |
+| reviewers | none (fresh per pass) |
 
 ### 1.2. Ручная модель (fallback, deprecated)
 
 > **Deprecated.** Используется только если Codex CLI полностью недоступен. Если Codex временно недоступен — используй `recovery.md`, RP-3.
 
-Пользователь ставит задачу GPT-5.4 в отдельном чате, GPT-5.4 пишет `current_plan.md`, Claude исполняет план, пользователь передаёт `last_report.md` обратно в GPT-5.4 вручную. Все роли и артефакты те же, меняется только transport: вместо Codex plugin — ручной relay через пользователя.
+Пользователь ставит задачу в отдельном чате, `lead-strategic` пишет `current_plan.md`, orchestrator исполняет план, пользователь передаёт `last_report.md` обратно вручную.
 
 ### Ключевые принципы
 
@@ -96,7 +73,7 @@ worker/reviewer-only.
 - `orchestrator` не реализует product code вне `direct-fix` protocol; остальной implementation идёт через worker.
 - `worker` реализует slice в заданном scope и сдаёт truthful handoff с evidence.
 - `reviewer` — fresh pass без persistent review memory.
-- любой product-code slice должен пройти минимум один independent reviewer pass (`code-reviewer` как минимальный floor; дополнительные reviewer'ы — по поверхности change).
+- любой product-code slice должен пройти минимум один independent reviewer pass (`code-reviewer` как минимальный floor; дополнительные reviewer'ы — по поверхности change). `direct-fix` — единственный waiver. `micro-task` size не waiv'ит это требование.
 - Качество важнее параллелизма; параллелизм нужен только для независимых bounded slices.
 - Пользователь — approver, а не manual relay.
 
@@ -107,7 +84,7 @@ worker/reviewer-only.
 **Что `orchestrator` читает по умолчанию:**
 
 - `current_plan.md`;
-- свою durable memory в `docs/agents/orchestrator/memory.md`;
+- свою durable memory в `orchestrator/memory.md`;
 - worker handoff notes;
 - reviewer verdicts;
 - checks evidence;
@@ -124,7 +101,7 @@ worker/reviewer-only.
 - не исправляет reviewer findings сам;
 - не компенсирует плохой handoff тем, что "сам быстро посмотрит код".
 
-**Когда делегировать Codex / GPT-5.4:**
+**Когда делегировать Codex:**
 
 - создание или обновление `current_plan.md`;
 - strategic acceptance review;
@@ -137,7 +114,7 @@ worker/reviewer-only.
 - координация execution flow;
 - сборка report;
 - обновление memory и usage telemetry;
-- strategic backfill при необходимости.
+- strategic backfill при необходимости;
 - `direct-fix`, если change подпадает под fast path.
 
 **Когда dispatch worker обязателен:**
@@ -156,24 +133,24 @@ worker/reviewer-only.
 
 ### Гибридная модель: isolated writers + fresh reviewers
 
-| Роль       | Технология                                                                                 | Почему                                              |
-| ---------- | ------------------------------------------------------------------------------------------ | --------------------------------------------------- |
-| `worker`   | subagent + worktree (default for code-writing); teammate only as shared-checkout exception | diff isolation, scope hygiene, reproducible handoff |
-| `reviewer` | fresh subagent                                                                             | дешёвый и воспроизводимый bounded review по diff    |
+| Роль | Технология | Почему |
+|---|---|---|
+| `worker` | subagent + worktree (default for code-writing); teammate only as shared-checkout exception | diff isolation, scope hygiene, reproducible handoff |
+| `reviewer` | fresh subagent | дешёвый и воспроизводимый bounded review по diff |
 
 Workers как isolated subagents (default for code-writing):
 
 - получают отдельный worktree и `agent/worker/<slug>` branch;
 - дают diff-isolated handoff и review input без shared-checkout contamination;
-- позволяют `orchestrator` проверять scope по branch/diff boundaries, не полагаясь только на manifest;
+- позволяют `orchestrator` проверять scope по branch/diff boundaries;
 - не ведут отдельный durable `memory.md`;
-- **контекст:** получают только prompt (task packet) + `CLAUDE.md` из worktree; `settings.json` и user profile не наследуются; протокол spawn и prompt composition — в `orchestrator/instructions.md` §Worker Spawn Protocol.
+- **контекст:** получают только prompt (task packet) + `CLAUDE.md` из worktree; протокол spawn и prompt composition — в `orchestrator/instructions.md` §Worker Spawn Protocol.
 
 Workers как teammates (shared-checkout exception):
 
 - видят `AGENTS.md`, локальные docs и репозиторий целиком;
 - допускаются только для docs-only, read-only investigation или governance-closeout slices без product code;
-- работают в том же checkout и integration branch, что и `orchestrator`; коммитят только в рамках assigned scope;
+- работают в том же checkout и integration branch; коммитят только в рамках assigned scope;
 - общаются с `orchestrator` через SendMessage;
 - не ведут отдельный durable `memory.md`.
 
@@ -193,13 +170,13 @@ Reviewers как fresh subagents:
 
 ### 2.1. Выбор режима
 
-| Критерий                 | Direct-fix            | Batch              | Iterative              |
-| ------------------------ | --------------------- | ------------------ | ---------------------- |
-| Размер change            | `<= 10` строк, 1 файл | 1-3 bounded slices | 4+ или slice-dependent |
-| Architectural surface    | нет                   | низкий             | средний-высокий        |
-| Schema / contract touch  | нет                   | нет или локальный  | возможен               |
-| Нужен worker handoff     | нет                   | да                 | да                     |
-| Нужен post-slice reframe | нет                   | обычно в конце     | да                     |
+| Критерий | Direct-fix | Batch | Iterative |
+|---|---|---|---|
+| Размер change | `<= 10` строк, 1 файл | 1-3 bounded slices | 4+ или slice-dependent |
+| Architectural surface | нет | низкий | средний-высокий |
+| Schema / contract touch | нет | нет или локальный | возможен |
+| Нужен worker handoff | нет | да | да |
+| Нужен post-slice reframe | нет | обычно в конце | да |
 
 **Default heuristic для `orchestrator`:**
 
@@ -238,7 +215,7 @@ Dispatch heuristic:
 - если slice trivial и bounded, но уже не `direct-fix`, выбирай `micro-worker`;
 - parallel workers допустимы только для независимых ownership slices;
 - если workers идут параллельно, default и required mode = isolated `subagent + worktree`;
-- teammate/shared-checkout path не используется для parallel execution, даже если slices маленькие.
+- teammate/shared-checkout path не используется для parallel execution.
 
 `direct-fix` protocol:
 
@@ -249,16 +226,12 @@ Dispatch heuristic:
 
 ### 2.2. Планирование (`lead-strategic`)
 
-**Интегрированная модель:**
-
 1. `orchestrator` получает задачу от пользователя.
-2. Поднимает strategic loop через selected Codex runtime path per `execution-profiles.md`.
+2. Поднимает strategic loop через selected runtime path per `execution-profiles.md`.
 3. `lead-strategic` создаёт или обновляет `current_plan.md`.
 4. Пользователь подтверждает план, если задача нетривиальна или меняет scope.
 
-**Fallback (deprecated):** пользователь передаёт задачу в отдельный GPT-чат, `lead-strategic` пишет `current_plan.md` вручную.
-
-Bootstrap hints (`--low-risk`, legacy `--simple`) не создают sanctioned exception:
+Bootstrap hints (`--low-risk`) не создают sanctioned exception:
 
 - они только подсказывают ожидаемый risk profile для initial triage;
 - не убирают `lead-strategic` как canonical owner `current_plan.md`;
@@ -282,46 +255,42 @@ Bootstrap hints (`--low-risk`, legacy `--simple`) не создают sanctioned
 - фича вводит новый dataset, provider или BI-страницу;
 - фича затрагивает cross-layer boundaries (package ↔ app, server ↔ client);
 - фича затрагивает зону с известным migration debt (см. `architecture_dashboard_bi.md` §9);
-- unfamiliar code или новый домен (orchestrator оценивает по описанию в `current_plan.md` и собственной `memory.md`, а не по чтению source files).
+- unfamiliar code или новый домен.
 
 **Что проверяется:**
 
 1. Соответствие planned change текущим architectural guardrails (`architecture_dashboard_bi.md` §8, `invariants.md` §1-9).
-2. Не попадает ли planned scope в зону migration debt (`architecture_dashboard_bi.md` §9) — если да, миграция включается в scope.
+2. Не попадает ли planned scope в зону migration debt — если да, миграция включается в scope.
 3. Нужны ли новые архитектурные решения, которых нет в текущей документации.
 
-**Протокол документирования архитектурных решений:**
+**Протокол документирования (architecture-docs-first):**
 
-Если аудит выявил потребность в новом архитектурном решении (новый паттерн, новый контракт, расширение IR, новый scope фильтров):
+Если аудит выявил потребность в новом архитектурном решении:
 
-1. Решение фиксируется в соответствующем architecture doc **до начала реализации** (не после).
+1. Решение фиксируется в соответствующем architecture doc **до начала реализации**.
 2. Если решение создаёт новый инвариант — он добавляется в `invariants.md`.
 3. Если решение меняет migration debt — обновляется §9 `architecture_dashboard_bi.md`.
-4. Если решение требует governance — эскалируется через `architecture pass` (§3.1 `review-gate.md`).
+4. Если решение требует governance — эскалируется через architecture pass (§5.1).
 
-**Не обязателен для:**
+**Output:** `CLEAR | CLEAR WITH DEBT | DOCS FIRST | ESCALATE`.
 
-- docs-only / trivial изменений;
-- работы строго в рамках одного уже задокументированного паттерна (e.g. добавление ещё одного declarative dataset по существующему шаблону);
-- фиксов, явно привязанных к конкретному багу без architectural surface.
+**Не обязателен для:** docs-only / trivial изменений; работы строго в рамках одного уже задокументированного паттерна; фиксов без architectural surface.
 
 **Кто выполняет:**
 
-- `lead-strategic` выявляет потребность в new architectural decisions **при планировании** (шаг 5 в `lead-strategic/instructions.md`) и фиксирует их в docs как часть плана;
-- `orchestrator` проводит bounded readiness check самостоятельно перед началом execution;
-- если нужен structured audit, `orchestrator` запускает **`architecture-reviewer` в audit mode** (Mode 2 в `architecture-reviewer/instructions.md`);
-- `architecture-reviewer` возвращает readiness verdict: `CLEAR | CLEAR WITH DEBT | DOCS FIRST | ESCALATE`;
-- если readiness = `ESCALATE` — `orchestrator` эскалирует к `lead-strategic` для architecture pass (`review-gate.md` §3.1).
+- `lead-strategic` выявляет потребность при планировании и фиксирует в docs как часть плана;
+- `orchestrator` проводит bounded check перед execution;
+- если нужен structured audit, `orchestrator` запускает `architecture-reviewer` в audit mode;
+- если readiness = `ESCALATE` — `orchestrator` эскалирует к `lead-strategic` для architecture pass (§5.1).
 
 ### 2.4. Strategic operating mode
 
-`lead-strategic` выбирает operating mode в начале wave и фиксирует его в canonical plan/report context.
-После любого post-slice reframe mode можно оставить без изменений или переключить, но только с коротким rationale.
+`lead-strategic` выбирает operating mode в начале wave и фиксирует его в canonical plan/report context. После любого post-slice reframe mode можно переключить с коротким rationale.
 
 Три canonical mode:
 
 - `high-risk iterative / unstable wave` — per-slice strategic-reviewer pass по умолчанию;
-- `ordinary iterative` — post-slice reframe обязателен всегда, но отдельный strategic-reviewer pass идёт только по risk signals;
+- `ordinary iterative` — post-slice reframe обязателен, но отдельный strategic-reviewer pass идёт только по risk signals;
 - `batch / low-risk` — acceptance и reframe можно батчить до integration/final stage.
 
 `high-risk iterative / unstable wave` используй, если есть хотя бы один сигнал:
@@ -332,30 +301,18 @@ Bootstrap hints (`--low-risk`, legacy `--simple`) не создают sanctioned
 - частые findings, которые меняют sequencing;
 - реальный diff уже хотя бы раз заметно разошёлся с initial plan.
 
-В этом mode bounded `strategic-reviewer` pass по умолчанию запускай на `gpt-5.4-mini` как дешёвый cross-model recheck после Sonnet-based review.
+`ordinary iterative` используй, если задача slice-dependent, но reviewer verdicts стабильны и boundaries не дрейфуют.
 
-`ordinary iterative` используй, если задача всё ещё slice-dependent, но:
+`batch / low-risk` используй, если slices независимы, post-slice reframe не меняет plan semantics, и strategic loop нужен в основном на integration/final acceptance.
 
-- следующий slice можно reframe'ить локально без полного strategic pass;
-- reviewer verdicts в целом стабильны;
-- boundaries и core acceptance пока не дрейфуют.
-
-`batch / low-risk` используй, если:
-
-- slices независимы или почти независимы;
-- post-slice reframe не меняет plan semantics;
-- strategic loop нужен в основном на integration/final acceptance.
-
-Risk signals для slice-level strategic-reviewer pass: canonical list в `review-gate.md` §2.1.
-
-Transparency request throttle applies in any execution path: after 2 transparency requests for the same handoff, `orchestrator` must choose `accept`, `reject`, or `escalate`. A third request for the same handoff is prohibited and means the handoff is materially incomplete.
+Transparency request throttle: after 2 transparency requests for the same handoff, `orchestrator` must choose `accept`, `reject`, or `escalate`. A third request is prohibited.
 
 ### 2.5. Batch-исполнение
 
 1. `orchestrator` читает `current_plan.md` и свою durable memory.
 2. Dispatches worker'ов на все implementation slices, которые не пошли через `direct-fix`.
-3. Принимает handoff packets и добирает недостающий evidence через reviewers / transparency requests / verification-workers.
-4. Запускает Review Gate, если он нужен по `review-gate.md`.
+3. Принимает handoff packets и добирает evidence через reviewers / transparency requests / verification-workers.
+4. Запускает Review Gate (§3).
 5. Выбирает формат report и пишет `last_report.md`.
 6. Запускает strategic acceptance review.
 7. После acceptance пользователь подтверждает merge.
@@ -367,14 +324,12 @@ Transparency request throttle applies in any execution path: after 2 transparenc
 3. Фиксит локальные non-critical findings.
 4. Возвращает `orchestrator` summary, change manifest, checks evidence и review disposition/results.
 5. `orchestrator` принимает или отклоняет handoff на основе артефактов, затем передаёт slice result в strategic loop.
-6. `lead-strategic` делает post-slice reframe следующего slice и, в зависимости от current operating mode, запускает bounded `strategic-reviewer` pass или ограничивается direct strategic acceptance. По умолчанию bounded pass идёт через `gpt-5.4-mini`; на `gpt-5.4` эскалируй только для design/boundary/contract-sensitive ambiguity.
+6. `lead-strategic` делает post-slice reframe и, в зависимости от operating mode, запускает bounded `strategic-reviewer` pass или ограничивается direct strategic acceptance.
 7. Вердикт:
    - `ACCEPT` — запускается следующий slice;
-   - `ACCEPT WITH ADJUSTMENTS` — оформляется `Plan Change Request`, затем обновлённый slice flow;
-   - `REJECT` — findings возвращаются в execution loop. При 3+ rejection cycles действует `recovery.md` RP-5.
-8. После всех slices `orchestrator` запускает integration Review Gate, если он нужен, затем final strategic review.
-
-Детали slice review, integration review, governance passes и strategic acceptance/reframe pass лежат в `review-gate.md`.
+   - `ACCEPT WITH ADJUSTMENTS` — `Plan Change Request`, затем обновлённый slice flow;
+   - `REJECT` — findings возвращаются в execution loop. При 3+ rejection cycles: `recovery.md` RP-5.
+8. После всех slices `orchestrator` запускает integration review (§3.2), затем final strategic review.
 
 ### 2.7. Формат report
 
@@ -390,7 +345,7 @@ Transparency request throttle applies in any execution path: after 2 transparenc
 - если review не запускался, report обязан содержать truthful `review disposition + rationale`;
 - durable governance decisions живут в отдельном artifact только когда должны пережить текущий `last_report.md`.
 
-Шаблоны report и handoff: `docs/agents/templates.md`.
+Шаблоны report и handoff: `templates.md`.
 
 ### 2.8. Cost-aware defaults
 
@@ -402,7 +357,6 @@ Cost-awareness калибрует cadence strategic loop, а не отменяе
 - если несколько slices подряд не меняют plan, boundaries и acceptance logic, `orchestrator` может предложить снизить cadence, а `lead-strategic` — переключить operating mode;
 - если per-slice strategic pass регулярно находит important issues или меняет next-slice plan, это high-yield cadence, и его не нужно "оптимизировать away";
 - если passes становятся low-yield, cadence нужно снижать или явно объяснять, почему выбранный mode остаётся оправданным.
-- default cost-saving path для cross-model recheck: сначала `gpt-5.4-mini`, а не full `gpt-5.4`.
 
 Признаки low-yield / cost creep:
 
@@ -413,15 +367,11 @@ Cost-awareness калибрует cadence strategic loop, а не отменяе
 
 ### 2.9. Приёмка
 
-**Интегрированная модель:**
-
-1. `orchestrator` запускает strategic acceptance через selected Codex runtime path per `execution-profiles.md`.
+1. `orchestrator` запускает strategic acceptance через selected runtime path per `execution-profiles.md`.
 2. `lead-strategic` сверяет report, plan fit, scope, architecture и review discipline.
-3. Делает post-slice or final reframe и запускает bounded `strategic-reviewer` pass, если этого требует current operating mode или risk signals.
+3. Делает post-slice or final reframe и запускает bounded `strategic-reviewer` pass, если этого требует operating mode или risk signals.
 4. Выносит `ACCEPT`, `ACCEPT WITH NOTES` или `REJECT`.
 5. Пользователь подтверждает merge.
-
-**Fallback (deprecated):** пользователь передаёт report в GPT-чат, `lead-strategic` делает acceptance review вручную.
 
 ### 2.10. Эскалация
 
@@ -432,11 +382,11 @@ Default routing:
 
 `orchestrator` эскалирует к `lead-strategic`, когда:
 
-- change вводит новый контракт, schema change или cross-module / cross-layer decision;
+- change вводит новый контракт, schema change или cross-module decision;
 - нужен новый exception / waiver;
 - reviewer'ы расходятся по technical acceptance;
 - baseline state или architecture state спорный;
-- решение упирается в documented technical governance, а не в product priority.
+- решение упирается в documented technical governance.
 
 `orchestrator` эскалирует к пользователю, когда:
 
@@ -445,7 +395,7 @@ Default routing:
 - нужен product/business tradeoff, не покрытый текущим plan state;
 - есть shared-environment side effect, destructive recovery или другой decision с внешним blast radius;
 - после strategic pass остаются несколько допустимых вариантов, и выбор между ними пользовательский;
-- план или merge ждут явного пользовательского approval по standard mode.
+- план или merge ждут явного пользовательского approval.
 
 Формат эскалации:
 
@@ -461,15 +411,15 @@ Default routing:
    Рекомендация: вариант <N>, потому что <причина>
 ```
 
-Failure-path после эскалации описан в `docs/agents/recovery.md`.
+Failure-path после эскалации: `recovery.md`.
 
 ### 2.11. Wave Closure
 
-После принятия последнего slice волны и прохождения integration review (если нужен) `orchestrator` запускает wave closure.
+После принятия последнего slice волны и прохождения integration review `orchestrator` запускает wave closure.
 
 **Кто:** `orchestrator` выполняет, `lead-strategic` верифицирует.
 
-**Checklist:** `docs/agents/review-gate.md` §4.2 (Wave DoD).
+**Checklist:** §6.2 (Wave DoD).
 
 **Порядок:**
 
@@ -484,23 +434,323 @@ Failure-path после эскалации описан в `docs/agents/recovery
 
 Baseline number из wave closure становится минимальным порогом для следующей волны.
 
-## 3. Коммуникация и артефакты
+## 3. Review Model
+
+Review Gate работает на двух уровнях:
+
+- `slice review` — worker проверяет свой bounded diff сразу после реализации;
+- `integration review` — `orchestrator` запускает reviewers на интегрированный diff после merge slices.
+
+Не каждая задача требует оба уровня, но truthful `review disposition` обязателен всегда.
+
+### 3.1. Minimum Independent Review Floor
+
+Любой slice, который пишет product code, требует хотя бы одного fresh reviewer pass от агента, который этот код не писал, кроме `direct-fix`.
+
+- Минимальный floor для code-writing slice — `code-reviewer`.
+- Дополнительные reviewer'ы (`security`, `architecture`, `docs`, `ui`) подключаются по поверхности change.
+- Пользователь или `orchestrator` могут снизить coverage только сверх этого минимума; полностью waiv'ить independent review для code change нельзя вне `direct-fix`.
+- `micro-task` size не является причиной waiver, если slice пишет product code и не подпадает под `direct-fix`.
+
+`direct-fix` protocol: `<= 10` строк, один файл, нет architectural surface, change purely local/mechanical, нет schema/contract changes. Verification = свежие `pnpm check` + `pnpm build`.
+
+### 3.2. Slice Review
+
+После реализации slice worker запускает релевантных ревьюеров:
+
+```text
+Worker завершил slice
+    │
+    ├─ self-check
+    ├─ git diff по файлам slice
+    │
+    ├─► code-reviewer
+    ├─► security-reviewer       (если auth / SQL / API / secrets)
+    ├─► architecture-reviewer   (если imports / placement / boundaries)
+    ├─► docs-reviewer           (если docs / contracts / schema)
+    └─► ui-reviewer             (если UI)
+    │
+    ├─ фикс локальных non-critical findings
+    └─ handoff оркестратору
+```
+
+Почему slice review запускает сам worker: у него самый свежий implementation context; он может исправить локальные findings до handoff; `orchestrator` получает уже очищенный bounded slice.
+
+`direct-fix` не проходит worker-owned slice review loop: он верифицируется inline и помечается `N/A — direct-fix protocol`.
+
+**Выбор ревьюеров:**
+
+| Что менялось | Ревьюеры |
+|---|---|
+| Любой код | `code-reviewer` |
+| SQL, auth, API, secrets, user input | `+ security-reviewer` |
+| Cross-layer imports, новый package home, placement | `+ architecture-reviewer` |
+| BI vertical: datasets, providers, filters, BI pages | `+ architecture-reviewer` |
+| Docs, contracts, schema files | `+ docs-reviewer` |
+| UI components, страницы | `+ ui-reviewer` |
+| Только markdown | только `docs-reviewer` |
+
+Для code-writing slice первая строка таблицы не является optional.
+
+**Execution context:**
+
+- **Teammate mode:** reviewer input по owned files из handoff + коммиты worker'а. Worker не включает чужие коммиты.
+- **Subagent mode:** worker запускает ревьюеров на полный diff своей branch от base commit.
+
+### 3.3. Integration Review
+
+После всех slices `orchestrator` запускает review на полный интегрированный diff, если он нужен:
+
+```text
+git diff main..feature/<topic>
+    │
+    ├─► architecture-reviewer
+    ├─► security-reviewer
+    ├─► docs-reviewer
+    ├─► code-reviewer
+    └─► ui-reviewer (если фронтенд)
+```
+
+Integration review нужен для:
+
+- cross-slice naming conflicts;
+- architecture drift на стыке нескольких slices;
+- doc/code inconsistency после серии изменений;
+- security regressions, видимые только в полном data flow.
+
+**Протокол `needs design decision`:**
+
+Если `architecture-reviewer` на любом stage выносит `needs design decision`:
+
+1. Merge блокируется до согласования.
+2. `orchestrator` эскалирует к `lead-strategic` (или запускает architecture pass §5.1).
+3. Решение фиксируется в architecture doc **до merge**.
+4. Если решение создаёт enforceable rule → обновляется `invariants.md`.
+5. Re-review подтверждает соответствие diff зафиксированному решению.
+
+### 3.4. Severity
+
+- `CRITICAL` — блокирует merge. Нужно исправить или эскалировать.
+- `WARNING` — исправить до merge, если нет явного обоснования исключения.
+- `INFO` — неблокирующее наблюдение.
+
+### 3.5. Когда Review Gate можно не запускать
+
+**Slice review skip:**
+
+- change purely docs-only;
+- read-only analysis / audit / governance-closeout без product code;
+- change подпадает под `direct-fix` protocol;
+- пользователь явно попросил пропустить review только для non-code work;
+- `trivial` не является причиной skip, если slice пишет product code и не подпадает под `direct-fix`.
+
+**Integration review skip:**
+
+- задача была только чтение/анализ;
+- batch из одного slice, если slice review уже покрыл diff;
+- change целиком закрыт `direct-fix` и не дал cross-slice risk;
+- изменения только в markdown;
+- governance-closeout slice без нового product logic.
+
+Если docs-only change меняет active architecture contract, adds/removes exception или оформляет complexity waiver, нужен хотя бы bounded architecture pass.
+
+### 3.6. Truthful Reporting
+
+- если конкретный reviewer ожидался, но не запускался → `not run`;
+- если review не применим → `skipped/not applicable + rationale`;
+- не нужно механически перечислять всех reviewer'ов как `not run`, если review вообще не ожидался.
+
+### 3.7. Evidence Freshness
+
+| Состояние | Значение | Действие |
+|---|---|---|
+| `fresh` | Прогнан в текущей сессии после финального diff | Принимается как есть |
+| `not run` | Не запускался | Допустимо только с причиной |
+
+Evidence без явного состояния или с устаревшим результатом не принимается.
+
+- Fabricated evidence (заявленный результат, которого не было) — **`CRITICAL`**, блокирует acceptance.
+- Contradictory evidence (результат противоречит наблюдаемому) — **`CRITICAL`**, блокирует acceptance.
+- Missing expected evidence (check ожидался, но не упомянут) — **`WARNING`**, требует явного разрешения.
+
+### 3.8. Documentation Completeness Escalation
+
+| Уровень | Severity | Действие |
+|---|---|---|
+| Slice | `WARNING` | Worker исправляет до handoff; если нет — orchestrator возвращает |
+| Wave | `CRITICAL` | Блокирует wave closure |
+| Feature | `CRITICAL` | Блокирует merge в main |
+
+Неразрешённый docs `WARNING` на slice level автоматически поднимается до `CRITICAL` при wave closure.
+
+Docs gaps: отсутствующий/устаревший `AGENTS.md`, новое решение без записи в architecture doc, schema change без обновления `db/current_schema.sql` + `db/applied_changes.md`, API/contract change без обновления `RUNTIME_CONTRACT.md`.
+
+## 4. Strategic Acceptance / Reframe Pass
+
+`strategic-reviewer` не входит в обязательный Review Gate. Это bounded strategic acceptance/reframe pass внутри того же `lead-strategic` thread.
+
+Что он делает:
+
+- перепроверяет acceptance readiness текущего slice/report/diff;
+- помогает определить plan fit и next-slice impact;
+- даёт bounded cross-model second opinion перед reframe или final acceptance;
+- может поймать likely bugs/regressions, которые не были подняты review-lane reviewers;
+- не заменяет финальный strategic verdict от `lead-strategic`;
+- не заменяет профильные reviewer passes (`code-reviewer`, `security-reviewer`, etc.).
+
+Минимальный вход: `current_plan.md`, `last_report.md`, diff или changed files, только релевантные canonical docs.
+
+### 4.1. Strategic-reviewer cadence
+
+| Mode | Default cadence |
+|---|---|
+| `high-risk iterative / unstable wave` | strategic-reviewer после каждого slice |
+| `ordinary iterative` | только по risk signals; short post-slice reframe обязателен всегда |
+| `batch / low-risk` | обычно только на integration/final acceptance |
+
+Risk signals для slice-level pass:
+
+- scope drift или unclear plan fit;
+- conflicting reviewer signals;
+- новый architecture/topology question;
+- changed acceptance conditions for next slice;
+- findings, которые меняют sequencing или decomposition;
+- реальный diff заметно отличается от initial-plan assumptions;
+- slice review формально green, но confidence в acceptance низкий;
+- нужен дешёвый cross-model recheck на likely bugs/regressions.
+
+Чего strategic-reviewer не делает: не пишет код; не становится отдельным каналом для `orchestrator`; не забирает plan ownership у `lead-strategic`.
+
+### 4.2. Reframe policy after acceptance
+
+После каждого принятого slice `lead-strategic` делает короткий reframe:
+
+- сверяет plan против нового состояния репозитория;
+- оценивает, остаётся ли текущий operating mode валидным;
+- правит локальные формулировки и acceptance в `current_plan.md`, если достаточно;
+- при необходимости меняет operating mode с коротким rationale;
+- запускает bounded `strategic-reviewer` pass по mode или по risk signals.
+
+## 5. Governance Passes
+
+Governance passes не создают новых decision owners. Это именованные режимы внутри `lead-strategic`.
+
+### 5.1. Architecture Pass
+
+Подключается, когда нужен:
+
+- package/app placement decision;
+- новый exception или waiver;
+- пересечение контуров: `platform/shared` ↔ domain overlays, или `operational` ↔ `BI/read-side`;
+- docs-only rewrite active ownership rules.
+
+Timing: default event-driven; end-of-wave только если волна реально меняла boundaries, waivers/exceptions или ownership docs.
+
+Проверяет: packages как canonical homes; `apps/web` как app leaf; separation of domain paths; owner + expiry + removal condition для exceptions.
+
+Не делает: не пишет product plan; не заменяет diff-level `architecture-reviewer`; не выносит baseline status.
+
+Полномочия: approve/reject placement; требовать doc updates и exception id до merge; разрешать временный complexity waiver с owner + expiry; оформлять отдельный artifact для durable governance trail.
+
+Checklist: `lead-strategic/instructions.md` §Governance Passes > Architecture Pass.
+
+### 5.2. Baseline Pass
+
+Подключается в stabilization / baseline-control waves.
+
+Timing: default end-of-wave; ранний pass допустим как gate перед следующей large feature wave.
+
+Проверяет: baseline status (`Red | Yellow | Green`); truthful status canonical checks; consistency docs/ownership/code; registry known exceptions.
+
+Не делает: не декомпозирует product work; не пишет код; не заменяет Review Gate.
+
+Полномочия: пометить baseline как `not closed`; блокировать запуск новых large feature slices; требовать owner + expiry для exception.
+
+Практическое правило: `baseline pass = end-of-wave default`; `architecture pass = event-driven, end-of-wave optional`.
+
+Checklist: `lead-strategic/instructions.md` §Governance Passes > Baseline Pass.
+
+### 5.3. Pre-Implementation Architecture Audit
+
+Bounded audit pass перед реализацией фичи с architectural surface. Исполнитель: `architecture-reviewer` в audit mode. Trigger и протокол: §2.3.1.
+
+## 6. Definition of Done
+
+Composable checklists: each level includes the previous. `N/A` with a one-line reason is allowed; silent omission is not.
+
+### Micro-task exemption
+
+If change is `<= 20` lines, at most 2 files, no architectural surface, no schema/contract change — only these are required: acceptance criteria met, scope not violated, checks satisfy current baseline policy. Everything else may be `N/A`.
+
+### 6.1. Slice DoD (Level 1)
+
+**Owner:** worker. **Verifier:** orchestrator at handoff.
+
+**Implementation:** acceptance criteria met; scope not violated; invariants not violated; required checks satisfy current baseline policy (`Green` baseline → `pnpm check`, `pnpm build`, `pnpm lint:boundaries` green; `Red/Yellow` baseline → each check is green or truthful `not run + reason`, and the slice does not widen the known failing baseline); baseline tests not shrunk.
+
+**Documentation:** new directories got `AGENTS.md`; changed directories updated `AGENTS.md`; new architectural decisions documented; public API/contract changes updated `RUNTIME_CONTRACT.md`; schema changes updated `db/current_schema.sql` + `db/applied_changes.md`.
+
+**Quality:** no hardcoded secrets; no speculative abstractions; file complexity within guardrails; minimum independent review floor satisfied for code-writing slices; security-relevant changes ran `security-reviewer`.
+
+**Evidence:** every check is `fresh` or `not run + reason`; change manifest truthful; review disposition recorded; no fabricated evidence.
+
+### 6.2. Wave DoD (Level 2)
+
+**Owner:** orchestrator. **Verifier:** lead-strategic at wave acceptance.
+
+- All slices have `ACCEPT` verdict
+- Plan change requests resolved or rejected
+- Integration review green (if 3+ files or cross-module impact)
+- Architecture pass done (if placement/boundary decisions)
+- Baseline status (`Red`/`Yellow`/`Green`) recorded
+- Architecture docs reflect wave decisions; `invariants.md` updated if new rules
+- `current_plan.md` slices marked done
+- Operating mode valid for next wave
+- Both `memory.md` files rewritten to active state (~20 lines max)
+- Test baseline recorded for next wave
+
+### 6.3. Feature DoD (Level 3)
+
+**Owner:** lead-strategic. **Verifier:** user (standard) or decision-log (autonomous).
+
+- Expected Result from plan achieved
+- All waves closed (Wave DoD passed)
+- Architecture docs updated (as-is → reality)
+- All CRITICAL findings closed; WARNING findings justified or closed
+- Migration instructions if schema changes
+- Final test baseline recorded
+
+### 6.4. Responsibility Matrix
+
+| Item | Creates | Verifies | Accepts |
+|---|---|---|---|
+| Code implementation | worker | code-reviewer | orchestrator |
+| Security | worker | security-reviewer | orchestrator |
+| Architecture boundaries | worker | architecture-reviewer | lead-strategic |
+| AGENTS.md | worker | docs-reviewer | orchestrator |
+| Architecture docs | worker/orchestrator | docs-reviewer | lead-strategic |
+| Wave governance | orchestrator | governance passes | lead-strategic |
+| Memory updates | each role | — | self |
+
+Severity escalation: unresolved docs `WARNING` at slice level auto-escalates to `CRITICAL` at wave closure (§3.8).
+
+## 7. Коммуникация и артефакты
 
 ### Файловый протокол
 
-| Файл                                                                              | Кто пишет                        | Кто читает                                          |
-| --------------------------------------------------------------------------------- | -------------------------------- | --------------------------------------------------- |
-| `docs/agents/lead-strategic/current_plan.md`                                      | `lead-strategic`                 | `orchestrator`, workers по need-to-know             |
-| `docs/agents/orchestrator/last_report.md`                                         | `orchestrator`                   | `lead-strategic`, пользователь                      |
-| `docs/agents/lead-strategic/memory.md`                                            | `lead-strategic`                 | следующий strategic thread                          |
-| `docs/agents/orchestrator/memory.md`                                              | `orchestrator`                   | следующий orchestration session                     |
-| `runtime/agents/usage-log.ndjson`                                                 | `orchestrator`                   | локальная optimization analytics / future DB import |
-| domain-specific exceptions registry (e.g. `emis_known_exceptions.md` per overlay) | `lead-strategic` governance loop | все роли по необходимости                           |
+| Файл | Кто пишет | Кто читает |
+|---|---|---|
+| `lead-strategic/current_plan.md` | `lead-strategic` | `orchestrator`, workers по need-to-know |
+| `orchestrator/last_report.md` | `orchestrator` | `lead-strategic`, пользователь |
+| `lead-strategic/memory.md` | `lead-strategic` | следующий strategic thread |
+| `orchestrator/memory.md` | `orchestrator` | следующий orchestration session |
+| `runtime/agents/usage-log.ndjson` | `orchestrator` | локальная optimization analytics |
+| domain-specific exceptions registry | `lead-strategic` governance loop | все роли по необходимости |
 
 Правила хранения:
 
 - `last_report.md` — всегда текущий canonical execution report;
-- `runtime/agents/usage-log.ndjson` — append-only local usage history; не заменяет report или memory;
+- `runtime/agents/usage-log.ndjson` — append-only local usage history;
 - отдельного worker-memory файла нет;
 - durable governance trail оформляется отдельным artifact только при изменении долгоживущего решения.
 
@@ -513,26 +763,16 @@ pane #2  worker B (если нужен)
 ```
 
 - `orchestrator` держит orchestration context и запускает reviewers как fresh subagents;
-- isolated code-writing workers по умолчанию живут в своих worktree/branch и не обязаны появляться как shared tmux pane;
+- isolated code-writing workers по умолчанию живут в своих worktree/branch;
 - teammate panes — exception path для docs-only / read-only / governance-closeout work;
-- пользователь может зайти в pane teammate-worker'а напрямую, если такой mode был выбран.
+- пользователь может зайти в pane teammate-worker'а напрямую.
 
-### Canonical supporting docs
-
-- `docs/agents/review-gate.md` — Review Gate, governance passes, definition of done
-- `docs/agents/recovery.md` — failure-path protocols
-- `docs/agents/invariants.md` — project invariants (domain overlays: `invariants-emis.md`, etc.)
-- `docs/agents/git-protocol.md` — branch/worktree discipline
-- `docs/agents/usage-telemetry.md` — usage log and optimization analytics
-- `docs/agents/roles.md` — role map
-- `docs/agents/templates.md` — all templates (plan, task, handoff, report, governance, transparency)
-
-## 4. Memory Protocol
+## 8. Memory Protocol
 
 ### Who writes what
 
 | Role | File | When |
-| --- | --- | --- |
+|---|---|---|
 | `lead-strategic` | `lead-strategic/memory.md` | after plan decisions, acceptance, reframe |
 | `orchestrator` | `orchestrator/memory.md` | after each accepted slice, before session end |
 | `worker` | none | session context only, continuity via handoff |

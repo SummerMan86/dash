@@ -1,3 +1,5 @@
+> **DEPRECATED.** Operator runbook content is moving to `docs/QUICKSTART.md` (ST-2). Process truth is in `workflow.md`. Codex integration is in `docs/codex-integration.md`. This file will be deleted after repointing is complete (ST-4).
+
 # User Guide — Работа с командой агентов
 
 Практический runbook для пользователя.

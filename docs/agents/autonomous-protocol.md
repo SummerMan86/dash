@@ -1,3 +1,5 @@
+> **DEPRECATED.** This document's content has been moved to `autonomous-mode.md` (lifecycle/delta) and `docs/codex-integration.md` (Codex commands/prompts). This file will be deleted after repointing is complete (ST-4).
+
 # Autonomous Execution Protocol
 
 Протокол автономного выполнения задач без user-in-the-loop.
