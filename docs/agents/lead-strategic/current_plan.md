@@ -4,7 +4,9 @@
 
 - opened on `2026-04-16`
 - wave status: `open`
-- operating mode: `safe structural refactor`
+- wave criticality: `critical`
+- selected execution profile: `opus-orchestrated-codex-workers`
+- operating mode: `high-risk iterative / unstable wave`
 - canonical live plan path: `docs/agents/lead-strategic/current_plan.md`
 
 ## Context
@@ -34,6 +36,33 @@ This wave executes that model across the remaining app-local surface so that `sr
 - remove the FSD aliases and lint rules that are no longer needed after the moves
 - keep docs aligned with the actual post-wave state
 
+## Execution Discipline
+
+This wave is a critical structural refactor. Execute it with maximal rechecks, not with throughput bias.
+
+- Use execution profile `opus-orchestrated-codex-workers`
+- If the runtime surface cannot truthfully launch or verify Codex worker/reviewer lanes per `docs/codex-integration.md` §4, pause and explicitly downgrade the wave to `mixed-claude-workers` at a slice boundary
+- Keep `high-risk iterative / unstable wave` cadence for the whole wave unless `lead-strategic` explicitly downgrades it at a slice boundary
+- Do not batch multiple ST acceptances into one strategic pass
+- After each accepted ST, `orchestrator` must return to `lead-strategic` for post-slice reframe before starting the next ST
+- For this wave, treat “post-slice reframe” as mandatory next-slice confirmation, not as an optional lightweight check
+- Run bounded `strategic-reviewer` after each accepted ST by default
+- If a slice changes real blast radius, path ownership, or config/lint semantics beyond the planned scope, stop and escalate through `Plan Change Request` instead of continuing optimistically
+- Prefer truthful slowdown over hidden scope growth
+
+## Review Requirements
+
+- Minimum independent review floor for every code-writing ST: `code-reviewer`
+- `architecture-reviewer` is mandatory for this wave; do not treat it as optional side coverage
+- Run a pre-implementation `architecture-reviewer` audit on the wave scope before starting the first implementation ST
+- Run diff-level `architecture-reviewer` after each accepted code-writing ST
+- Use `ui-reviewer` where the slice changes route-visible UI behavior:
+  - ST-3 `stock-alerts`
+  - ST-4 `dashboard-edit`
+  - ST-5 `emis-manual-entry`
+  - ST-6 `EmisDrawer`
+- Use `docs-reviewer` on ST-8
+
 ## Subtasks
 
 ### ST-1: Remove Unused Tracked Starter Assets
@@ -45,6 +74,9 @@ This wave executes that model across the remaining app-local surface so that `sr
   - no runtime imports or references remain
 - verification intent: confirm assets are unused and the app still builds
 - verification mode: `verification-first`
+- checks:
+  - `pnpm check`
+  - `pnpm build`
 - notes:
   - empty directories under `src/lib/server/**` and `src/lib/features/dashboard-builder/` are not tracked and are not worker-worthy slices
 
@@ -66,6 +98,10 @@ This wave executes that model across the remaining app-local surface so that `sr
   - `src/lib/shared/` is deleted once no product-code imports remain
 - verification intent: ensure path moves are complete and do not break typecheck/build/boundaries across BI and EMIS consumers
 - verification mode: `verification-first`
+- checks:
+  - `pnpm check`
+  - `pnpm build`
+  - `pnpm lint:boundaries`
 
 ### ST-3: Route-Localize Wildberries `stock-alerts`
 - scope:
@@ -79,6 +115,10 @@ This wave executes that model across the remaining app-local surface so that `sr
   - `apps/web/src/lib/widgets/stock-alerts/` is deleted after the route owns the implementation directly
 - verification intent: ensure the stock-alerts route still builds and tests continue to pass
 - verification mode: `verification-first`
+- checks:
+  - `pnpm check`
+  - `pnpm build`
+  - `pnpm test`
 - notes:
   - keep the route-local helpers as real source files, not re-export shims
 
@@ -96,6 +136,9 @@ This wave executes that model across the remaining app-local surface so that `sr
   - stale self-references and local docs are updated
 - verification intent: ensure dashboard editor routes and imports still build after the move
 - verification mode: `verification-first`
+- checks:
+  - `pnpm check`
+  - `pnpm build`
 
 ### ST-5: Promote `emis-manual-entry` to a First-Level App-Local Module
 - scope:
@@ -110,6 +153,9 @@ This wave executes that model across the remaining app-local surface so that `sr
   - local docs reflect the new canonical home
 - verification intent: ensure EMIS object/news create-edit routes still build after the move
 - verification mode: `verification-first`
+- checks:
+  - `pnpm check`
+  - `pnpm build`
 - notes:
   - keep the forms app-local; they depend on `$app/forms` and are not package candidates in this wave
 
@@ -126,6 +172,9 @@ This wave executes that model across the remaining app-local surface so that `sr
   - `apps/web/src/lib/widgets/emis-drawer/` is deleted after the route owns the component directly
 - verification intent: ensure the vessel-positions BI page still builds and behaves with the route-local drawer
 - verification mode: `verification-first`
+- checks:
+  - `pnpm check`
+  - `pnpm build`
 - notes:
   - this is a BI route-local component, not an EMIS reusable UI package concern
 
@@ -145,6 +194,11 @@ This wave executes that model across the remaining app-local surface so that `sr
   - config matches the implemented post-wave layout without transitional FSD buckets
 - verification intent: ensure config, lint boundaries, typecheck, and build match the implemented structure
 - verification mode: `verification-first`
+- checks:
+  - `pnpm check`
+  - `pnpm build`
+  - `pnpm lint:boundaries`
+  - `pnpm lint:eslint`
 
 ### ST-8: Close Out Docs Against the Actual Post-Wave State
 - scope:
@@ -162,6 +216,9 @@ This wave executes that model across the remaining app-local surface so that `sr
   - docs explicitly state how the design system is applied: reusable components from `@dashboard-builder/platform-ui`, app-level token CSS and guide from `src/lib/styles/`
 - verification intent: ensure navigation and architecture docs match the code layout after implementation
 - verification mode: `verification-first`
+- checks:
+  - `pnpm check`
+  - `pnpm build`
 - notes:
   - architecture-docs-first decisions for flat app-local structure are already recorded; this slice is sync/close-out, not a new architecture decision
 
