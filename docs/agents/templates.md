@@ -51,10 +51,11 @@ Per `workflow.md` §6.1. Report only gaps or N/A; green items implied:
 - docs: <done | N/A — reason | gap — what's missing>
 - baseline tests: <maintained | grew to N>
 
-## Continuation Notes (for dependent slices)
-- decisions: <pattern chosen and why>
-- gotchas: <non-obvious discoveries>
-- deferred items: <what was consciously deferred>
+## Carry-Forward Context (required for code-writing handoffs; `none` if empty)
+- carried_decisions: <patterns chosen and why>
+- open_findings: <reviewer findings not yet closed>
+- next_slice_assumptions: <what next slice may assume>
+- patterns_established: <patterns to reuse, not reinvent>
 
 ## Next Action Requested
 - `accept` | `re-review` | `fix-worker` | `escalate`
@@ -144,12 +145,12 @@ File: `docs/agents/lead-strategic/current_plan.md`
 ## Optional References
 - <2-4 docs if needed for context>
 
-## Carry-Forward Context (for dependent slices)
-- previous slice: <ST-N>
-- summary: <what was done — 3-5 bullets>
-- decisions/patterns: <what to continue, not reinvent>
-- open findings: <from previous review> or `none`
-- continuation notes: <from previous handoff> or `none`
+## Carry-Forward Context (required for code-writing handoffs; `none` if empty)
+- previous slice: <ST-N> or `none` (independent slice)
+- carried_decisions: <from prior handoff>
+- open_findings: <unresolved reviewer findings> or `none`
+- next_slice_assumptions: <what this slice may assume>
+- patterns_established: <patterns to reuse, not reinvent>
 
 ## Acceptance
 - <done-when criteria>

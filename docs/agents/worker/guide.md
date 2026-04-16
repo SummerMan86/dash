@@ -173,7 +173,7 @@ Canonical handoff templates: `docs/agents/templates.md` §1-§2.
 
 The task packet specifies which template to use. Key handoff contract:
 
-- **Required:** task summary, change manifest, checks evidence, review disposition, next action requested
+- **Required:** task summary, change manifest, checks evidence, review disposition, next action requested; Carry-Forward Context on code-writing handoffs
 - **Micro-worker:** shortened format — what changed, manifest, checks, review, next action
 - If a field is not applicable, mark it `N/A` with a reason; do not silently omit
 

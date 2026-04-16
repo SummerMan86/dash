@@ -149,21 +149,19 @@ Bootstrap и integration choreography — `git-protocol.md` §5-6.
 - Task packet из `templates.md` §4 (или §4.1 для micro-worker) — единственный канал от orchestrator к worker.
 - `Bootstrap Reads` — обязательная секция; worker читает перечисленные файлы до начала реализации. Default = `worker/guide.md` + локальные `AGENTS.md`.
 - `Optional References` — документы, которые пригодятся worker'у при неясностях; не перегружай, 2-4 ссылки максимум.
-- `Carry-Forward Context` — обязательная секция для dependent slices (где `depends on: ST-N` в плане). Не отправляй worker читать весь `current_plan.md`.
+- `Carry-Forward Context` — обязательная секция для любого code-writing slice; для dependent slice (где `depends on: ST-N` в плане) собирается из предыдущего handoff, для независимого указывается `none` в каждом неприменимом поле. Не отправляй worker читать весь `current_plan.md`.
 - Не переиспользуй старые worker worktrees как bootstrap surface: stale local redirects не считаются canonical context.
 
 ### Carry-Forward Context: обязанность orchestrator'а
 
 Workers не имеют shared memory. Continuity между ними — твоя ответственность.
 
-Для dependent slices ты **обязан** собрать `Carry-Forward Context` из handoff предыдущего worker'а:
+Блок входит в task packet каждого code-writing slice как четыре структурированных поля: `carried_decisions`, `open_findings`, `next_slice_assumptions`, `patterns_established`.
 
-1. Возьми `Continuation Notes` из предыдущего handoff — вставь as-is.
-2. Возьми open findings/risks, которые переходят в текущий slice.
-3. Напиши summary: что было сделано и какие decisions/patterns текущий worker должен продолжить.
-4. Не копируй весь предыдущий handoff — worker'у нужен контекст, а не стена текста.
+- dependent slice: **обязан** заполнить поля из handoff предыдущего worker'а; не копируй весь handoff целиком — worker'у нужен контекст, а не стена текста.
+- независимый code-writing slice: указывай `none` в каждом неприменимом поле; пропускать секцию нельзя.
 
-Если предыдущий worker не оставил `Continuation Notes`, а slice dependent — реконструируй continuity из change manifest и review results сам.
+Если предыдущий worker не оставил `Carry-Forward Context`, а slice dependent — реконструируй continuity из change manifest и review results сам.
 
 ### Model selection
 
@@ -175,7 +173,7 @@ Model defaults per `execution-profiles.md`. When spawning workers/reviewers, use
 - [ ] worker mode выбран (`in-place` default или `isolated` с зафиксированным trigger из `git-protocol.md` §4)
 - [ ] `Bootstrap Reads` содержит `worker/guide.md` и локальные `AGENTS.md`
 - [ ] `Optional References` заполнен, если slice в нетривиальном контексте (domain, BI, cross-layer)
-- [ ] `Carry-Forward Context` собран из предыдущего handoff, если slice dependent
+- [ ] `Carry-Forward Context` заполнен для code-writing slice (четыре поля; `none` в неприменимых; содержимое из предыдущего handoff для dependent slice)
 - [ ] integration branch и base commit указаны; worker branch указан только для isolated mode
 - [ ] owned files и out-of-scope files указаны
 
