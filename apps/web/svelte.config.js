@@ -12,7 +12,6 @@ const config = {
 		alias: {
 			$lib: 'src/lib',
 			$shared: 'src/lib/shared',
-			$entities: 'src/lib/entities',
 			$features: 'src/lib/features',
 			$widgets: 'src/lib/widgets'
 		}

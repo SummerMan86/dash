@@ -23,9 +23,9 @@ Before reviewing, you must have:
 ## Checks
 
 1. **Platform/layer boundaries:**
-   - `entities` НЕ импортируют из `features`, `widgets`, `routes`
+   > `shared/features/widgets` — app-local layer discipline, не архитектура целиком. Reusable logic живёт в `packages/*`. `entities/` удалён.
    - `features` НЕ импортируют из `widgets`, `routes`
-   - `shared` НЕ импортирует из `entities`, `features`, `widgets`, `routes`
+   - `shared` НЕ импортирует из `features`, `widgets`, `routes`
 
 2. **Package vs app-leaf ownership:**
    Overlay-owned canonical homes define where reusable code lives and what stays in the app leaf. Check the active domain overlay (e.g. `invariants-emis.md`) for the authoritative mapping of:
@@ -51,7 +51,7 @@ Before reviewing, you must have:
    - long-lived complexity waiver должен быть явно назван в report и, при необходимости, в overlay's exceptions registry (e.g. `docs/emis_known_exceptions.md`)
 
 6. **Import aliases:**
-   - `$lib`, `$shared`, `$entities`, `$features`, `$widgets` — не relative `../../` через boundaries
+   - `$lib`, `$shared`, `$features`, `$widgets` — не relative `../../` через boundaries
 
 7. **Complexity:**
    - 500-700 строк: `WARNING`

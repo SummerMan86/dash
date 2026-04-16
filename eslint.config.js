@@ -22,9 +22,6 @@ const appImportPatterns = [
 	'$shared',
 	'$shared/*',
 	'$shared/**',
-	'$entities',
-	'$entities/*',
-	'$entities/**',
 	'$features',
 	'$features/*',
 	'$features/**',
@@ -292,7 +289,7 @@ export default defineConfig(
 	// ── Architecture boundary guardrails (ST-4) ──────────────────────────
 	// Each file scope has ONE no-restricted-imports block with all its combined patterns.
 	// (ESLint flat config: later matching block overrides, not merges, same rule key.)
-	// Note: ESLint matches the literal import string — path aliases ($shared, $entities, etc.)
+	// Note: ESLint matches the literal import string — path aliases ($shared, $features, etc.)
 	// are NOT resolved before matching, so both alias forms must be listed where relevant.
 
 	// App-local layer: shared — no upper-layer imports, no server imports
@@ -309,10 +306,6 @@ export default defineConfig(
 				{
 					patterns: [
 						{
-							group: ['$entities/*', '$entities'],
-							message: 'shared must not import from entities (app-local layer boundary)'
-						},
-						{
 							group: ['$features/*', '$features'],
 							message: 'shared must not import from features (app-local layer boundary)'
 						},
@@ -323,36 +316,6 @@ export default defineConfig(
 						{
 							group: serverImportPatterns,
 							message: 'shared must not import server-only modules'
-						}
-					]
-				}
-			]
-		}
-	},
-	// App-local layer: entities — no features/widgets, no server
-	{
-		files: [
-			'apps/web/src/lib/entities/**/*.ts',
-			'apps/web/src/lib/entities/**/*.svelte.ts',
-			'apps/web/src/lib/entities/**/*.svelte.js',
-			'apps/web/src/lib/entities/**/*.svelte'
-		],
-		rules: {
-			'no-restricted-imports': [
-				'error',
-				{
-					patterns: [
-						{
-							group: ['$features/*', '$features'],
-							message: 'entities must not import from features (app-local layer boundary)'
-						},
-						{
-							group: ['$widgets/*', '$widgets'],
-							message: 'entities must not import from widgets (app-local layer boundary)'
-						},
-						{
-							group: serverImportPatterns,
-							message: 'entities must not import server-only modules'
 						}
 					]
 				}

@@ -31,8 +31,6 @@
 Основные активные зоны:
 
 - `apps/web/src/lib/shared/*`
-- `apps/web/src/lib/entities/dataset/*`
-- `apps/web/src/lib/entities/filter/*`
 - `apps/web/src/lib/server/*`
 - `apps/web/src/lib/features/dashboard-edit/*`
 - `apps/web/src/lib/widgets/filters/*`
@@ -73,9 +71,7 @@ EMIS-активный контур сейчас находится здесь:
 - `packages/emis-contracts/` — entity types, Zod schemas (canonical)
 - `packages/emis-server/` — server infra + modules (canonical)
 - `packages/emis-ui/` — map widgets, status bar (canonical)
-- `apps/web/src/lib/entities/emis-*` — compatibility shims → `packages/emis-contracts`
-- `apps/web/src/lib/server/emis/*` — compatibility shims → `packages/emis-server`
-- `apps/web/src/lib/widgets/emis-map/*` — compatibility shim → `packages/emis-ui`
+- `apps/web/src/lib/server/emis/*` — app-local server layer (infra, modules, queries, repositories)
 - `apps/web/src/lib/widgets/emis-drawer/` — app-local (depends on `$widgets/filters`)
 - `apps/web/src/lib/features/emis-manual-entry/` — app-local (depends on `$app/forms`)
 - `apps/web/src/routes/api/emis/*` — thin HTTP transport (stays in app)
@@ -102,10 +98,11 @@ EMIS-активный контур сейчас находится здесь:
 - `CLAUDE.md` в таких местах оставлять как compatibility-layer для Claude-based агентов.
 - Если в папке пока есть только `CLAUDE.md`, читать его как legacy-local note до миграции в `AGENTS.md`.
 
-## 5. Deleted placeholders (ST-8)
+## 5. Deleted placeholders
 
-The following empty placeholder directories were deleted in ST-8:
+The following empty directories were deleted:
 
+- `entities/` — полностью; содержимое мигрировало в `packages/*`
 - `entities/dashboard/`, `entities/widget/`
 - `features/dashboard-builder/`
 - `widgets/chart/`, `widgets/dashboard-container/`, `widgets/kpi/`, `widgets/table/`
@@ -174,11 +171,9 @@ Canonical target layout для monorepo-style separation:
 - `apps/web/src/routes/api/emis/*` - тонкий HTTP transport (stays in app)
 - `apps/web/src/routes/emis/*` - UI/workspace слой (stays in app)
 
-Compatibility shims at old app paths (`apps/web/src/lib/entities/emis-*`, `apps/web/src/lib/server/emis/*`, `apps/web/src/lib/widgets/emis-*`) re-export from packages and are marked `// MIGRATION`. New code goes directly into packages.
-
 Что это означает на практике:
 
-- app-local naming `shared/entities/features/widgets` остается как внутренняя организация app-кода, но не как название всей архитектуры.
+- Reusable бизнес-логика, контракты и server-side код живут в `packages/*`. App layers (`shared`, `features`, `widgets`) — это app-local UI composition и orchestration, а не название всей архитектуры. `entities/` удалён.
 - Server write/query logic не нужно насильно раскладывать по `features/` и `widgets/`.
 - `server/emis` считается нормальным server-only слоем в текущем modular monolith.
 

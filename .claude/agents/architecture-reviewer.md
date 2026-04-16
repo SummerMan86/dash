@@ -28,19 +28,20 @@ Do not skip these. The inline rules below cover the common checks, but invariant
 
 ## Project structure
 
-- `$entities` = `apps/web/src/lib/entities/` — app-local contracts and package re-exports
-- `$features` = `apps/web/src/lib/features/` — user-facing features
-- `$widgets` = `apps/web/src/lib/widgets/` — composite UI blocks
+> Reusable logic lives in `packages/*`. App layers below are UI composition only. `entities/` was deleted — its content migrated to packages.
+
+- `$features` = `apps/web/src/lib/features/` — user-facing features (app-local)
+- `$widgets` = `apps/web/src/lib/widgets/` — composite UI blocks (app-local)
 - `$shared` = `apps/web/src/lib/shared/` — UI kit, utils, API facade
 - `$lib/server/` = `apps/web/src/lib/server/` — server-only BFF layer (NOT importable from client)
+- `packages/*` — reusable contracts, server logic, UI (canonical homes for business logic)
 - `apps/web/src/routes/` — pages and API endpoints
 
 ## Architecture rules to check
 
 1. **App-layer boundaries**:
-   - entities MUST NOT import from features, widgets, or routes
    - features MUST NOT import from widgets or routes
-   - shared MUST NOT import from entities, features, widgets, or routes
+   - shared MUST NOT import from features, widgets, or routes
 
 2. **Server isolation**:
    - `$lib/server/*` MUST NOT be imported from client-side code (components, stores, client utils)
@@ -57,7 +58,7 @@ Do not skip these. The inline rules below cover the common checks, but invariant
    - Operational flows do not leak into dataset/IR abstraction without a real BI reason
 
 5. **Import aliases**:
-   - Use `$lib`, `$shared`, `$entities`, `$features`, `$widgets` — not relative `../../` paths crossing layer boundaries
+   - Use `$lib`, `$shared`, `$features`, `$widgets` — not relative `../../` paths crossing layer boundaries
 
 6. **Complexity guardrails**:
    - 500-700 lines: warning, ask whether decomposition is overdue

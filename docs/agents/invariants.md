@@ -8,16 +8,16 @@ For domain-specific invariants, see the relevant overlay: `invariants-emis.md`, 
 
 ## 1. Архитектура (layers and boundaries)
 
+> `shared/features/widgets` здесь означает app-local layer discipline внутри `apps/web/src/lib/`, а не название всей архитектуры. Reusable бизнес-логика, контракты и server-side код живут в `packages/*`. App layers — это UI composition и app-local orchestration. `entities/` удалён; его содержимое мигрировало в `packages/*`.
+
 | Инвариант | Enforcement | Current enforcement / path to automation |
 | --- | --- | --- |
-| `shared` не импортирует из `entities`, `features`, `widgets` и server-only модулей | `automated` | `eslint.config.js`: `no-restricted-imports` для `apps/web/src/lib/shared/**` |
-| `entities` не импортируют из `features`, `widgets` и server-only модулей | `automated` | `eslint.config.js`: `no-restricted-imports` для `apps/web/src/lib/entities/**` |
+| Reusable бизнес-логика, контракты и server-side код живут в `packages/*`; app layers — app-local composition | `review-only` | Расширить path-ownership lint правила по package/app seams |
+| `shared` не импортирует из `features`, `widgets` и server-only модулей | `automated` | `eslint.config.js`: `no-restricted-imports` для `apps/web/src/lib/shared/**` |
 | `features` не импортируют из `widgets` и server-only модулей | `automated` | `eslint.config.js`: `no-restricted-imports` для `apps/web/src/lib/features/**` |
 | client-side код не импортирует `$lib/server/*` и server-only workspace modules | `automated` | `eslint.config.js`: `serverImportPatterns` для client routes/layers |
-| `entities`, `features`, `shared` не импортируют из `routes` | `review-only` | Добавить route-boundary patterns в `no-restricted-imports` для app-local layers |
-| path aliases (`$lib`, `$shared`, `$entities`, `$features`, `$widgets`) используются последовательно | `review-only` | Добавить lint rule, которая банит cross-tree relative climbs там, где есть alias |
-
-`shared/entities/features/widgets` здесь означает app-local layering discipline, а не имя всей repo-wide архитектуры.
+| `features`, `shared` не импортируют из `routes` | `review-only` | Добавить route-boundary patterns в `no-restricted-imports` для app-local layers |
+| path aliases (`$lib`, `$shared`, `$features`, `$widgets`) используются последовательно | `review-only` | Добавить lint rule, которая банит cross-tree relative climbs там, где есть alias |
 
 ## 2. Placement (package homes and route discipline)
 

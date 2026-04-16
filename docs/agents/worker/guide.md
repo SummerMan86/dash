@@ -85,13 +85,15 @@ Exception for docs-only, read-only, or governance-closeout work without product 
 
 ### Architecture and boundaries
 
+> `shared/features/widgets` здесь означает app-local layer discipline внутри `apps/web/src/lib/`, а не название всей архитектуры. Reusable бизнес-логика, контракты и server-side код живут в `packages/*`. App layers — это UI composition и app-local orchestration.
+
 | Rule | Worker action |
 | --- | --- |
-| `shared` does not import upper app layers or server-only modules | Keep `shared` leaf-like; do not pull in `entities`, `features`, `widgets`, `routes`, or `$lib/server/*`. |
-| `entities` does not import `features`, `widgets`, `routes`, or server-only modules | Keep entities reusable and client-safe. |
+| Reusable logic lives in packages | New reusable contracts, server logic, UI — в `packages/*`; app layers (`shared`, `features`, `widgets`) остаются app-local composition. |
+| `shared` does not import upper app layers or server-only modules | Keep `shared` leaf-like; do not pull in `features`, `widgets`, `routes`, or `$lib/server/*`. |
 | `features` does not import `widgets`, `routes`, or server-only modules | Keep feature logic below page composition. |
 | Client-side code does not import `$lib/server/*` | Use route/load/API seams instead of server imports in client modules. |
-| Use path aliases consistently | Prefer `$lib`, `$shared`, `$entities`, `$features`, `$widgets` over fragile cross-tree relative paths. |
+| Use path aliases consistently | Prefer `$lib`, `$shared`, `$features`, `$widgets` over fragile cross-tree relative paths. |
 
 ### Placement and transport
 
