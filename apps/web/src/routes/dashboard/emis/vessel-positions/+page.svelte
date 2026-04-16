@@ -1,22 +1,14 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 
-	import type {
-		EmisMapSelectedFeature,
-		EmisMapNewsFeatureProperties
-	} from '@dashboard-builder/emis-contracts/emis-map';
-	import type { EmisShipRouteVessel } from '@dashboard-builder/emis-contracts/emis-ship-route';
+	import type { EmisMapSelectedFeature } from '@dashboard-builder/emis-contracts/emis-map';
 	import { useFilterWorkspace } from '@dashboard-builder/platform-filters';
-	import { formatCompact, formatDate, formatNumber } from '@dashboard-builder/platform-core';
-	import { EmisDrawer } from '$widgets/emis-drawer';
 	import { EmisMap } from '@dashboard-builder/emis-ui/emis-map';
 	import { EmisStatusBar } from '@dashboard-builder/emis-ui/emis-status-bar';
 
+	import EmisDrawer from './EmisDrawer.svelte';
+	import type { CatalogTab, NewsRow, VesselRow } from './drawer';
 	import { vesselPositionsFilters, VESSEL_POSITIONS_FILTER_TARGETS } from './filters';
-
-	type VesselRow = EmisShipRouteVessel & { vesselLabel: string };
-	type NewsRow = EmisMapNewsFeatureProperties;
-	type CatalogTab = 'vessels' | 'news';
 	type LayerMode = 'vessels' | 'news' | 'vessels+news';
 
 	let { data }: { data: PageData } = $props();
@@ -83,30 +75,6 @@
 			viewportVesselCount = null;
 		}
 	});
-
-	function formatCoord(value: number) {
-		return value.toFixed(4);
-	}
-
-	function importanceBadge(importance: number | null): { label: string; tone: string } {
-		switch (importance) {
-			case 5:
-				return { label: 'critical', tone: 'bg-error/15 text-error border-error/30' };
-			case 4:
-				return {
-					label: 'high',
-					tone: 'bg-destructive-hover/15 text-destructive-hover border-destructive-hover/30'
-				};
-			case 3:
-				return { label: 'medium', tone: 'bg-warning/15 text-warning border-warning/30' };
-			case 2:
-				return { label: 'low', tone: 'bg-info/15 text-info border-info/30' };
-			case 1:
-				return { label: 'minor', tone: 'bg-success/15 text-success border-success/30' };
-			default:
-				return { label: 'n/a', tone: 'bg-muted/50 text-muted-foreground border-border/60' };
-		}
-	}
 
 	function buildVesselFeature(vessel: VesselRow): EmisMapSelectedFeature | null {
 		if (vessel.lastLatitude == null || vessel.lastLongitude == null) return null;

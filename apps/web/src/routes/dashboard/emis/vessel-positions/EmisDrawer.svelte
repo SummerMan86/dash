@@ -4,16 +4,17 @@
 -->
 
 <script lang="ts">
-	import type { EmisMapNewsFeatureProperties } from '@dashboard-builder/emis-contracts/emis-map';
-	import type { EmisShipRouteVessel } from '@dashboard-builder/emis-contracts/emis-ship-route';
 	import type { FilterWorkspaceRuntime } from '@dashboard-builder/platform-filters';
-	import { Skeleton } from '@dashboard-builder/platform-ui';
 	import { formatDate, formatNumber } from '@dashboard-builder/platform-core';
 	import { FilterPanel } from '@dashboard-builder/platform-filters/widgets';
-
-	type VesselRow = EmisShipRouteVessel & { vesselLabel: string };
-	type NewsRow = EmisMapNewsFeatureProperties;
-	type CatalogTab = 'vessels' | 'news';
+	import { Skeleton } from '@dashboard-builder/platform-ui';
+	import {
+		formatCoord,
+		importanceBadge,
+		type CatalogTab,
+		type NewsRow,
+		type VesselRow
+	} from './drawer';
 
 	interface Props {
 		open: boolean;
@@ -54,30 +55,6 @@
 		onToggleNews,
 		filterRuntime
 	}: Props = $props();
-
-	function formatCoord(v: number): string {
-		return v.toFixed(4);
-	}
-
-	function importanceBadge(importance: number | null): { label: string; tone: string } {
-		switch (importance) {
-			case 5:
-				return { label: 'critical', tone: 'bg-error/15 text-error border-error/30' };
-			case 4:
-				return {
-					label: 'high',
-					tone: 'bg-destructive-hover/15 text-destructive-hover border-destructive-hover/30'
-				};
-			case 3:
-				return { label: 'medium', tone: 'bg-warning/15 text-warning border-warning/30' };
-			case 2:
-				return { label: 'low', tone: 'bg-info/15 text-info border-info/30' };
-			case 1:
-				return { label: 'minor', tone: 'bg-success/15 text-success border-success/30' };
-			default:
-				return { label: 'n/a', tone: 'bg-muted/50 text-muted-foreground border-border/60' };
-		}
-	}
 
 	function handleMiniBarClick(tab: CatalogTab) {
 		onTabChange(tab);
