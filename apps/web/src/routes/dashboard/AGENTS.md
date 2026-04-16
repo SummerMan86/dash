@@ -43,11 +43,14 @@ Demo/example routes for analytics showcase and dashboard editor.
 All BI pages follow this pattern:
 
 ```svelte
-import {fetchDataset} from '$shared/api/fetchDataset'; import {useDebouncedLoader} from '@dashboard-builder/platform-core';
-import {useFilterWorkspace} from '$entities/filter'; import {FilterPanel} from '$widgets/filters';
+import { fetchDataset } from '$shared/api/fetchDataset';
+import { useDebouncedLoader } from '@dashboard-builder/platform-core';
+import { useFilterWorkspace } from '@dashboard-builder/platform-filters';
+import { FilterPanel } from '@dashboard-builder/platform-filters/widgets';
 ```
 
 `fetchDataset` is the canonical BI data facade in `$shared/api/`.
+The remaining `$shared` alias here is an app-local transport facade, not a sign that `shared/` is the governing BI architecture layer.
 
 ## Как читать dashboard routes
 

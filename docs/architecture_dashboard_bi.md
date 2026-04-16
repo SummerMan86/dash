@@ -759,6 +759,9 @@ Packages own:
 
 Existing FSD-like folders under `src/lib/` may remain as migration residue or thin glue, but they do not define where new BI code should live.
 
+For non-EMIS BI work, avoid creating new `shared`, `entities`, `features`, or `widgets` folders as if they were canonical architecture layers.
+If app-local cross-route code is still needed, use flat first-level modules under `src/lib/` (`api/`, `fixtures/`, `styles/`, `<module>/`) or keep the code route-local.
+
 ### Page Model
 
 ```txt
@@ -957,6 +960,7 @@ Practical guidance:
 ### What This Is Not
 
 - not FSD as a governing architecture model
+- not “FSD folders with new disclaimers”
 - not a dashboard framework or page registry DSL
 - not global-store-first BI state
 - not provider logic hidden inside pages

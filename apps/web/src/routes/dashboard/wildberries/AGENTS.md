@@ -28,11 +28,11 @@
 - таблицы
 - action через `/api/wb/prices`
 
-Хорошо показывает, как shared/ui, dataset layer и page-level business logic собираются вместе.
+Хорошо показывает, как `platform-ui`, dataset layer и page-level business logic собираются вместе.
 
 ### `stock-alerts/`
 
-Маршрут с агрегацией, сценарными параметрами и прикладными widgets.
+Маршрут с агрегацией, сценарными параметрами и прикладными composite UI blocks.
 
 Показывает:
 

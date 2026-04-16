@@ -4,15 +4,18 @@
 
 ## Что уже есть
 
-Краткий обзор ключевых модулей (пути указаны концептуально; физически код живёт в `apps/web/src/lib/` и `packages/`):
+Краткий обзор ключевых модулей:
 
-- `shared/ui` и `shared/styles` — базовый design system на Svelte 5 + Tailwind 4
-- `entities/dataset` + `server/*` — BFF-паттерн `DatasetQuery -> IR -> Provider` для BI/read-side
-- `entities/filter` + `widgets/filters` — декларативные фильтры, workspace runtime, URL sync и target-aware planner
-- `server/emis/*` + `routes/api/emis/*` — Postgres-first operational/server modules для EMIS без лишней generic IR-обвязки
-- `features/dashboard-edit` — редактор дашбордов на GridStack
-- `routes/dashboard/wildberries/*` — прикладные аналитические страницы поверх PostgreSQL
-- `server/alerts` — серверный scheduler и уведомления
+- `packages/platform-ui` + `apps/web/src/app.css` — базовый design system на Svelte 5 + Tailwind 4
+- `packages/platform-datasets` + `apps/web/src/routes/api/datasets/[id]/+server.ts` — BI/read-side path `DatasetQuery -> compile -> Provider`
+- `packages/platform-filters` + BI routes — декларативные фильтры, workspace runtime, URL sync и target-aware planner
+- `apps/web/src/lib/shared/api/fetchDataset.ts` — app-local BI data facade поверх dataset runtime
+- `apps/web/src/lib/features/dashboard-edit` — редактор дашбордов на GridStack
+- `apps/web/src/routes/dashboard/wildberries/*` и `apps/web/src/routes/dashboard/strategy/*` — прикладные аналитические страницы
+- `apps/web/src/lib/server/alerts` — серверный scheduler и уведомления
+- `apps/web/src/lib/server/emis/*` + `apps/web/src/routes/api/emis/*` — Postgres-first operational/server modules для EMIS без лишней generic IR-обвязки
+
+Оставшиеся `apps/web/src/lib/shared|features|widgets` — это app-local transitional folders, а не repo-wide architecture model.
 
 ## Стек
 
@@ -104,7 +107,7 @@ pnpm lint:boundaries
 - `/dashboard` - редактор дашборда
 - `/dashboard/demo` - демо аналитического UI
 - `/dashboard/analytics` - статическая demo-аналитика
-- `/dashboard/strategy-drive` - стратегия, BSC, planning cascade и gap analysis
+- `/dashboard/strategy` - стратегия, BSC, planning cascade и gap analysis
 - `/dashboard/wildberries/office-day` - таблица офисных остатков
 - `/dashboard/wildberries/product-analytics` - аналитика товара
 - `/dashboard/wildberries/stock-alerts` - анализ рисков по складам
@@ -148,6 +151,8 @@ Monorepo-style layout: единое SvelteKit-приложение в `apps/web/
 - `emis-contracts`, `emis-server`, `emis-ui` — EMIS domain packages
 
 Single-deployable: один runtime, но code ownership и import boundaries разделены по package границам. Подробнее — `docs/architecture.md` и `docs/emis_monorepo_target_layout.md`.
+
+Важно: исторические `src/lib/shared|features|widgets` не стоит читать как FSD-layer contract. Для новой non-EMIS разработки canonical model — `routes/*` для page composition и `packages/*` для reusable logic.
 
 ## Локальные git-checkpoints
 

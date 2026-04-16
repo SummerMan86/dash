@@ -1,6 +1,7 @@
 # Features Navigation
 
-`src/lib/features/` сейчас почти полностью определяется модулем `dashboard-edit/`.
+`src/lib/features/` - transitional app-local bucket for remaining user workflows/editors.
+It is not a canonical repo-wide architecture layer.
 
 ## Что реально используется
 
@@ -23,7 +24,7 @@
 
 ## Что здесь пока неактивно
 
-- `dashboard-builder/` сейчас пустой
+- `dashboard-builder/` сейчас пустой migration residue
 
 Не стоит ориентироваться на него как на реальный модуль.
 
@@ -32,3 +33,5 @@
 - если нужен именно пользовательский сценарий, а не shared primitive;
 - если работаешь с layout editor;
 - если ищешь orchestration между UI и state в рамках одной функции.
+
+Если появится новый reusable app-only flow, семантически точнее считать целевым именем `workflows/`, а не расширять vocabulary `features/` без необходимости.

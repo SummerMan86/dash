@@ -1,6 +1,7 @@
 # Library Layer Navigation
 
 `src/lib/` contains app-local code: server-side infrastructure, thin API facades, and a few remaining app-specific modules.
+It is not a canonical layer map for the repository.
 
 ## Placement rules for new code
 
@@ -11,12 +12,34 @@
 | Folder | Status | Contains |
 |--------|--------|----------|
 | `server/` | **Active** | BFF transport, legacy dataset-definition copies, providers, alerts scheduler, EMIS route infra |
-| `shared/` | **Active (thin)** | `fetchDataset.ts` (BI data facade), CSS tokens, fixtures |
-| `features/dashboard-edit/` | **Active** | Dashboard layout editor (GridStack). Single app-local consumer |
+| `shared/` | **Transitional** | Mixed app-local residue: `fetchDataset.ts`, style docs/tokens, fixtures |
+| `features/dashboard-edit/` | **Active (transitional home)** | Dashboard layout editor (GridStack). Single app-local consumer |
 | `features/emis-manual-entry/` | **Active** | EMIS CMS forms. Depends on `$app/forms` |
-| `widgets/stock-alerts/` | **Active** | Wildberries-specific alert widgets |
+| `widgets/stock-alerts/` | **Active (transitional home)** | Wildberries-specific alert widgets |
 | `widgets/emis-drawer/` | **Active** | EMIS map detail panel |
-| `entities/` | **Empty** | All re-export shims removed in TD-2. Direct package imports only |
+| `entities/` | **Deleted** | All re-export shims removed in TD-2. Do not recreate |
+
+## Target non-EMIS shape
+
+For future rename/migration, the intended app-local shape is flat by module:
+
+```text
+src/lib/
+  server/
+  api/
+  fixtures/
+  styles/
+  dashboard-edit/
+  <module>/
+```
+
+Meaning:
+
+- `server/` remains the server-only boundary
+- `api/` holds client facades such as `fetchDataset`
+- `fixtures/` holds mock/demo/test data
+- `styles/` holds tokens, global CSS, and style docs
+- every app-local feature/editor/composite becomes a first-level peer module instead of living under `features/` or `widgets/`
 
 ## Package layer vs app layer
 
@@ -49,6 +72,26 @@ Server-only consumers should import canonical packages directly:
 
 - `@dashboard-builder/platform-datasets/server` — `compileDataset`, `postgresProvider`
 - `@dashboard-builder/db` — pg pool
+
+## Rules for new non-EMIS app-local code
+
+- Do not create new `shared/`, `entities/`, `features/`, or `widgets/` buckets
+- Reusable across domains/projects -> `packages/*`
+- Single page/workspace only -> route-local files under `src/routes/...`
+- Multi-route but app-specific -> `src/lib/<module>/`
+- Thin client transport facade -> `src/lib/api/`
+- Server-only -> `src/lib/server/`
+- App-local peer modules should not import each other; if two modules need shared code, move that code into `packages/*` or a narrower route-local shared home
+- Long-term alias policy is `$lib/*`; transitional `$shared/$features/$widgets` should disappear during rename migration
+
+## Module lifecycle
+
+1. Route-local: keep code next to the page/workspace while one route owns it.
+2. App-local module: move it to `src/lib/<module>/` when 2+ routes use it and it is still app-specific.
+3. Package: extract to `packages/<name>/` when the module gains broader contracts, related submodules, or clear reuse beyond one app-local module.
+
+This repository scales primarily through `packages/*`, not by adding more grouping buckets under `src/lib/`.
+If `src/lib/` starts asking for sub-groups-of-groups, that is usually the signal to extract a package instead.
 
 ## EMIS vs BI boundary
 

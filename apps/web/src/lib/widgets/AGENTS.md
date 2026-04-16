@@ -1,14 +1,14 @@
 # Widgets Navigation
 
-`src/lib/widgets/` - слой composite widgets.
-Он стоит выше `shared/ui`, но ниже page-level routes.
+`src/lib/widgets/` - transitional bucket for app-local composite UI.
+Это не canonical layer между `shared/ui` и routes: `shared/ui` уже вынесен в `@dashboard-builder/platform-ui`, а filter widgets - в `@dashboard-builder/platform-filters/widgets`.
 
 ## Purpose
 
-- собирать shared/ui primitives в готовые reusable widgets
-- держать UI composition без утаскивания raw business logic в pages
+- держать несколько оставшихся app-local composite blocks
+- не размазывать route-specific UI glue по unrelated страницам
 
-Widgets могут использовать `entities` и `shared`, но не должны тянуть `features`, чтобы не плодить circular deps.
+Для новой non-EMIS разработки лучше либо держать composition route-local (`components/`, `_shared/`), либо использовать более семантичное имя вроде `composites/`, если действительно нужен cross-route app-local home.
 
 ## What lives here after TD-2
 

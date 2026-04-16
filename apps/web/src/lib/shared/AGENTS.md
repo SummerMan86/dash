@@ -1,6 +1,7 @@
 # Shared Layer Navigation
 
-`src/lib/shared/` - текущий platform shared слой проекта.
+`src/lib/shared/` - transitional app-local bucket, not the canonical platform/shared layer.
+Canonical reusable platform code now lives in packages such as `@dashboard-builder/platform-ui`, `@dashboard-builder/platform-core`, `@dashboard-builder/platform-datasets`, and `@dashboard-builder/platform-filters`.
 
 ## Structure
 
@@ -26,6 +27,13 @@ Consumers now import directly from packages:
 - `api/` - client-side facade для dataset-backed BI/read-side загрузки
 - `styles/` - CSS tokens, design system docs
 - `fixtures/` - mock datasets
+
+Это не удачный долгосрочный umbrella-name для новых модулей.
+Если код отсюда двигается или создается заново, ориентир такой:
+
+- `api/` -> `data-access/`
+- `styles/` -> `design/`
+- `fixtures/` -> `mocks/` или route-local fixtures
 
 ## Самые важные точки входа
 

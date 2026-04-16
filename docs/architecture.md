@@ -14,7 +14,7 @@ Three architecture lenses define the system at different levels:
 
 - **App composition model: route-first UI + package-first reusable logic.** Routes own page/workspace composition and page-local BI state. Packages own reusable contracts, data execution, and server logic. This is the governing architecture for active development.
 
-- **Legacy app-local folders: secondary organization, not architectural authority.** Old `src/lib/shared`, `entities`, `features`, and `widgets` folders still exist in parts of the app as migration residue and thin glue. They may help local navigation, but they do not define placement for new architecture decisions.
+- **Legacy app-local folders: secondary organization, not architectural authority.** Old `src/lib/shared`, `features`, and `widgets` folders still exist in parts of the app as migration residue and thin glue. `entities/` has already been removed. These names may help local navigation, but they are migration debt and must not drive new placement or naming decisions.
 
 - **Server pattern: BFF transport over package-owned services.** SvelteKit routes (`+server.ts`, `+page.server.ts`) are thin HTTP transport. Business logic, SQL, and domain rules live in `packages/emis-server`, `packages/platform-datasets`, etc. Routes parse HTTP, validate, delegate to package entrypoints, and map errors.
 
@@ -196,7 +196,7 @@ See [architecture_dashboard_bi.md](./architecture_dashboard_bi.md) for the sched
 3. `emis-server` never imports from `emis-ui`.
 4. Nobody imports from `apps/web`.
 
-### App-Local Structure (Route-First, Packages-First)
+### App-Local Structure (Current State + Target Policy)
 
 The app still contains historical `src/lib/` folders from an earlier FSD-like organization. They are not the governing architecture model anymore.
 
@@ -208,10 +208,10 @@ For active development, placement is decided by responsibility first:
 
 | Layer | Path | Alias | Contains | Status |
 |---|---|---|---|---|
-| `shared` | `src/lib/shared/` | `$shared` | API facades (`fetchDataset`), fixtures, thin app-local glue | Secondary support layer, not architecture driver |
-| `entities` | `src/lib/entities/` | `$entities` | Re-exports from packages, compatibility shims | Legacy / migration structure |
-| `features` | `src/lib/features/` | `$features` | Remaining app-local user flows (dashboard-edit, emis-manual-entry) | Limited active use, not the default target home |
-| `widgets` | `src/lib/widgets/` | `$widgets` | Composite UI glue blocks (filters, emis-drawer, stock-alerts) | Thin glue / migration structure |
+| `shared` | `src/lib/shared/` | `$shared` | Transitional bucket: BI facade (`fetchDataset`), styles docs/tokens, fixtures | Migration residue only; not a target home for new naming |
+| `entities` | `src/lib/entities/` | `$entities` | Removed in TD-2 | Deleted; do not recreate |
+| `features` | `src/lib/features/` | `$features` | Transitional bucket for remaining app-local workflows/editors (`dashboard-edit`, `emis-manual-entry`) | Limited active use, not the default target home |
+| `widgets` | `src/lib/widgets/` | `$widgets` | Transitional bucket for app-local composite UI glue (`stock-alerts`, `emis-drawer`) | Thin glue / migration structure |
 | `routes` | `src/routes/` | -- | Pages, API endpoints, layouts | Canonical home for UI composition |
 | `server` | `src/lib/server/` | -- | BFF: datasets, providers, alerts, strategy | Server-only; never imported from client |
 
@@ -221,6 +221,51 @@ For active development, placement is decided by responsibility first:
 - Existing `entities/features/widgets/shared` folders may host compatibility code or thin app-local glue, but they are not a required layering model for new work
 - Clear import boundaries still matter even if the structure already hints at them; “obvious from folders” is not a substitute for boundary discipline
 
+**Target non-EMIS app-local shape:**
+
+```txt
+src/lib/
+  server/              # server-only boundary
+  api/                 # client API / transport facades
+  fixtures/            # mock, demo, and test data
+  styles/              # tokens, global CSS, style docs
+  dashboard-edit/      # app-local module
+  <module>/            # each additional app-local module is a first-level peer
+```
+
+Rules for this shape:
+- Flat by module, not layered by type
+- Do not introduce new top-level `shared`, `entities`, `features`, or `widgets` folders under `src/lib/`
+- Each first-level module under `src/lib/` is an app-local unit with an explicit responsibility
+- Keep `server/` as-is; it is already semantic and accurate
+- If a folder mixes unrelated responsibilities, split it by responsibility instead of renaming one catch-all bucket into another catch-all bucket
+
+**Decision tree for new code:**
+- Reusable across domains/projects -> `packages/*`
+- Used by exactly one page/workspace -> route-local files under `src/routes/...`
+- Used by multiple routes but still app-specific -> `src/lib/<module-name>/`
+- Thin client facade to HTTP/BFF -> `src/lib/api/`
+- Server-only logic -> `src/lib/server/`
+
+**Module lifecycle:**
+1. Route-local: code lives next to the page/workspace that owns it
+2. App-local module: once the code is used by 2+ routes and is still app-specific, promote it to `src/lib/<module-name>/`
+3. Package: once the module grows broader contracts, related submodules, or cross-domain/project reuse, promote it to `packages/<name>/`
+
+Each promotion is a response to actual growth, not speculative pre-design.
+
+**Grouping and scaling model:**
+- `packages/*` is the primary grouping and scaling mechanism for the repository
+- New domains normally appear as new packages (`{domain}-contracts`, `{domain}-server`, `{domain}-ui`, or additions to existing platform packages)
+- `apps/web/src/routes/*` owns page composition and route-local code
+- `apps/web/src/lib/*` stays intentionally thin: `server/`, `api/`, `fixtures/`, `styles/`, and a small number of app-local peer modules
+- Do not introduce extra grouping layers inside `src/lib/` to simulate package boundaries; if grouping pressure appears, that is usually the signal to extract a package
+
+**Alias policy for the target shape:**
+- Keep `$lib`
+- Deprecate `$shared`, `$features`, `$widgets`, and `$entities`
+- Prefer explicit imports such as `$lib/api/fetchDataset`, `$lib/styles/...`, `$lib/fixtures/...`, `$lib/dashboard-edit`
+
 **Compact boundary rules:**
 - Routes own page/workspace composition
 - Route-local `components/`, `view-model.ts`, and `filters.ts` are page-scoped and should not become cross-route shared modules
@@ -228,6 +273,7 @@ For active development, placement is decided by responsibility first:
 - App-local shared UI primitives may live in neutral folders such as `src/lib/components/` or in `platform-ui`, but they must not know about concrete pages
 - `packages/*` must not import app code
 - Routes and app-local UI must not reach into package-private server internals; they use public package entrypoints and documented route/BFF seams
+- App-local peer modules under `src/lib/<module>/` should not import each other; if two modules need shared code, that code belongs either in `packages/*` or in a narrower route-local shared home
 
 **Server boundary and transport policy:**
 - `src/lib/server/**` is a formal server-only boundary. Allowed consumers: `src/routes/api/**`, `+page.server.ts`, `+layout.server.ts`, `hooks.server.ts`, and other `src/lib/server/**` modules.
@@ -235,6 +281,12 @@ For active development, placement is decided by responsibility first:
 - `routes/api/**/+server.ts` and server load files stay thin adapters: parse request/params/session, derive context, call package or server entrypoints, map result/error to HTTP or load output.
 - Put code into `packages/*` when it is reusable, contract-bearing, or domain logic. Put code into `src/lib/server/**` only for app-owned server concerns and glue (`alerts`, mock provider, EMIS SvelteKit transport helpers).
 - BI dataset definitions executed at runtime live in `packages/platform-datasets/src/server/definitions/*`. `apps/web/src/lib/server/datasets/definitions/*` are migration copies/reference only and are not the runtime source of truth for `/api/datasets/:id`.
+
+**`src/lib/` dependency rules:**
+- `src/lib/server/**` may import packages and server-safe utilities; it must not import `src/lib/api/**` or app-local UI modules
+- `src/lib/api/**` may import packages and client-safe transport utilities; it must not import `src/lib/server/**` or peer app-local modules
+- `src/lib/styles/**` is for tokens, CSS, and style docs only; no business logic
+- `src/lib/<module>/**` may import packages, `src/lib/api/**`, and `src/lib/styles/**`; it should not import other peer app-local modules
 
 ## 6. Deployment Model
 
