@@ -135,81 +135,24 @@ Apply these when the slice touches datasets, providers, filters, or BI pages.
 | Provider SQL safety stays intact | Do not bypass `isSafeIdent()` or similar provider safety guards. |
 | New datasets and providers extend via registration | Add registrations; do not poke holes in central routers/switches. |
 
-## 6. Review Trigger Table
+## 6. Review, Evidence, and DoD
 
-> Derived from `docs/agents/review-gate.md` §1.1. Canonical source wins on divergence.
+Canonical ownership stays in `docs/agents/workflow.md`:
 
-Run reviewers on your slice diff after implementation.
+- reviewer selection and minimum independent review floor: §3.1-§3.2
+- evidence freshness and truthful reporting: §3.6-§3.7
+- Slice DoD and micro-task exemption: §6.1
 
-| What changed | Reviewers |
-| --- | --- |
-| Any product code | `code-reviewer` required |
-| SQL, auth, API, secrets, user input | `code-reviewer` + `security-reviewer` |
-| Cross-layer imports, placement, package/app home, boundaries | `code-reviewer` + `architecture-reviewer` |
-| BI datasets, providers, filters, BI pages | `code-reviewer` + `architecture-reviewer` |
-| Docs, contracts, schema files | `docs-reviewer`; add `code-reviewer` too if product code changed in the same slice |
-| UI components or pages | `code-reviewer` + `ui-reviewer` |
-| Only markdown / docs-only work | `docs-reviewer` only |
+Use those sections directly when deciding:
 
-If multiple conditions apply, combine reviewers.
+- which reviewers to run
+- whether a review skip is allowed
+- how to classify checks as `fresh` or `not run + reason`
+- which DoD items may be marked `N/A`
 
-## 7. Evidence Rules
+This guide does not redefine review-floor rules, reviewer-selection rules, or DoD checklists.
 
-- Every reported check is either `fresh` or `not run + reason`.
-- `fresh` means it ran in the current session after the final diff.
-- Stale results are not acceptable; rerun the check or mark it `not run`.
-- Fabricated or contradictory evidence is a `CRITICAL` failure.
-- If the task packet expected a check and you did not run it, say so explicitly.
-
-## 8. Slice DoD
-
-### Micro-task exemption
-
-If the final change is `<= 20` changed lines across at most two files, has no architectural surface, and does not change schema or runtime contract:
-
-- required: acceptance criteria met
-- required: scope not violated
-- required: checks satisfy current baseline policy
-- everything else may be marked `N/A`
-
-This exemption reduces checklist overhead.
-It does **not** waive independent review for worker-owned product-code changes; review skip belongs only to `direct-fix`.
-
-### Level 1 checklist
-
-#### Implementation
-
-- [ ] Acceptance criteria from the task packet are met
-- [ ] Scope is not violated
-- [ ] Applicable invariants are not violated
-- [ ] Required checks satisfy current baseline policy
-- [ ] Baseline tests did not shrink
-
-#### Documentation
-
-- [ ] New directories got `AGENTS.md` when needed
-- [ ] Changed directories updated `AGENTS.md` when needed
-- [ ] New architectural pattern/decision is documented
-- [ ] Public API/contract change updated `RUNTIME_CONTRACT.md` when needed
-- [ ] Schema change updated `db/current_schema.sql` and `db/applied_changes.md`
-- [ ] New feature/capability got user-facing documentation if the packet asked for it
-
-#### Quality
-
-- [ ] No hardcoded secrets or obvious security regressions
-- [ ] No speculative abstraction
-- [ ] File complexity stayed within guardrails or existing waiver
-- [ ] Independent review floor is satisfied for code-writing slices
-- [ ] Security-relevant changes ran `security-reviewer`
-
-#### Evidence
-
-- [ ] Every check is `fresh` or `not run + reason`
-- [ ] Change manifest is truthful
-- [ ] Review disposition is recorded
-- [ ] No fabricated or contradictory evidence
-
-## 9. Handoff Templates
+## 7. Handoff Templates
 
 Canonical handoff templates: `docs/agents/templates.md` §1-§2.
 

@@ -1,22 +1,6 @@
 # Agent Templates
 
-All communication templates between agents. Each role reads only the sections relevant to them.
-
-## Routing
-
-| Role | Sections |
-| --- | --- |
-| **Worker** | §1 (Worker Handoff), §2 (Micro-Worker Handoff) |
-| **Orchestrator** | §3 (Plan), §4 (Task Packet), §5 (Reports), §6 (Review Request/Result), §7-§10 (Governance), §11 (Transparency) |
-| **Lead-strategic** | §3 (Plan), §7-§9 (Strategic/Governance), §10 (Plan Change Request) |
-| **Reviewer** | Output format is inline in each reviewer's `instructions.md` |
-
-## Rules
-
-- `Required` = section must be present. `Optional` = may be omitted entirely if not applicable.
-- If a block is N/A, omit it with a one-line disposition note, don't fill each field with "not applicable".
-- Report type is determined by risk profile, not file count.
-- Verdict artifacts (Baseline Verdict, Architecture Pass Decision) become separate files only when the decision must outlive `last_report.md`.
+Canonical artifact shapes only. Workflow policy, ownership, routing, and runtime rules live in `workflow.md`, role instructions, and `docs/codex-integration.md`.
 
 ---
 
@@ -62,7 +46,7 @@ All communication templates between agents. Each role reads only the sections re
 - ui-reviewer: <OK | findings summary>
 
 ## Slice DoD Status
-Per `review-gate.md` § 4.1. Report only gaps or N/A; green items implied:
+Per `workflow.md` §6.1. Report only gaps or N/A; green items implied:
 - docs: <done | N/A — reason | gap — what's missing>
 - baseline tests: <maintained | grew to N>
 
@@ -133,8 +117,6 @@ File: `docs/agents/lead-strategic/current_plan.md`
 - <what should work after execution>
 ```
 
-Plan self-review: every slice has testable acceptance; non-trivial slices have verification intent and mode; plan stays at decision-level, no implementation walkthroughs.
-
 ## 4. Task Packet (orchestrator → worker)
 
 ```md
@@ -184,15 +166,40 @@ Plan self-review: every slice has testable acceptance; non-trivial slices have v
 
 ### 4.1. Micro-Task Packet
 
-Shortened packet for trivial bounded slices. Same fields minus Carry-Forward, Optional References, and Review Floor.
+```md
+# Task: <name>
+
+## What To Do
+<clear description>
+
+## Scope
+- files: <list>
+- DO NOT touch: <files/modules out of scope>
+
+## Branches
+- integration branch: feature/<topic>
+- worker branch: agent/worker/<task-slug>
+- base commit: <sha>
+
+## Bootstrap Reads
+- docs/agents/worker/guide.md
+- <local AGENTS.md in touched zones>
+
+## Acceptance
+- <done-when criteria>
+
+## Checks
+- <what to run>
+
+## Return Artifacts
+- use Micro-Worker Handoff template (§2)
+```
 
 ## 5. Reports (orchestrator → lead-strategic)
 
 File: `docs/agents/orchestrator/last_report.md`
 
 ### 5.1. Full Report
-
-For multi-slice, risky, or cross-layer work.
 
 ```md
 # Report: <task name>
@@ -242,11 +249,7 @@ For multi-slice, risky, or cross-layer work.
 - <question> or `none`
 ```
 
-Optional sections (add when applicable): Execution Profile, Strategic Cadence, Governance Summary, Branches, Agent Effort, Usage Telemetry, Wave DoD Status (at wave close per `review-gate.md` §4.2).
-
 ### 5.2. Lightweight Report
-
-For docs-only, direct-fix, or low-risk one-slice work.
 
 ```md
 # Report: <task name>
@@ -273,8 +276,6 @@ For docs-only, direct-fix, or low-risk one-slice work.
 ```
 
 ### 5.3. Governance Closeout Report
-
-For verification/docs/baseline closure without new implementation.
 
 ```md
 # Report: <task name>
@@ -350,7 +351,18 @@ Questions:
 
 ### Result
 
-Format: see `lead-strategic/instructions.md` § "Strategic review output format".
+```md
+# Strategic Review
+
+Operating Mode: current: <mode> | mode change: none | <from -> to>
+Verdict: accept-ready | needs follow-up | needs strategic decision
+Findings: [CRITICAL|WARNING|INFO] file:line — description (or "No issues found.")
+Plan Fit: <matches plan / scope drift / acceptance partially closed>
+Next-Slice Impact: <no changes / local reframe / needs strategic re-slice>
+Yield: meaningful | low-yield
+Cross-Model Value: found likely missed bug | found acceptance signal | no additional value
+Recommended next step: accept | request fixes | re-slice | escalate
+```
 
 ## 8. Baseline Verdict
 
@@ -393,18 +405,12 @@ Decision needed: approve and rewrite plan | reject | escalate
 
 ## 11. Transparency Request (orchestrator → worker/reviewer)
 
-Types: `EXPLAIN_DIFF` | `EXPLAIN_DECISION` | `SHOW_STRUCTURE` | `SHOW_IMPACT` | `ALTERNATIVE_APPROACH` | `DOCUMENT_RISK` | `VERIFY_INVARIANT` | `CHECK_STATUS`
-
 ```md
 # Transparency Request
 
-Request Type: <type>
+Request Type: <EXPLAIN_DIFF | EXPLAIN_DECISION | SHOW_STRUCTURE | SHOW_IMPACT | ALTERNATIVE_APPROACH | DOCUMENT_RISK | VERIFY_INVARIANT | CHECK_STATUS>
 Target Scope: slice <ST-N>, files/modules: <list>
 Question: <what to clarify>
 Expected Output: bullets | table | short summary (no raw diff dumps)
 Why Needed: <why handoff/verdict cannot be accepted without this>
 ```
-
-## 12. Usage Log Entry
-
-Append-only telemetry: `runtime/agents/usage-log.ndjson`. Core fields: timestamp, task_id, wave_id, stage, report_type, operating_mode, status. Full schema: `usage-telemetry.md` §3.
