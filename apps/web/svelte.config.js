@@ -10,10 +10,7 @@ const config = {
 
 		// Path aliases
 		alias: {
-			$lib: 'src/lib',
-			$shared: 'src/lib/shared',
-			$features: 'src/lib/features',
-			$widgets: 'src/lib/widgets'
+			$lib: 'src/lib'
 		}
 	}
 };

@@ -8,16 +8,15 @@ For domain-specific invariants, see the relevant overlay: `invariants-emis.md`, 
 
 ## 1. Архитектура (layers and boundaries)
 
-> `shared/features/widgets` здесь означает app-local layer discipline внутри `apps/web/src/lib/`, а не название всей архитектуры. Reusable бизнес-логика, контракты и server-side код живут в `packages/*`. App layers — это UI composition и app-local orchestration. `entities/` удалён; его содержимое мигрировало в `packages/*`.
+> `apps/web/src/lib/` теперь flat-by-responsibility: `server/`, `api/`, `fixtures/`, `styles/` и first-level app-local modules (`dashboard-edit/`, `emis-manual-entry/`, etc.). Reusable бизнес-логика, контракты и server-side код живут в `packages/*`. Не возвращаем FSD buckets (`shared/features/widgets/entities`) как живые архитектурные слои.
 
 | Инвариант | Enforcement | Current enforcement / path to automation |
 | --- | --- | --- |
-| Reusable бизнес-логика, контракты и server-side код живут в `packages/*`; app layers — app-local composition | `review-only` | Расширить path-ownership lint правила по package/app seams |
-| `shared` не импортирует из `features`, `widgets` и server-only модулей | `automated` | `eslint.config.js`: `no-restricted-imports` для `apps/web/src/lib/shared/**` |
-| `features` не импортируют из `widgets` и server-only модулей | `automated` | `eslint.config.js`: `no-restricted-imports` для `apps/web/src/lib/features/**` |
+| Reusable бизнес-логика, контракты и server-side код живут в `packages/*`; app-local `src/lib/*` остаётся thin composition/orchestration | `review-only` | Расширить path-ownership lint правила по package/app seams |
+| First-level app-local modules под `src/lib/<module>/` не тянут друг друга без явного архитектурного решения; текущая автоматизированная peer-изоляция: `dashboard-edit` ↔ `emis-manual-entry` | `automated` | `eslint.config.js`: `no-restricted-imports` для `apps/web/src/lib/dashboard-edit/**` и `apps/web/src/lib/emis-manual-entry/**` |
 | client-side код не импортирует `$lib/server/*` и server-only workspace modules | `automated` | `eslint.config.js`: `serverImportPatterns` для client routes/layers |
-| `features`, `shared` не импортируют из `routes` | `review-only` | Добавить route-boundary patterns в `no-restricted-imports` для app-local layers |
-| path aliases (`$lib`, `$shared`, `$features`, `$widgets`) используются последовательно | `review-only` | Добавить lint rule, которая банит cross-tree relative climbs там, где есть alias |
+| App-local `src/lib/*` модули не импортируют из `routes` | `review-only` | Добавить route-boundary patterns в `no-restricted-imports` для app-local modules |
+| Активная alias policy для app-local кода: `$lib/*`; retired bucket aliases (`$shared`, `$features`, `$widgets`) не возвращаются | `review-only` | Добавить lint rule, которая банит retired aliases и cross-tree relative climbs там, где есть `$lib` |
 
 ## 2. Placement (package homes and route discipline)
 

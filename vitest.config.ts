@@ -4,10 +4,7 @@ import path from 'path';
 export default defineConfig({
 	resolve: {
 		alias: {
-			$lib: path.resolve(__dirname, 'apps/web/src/lib'),
-			$shared: path.resolve(__dirname, 'apps/web/src/lib/shared'),
-			$features: path.resolve(__dirname, 'apps/web/src/lib/features'),
-			$widgets: path.resolve(__dirname, 'apps/web/src/lib/widgets')
+			$lib: path.resolve(__dirname, 'apps/web/src/lib')
 		}
 	},
 	test: {

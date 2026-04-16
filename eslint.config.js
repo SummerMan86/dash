@@ -19,17 +19,18 @@ const appImportPatterns = [
 	'$lib',
 	'$lib/*',
 	'$lib/**',
-	'$shared',
-	'$shared/*',
-	'$shared/**',
-	'$features',
-	'$features/*',
-	'$features/**',
-	'$widgets',
-	'$widgets/*',
-	'$widgets/**',
 	'**/apps/web/**'
 ];
+const appLocalModuleImportPatterns = (moduleName) => [
+	`$lib/${moduleName}`,
+	`$lib/${moduleName}/*`,
+	`$lib/${moduleName}/**`,
+	`**/${moduleName}`,
+	`**/${moduleName}/*`,
+	`**/${moduleName}/**`
+];
+const dashboardEditImportPatterns = appLocalModuleImportPatterns('dashboard-edit');
+const emisManualEntryImportPatterns = appLocalModuleImportPatterns('emis-manual-entry');
 const serverImportPatterns = [
 	'$lib/server',
 	'$lib/server/*',
@@ -48,24 +49,8 @@ const serverImportPatterns = [
 	'@dashboard-builder/emis-server/**'
 ];
 const clientUiImportPatterns = [
-	'$features',
-	'$features/*',
-	'$features/**',
-	'**/features',
-	'**/features/*',
-	'**/features/**',
-	'$widgets',
-	'$widgets/*',
-	'$widgets/**',
-	'**/widgets',
-	'**/widgets/*',
-	'**/widgets/**',
-	'$shared/ui',
-	'$shared/ui/*',
-	'$shared/ui/**',
-	'**/shared/ui',
-	'**/shared/ui/*',
-	'**/shared/ui/**',
+	...dashboardEditImportPatterns,
+	...emisManualEntryImportPatterns,
 	'@dashboard-builder/platform-ui',
 	'@dashboard-builder/platform-ui/*',
 	'@dashboard-builder/platform-ui/**',
@@ -289,16 +274,16 @@ export default defineConfig(
 	// ── Architecture boundary guardrails (ST-4) ──────────────────────────
 	// Each file scope has ONE no-restricted-imports block with all its combined patterns.
 	// (ESLint flat config: later matching block overrides, not merges, same rule key.)
-	// Note: ESLint matches the literal import string — path aliases ($shared, $features, etc.)
-	// are NOT resolved before matching, so both alias forms must be listed where relevant.
+	// Note: ESLint matches the literal import string. Aliases and relative sibling paths
+	// are NOT resolved before matching, so both forms must be listed where relevant.
 
-	// App-local layer: shared — no upper-layer imports, no server imports
+	// App-local peer modules stay isolated and must not reach into server-only code.
 	{
 		files: [
-			'apps/web/src/lib/shared/**/*.ts',
-			'apps/web/src/lib/shared/**/*.svelte.ts',
-			'apps/web/src/lib/shared/**/*.svelte.js',
-			'apps/web/src/lib/shared/**/*.svelte'
+			'apps/web/src/lib/dashboard-edit/**/*.ts',
+			'apps/web/src/lib/dashboard-edit/**/*.svelte.ts',
+			'apps/web/src/lib/dashboard-edit/**/*.svelte.js',
+			'apps/web/src/lib/dashboard-edit/**/*.svelte'
 		],
 		rules: {
 			'no-restricted-imports': [
@@ -306,29 +291,24 @@ export default defineConfig(
 				{
 					patterns: [
 						{
-							group: ['$features/*', '$features'],
-							message: 'shared must not import from features (app-local layer boundary)'
-						},
-						{
-							group: ['$widgets/*', '$widgets'],
-							message: 'shared must not import from widgets (app-local layer boundary)'
+							group: emisManualEntryImportPatterns,
+							message: 'dashboard-edit must not import from emis-manual-entry (app-local peer boundary)'
 						},
 						{
 							group: serverImportPatterns,
-							message: 'shared must not import server-only modules'
+							message: 'dashboard-edit must not import server-only modules'
 						}
 					]
 				}
 			]
 		}
 	},
-	// App-local layer: features — no widgets, no server
 	{
 		files: [
-			'apps/web/src/lib/features/**/*.ts',
-			'apps/web/src/lib/features/**/*.svelte.ts',
-			'apps/web/src/lib/features/**/*.svelte.js',
-			'apps/web/src/lib/features/**/*.svelte'
+			'apps/web/src/lib/emis-manual-entry/**/*.ts',
+			'apps/web/src/lib/emis-manual-entry/**/*.svelte.ts',
+			'apps/web/src/lib/emis-manual-entry/**/*.svelte.js',
+			'apps/web/src/lib/emis-manual-entry/**/*.svelte'
 		],
 		rules: {
 			'no-restricted-imports': [
@@ -336,34 +316,12 @@ export default defineConfig(
 				{
 					patterns: [
 						{
-							group: ['$widgets/*', '$widgets'],
-							message: 'features must not import from widgets (app-local layer boundary)'
+							group: dashboardEditImportPatterns,
+							message: 'emis-manual-entry must not import from dashboard-edit (app-local peer boundary)'
 						},
 						{
 							group: serverImportPatterns,
-							message: 'features must not import server-only modules'
-						}
-					]
-				}
-			]
-		}
-	},
-	// App-local layer: widgets — no server
-	{
-		files: [
-			'apps/web/src/lib/widgets/**/*.ts',
-			'apps/web/src/lib/widgets/**/*.svelte.ts',
-			'apps/web/src/lib/widgets/**/*.svelte.js',
-			'apps/web/src/lib/widgets/**/*.svelte'
-		],
-		rules: {
-			'no-restricted-imports': [
-				'error',
-				{
-					patterns: [
-						{
-							group: serverImportPatterns,
-							message: 'widgets must not import server-only modules'
+							message: 'emis-manual-entry must not import server-only modules'
 						}
 					]
 				}
