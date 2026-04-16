@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { ActionData, PageData } from './$types';
 
-	import ObjectEditorForm from '$lib/features/emis-manual-entry/ObjectEditorForm.svelte';
+	import ObjectEditorForm from '$lib/emis-manual-entry/ObjectEditorForm.svelte';
 	import {
 		Card,
 		CardContent,

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { ActionData, PageData } from './$types';
 
-	import NewsEditorForm from '$lib/features/emis-manual-entry/NewsEditorForm.svelte';
+	import NewsEditorForm from '$lib/emis-manual-entry/NewsEditorForm.svelte';
 	import {
 		Card,
 		CardContent,

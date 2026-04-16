@@ -1,6 +1,6 @@
 # EMIS Manual Entry
 
-App-local feature: CMS-style editor forms for manual EMIS data entry (objects and news).
+App-local module: CMS-style editor forms for manual EMIS data entry (objects and news).
 
 ## Structure
 
@@ -33,6 +33,6 @@ Both forms use SvelteKit `use:enhance` for progressive enhancement (no JS requir
 
 ## Rules
 
-- This is an app-local feature. It stays in `$features/`, not in packages — depends on `$app/forms` which is SvelteKit app-specific.
+- This is an app-local module. It lives in `$lib/emis-manual-entry/`, not in packages, because it depends on `$app/forms` which is SvelteKit app-specific.
 - Forms are presentational: validation logic and form actions live in the consuming route's `+page.server.ts`.
 - No direct API calls or server imports from these components.

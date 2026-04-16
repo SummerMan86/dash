@@ -2,7 +2,7 @@
 	import { enhance } from '$app/forms';
 	import type { ActionData, PageData } from './$types';
 
-	import NewsEditorForm from '$lib/features/emis-manual-entry/NewsEditorForm.svelte';
+	import NewsEditorForm from '$lib/emis-manual-entry/NewsEditorForm.svelte';
 	import { Button } from '@dashboard-builder/platform-ui';
 	import {
 		Card,
