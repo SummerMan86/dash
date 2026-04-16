@@ -70,14 +70,15 @@ Measure core docs separately from state/history files.
   - `orchestrator/last_report.md`
   - `orchestrator/memory.md`
   - `orchestrator/decision-log.md`
-- **Target:** **17 canonical docs**
-- **Target lines:** **~1,750–1,950**
+- **Target:** **18 canonical docs**
+- **Target lines:** **~1,850–2,050**
 
 ### Canonical set after rewrite (explicit)
 
-These 17 files are the canonical docs budget inside `docs/agents/`:
+These 18 files are the canonical docs budget inside `docs/agents/`:
 
 - `workflow.md`
+- `execution-profiles.md`
 - `git-protocol.md`
 - `recovery.md`
 - `templates.md`
@@ -105,8 +106,9 @@ Outside `docs/agents/`:
 ### Hard acceptance rules
 
 - Zero live refs to deleted docs.
-- `workflow.md` contains no runtime/model/plugin-command details.
-- `docs/codex-integration.md` is the only runtime truth.
+- `workflow.md` contains no plugin-command details or proof retrieval mechanics.
+- `execution-profiles.md` owns profile tables and selection rules (process-level runtime binding).
+- `docs/codex-integration.md` owns plugin-specific commands, proof tuples, companion CLI (implementation-level runtime plumbing).
 - Historical refs to old docs are allowed only inside archived files.
 
 ## Canonical ownership after the rewrite
@@ -114,7 +116,8 @@ Outside `docs/agents/`:
 | File | Owns |
 |---|---|
 | `workflow.md` | End-to-end process, role responsibilities, execution paths, review floor, reviewer selection, acceptance, user-in-loop operating modes, DoD, escalation, memory protocol |
-| `docs/codex-integration.md` | Runtime profiles, model defaults, plugin commands, proof tuples, companion CLI, runtime caveats |
+| `execution-profiles.md` | Profile tables (role → runtime/model/effort mapping), selection rules, fallback policies. Process-level "which lane for which role". Extensible for future profiles. |
+| `docs/codex-integration.md` | Plugin commands, proof tuples, companion CLI, runtime caveats. Implementation-level "how to invoke the lane". |
 | `docs/agents/autonomous-mode.md` | No-user-in-loop autonomous overlay only; autonomous-only deltas relative to `workflow.md`; no duplicated lifecycle |
 | `templates.md` | Handoff/report shapes only |
 | `git-protocol.md` | Worktree / branch / merge mechanics only |
@@ -122,11 +125,12 @@ Outside `docs/agents/`:
 | `invariants.md`, `invariants-emis.md` | Project-specific constraints only |
 | Role docs | Role-local execution detail only |
 
-## Files to REWRITE (7 files)
+## Files to REWRITE (8 files)
 
 | File | Now | Target | Key change |
 |---|---:|---:|---|
 | `workflow.md` | 553 | ~240–280 | Full rewrite. Process truth only. Absorbs role map, review model core, DoD, memory protocol. **Does not absorb runtime/model tables.** |
+| `execution-profiles.md` | 127 | ~80–100 | Keep profile tables, selection rules, fallback policies. Strip plugin commands, proof tuples, companion CLI → `docs/codex-integration.md`. Extensible for future profiles. |
 | `orchestrator/instructions.md` | 248 | ~110–130 | Keep work cycle, direct-fix rules, escalation, evidence discipline. Runtime details move to `docs/codex-integration.md`. |
 | `lead-strategic/instructions.md` | 290 | ~110–130 | Keep planning cadence, acceptance, governance passes. Remove autonomous/runtime prompt surface. |
 | `worker/guide.md` | 229 | ~120–140 | Remove duplicated BI guardrails and duplicated DoD. Keep worker loop only. |
@@ -148,17 +152,16 @@ Outside `docs/agents/`:
 | File | Lines | What |
 |---|---:|---|
 | `docs/agents/autonomous-mode.md` | ~80–100 | Delta-only appendix: when autonomous mode is allowed, lightweight vs full, decision framework, guardrails, decision log, recovery deltas. |
-| `docs/codex-integration.md` | ~100–140 | Runtime truth: profile tables, plugin commands, proof tuples, companion CLI, runtime caveats. Outside `docs/agents/`. |
+| `docs/codex-integration.md` | ~80–120 | Plugin-level runtime plumbing: plugin commands, proof tuples, companion CLI, runtime caveats. Profile tables stay in `execution-profiles.md`. Outside `docs/agents/`. |
 | `docs/QUICKSTART.md` | ~80–120 | Human/operator runbook extracted from `user-guide.md`. Outside `docs/agents/`. |
 | `docs/ops/usage-telemetry.md` | ~40–80 | **Conditional.** Create only if repo-wide grep shows a real consumer remains after the simplification. Otherwise delete telemetry doc completely. |
 
-## Files to DELETE from `docs/agents/` (14 guaranteed + 1 conditional)
+## Files to DELETE from `docs/agents/` (13 guaranteed + 1 conditional)
 
-### Guaranteed canonical deletions (5)
+### Guaranteed canonical deletions (4)
 
 - `review-gate.md`
 - `roles.md`
-- `execution-profiles.md`
 - `autonomous-protocol.md`
 - `user-guide.md`
 
@@ -239,18 +242,17 @@ orchestrator → lead-strategic vs → user.
 Slice / wave / feature DoD. Documentation items must be explicit done or N/A.
 
 ## 10. Pointers
-templates.md, docs/codex-integration.md, autonomous-mode.md,
-git-protocol.md, recovery.md, invariants.md.
+execution-profiles.md, templates.md, docs/codex-integration.md,
+autonomous-mode.md, git-protocol.md, recovery.md, invariants.md.
 ```
 
 ## Execution plan
 
 ### Preflight (no merge)
 
-- Run a repo-wide grep for external references to:
+- Run a repo-wide grep for external references to files being deleted:
   - `review-gate.md`
   - `roles.md`
-  - `execution-profiles.md`
   - `autonomous-protocol.md`
   - `user-guide.md`
   - `usage-telemetry.md`
@@ -264,18 +266,19 @@ git-protocol.md, recovery.md, invariants.md.
 
 ### Slice 1: establish the new canon
 
-- Create `docs/codex-integration.md`
+- Create `docs/codex-integration.md` (plugin-level plumbing extracted from execution-profiles.md and other sources)
 - Rewrite `workflow.md` from scratch
+- Rewrite `execution-profiles.md` (keep profile tables + selection rules; strip plugin commands → codex-integration.md)
 - Create `docs/agents/autonomous-mode.md`
 - If Slice 1 is merged before legacy deletion, add one-line deprecation headers to:
   - `review-gate.md`
-  - `execution-profiles.md`
   - `autonomous-protocol.md`
   - `roles.md`
   - `user-guide.md`
 
 **Slice 1 acceptance:**
-- `workflow.md` contains **no** plugin commands, model defaults, proof retrieval details, or companion CLI usage.
+- `workflow.md` contains **no** plugin commands, proof retrieval details, or companion CLI usage.
+- `execution-profiles.md` contains profile tables and selection rules but **no** plugin commands, proof tuples, or companion CLI recipes.
 - `workflow.md` single-sources all of these:
   - review floor
   - integration review trigger
@@ -336,7 +339,7 @@ git-protocol.md, recovery.md, invariants.md.
 
 ### Slice 4: delete legacy docs + final verify
 
-- Delete the guaranteed 14 legacy files
+- Delete the guaranteed 13 legacy files
 - Remove any temporary deprecation headers by removing the legacy files entirely
 - Record final counts/results in live state docs
 
@@ -355,7 +358,7 @@ find docs/agents -name '*.md' -not -path '*/archive/*' \
 | grep -vE 'lead-strategic/current_plan.md|lead-strategic/memory.md|orchestrator/last_report.md|orchestrator/memory.md|orchestrator/decision-log.md' \
 | wc -l
 ```
-Target: `17`
+Target: `18`
 
 Canonical lines:
 ```bash
@@ -363,7 +366,7 @@ find docs/agents -name '*.md' -not -path '*/archive/*' \
 | grep -vE 'lead-strategic/current_plan.md|lead-strategic/memory.md|orchestrator/last_report.md|orchestrator/memory.md|orchestrator/decision-log.md' \
 | xargs wc -l
 ```
-Target: `~1,750–1,950`
+Target: `~1,850–2,050`
 
 ### Structural verification
 
@@ -388,7 +391,7 @@ These are mandatory, not optional:
 
 Use realistic bootstrap, not one-file fantasy:
 - `lead-strategic` bootstrap: `workflow.md` + `lead-strategic/instructions.md` (+ `docs/codex-integration.md` when runtime details matter)
-- `orchestrator` bootstrap: `workflow.md` + `orchestrator/instructions.md` + `templates.md` (+ `docs/codex-integration.md` when runtime details matter)
+- `orchestrator` bootstrap: `workflow.md` + `orchestrator/instructions.md` + `templates.md` + `execution-profiles.md` (+ `docs/codex-integration.md` when plugin-level details matter)
 - `worker` bootstrap: `workflow.md` + `worker/guide.md` + `invariants.md`
 
 ## Non-goals
@@ -402,6 +405,7 @@ Use realistic bootstrap, not one-file fantasy:
 
 ### Rewrite first
 - `workflow.md`
+- `execution-profiles.md`
 - `orchestrator/instructions.md`
 - `lead-strategic/instructions.md`
 - `worker/guide.md`
@@ -422,7 +426,6 @@ Use realistic bootstrap, not one-file fantasy:
 ### Delete last
 - `review-gate.md`
 - `roles.md`
-- `execution-profiles.md`
 - `autonomous-protocol.md`
 - `user-guide.md`
 - 9 redirect stubs
