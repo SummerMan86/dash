@@ -89,7 +89,7 @@ New EMIS backend logic goes into `packages/emis-server/`, not here.
 
 1. Add dataset ID constant in `definitions/your-dataset.ts`
 2. Implement `compileYourDataset(id, query): DatasetIr`
-3. Add fixture in `shared/fixtures/`
+3. Add fixture in `fixtures/`
 4. Register in `packages/platform-datasets/src/server/compile.ts`
 
 ### Postgres

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { fetchDataset } from '$shared/api';
+	import { fetchDataset } from '$lib/api';
 	import { useDebouncedLoader } from '@dashboard-builder/platform-core';
 	import {
 		useFilterWorkspace,

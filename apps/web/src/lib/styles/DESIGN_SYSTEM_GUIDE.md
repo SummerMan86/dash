@@ -11,18 +11,20 @@
 
 ```typescript
 // UI Components
-import { StatCard } from '$shared/ui/stat-card';
-import { MetricCard } from '$shared/ui/metric-card';
-import { ChartCard } from '$shared/ui/chart-card';
-import { DataTable } from '$shared/ui/data-table';
-import { ProgressBar } from '$shared/ui/progress-bar';
-import { ProgressCircle } from '$shared/ui/progress-circle';
-import { Badge } from '$shared/ui/badge';
-import { Sparkline } from '$shared/ui/sparkline';
-import { Skeleton } from '$shared/ui/skeleton';
-import { Button } from '$shared/ui/button';
-import { Input } from '$shared/ui/input';
-import { Select } from '$shared/ui/select';
+import {
+	Badge,
+	Button,
+	ChartCard,
+	DataTable,
+	Input,
+	MetricCard,
+	ProgressBar,
+	ProgressCircle,
+	Select,
+	Skeleton,
+	Sparkline,
+	StatCard
+} from '@dashboard-builder/platform-ui';
 
 // Utilities
 import {
@@ -34,8 +36,8 @@ import {
 	formatDate,
 	formatRating,
 	truncate
-} from '$shared/utils';
-import { cn } from '$shared/styles/utils';
+} from '@dashboard-builder/platform-core';
+import { cn } from '@dashboard-builder/platform-ui';
 
 // Chart presets (basic)
 import {
@@ -45,7 +47,7 @@ import {
 	getLineSeries,
 	getBarSeries,
 	getPieSeries
-} from '$entities/charts';
+} from '@dashboard-builder/platform-ui';
 
 // Chart presets (strategy / analytics)
 import {
@@ -54,7 +56,7 @@ import {
 	getGaugePreset,
 	heatmapChartPreset,
 	getWaterfallSeries
-} from '$shared/ui/chart/presets';
+} from '@dashboard-builder/platform-ui';
 
 // Tokens (Canvas/Charts only)
 import {
@@ -62,14 +64,14 @@ import {
 	getChartPalette,
 	getChartColor,
 	resolveCssColorVar
-} from '$shared/styles/tokens';
+} from '@dashboard-builder/platform-ui';
 import type {
 	TrendDirection,
 	ChartColorIndex,
 	ButtonVariant,
 	ButtonSize,
 	StatusVariant
-} from '$shared/styles/tokens';
+} from '@dashboard-builder/platform-ui';
 ```
 
 ### Color Tokens (Tailwind classes)
@@ -178,38 +180,35 @@ color: '#009d9a'                                              <!-- Use getChartP
 src/
 ├── app.css                          ← Entry: @import tokens.css + type-* classes
 ├── lib/
-│   ├── shared/
-│   │   ├── styles/
-│   │   │   ├── tokens/
-│   │   │   │   ├── tokens.css       ← Tailwind 4 @theme (primitives + semantic)
-│   │   │   │   ├── semantic.ts      ← TS thin wrapper (semanticVars + resolve*)
-│   │   │   │   └── index.ts
-│   │   │   └── utils/
-│   │   │       ├── cn.ts            ← clsx + tailwind-merge
-│   │   │       └── index.ts
-│   │   ├── ui/                      ← UI Components
-│   │   │   ├── badge/               ← Status labels
-│   │   │   ├── button/
-│   │   │   ├── card/
-│   │   │   ├── chart/               ← ECharts wrapper + presets
-│   │   │   ├── chart-card/          ← Chart container
-│   │   │   ├── data-table/          ← Sortable table
-│   │   │   ├── input/
-│   │   │   ├── metric-card/         ← Plan/fact KPI card
-│   │   │   ├── progress-bar/
-│   │   │   ├── progress-circle/     ← Radial gauge
-│   │   │   ├── select/
-│   │   │   ├── sidebar/
-│   │   │   ├── skeleton/            ← Loading placeholder
-│   │   │   ├── sparkline/           ← SVG trend line
-│   │   │   └── stat-card/           ← KPI card with trends
-│   │   └── utils/
-│   │       ├── format.ts            ← Number/currency formatting
-│   │       └── index.ts
-│   └── entities/
-│       └── charts/
-│           ├── presets.ts           ← Compat re-export (real presets in shared/ui/chart)
-│           └── index.ts
+│   ├── api/
+│   │   └── fetchDataset.ts          ← App-local BI data facade
+│   ├── fixtures/
+│   │   └── paymentAnalytics.ts      ← Demo/mock datasets
+│   └── styles/
+│       ├── DESIGN_SYSTEM_GUIDE.md   ← This guide
+│       └── tokens/
+│           └── tokens.css           ← Tailwind 4 @theme (primitives + semantic)
+packages/
+├── platform-core/
+│   └── src/format/                  ← Number/currency/date formatting
+└── platform-ui/
+    └── src/
+        ├── badge/                   ← Status labels
+        ├── button/
+        ├── card/
+        ├── chart/                   ← ECharts wrapper + presets
+        ├── chart-card/              ← Chart container
+        ├── data-table/              ← Sortable table
+        ├── input/
+        ├── metric-card/             ← Plan/fact KPI card
+        ├── progress-bar/
+        ├── progress-circle/         ← Radial gauge
+        ├── select/
+        ├── sidebar/
+        ├── skeleton/                ← Loading placeholder
+        ├── sparkline/               ← SVG trend line
+        ├── stat-card/               ← KPI card with trends
+        └── styles/                  ← `cn`, token helpers, chart palette
 ```
 
 ---
@@ -297,7 +296,7 @@ bg-chart-4 <!-- #f1c21b (yellow-30) -->
 bg-chart-5 <!-- #6f6f6f (gray-60) -->
 
 <!-- Use in JS for ECharts -->
-import {getChartPalette} from '$shared/styles/tokens'; const colors = getChartPalette(); // resolved
+import { getChartPalette } from '@dashboard-builder/platform-ui'; const colors = getChartPalette(); // resolved
 from CSS vars, e.g. ['rgb(0, 157, 154)', ...]
 ```
 
@@ -355,11 +354,11 @@ type-kpi-value <!-- KPI numbers: 24px / 600 / tight -->
 
 ### Form Controls (Inputs / Filters)
 
-**Rule:** For any user input/filter, prefer `$shared/ui` components over raw HTML:
+**Rule:** For any user input/filter, prefer `@dashboard-builder/platform-ui` components over raw HTML:
 
-- Use `<Input />` from `$shared/ui/input`
-- Use `<Select />` from `$shared/ui/select`
-- Use `<Button />` from `$shared/ui/button`
+- Use `<Input />` from `@dashboard-builder/platform-ui`
+- Use `<Select />` from `@dashboard-builder/platform-ui`
+- Use `<Button />` from `@dashboard-builder/platform-ui`
 
 **Sizing standard (recommended):**
 
@@ -559,7 +558,7 @@ Responsive sidebar with collapsible mode (desktop: icons-only, mobile: drawer).
 		SidebarInset,
 		SidebarNav,
 		SidebarItem
-	} from '$shared/ui/sidebar';
+	} from '@dashboard-builder/platform-ui';
 </script>
 
 <SidebarProvider>
@@ -601,7 +600,7 @@ import {
 	formatDate,
 	formatRating,
 	truncate
-} from '$shared/utils';
+} from '@dashboard-builder/platform-core';
 
 // Numbers (locale: ru-RU)
 formatNumber(1234567); // "1 234 567"
@@ -648,7 +647,7 @@ import {
 	getLineSeries,
 	getBarSeries,
 	getPieSeries
-} from '$entities/charts';
+} from '@dashboard-builder/platform-ui';
 
 // Line/Area Chart
 const lineOptions = {
@@ -698,7 +697,7 @@ import {
 	getGaugePreset,
 	heatmapChartPreset,
 	getWaterfallSeries
-} from '$shared/ui/chart/presets';
+} from '@dashboard-builder/platform-ui';
 
 // Radar
 const radarOptions = {
@@ -753,15 +752,14 @@ const heatmapOptions = {
 ### Color Helpers
 
 ```typescript
-import { getChartPalette, getAreaGradient } from '$entities/charts';
-import { getChartColor } from '$shared/styles/tokens';
+import { getChartPalette, getAreaGradient, getChartColor } from '@dashboard-builder/platform-ui';
 
 getChartColor(1); // 'rgb(0, 157, 154)' (teal, resolved from CSS var)
 getChartPalette(); // ['rgb(0, 157, 154)', 'rgb(0, 93, 93)', ...] (resolved from CSS vars)
 getAreaGradient(1); // ECharts linear gradient config for area fill
 ```
 
-> **Note:** `getChartColor` is only available from `$shared/styles/tokens`, not from `$entities/charts`.
+> `getChartColor` is exported from `@dashboard-builder/platform-ui` together with the chart helpers.
 
 ---
 
@@ -774,7 +772,7 @@ import type {
 	StatusVariant, // 'success' | 'warning' | 'error' | 'info'
 	TrendDirection, // 'up' | 'down' | 'neutral'
 	ChartColorIndex // 1 | 2 | 3 | 4 | 5
-} from '$shared/styles/tokens';
+} from '@dashboard-builder/platform-ui';
 ```
 
 ---
@@ -784,7 +782,7 @@ import type {
 Always use for class composition in components:
 
 ```typescript
-import { cn } from '$shared/styles/utils';
+import { cn } from '@dashboard-builder/platform-ui';
 
 cn('px-2', 'px-4')                              // => 'px-4' (last wins)
 cn('base', { 'active': isActive })               // conditional classes
@@ -797,11 +795,8 @@ cn('base', { 'active': isActive })               // conditional classes
 
 ```svelte
 <script lang="ts">
-	import { StatCard } from '$shared/ui/stat-card';
-	import { ChartCard } from '$shared/ui/chart-card';
-	import { Chart } from '$shared/ui/chart';
-	import { formatCurrency, formatCompact } from '$shared/utils';
-	import { lineChartPreset, getLineSeries } from '$entities/charts';
+	import { StatCard, ChartCard, Chart, lineChartPreset, getLineSeries } from '@dashboard-builder/platform-ui';
+	import { formatCurrency, formatCompact } from '@dashboard-builder/platform-core';
 </script>
 
 <div class="min-h-screen bg-background p-6 lg:p-8">

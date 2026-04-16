@@ -16,7 +16,7 @@
 		SidebarProvider,
 		SidebarTrigger
 	} from '@dashboard-builder/platform-ui';
-	import { fetchDataset } from '$shared/api/fetchDataset';
+	import { fetchDataset } from '$lib/api/fetchDataset';
 	import {
 		formatCurrency,
 		formatCompact,
@@ -38,7 +38,7 @@
 		TimeseriesDaily,
 		TopClient,
 		MccSummary
-	} from '$shared/fixtures/paymentAnalytics';
+	} from '$lib/fixtures/paymentAnalytics';
 
 	// ============================================================================
 	// Data loading (UI -> fetchDataset -> BFF -> compile -> provider -> response)

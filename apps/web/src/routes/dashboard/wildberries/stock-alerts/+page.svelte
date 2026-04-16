@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 
-	import { fetchDataset } from '$shared/api/fetchDataset';
+	import { fetchDataset } from '$lib/api/fetchDataset';
 	import { useDebouncedLoader } from '@dashboard-builder/platform-core';
 	import { Button } from '@dashboard-builder/platform-ui';
 	import { Card, CardContent } from '@dashboard-builder/platform-ui';

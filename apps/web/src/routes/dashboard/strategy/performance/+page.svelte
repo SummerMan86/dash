@@ -5,7 +5,7 @@
 
 	import type { DatasetResponse, JsonValue } from '@dashboard-builder/platform-datasets';
 	import { useFilterWorkspace } from '@dashboard-builder/platform-filters';
-	import { fetchDataset } from '$shared/api/fetchDataset';
+	import { fetchDataset } from '$lib/api/fetchDataset';
 	import { useDebouncedLoader } from '@dashboard-builder/platform-core';
 	import { Badge } from '@dashboard-builder/platform-ui';
 	import { Button } from '@dashboard-builder/platform-ui';

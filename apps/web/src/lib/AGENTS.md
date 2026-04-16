@@ -12,7 +12,9 @@ It is not a canonical layer map for the repository.
 | Folder | Status | Contains |
 |--------|--------|----------|
 | `server/` | **Active** | BFF transport, legacy dataset-definition copies, providers, alerts scheduler, EMIS route infra |
-| `shared/` | **Transitional** | Mixed app-local residue: `fetchDataset.ts`, style docs/tokens, fixtures |
+| `api/` | **Active** | App-local BI data facade such as `fetchDataset.ts` |
+| `fixtures/` | **Active** | Mock/demo/test datasets |
+| `styles/` | **Active** | App-level token CSS and design-system docs |
 | `features/dashboard-edit/` | **Active (transitional home)** | Dashboard layout editor (GridStack). Single app-local consumer |
 | `features/emis-manual-entry/` | **Active** | EMIS CMS forms. Depends on `$app/forms` |
 | `widgets/stock-alerts/` | **Active (transitional home)** | Wildberries-specific alert widgets |
@@ -60,9 +62,9 @@ What remains in `lib/` is **app-level composition and glue**:
 - `server/alerts/` — alert scheduler + Telegram (app lifecycle, hooks.server.ts)
 - `server/providers/` — mockProvider only (fixture/demo provider)
 - `server/emis/` — EMIS route infra (re-exports from emis-server package)
-- `shared/api/fetchDataset.ts` — BI data access facade (filter composition)
-- `shared/styles/` — CSS tokens, design system guide
-- `shared/fixtures/` — mock datasets
+- `api/fetchDataset.ts` — BI data access facade (filter composition)
+- `styles/` — CSS tokens, design system guide
+- `fixtures/` — mock datasets
 - `features/dashboard-edit/` — dashboard editor (app feature, no second consumer)
 - `features/emis-manual-entry/` — EMIS CMS forms (app feature, depends on $app/forms)
 - `widgets/stock-alerts/` — Wildberries-specific alert widgets
@@ -102,5 +104,5 @@ If `src/lib/` starts asking for sub-groups-of-groups, that is usually the signal
 ## What to read next
 
 1. `server/AGENTS.md` — server-side infrastructure
-2. `shared/AGENTS.md` — fetchDataset and styles
+2. `api/fetchDataset.ts` and `styles/DESIGN_SYSTEM_GUIDE.md` — app-local BI facade and style docs
 3. `features/dashboard-edit/AGENTS.md` — layout editor details

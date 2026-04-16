@@ -13,7 +13,7 @@ import {
 	mccSummary,
 	timeseriesDaily,
 	topClients
-} from '$shared/fixtures/paymentAnalytics';
+} from '$lib/fixtures/paymentAnalytics';
 
 type Row = Record<string, JsonValue>;
 

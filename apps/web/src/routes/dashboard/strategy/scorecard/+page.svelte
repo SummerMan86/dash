@@ -2,7 +2,7 @@
 	import type { DatasetResponse, AsyncState } from '@dashboard-builder/platform-datasets';
 	import { ok, loading, error as errorState, idle, normalizeDatasetError } from '@dashboard-builder/platform-datasets';
 	import { useFilterWorkspace, planFiltersForTarget } from '@dashboard-builder/platform-filters';
-	import { fetchDataset, DatasetFetchError } from '$shared/api/fetchDataset';
+	import { fetchDataset, DatasetFetchError } from '$lib/api/fetchDataset';
 	import { cn } from '@dashboard-builder/platform-ui';
 	import { Button } from '@dashboard-builder/platform-ui';
 	import {
