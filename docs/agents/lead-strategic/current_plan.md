@@ -73,6 +73,28 @@ Measure core docs separately from state/history files.
 - **Target:** **17 canonical docs**
 - **Target lines:** **~1,750–1,950**
 
+### Canonical set after rewrite (explicit)
+
+These 17 files are the canonical docs budget inside `docs/agents/`:
+
+- `workflow.md`
+- `git-protocol.md`
+- `recovery.md`
+- `templates.md`
+- `invariants.md`
+- `invariants-emis.md`
+- `autonomous-mode.md`
+- `lead-strategic/instructions.md`
+- `orchestrator/instructions.md`
+- `worker/guide.md`
+- `architecture-reviewer/instructions.md`
+- `code-reviewer/instructions.md`
+- `docs-reviewer/instructions.md`
+- `security-reviewer/instructions.md`
+- `ui-reviewer/instructions.md`
+- `skills/debugging.md`
+- `skills/testing-strategy.md`
+
 ### Runtime / ops docs target
 
 Outside `docs/agents/`:
@@ -91,9 +113,9 @@ Outside `docs/agents/`:
 
 | File | Owns |
 |---|---|
-| `workflow.md` | End-to-end process, role responsibilities, execution paths, review floor, reviewer selection, acceptance, operating modes, DoD, escalation, memory protocol |
+| `workflow.md` | End-to-end process, role responsibilities, execution paths, review floor, reviewer selection, acceptance, user-in-loop operating modes, DoD, escalation, memory protocol |
 | `docs/codex-integration.md` | Runtime profiles, model defaults, plugin commands, proof tuples, companion CLI, runtime caveats |
-| `docs/agents/autonomous-mode.md` | Autonomous-only deltas relative to `workflow.md`; no duplicated lifecycle |
+| `docs/agents/autonomous-mode.md` | No-user-in-loop autonomous overlay only; autonomous-only deltas relative to `workflow.md`; no duplicated lifecycle |
 | `templates.md` | Handoff/report shapes only |
 | `git-protocol.md` | Worktree / branch / merge mechanics only |
 | `recovery.md` | Recovery procedures only |
@@ -276,6 +298,18 @@ git-protocol.md, recovery.md, invariants.md.
 - No default bootstrap doc points to `review-gate.md`, `roles.md`, `execution-profiles.md`, `autonomous-protocol.md`, or `user-guide.md`.
 - `templates.md` contains only artifact shapes.
 - Role docs point runtime questions only to `docs/codex-integration.md`.
+- `orchestrator/instructions.md`, `lead-strategic/instructions.md`, `worker/guide.md`, and `templates.md`
+  do not restate, weaken, or override:
+  - review floor
+  - reviewer selection rules
+  - integration review trigger
+  - re-review after post-review orchestrator code changes
+- Those rules are owned only by `workflow.md`.
+- These files also do not restate:
+  - runtime commands
+  - model defaults
+  - proof retrieval mechanics
+- Runtime details are owned only by `docs/codex-integration.md`.
 
 ### Slice 3: slim support docs + refresh live state
 
@@ -296,6 +330,9 @@ git-protocol.md, recovery.md, invariants.md.
 - Live state docs do not cite deleted canon.
 - Any telemetry note that remains lives outside `docs/agents/`.
 - Navigation points to `workflow.md`, `docs/codex-integration.md`, and `docs/QUICKSTART.md`.
+- `lead-strategic/current_plan.md` and `orchestrator/last_report.md`
+  must continue to exist at their current active paths after refresh.
+  Archiving old content without creating a replacement active file is not allowed.
 
 ### Slice 4: delete legacy docs + final verify
 
