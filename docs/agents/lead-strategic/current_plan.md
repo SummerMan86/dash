@@ -106,8 +106,8 @@ Outside `docs/agents/`:
 ### Hard acceptance rules
 
 - Zero live refs to deleted docs.
-- `workflow.md` contains no plugin-command details or proof retrieval mechanics.
-- `execution-profiles.md` owns profile tables and selection rules (process-level runtime binding).
+- `workflow.md` contains no plugin-command details, proof retrieval mechanics, or concrete model names.
+- `execution-profiles.md` is the **single source of truth for model assignments** (Opus, Sonnet, gpt-5.4, etc.). All other docs use role names only (worker, lead-strategic, etc.), never model names.
 - `docs/codex-integration.md` owns plugin-specific commands, proof tuples, companion CLI (implementation-level runtime plumbing).
 - Historical refs to old docs are allowed only inside archived files.
 
@@ -116,7 +116,7 @@ Outside `docs/agents/`:
 | File | Owns |
 |---|---|
 | `workflow.md` | End-to-end process, role responsibilities, execution paths, review floor, reviewer selection, acceptance, user-in-loop operating modes, DoD, escalation, memory protocol |
-| `execution-profiles.md` | Profile tables (role → runtime/model/effort mapping), selection rules, fallback policies. Process-level "which lane for which role". Extensible for future profiles. |
+| `execution-profiles.md` | Profile tables (role → runtime/model/effort mapping), selection rules, fallback policies. **The only file that names concrete models** (Opus, Sonnet, gpt-5.4, etc.). All other docs refer to roles only (worker, lead-strategic, etc.), never to model names. Extensible for future profiles. |
 | `docs/codex-integration.md` | Plugin commands, proof tuples, companion CLI, runtime caveats. Implementation-level "how to invoke the lane". |
 | `docs/agents/autonomous-mode.md` | No-user-in-loop autonomous overlay only; autonomous-only deltas relative to `workflow.md`; no duplicated lifecycle |
 | `templates.md` | Handoff/report shapes only |
@@ -308,11 +308,12 @@ autonomous-mode.md, git-protocol.md, recovery.md, invariants.md.
   - integration review trigger
   - re-review after post-review orchestrator code changes
 - Those rules are owned only by `workflow.md`.
-- These files also do not restate:
+- These files also do not contain:
+  - concrete model names (Opus, Sonnet, gpt-5.4, etc.) — use role names only
   - runtime commands
-  - model defaults
   - proof retrieval mechanics
-- Runtime details are owned only by `docs/codex-integration.md`.
+- Model assignments are owned only by `execution-profiles.md`.
+- Plugin-level runtime details are owned only by `docs/codex-integration.md`.
 
 ### Slice 3: slim support docs + refresh live state
 
