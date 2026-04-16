@@ -169,4 +169,4 @@ The task packet specifies which template to use. Key handoff contract:
 
 - `direct-fix` is an `orchestrator`-only path, not a worker path.
 - Workers do not maintain a separate `memory.md`.
-- This file (`worker/guide.md`) is the canonical worker doc. `worker/instructions.md` is a redirect.
+- This file (`worker/guide.md`) is the canonical worker doc. There is no separate worker bootstrap doc.

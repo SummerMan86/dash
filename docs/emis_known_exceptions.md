@@ -66,5 +66,5 @@ None.
 - This registry is for live exceptions only.
 - Historical resolved issues should not stay here forever; move them to memory or archive once closed.
 - New exceptions should be added in the same slice where they are introduced, not retroactively.
-- `architecture-steward` approves new architecture exceptions / waivers and ensures they are documented here.
-- `baseline-governor` validates that this registry stays truthful before baseline verdicts.
+- `lead-strategic` approves new architecture exceptions / waivers and ensures they are documented here.
+- `orchestrator` keeps this registry truthful in the active plan/report flow before baseline verdicts.

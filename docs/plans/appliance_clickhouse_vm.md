@@ -374,7 +374,7 @@ Watchdog **must not** use `/api/emis/health` as a deep check.
 ## Execution Strategy: Agent Workflow
 
 Implementation should run through the canonical agent model in
-`docs/agents/workflow.md` and `docs/agents/review-gate.md`.
+`docs/agents/workflow.md`.
 
 ### Recommended operating mode
 

@@ -324,7 +324,7 @@ Recommended v3 shape:
 
 - add a small lifecycle section to active rollout docs
 - use `fresh/stale/missing` evidence wording in supporting rollout and review-related docs
-- optionally add a short refresh rule to `docs/agents/workflow.md` or `memory-protocol.md`
+- optionally add a short refresh rule to `docs/agents/workflow.md` or the role memory files
 
 ### 2. Onboarding / Decision Backfill Scan
 

@@ -114,15 +114,14 @@ Historical BI archive: [archive/bi/architecture_dashboard_bi.md](./archive/bi/ar
 
 | Документ                                      | Владеет                                      | Source of truth для                                                      |
 | --------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------ |
-| `agents/workflow.md`                          | core agent lifecycle + memory protocol       | процесс, plan ownership, execution loop, escalation, durable memory     |
-| `agents/review-gate.md`                       | review, governance, definition of done       | slice/integration review, governance passes, DoD checklists              |
-| `agents/roles.md`                             | agent role map                               | все роли и ответственности                                               |
+| `agents/workflow.md`                          | core agent lifecycle, review model, governance, DoD, memory protocol | процесс, plan ownership, execution loop, review gate, governance passes, DoD, durable memory |
+| `agents/execution-profiles.md`                | runtime/model binding per profile            | which runtime, model, effort, fallback per role per profile              |
+| `../docs/codex-integration.md`                | Codex CLI integration                        | plugin commands, proof tuples, companion CLI, Codex prompting templates  |
+| `agents/autonomous-mode.md`                   | autonomous execution delta                   | autonomous mode lifecycle, decision framework, guardrails, recovery      |
 | `agents/templates.md`                         | all agent communication templates            | plan, task, handoff, report, governance, transparency templates          |
 | `agents/invariants.md`                        | generic project invariants                   | repo-wide architecture/data/schema/complexity guardrails                 |
 | `agents/git-protocol.md`                      | branch и worktree protocol                   | ветки, worktrees, merge choreography, checkpoints                        |
 | `agents/recovery.md`                          | failure-path protocol                        | recovery rules для rejected slices, branch divergence и tooling outage   |
-| `agents/autonomous-protocol.md`               | autonomous execution protocol                | autonomous mode lifecycle, decision framework, guardrails, recovery      |
-| `agents/usage-telemetry.md`                   | agent usage telemetry                        | durable usage history, usefulness rubric, file-first telemetry contract  |
 | `agents/lead-strategic/instructions.md`       | GPT-5.4 lead + governance passes             | planning, acceptance, architecture/baseline/strategic review passes      |
 | `agents/orchestrator/instructions.md`         | Claude Opus orchestration instructions       | worker dispatch, review gate, report, direct-fix exception               |
 | `agents/worker/guide.md`                      | worker bootstrap and guardrails              | bootstrap, guardrails, review triggers, evidence rules, DoD checklist    |
@@ -130,7 +129,8 @@ Historical BI archive: [archive/bi/architecture_dashboard_bi.md](./archive/bi/ar
 | `agents/ui-reviewer/instructions.md`          | UI smoke + deep mode                         | smoke-test checks and deep UX audit mode                                 |
 | `agents/skills/debugging.md`                  | debugging playbook                           | reproduce, compare, hypothesize, fix, escalation triggers                |
 | `agents/skills/testing-strategy.md`           | three-mode testing strategy                  | test-first, prototype-pin-refactor, verification-first, per-slice fields |
-| `agents/user-guide.md`                        | user-facing agent workflow runbook           | как ставить задачи команде агентов, integrated orchestration path        |
+| `../docs/QUICKSTART.md`                       | user-facing operator runbook                 | как ставить задачи команде агентов, промпты и сценарии                   |
+| `../docs/ops/usage-telemetry.md`              | agent usage telemetry                        | durable usage history, usefulness rubric, file-first telemetry contract  |
 
 #### Domain invariant overlays
 
@@ -194,16 +194,14 @@ Historical BI archive: [archive/bi/architecture_dashboard_bi.md](./archive/bi/ar
 - `archive/emis/emis_external_object_ingestion.md` - если нужен historical design context по completed ingestion wave
 - `archive/emis/emis_external_object_ingestion_lead_tactical_handoff.md` - если нужен historical tactical handoff по completed ingestion wave
 - `archive/emis/emis_implementation_reference_v1.md` - если нужен historical rollout context или retained implementation rationale
-- `agents/workflow.md` - если нужен core agent lifecycle
-- `agents/review-gate.md` - если нужен Review Gate, strategic acceptance/reframe pass или governance pass
+- `agents/workflow.md` - если нужен core agent lifecycle, review model, governance passes, DoD
 - `agents/recovery.md` - если выполнение ушло с happy path
-- `agents/autonomous-protocol.md` - если задача в autonomous mode
+- `agents/autonomous-mode.md` - если задача в autonomous mode
 - `agents/invariants.md` - если нужны generic project invariants и guardrails
 - `agents/invariants-emis.md` - если нужны EMIS-specific domain invariants
 - `agents/git-protocol.md` - если нужны branches, worktrees и merge choreography
-- `agents/workflow.md` §4 - если нужно понять memory ownership
-- `agents/usage-telemetry.md` - если нужен durable usage log, usefulness rubric или telemetry storage contract
-- `agents/roles.md` - если нужны роли агентов
+- `agents/workflow.md` §8 - если нужно понять memory ownership
+- `ops/usage-telemetry.md` - если нужен durable usage log, usefulness rubric или telemetry storage contract
 - `agents/templates.md` - если нужны шаблоны коммуникации между агентами
 - `agents/worker/guide.md` - если нужен self-contained worker execution guide без чтения всего generic governance stack
 - `../packages/emis-contracts/AGENTS.md` - если change касается contracts, DTO, Zod schemas

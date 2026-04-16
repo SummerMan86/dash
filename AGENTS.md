@@ -56,16 +56,17 @@
 
 Если задача выполняется через agent workflow stack:
 
-1. [docs/agents/user-guide.md](./docs/agents/user-guide.md) — **для пользователя: промпты и сценарии**
-2. [docs/agents/workflow.md](./docs/agents/workflow.md) — core process, lifecycle, memory protocol
-3. [docs/agents/roles.md](./docs/agents/roles.md) — role map
-4. [docs/agents/execution-profiles.md](./docs/agents/execution-profiles.md) — runtime/model binding per profile
-5. [docs/agents/review-gate.md](./docs/agents/review-gate.md) — Review Gate, governance passes, definition of done
+1. [docs/QUICKSTART.md](./docs/QUICKSTART.md) — **для пользователя: промпты и сценарии**
+2. [docs/agents/workflow.md](./docs/agents/workflow.md) — core process, lifecycle, review model, governance, DoD, memory protocol
+3. [docs/agents/execution-profiles.md](./docs/agents/execution-profiles.md) — runtime/model binding per profile
+4. [docs/codex-integration.md](./docs/codex-integration.md) — Codex CLI integration, plugin commands, proof tuples
+5. [docs/agents/autonomous-mode.md](./docs/agents/autonomous-mode.md) — autonomous execution delta
 6. [docs/agents/templates.md](./docs/agents/templates.md) — all templates (plan, task, handoff, report, governance)
 7. [docs/agents/invariants.md](./docs/agents/invariants.md) — project guardrails
 8. [docs/agents/git-protocol.md](./docs/agents/git-protocol.md) — branches, worktrees, checkpoints
-9. `docs/agents/{role}/instructions.md` — role-specific instructions
-10. `docs/agents/lead-strategic/memory.md` и `docs/agents/orchestrator/memory.md` — durable memory (see workflow.md §4)
+9. [docs/agents/recovery.md](./docs/agents/recovery.md) — failure-path protocols
+10. `docs/agents/{role}/instructions.md` — role-specific instructions
+11. `docs/agents/lead-strategic/memory.md` и `docs/agents/orchestrator/memory.md` — durable memory (see workflow.md §8)
 
 EMIS-активный контур сейчас находится здесь:
 
@@ -216,10 +217,10 @@ Compatibility shims at old app paths (`apps/web/src/lib/entities/emis-*`, `apps/
 
 Canonical docs:
 
-- [workflow.md](./docs/agents/workflow.md) — lifecycle, execution paths, memory protocol
-- [roles.md](./docs/agents/roles.md) — role map
+- [workflow.md](./docs/agents/workflow.md) — lifecycle, review model, governance, DoD, memory protocol
 - [execution-profiles.md](./docs/agents/execution-profiles.md) — runtime/model binding per profile
-- [review-gate.md](./docs/agents/review-gate.md) — review model, governance passes, definition of done
+- [codex-integration.md](./docs/codex-integration.md) — Codex CLI integration, plugin commands, proof tuples
+- [autonomous-mode.md](./docs/agents/autonomous-mode.md) — autonomous execution delta
 - [templates.md](./docs/agents/templates.md) — all templates
 - [invariants.md](./docs/agents/invariants.md) — project guardrails
 - [git-protocol.md](./docs/agents/git-protocol.md) — branches, worktrees, integration

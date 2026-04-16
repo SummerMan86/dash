@@ -2,7 +2,7 @@
 
 Canonical branch, worktree и integration protocol для агентной команды.
 
-`workflow.md` описывает execution loop.
+`workflow.md` описывает execution loop и review model.
 Этот документ фиксирует git ownership и integration choreography.
 
 ## 1. Ветки
@@ -103,17 +103,17 @@ Teammate mode разрешён только если одновременно в
    - out-of-scope files.
 4. Не запускать dependent worker task, если предыдущий обязательный slice ещё не влит в integration branch.
 
-## 6. Branch integration и Review Gate
+## 6. Branch Integration
 
 ### 6.1. Subagent mode (default)
 
 ```text
 1. Worker реализует slice в agent/worker/<slug>
 2. Worker коммитит и сдаёт handoff
-3. `orchestrator` проверяет scope, checks evidence и review disposition
-4. `orchestrator` мержит worker branch в `feature/<topic>` или создаёт merge/fix-worker, если merge требует code edits
-5. `orchestrator` удаляет worker branch: `git branch -d agent/worker/<slug>`
-6. После интеграции запускается integration review, если он нужен
+3. orchestrator проверяет scope, checks evidence и review disposition
+4. orchestrator мержит worker branch в feature/<topic> или создаёт merge/fix-worker, если merge требует code edits
+5. orchestrator удаляет worker branch: git branch -d agent/worker/<slug>
+6. После интеграции запускается integration review по правилам workflow.md §3.3
 ```
 
 ### 6.2. Teammate mode (shared-checkout exception)
@@ -121,13 +121,13 @@ Teammate mode разрешён только если одновременно в
 ```text
 1. Worker реализует non-code slice в feature/<topic> (только owned files)
 2. Worker коммитит и сдаёт handoff
-3. `orchestrator` проверяет scope по manifest/commit ownership: коммиты worker'а не вышли за owned files
-4. `orchestrator` запускает integration review, если он нужен
+3. orchestrator проверяет scope по manifest/commit ownership: коммиты worker'а не вышли за owned files
+4. orchestrator запускается integration review по правилам workflow.md §3.3
 ```
 
 Ключевые правила (оба режима):
 
-- integration Review Gate всегда идёт по integration branch, а не по worker branch;
+- integration review всегда идёт по integration branch, а не по worker branch;
 - если несколько workers, все merge идут в один `feature/<topic>`;
 - dependent slices стартуют только от актуального состояния integration branch.
 
@@ -142,17 +142,9 @@ Teammate mode разрешён только если одновременно в
 
 Cleanup не блокирует следующую wave — это housekeeping step после успешного merge.
 
-## 7. Merge policy during stabilization waves
+## 7. Recovery crossover
 
-- не смешивать structural cleanup и product feature в одном slice;
-- новый exception нельзя вводить без owner и expiry;
-- новый architecture exception или long-lived complexity waiver требует `architecture pass` decision и записи в registry до merge;
-- рост oversized files требует extraction или явного waiver в report;
-- `baseline pass` может заблокировать merge large feature slice, если baseline status остаётся `Red`.
-
-## 8. Recovery crossover
-
-Если integration branch разошёлся с `main` или worker branch конфликтует с новым base, действует `docs/agents/recovery.md`.
+Если integration branch разошёлся с `main` или worker branch конфликтует с новым base, действует `recovery.md`.
 
 - RP-2 (branch divergence, worker branch rebase): применимо только к subagent workers с отдельными ветками.
 - RP-6 (teammate scope contamination): применимо к teammate workers в shared checkout.

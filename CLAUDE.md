@@ -14,7 +14,7 @@
 
 Если нужен EMIS-контекст, после этого начинай с [docs/emis_session_bootstrap.md](./docs/emis_session_bootstrap.md).
 
-Если работа идёт через команду агентов (GPT-5.4 lead + Claude workers), читай [docs/agents/workflow.md](./docs/agents/workflow.md).
+Если работа идёт через команду агентов (GPT-5.4 lead + Claude workers), читай [docs/agents/workflow.md](./docs/agents/workflow.md). Operator runbook: [docs/QUICKSTART.md](./docs/QUICKSTART.md). Codex integration: [docs/codex-integration.md](./docs/codex-integration.md).
 
 Если в папке есть и `AGENTS.md`, и `CLAUDE.md`, canonical считать `AGENTS.md`.
 

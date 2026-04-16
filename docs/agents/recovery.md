@@ -2,7 +2,7 @@
 
 Canonical failure-path protocol для агентной команды.
 
-`workflow.md` описывает normal execution loop.
+`workflow.md` описывает normal execution loop, review model и governance.
 Этот документ описывает, что делать, когда happy path уже нарушен.
 
 Общее правило recovery:
@@ -69,14 +69,14 @@ Canonical failure-path protocol для агентной команды.
 7. После восстановления branch state:
    - обновить memory;
    - заново прогнать canonical checks (`pnpm check`, `pnpm build`, `pnpm lint:boundaries`);
-   - при необходимости повторить integration review.
+   - при необходимости повторить integration review (`workflow.md` §3.3).
 
 Практическое правило:
 
 - mid-wave merge предпочтительнее rebase;
 - rebase допустим только когда нет active worker handoffs и нет риска потерять review context.
 
-## RP-3. Codex / GPT-5.4 unavailable mid-iterative cycle
+## RP-3. Codex / lead-strategic runtime unavailable mid-iterative cycle
 
 Примеры:
 
@@ -112,10 +112,10 @@ Canonical failure-path protocol для агентной команды.
    - `last_report.md` со статусом `частично` / `blocked`;
    - список открытых вопросов для strategic review.
 8. Переключиться на fallback/manual strategic path, если он доступен.
-9. После возвращения Codex/GPT продолжить с `--resume`, если thread жив, иначе с `--fresh` + актуальные `memory.md`.
+9. После возвращения Codex продолжить с `--resume`, если thread жив, иначе с `--fresh` + актуальные `memory.md`.
 10. Перед wave closure degraded mode должен быть закрыт полным strategic review:
-   - без этого wave не закрывается;
-   - финальный merge-ready verdict не выносится.
+    - без этого wave не закрывается;
+    - финальный merge-ready verdict не выносится.
 
 Жёсткое правило:
 

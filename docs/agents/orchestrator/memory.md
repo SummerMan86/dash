@@ -4,14 +4,14 @@
 
 - wave: Agent Docs Radical Simplification (Wave 2)
 - plan: `docs/agents/lead-strategic/current_plan.md`
-- branch: `feature/agent-workflow-simplification-wave1` (continue or create new branch)
-- current slice: Preflight (not started)
+- branch: `feature/agent-workflow-simplification-wave1`
+- current slice: `none — wave closed`
 - mode: high-risk iterative / unstable wave
 - profile: mixed-claude-workers
 
 ## Context
 
-Wave 1 (completed 2026-04-15) merged duplicates. Wave 2 restructures the entire doc set: 28 files / 5,600 lines → 17 files / ~1,800 lines. Process truth separated from runtime truth.
+Wave 2 is closed. Structural closeout is complete: canonical count met, navigation/bootstrap refreshed, telemetry repointed, and stale live refs removed. Remaining open issue is the canonical line-budget overshoot (`3464` vs `~1850-2050`), which needs a separate slimming pass only if that target remains enforced.
 
 ## Pruning Rule
 

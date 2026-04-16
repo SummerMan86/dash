@@ -1,6 +1,6 @@
 # EMIS Review Gate
 
-Короткий approve checklist для `orchestrator` (legacy alias: `lead-tactical`), `architecture-reviewer` и `architecture-steward` по EMIS.
+Короткий approve checklist для `orchestrator` (legacy alias: `lead-tactical`), `architecture-reviewer` и `lead-strategic` по EMIS.
 
 Использовать вместе с:
 
@@ -23,7 +23,7 @@
    - почему change живет именно здесь
    - какие риски остаются
 6. Reviewers дают findings по diff.
-7. Если нужен новый placement/waiver verdict, подключается `architecture-steward`.
+7. Если нужен новый placement/waiver verdict, `orchestrator` эскалирует его в `lead-strategic` с findings от `architecture-reviewer`.
 8. `orchestrator` агрегирует findings и выносит tactical recommendation:
    - `approve`
    - `request changes`
@@ -119,4 +119,4 @@ Required follow-ups:
 - Prefer bounded, boring placement over clever cross-layer abstractions.
 - Prefer extraction over additional growth in already oversized route/map files.
 - Prefer documented contracts over implicit tribal knowledge.
-- Prefer explicit steward-approved waiver over silent architectural drift.
+- Prefer explicit `lead-strategic` waiver over silent architectural drift.
