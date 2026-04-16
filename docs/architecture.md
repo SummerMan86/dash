@@ -228,7 +228,7 @@ src/lib/
   server/              # server-only boundary
   api/                 # client API / transport facades
   fixtures/            # mock, demo, and test data
-  styles/              # tokens, global CSS, style docs
+  styles/              # app-level design system: tokens, global CSS, style docs
   dashboard-edit/      # app-local module
   <module>/            # each additional app-local module is a first-level peer
 ```
@@ -260,6 +260,12 @@ Each promotion is a response to actual growth, not speculative pre-design.
 - `apps/web/src/routes/*` owns page composition and route-local code
 - `apps/web/src/lib/*` stays intentionally thin: `server/`, `api/`, `fixtures/`, `styles/`, and a small number of app-local peer modules
 - Do not introduce extra grouping layers inside `src/lib/` to simulate package boundaries; if grouping pressure appears, that is usually the signal to extract a package
+
+**Design-system split:**
+- `@dashboard-builder/platform-ui` owns reusable UI primitives, chart presets, and generic component-level styling contracts
+- `src/lib/styles/` owns the app-level design system assets that are specific to this SvelteKit app shell: global token CSS, typography utility classes, `app.css` wiring, and the design-system guide
+- Promote design-system pieces from `src/lib/styles/` into `platform-ui` only when they become package-worthy and reusable beyond this app shell
+- Route and app-local code should consume the design system through reusable components from `@dashboard-builder/platform-ui` plus tokenized styles from `src/lib/styles/`; avoid hardcoded visual values when a token or shared primitive already exists
 
 **Alias policy for the target shape:**
 - Keep `$lib`

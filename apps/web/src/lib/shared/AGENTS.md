@@ -63,6 +63,17 @@ UI components, `cn()`, tokens (TS), formatters, `useDebouncedLoader` now live in
 - `@dashboard-builder/platform-ui`
 - `@dashboard-builder/platform-core`
 
+Правильный split сейчас такой:
+
+- reusable UI primitives и chart presets — в `@dashboard-builder/platform-ui`
+- app-level design system assets — здесь: token CSS, typography/global style wiring, `DESIGN_SYSTEM_GUIDE.md`
+
+Применение:
+
+- страницы и app-local модули сначала используют компоненты из `@dashboard-builder/platform-ui`
+- визуальные значения берутся из token CSS, а не хардкодятся
+- `app.css` остается точкой подключения глобальных design-system styles
+
 ## Canonical usage
 
 ```ts

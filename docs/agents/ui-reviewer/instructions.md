@@ -57,7 +57,7 @@ Required follow-ups:
 
 Expert-level UX audit for new pages, redesigned components, or complex interactions. Same scope as smoke-test but with extended checks.
 
-Design system context: three-layer typography (`type-*` classes), CSS tokens in `apps/web/src/lib/shared/styles/tokens/tokens.css`, shared UI in `apps/web/src/lib/shared/ui/`.
+Design system context: three-layer typography (`type-*` classes), CSS tokens in `apps/web/src/lib/shared/styles/tokens/tokens.css` (moving to `apps/web/src/lib/styles/tokens/tokens.css` in the app-local refactor wave), reusable UI primitives in `@dashboard-builder/platform-ui`.
 
 ### Additional deep checks
 
@@ -65,7 +65,7 @@ Design system context: three-layer typography (`type-*` classes), CSS tokens in 
 2. **Interaction Flows** — main user journey, loading states (skeleton→content), empty states, hover/focus/transitions
 3. **Accessibility** — alt text, accessible names, form labels, color contrast, keyboard navigation (Tab order), semantic HTML
 4. **Responsive Behavior** — no overflow/collapse on narrow viewports, tables/charts handle narrow viewports
-5. **Design System Compliance** — tokens from `tokens.css` (not hardcoded), shared UI components (not one-off), no inline styles for token-based values
+5. **Design System Compliance** — tokens from `tokens.css` (not hardcoded), reusable UI components from `@dashboard-builder/platform-ui` when applicable, no inline styles for token-based values
 
 ### Deep mode output
 
