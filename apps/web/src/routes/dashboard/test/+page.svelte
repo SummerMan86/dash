@@ -12,7 +12,7 @@
 		WidgetCanvas,
 		DragOverlay,
 		type DashboardConfig
-	} from '$lib/features/dashboard-edit';
+	} from '$lib/dashboard-edit';
 
 	// Mock data for charts
 	const dates = ['01.12', '02.12', '03.12', '04.12', '05.12', '06.12', '07.12'];

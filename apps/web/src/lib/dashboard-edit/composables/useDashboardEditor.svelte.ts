@@ -95,7 +95,7 @@ function generateWidgetId(): string {
  * @example
  * ```svelte
  * <script lang="ts">
- *   import { useDashboardEditor, WidgetCanvas } from '$features/dashboard-edit';
+ *   import { useDashboardEditor, WidgetCanvas } from '$lib/dashboard-edit';
  *
  *   const editor = useDashboardEditor({
  *     initial: data.dashboard,

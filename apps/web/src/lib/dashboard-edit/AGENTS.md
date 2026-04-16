@@ -1,6 +1,6 @@
 # Dashboard Editor
 
-`src/lib/features/dashboard-edit/` - зрелый feature-модуль для GridStack-based dashboard editing.
+`src/lib/dashboard-edit/` - зрелый app-local модуль для GridStack-based dashboard editing.
 
 ## Purpose
 
@@ -66,7 +66,7 @@ editor.loadLayout();
 - Creating a package for a single consumer is speculative
 - Self-contained design means future extraction is trivial if needed
 
-Canonical home: `apps/web/src/lib/features/dashboard-edit/` (app-level feature).
+Canonical home: `apps/web/src/lib/dashboard-edit/` (first-level app-local module).
 
 ## When to read this folder
 

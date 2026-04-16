@@ -8,8 +8,8 @@
 		WidgetEditorShell,
 		WidgetInspector,
 		WidgetToolbox
-	} from '$lib/features/dashboard-edit';
-	import type { DashboardConfig } from '$lib/features/dashboard-edit';
+	} from '$lib/dashboard-edit';
+	import type { DashboardConfig } from '$lib/dashboard-edit';
 
 	let { data }: { data: { dashboard: DashboardConfig } } = $props();
 
