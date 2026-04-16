@@ -23,9 +23,9 @@ Before reviewing, you must have:
 ## Checks
 
 1. **Platform/layer boundaries:**
-   > `shared/features/widgets` — app-local layer discipline, не архитектура целиком. Reusable logic живёт в `packages/*`. `entities/` удалён.
-   - `features` НЕ импортируют из `widgets`, `routes`
-   - `shared` НЕ импортирует из `features`, `widgets`, `routes`
+   > App-local `src/lib/*` uses flat peer modules (`api`, `fixtures`, `styles`, `<module>`). Reusable logic lives in `packages/*`; route-owned UI stays in `src/routes/*`; old `shared/features/widgets` buckets are removed.
+   - app-local peer modules do not become hidden dependency layers for one another
+   - if shared code is needed across peer modules, it belongs in `packages/*` or a route-local shared home
 
 2. **Package vs app-leaf ownership:**
    Overlay-owned canonical homes define where reusable code lives and what stays in the app leaf. Check the active domain overlay (e.g. `invariants-emis.md`) for the authoritative mapping of:
@@ -51,7 +51,8 @@ Before reviewing, you must have:
    - long-lived complexity waiver должен быть явно назван в report и, при необходимости, в overlay's exceptions registry (e.g. `docs/emis_known_exceptions.md`)
 
 6. **Import aliases:**
-   - `$lib`, `$shared`, `$features`, `$widgets` — не relative `../../` через boundaries
+   - app code uses `$lib/*`, not fragile `../../` through boundaries
+   - removed aliases (`$shared`, `$entities`, `$features`, `$widgets`) must not reappear in the diff
 
 7. **Complexity:**
    - 500-700 строк: `WARNING`

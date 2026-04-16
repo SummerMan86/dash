@@ -5,8 +5,8 @@
 ## Контекст проекта
 
 SvelteKit 2 + TypeScript + TailwindCSS 4 + PostgreSQL/PostGIS.
-Архитектура: single-deployable modular monolith with layered app structure and package boundaries.
-`shared/entities/features/widgets` — это app-local layer organization, а не название всей архитектуры.
+Архитектура: single-deployable modular monolith with flat app-local `src/lib/*` peer modules, route-local composition in `src/routes/*`, and package boundaries for reusable code.
+`src/lib/*` — это app-local organization, а не название всей архитектуры.
 Domain-specific contours (e.g. EMIS) live as overlays inside the same modular monolith.
 
 Подробнее: see relevant domain bootstrap/freeze doc if applicable (e.g. `docs/emis_session_bootstrap.md`, `docs/emis_freeze_note.md`).

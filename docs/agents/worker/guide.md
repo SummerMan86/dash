@@ -85,15 +85,15 @@ Exception for docs-only, read-only, or governance-closeout work without product 
 
 ### Architecture and boundaries
 
-> `shared/features/widgets` здесь означает app-local layer discipline внутри `apps/web/src/lib/`, а не название всей архитектуры. Reusable бизнес-логика, контракты и server-side код живут в `packages/*`. App layers — это UI composition и app-local orchestration.
+> App-local code в `apps/web/src/lib/` теперь живёт в плоских peer-модулях (`api`, `fixtures`, `styles`, `<module>`), а route-owned UI остаётся в `src/routes/...`. Reusable бизнес-логика, контракты и server-side код живут в `packages/*`.
 
 | Rule | Worker action |
 | --- | --- |
-| Reusable logic lives in packages | New reusable contracts, server logic, UI — в `packages/*`; app layers (`shared`, `features`, `widgets`) остаются app-local composition. |
-| `shared` does not import upper app layers or server-only modules | Keep `shared` leaf-like; do not pull in `features`, `widgets`, `routes`, or `$lib/server/*`. |
-| `features` does not import `widgets`, `routes`, or server-only modules | Keep feature logic below page composition. |
+| Reusable logic lives in packages | New reusable contracts, server logic, UI — в `packages/*`; app-local peer modules in `src/lib/*` remain composition/orchestration only. |
+| Flat app-local modules stay responsibility-scoped | Do not recreate `shared`, `entities`, `features`, or `widgets`; use `src/lib/<module>/` or route-local files. |
+| App-local modules are peers, not hidden dependency layers | If two peer modules need shared code, move it to `packages/*` or to a narrower route-local shared home. |
 | Client-side code does not import `$lib/server/*` | Use route/load/API seams instead of server imports in client modules. |
-| Use path aliases consistently | Prefer `$lib`, `$shared`, `$features`, `$widgets` over fragile cross-tree relative paths. |
+| Use path aliases consistently | Prefer `$lib/*` over fragile cross-tree relative paths. Removed aliases (`$shared`, `$entities`, `$features`, `$widgets`) must not appear in new code. |
 
 ### Placement and transport
 

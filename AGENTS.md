@@ -30,11 +30,13 @@
 
 Основные активные зоны:
 
-- `apps/web/src/lib/shared/*`
+- `apps/web/src/lib/api/*`
+- `apps/web/src/lib/fixtures/*`
+- `apps/web/src/lib/styles/*`
 - `apps/web/src/lib/server/*`
-- `apps/web/src/lib/features/dashboard-edit/*`
-- `apps/web/src/lib/widgets/filters/*`
-- `apps/web/src/lib/widgets/stock-alerts/*`
+- `apps/web/src/lib/dashboard-edit/*`
+- `packages/platform-filters/*`
+- `apps/web/src/routes/dashboard/wildberries/stock-alerts/*`
 - `apps/web/src/routes/dashboard/wildberries/*`
 - `apps/web/src/routes/api/datasets/[id]/+server.ts`
 - `apps/web/src/routes/api/wb/prices/+server.ts`
@@ -72,8 +74,8 @@ EMIS-активный контур сейчас находится здесь:
 - `packages/emis-server/` — server infra + modules (canonical)
 - `packages/emis-ui/` — map widgets, status bar (canonical)
 - `apps/web/src/lib/server/emis/*` — app-local server layer (infra, modules, queries, repositories)
-- `apps/web/src/lib/widgets/emis-drawer/` — app-local (depends on `$widgets/filters`)
-- `apps/web/src/lib/features/emis-manual-entry/` — app-local (depends on `$app/forms`)
+- `apps/web/src/routes/dashboard/emis/vessel-positions/EmisDrawer.svelte` — route-local detail panel
+- `apps/web/src/lib/emis-manual-entry/` — app-local (depends on `$app/forms`)
 - `apps/web/src/routes/api/emis/*` — thin HTTP transport (stays in app)
 - `apps/web/src/routes/emis/*` — UI/workspace (stays in app)
 - `apps/web/src/routes/dashboard/emis*`
@@ -173,8 +175,8 @@ Canonical target layout для monorepo-style separation:
 
 Что это означает на практике:
 
-- Reusable бизнес-логика, контракты и server-side код живут в `packages/*`. App layers (`shared`, `features`, `widgets`) — это app-local UI composition и orchestration, а не название всей архитектуры. `entities/` удалён.
-- Server write/query logic не нужно насильно раскладывать по `features/` и `widgets/`.
+- Reusable бизнес-логика, контракты и server-side код живут в `packages/*`. App-local composition живёт в плоских peer-модулях `src/lib/*` (`api`, `fixtures`, `styles`, `<module>`) и route-local файлах, а не в FSD buckets. `entities/` удалён.
+- Server write/query logic не нужно насильно раскладывать по app-local UI peer-модулям.
 - `server/emis` считается нормальным server-only слоем в текущем modular monolith.
 
 Правила разработки:

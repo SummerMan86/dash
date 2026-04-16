@@ -16,7 +16,7 @@ Generic repo-wide guardrails и severity rules живут в `invariants.md`.
 - `apps/web/src/routes/api/emis/*` — thin HTTP transport, без SQL и бизнес-логики
 - `apps/web/src/routes/emis/*` — workspace/UI orchestration
 - `apps/web/src/routes/dashboard/emis/*` — BI/read-side routes
-- `apps/web/src/lib/server/emis/infra/http.ts`, `features/emis-manual-entry/*`, `widgets/emis-drawer/*` — app-local composition
+- `apps/web/src/lib/server/emis/infra/http.ts`, `apps/web/src/lib/emis-manual-entry/*`, `apps/web/src/routes/dashboard/emis/vessel-positions/EmisDrawer.svelte` — app-local composition
 
 ### Additional rules
 

@@ -28,8 +28,8 @@
   - `apps/web/src/routes/emis/*`
   - `apps/web/src/routes/dashboard/emis/*`
   - `apps/web/src/lib/server/emis/infra/http.ts`
-  - `apps/web/src/lib/features/emis-manual-entry/`
-  - `apps/web/src/lib/widgets/emis-drawer/`
+  - `apps/web/src/lib/emis-manual-entry/`
+  - `apps/web/src/routes/dashboard/emis/vessel-positions/EmisDrawer.svelte`
 - Operational path:
   `routes/api/emis/* -> packages/emis-server/src/modules/* -> queries/service/repository -> PostgreSQL/PostGIS`
 - BI/read-side path:
@@ -78,7 +78,7 @@
 - FK behavior и vocabulary boundaries должны быть задокументированы явно.
 - Compatibility shims не считаются ownership truth.
 - Новый EMIS UI писать на Svelte 5 runes.
-- Для новых `entities/features/widgets` по умолчанию использовать плоский namespace `emis-*`.
+- Для новых app-local EMIS modules по умолчанию использовать плоский namespace `emis-*`.
 
 ## 6. Current Focus
 

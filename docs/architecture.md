@@ -14,7 +14,7 @@ Three architecture lenses define the system at different levels:
 
 - **App composition model: route-first UI + package-first reusable logic.** Routes own page/workspace composition and page-local BI state. Packages own reusable contracts, data execution, and server logic. This is the governing architecture for active development.
 
-- **Legacy app-local folders: secondary organization, not architectural authority.** Old `src/lib/shared`, `features`, and `widgets` folders still exist in parts of the app as migration residue and thin glue. `entities/` has already been removed. These names may help local navigation, but they are migration debt and must not drive new placement or naming decisions.
+- **App-local folders: flat peer modules, not FSD layers.** `src/lib/` now uses flat peer modules such as `api`, `fixtures`, `styles`, `dashboard-edit`, and `emis-manual-entry`. `entities/`, `shared/`, `features/`, and `widgets/` are removed and must not drive placement or naming decisions.
 
 - **Server pattern: BFF transport over package-owned services.** SvelteKit routes (`+server.ts`, `+page.server.ts`) are thin HTTP transport. Business logic, SQL, and domain rules live in `packages/emis-server`, `packages/platform-datasets`, etc. Routes parse HTTP, validate, delegate to package entrypoints, and map errors.
 
@@ -198,7 +198,7 @@ See [architecture_dashboard_bi.md](./architecture_dashboard_bi.md) for the sched
 
 ### App-Local Structure (Current State + Target Policy)
 
-The app still contains historical `src/lib/` folders from an earlier FSD-like organization. They are not the governing architecture model anymore.
+The app-local `src/lib/` layer is now flat by responsibility. Historical FSD-like buckets under `src/lib/shared/`, `src/lib/features/`, and `src/lib/widgets/` were removed and are not the governing architecture model.
 
 For active development, placement is decided by responsibility first:
 
@@ -208,17 +208,20 @@ For active development, placement is decided by responsibility first:
 
 | Layer | Path | Alias | Contains | Status |
 |---|---|---|---|---|
-| `shared` | `src/lib/shared/` | `$shared` | Transitional bucket: BI facade (`fetchDataset`), styles docs/tokens, fixtures | Migration residue only; not a target home for new naming |
-| `entities` | `src/lib/entities/` | `$entities` | Removed in TD-2 | Deleted; do not recreate |
-| `features` | `src/lib/features/` | `$features` | Transitional bucket for remaining app-local workflows/editors (`dashboard-edit`, `emis-manual-entry`) | Limited active use, not the default target home |
-| `widgets` | `src/lib/widgets/` | `$widgets` | Transitional bucket for app-local composite UI glue (`stock-alerts`, `emis-drawer`) | Thin glue / migration structure |
+| `api` | `src/lib/api/` | `$lib/*` | App-local BI facade (`fetchDataset`) | Active app-local module |
+| `fixtures` | `src/lib/fixtures/` | `$lib/*` | Mock, demo, and test data | Active app-local module |
+| `styles` | `src/lib/styles/` | `$lib/*` | App-level token CSS and style docs | Active app-local module |
+| `dashboard-edit` | `src/lib/dashboard-edit/` | `$lib/*` | Dashboard editor | Active app-local peer module |
+| `emis-manual-entry` | `src/lib/emis-manual-entry/` | `$lib/*` | EMIS manual-entry forms | Active app-local peer module |
+| `entities` | `src/lib/entities/` | -- | Removed in TD-2 | Deleted; do not recreate |
 | `routes` | `src/routes/` | -- | Pages, API endpoints, layouts | Canonical home for UI composition |
 | `server` | `src/lib/server/` | -- | BFF: datasets, providers, alerts, strategy | Server-only; never imported from client |
 
 **Placement guidance for new code:**
 - New page-scoped BI UI goes into route-local files under `src/routes/dashboard/<domain>/...`
 - New reusable logic, contracts, and data execution go into `packages/*`
-- Existing `entities/features/widgets/shared` folders may host compatibility code or thin app-local glue, but they are not a required layering model for new work
+- Route-local UI such as `routes/dashboard/wildberries/stock-alerts/*` and `routes/dashboard/emis/vessel-positions/EmisDrawer.svelte` stays with its owning route instead of moving into generic app buckets
+- ESLint peer isolation is enforced for `src/lib/dashboard-edit/*` and `src/lib/emis-manual-entry/*`
 - Clear import boundaries still matter even if the structure already hints at them; “obvious from folders” is not a substitute for boundary discipline
 
 **Target non-EMIS app-local shape:**
@@ -269,7 +272,7 @@ Each promotion is a response to actual growth, not speculative pre-design.
 
 **Alias policy for the target shape:**
 - Keep `$lib`
-- Deprecate `$shared`, `$features`, `$widgets`, and `$entities`
+- `$shared`, `$features`, `$widgets`, and `$entities` are removed and must not be reintroduced
 - Prefer explicit imports such as `$lib/api/fetchDataset`, `$lib/styles/...`, `$lib/fixtures/...`, `$lib/dashboard-edit`
 
 **Compact boundary rules:**
@@ -283,7 +286,7 @@ Each promotion is a response to actual growth, not speculative pre-design.
 
 **Server boundary and transport policy:**
 - `src/lib/server/**` is a formal server-only boundary. Allowed consumers: `src/routes/api/**`, `+page.server.ts`, `+layout.server.ts`, `hooks.server.ts`, and other `src/lib/server/**` modules.
-- `src/lib/server/**` may import server-safe packages (`@dashboard-builder/*/server`, `@dashboard-builder/db`), `@sveltejs/kit` transport APIs, and server-safe shared utilities. It must not import `widgets`, `features`, `.svelte` components, `platform-ui`, `emis-ui`, or Svelte client runtime/store modules.
+- `src/lib/server/**` may import server-safe packages (`@dashboard-builder/*/server`, `@dashboard-builder/db`), `@sveltejs/kit` transport APIs, and server-safe utilities. It must not import app-local UI peer modules, `.svelte` components, `platform-ui`, `emis-ui`, or Svelte client runtime/store modules.
 - `routes/api/**/+server.ts` and server load files stay thin adapters: parse request/params/session, derive context, call package or server entrypoints, map result/error to HTTP or load output.
 - Put code into `packages/*` when it is reusable, contract-bearing, or domain logic. Put code into `src/lib/server/**` only for app-owned server concerns and glue (`alerts`, mock provider, EMIS SvelteKit transport helpers).
 - BI dataset definitions executed at runtime live in `packages/platform-datasets/src/server/definitions/*`. `apps/web/src/lib/server/datasets/definitions/*` are migration copies/reference only and are not the runtime source of truth for `/api/datasets/:id`.

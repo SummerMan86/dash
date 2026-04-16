@@ -89,7 +89,7 @@ The following decisions should be treated as the durable foundation unless there
 - provider-owned server-side caching hints, plus client-side request dedup for UX
 - page-owned async query state, not global dataset stores
 - static code registration, not runtime plugin loading
-- legacy `src/lib/shared|entities|features|widgets` folders are secondary organization only, not governing placement rules
+- flat app-local `src/lib/*` peer modules plus route-local ownership are secondary organization only; package-first placement rules still govern BI architecture
 
 ### Evolving parts
 
@@ -757,10 +757,11 @@ Packages own:
 - filter planning primitives
 - reusable visual primitives
 
-Existing FSD-like folders under `src/lib/` may remain as migration residue or thin glue, but they do not define where new BI code should live.
+The post-wave app-local layout under `src/lib/` is flat by module and does not define where new BI code should live.
 
-For non-EMIS BI work, avoid creating new `shared`, `entities`, `features`, or `widgets` folders as if they were canonical architecture layers.
+For non-EMIS BI work, do not recreate `shared`, `entities`, `features`, or `widgets` folders as if they were canonical architecture layers.
 If app-local cross-route code is still needed, use flat first-level modules under `src/lib/` (`api/`, `fixtures/`, `styles/`, `<module>/`) or keep the code route-local.
+Current example: `apps/web/src/routes/dashboard/wildberries/stock-alerts/*` stays route-local because one dashboard route owns the implementation.
 
 ### Page Model
 

@@ -15,15 +15,18 @@ It is not a canonical layer map for the repository.
 | `api/` | **Active** | App-local BI data facade such as `fetchDataset.ts` |
 | `fixtures/` | **Active** | Mock/demo/test datasets |
 | `styles/` | **Active** | App-level token CSS and design-system docs |
-| `features/dashboard-edit/` | **Active (transitional home)** | Dashboard layout editor (GridStack). Single app-local consumer |
-| `features/emis-manual-entry/` | **Active** | EMIS CMS forms. Depends on `$app/forms` |
-| `widgets/stock-alerts/` | **Active (transitional home)** | Wildberries-specific alert widgets |
-| `widgets/emis-drawer/` | **Active** | EMIS map detail panel |
+| `dashboard-edit/` | **Active** | Dashboard layout editor (GridStack). ESLint peer-isolated app-local module |
+| `emis-manual-entry/` | **Active** | EMIS CMS forms. Depends on `$app/forms`; ESLint peer-isolated |
 | `entities/` | **Deleted** | All re-export shims removed in TD-2. Do not recreate |
 
-## Target non-EMIS shape
+Route-local owners that used to live under `src/lib/`:
 
-For future rename/migration, the intended app-local shape is flat by module:
+- `src/routes/dashboard/wildberries/stock-alerts/*` — Wildberries stock-alerts implementation
+- `src/routes/dashboard/emis/vessel-positions/EmisDrawer.svelte` — EMIS vessel detail drawer
+
+## Current app-local shape
+
+App-local `src/lib/` is now flat by module:
 
 ```text
 src/lib/
@@ -32,6 +35,7 @@ src/lib/
   fixtures/
   styles/
   dashboard-edit/
+  emis-manual-entry/
   <module>/
 ```
 
@@ -41,7 +45,7 @@ Meaning:
 - `api/` holds client facades such as `fetchDataset`
 - `fixtures/` holds mock/demo/test data
 - `styles/` holds tokens, global CSS, and style docs
-- every app-local feature/editor/composite becomes a first-level peer module instead of living under `features/` or `widgets/`
+- app-local modules stay as first-level peers under `src/lib/`; page-owned UI stays route-local under `src/routes/...`
 
 ## Package layer vs app layer
 
@@ -65,10 +69,10 @@ What remains in `lib/` is **app-level composition and glue**:
 - `api/fetchDataset.ts` — BI data access facade (filter composition)
 - `styles/` — CSS tokens, design system guide
 - `fixtures/` — mock datasets
-- `features/dashboard-edit/` — dashboard editor (app feature, no second consumer)
-- `features/emis-manual-entry/` — EMIS CMS forms (app feature, depends on $app/forms)
-- `widgets/stock-alerts/` — Wildberries-specific alert widgets
-- `widgets/emis-drawer/` — EMIS map detail panel
+- `dashboard-edit/` — dashboard editor (app feature, no second consumer)
+- `emis-manual-entry/` — EMIS CMS forms (app feature, depends on `$app/forms`)
+- `styles/` — app-level token CSS and design-system guide
+- route-local owners outside `src/lib/`: `routes/dashboard/wildberries/stock-alerts/*`, `routes/dashboard/emis/vessel-positions/EmisDrawer.svelte`
 
 Server-only consumers should import canonical packages directly:
 
@@ -84,7 +88,7 @@ Server-only consumers should import canonical packages directly:
 - Thin client transport facade -> `src/lib/api/`
 - Server-only -> `src/lib/server/`
 - App-local peer modules should not import each other; if two modules need shared code, move that code into `packages/*` or a narrower route-local shared home
-- Long-term alias policy is `$lib/*`; transitional `$shared/$features/$widgets` should disappear during rename migration
+- Alias policy is `$lib/*` only; `$shared`, `$entities`, `$features`, and `$widgets` are removed and must not be reintroduced
 
 ## Module lifecycle
 
@@ -105,4 +109,5 @@ If `src/lib/` starts asking for sub-groups-of-groups, that is usually the signal
 
 1. `server/AGENTS.md` — server-side infrastructure
 2. `api/fetchDataset.ts` and `styles/DESIGN_SYSTEM_GUIDE.md` — app-local BI facade and style docs
-3. `features/dashboard-edit/AGENTS.md` — layout editor details
+3. `dashboard-edit/AGENTS.md` — layout editor details
+4. `emis-manual-entry/AGENTS.md` — EMIS manual-entry forms

@@ -39,7 +39,7 @@ src/
 
 ## Что осталось в apps/web
 
-- `emis-drawer` — зависит от `$widgets/filters` (app-local widget)
+- `apps/web/src/routes/dashboard/emis/vessel-positions/EmisDrawer.svelte` — route-local vessel detail drawer in the dashboard route
 - `emis-manual-entry` — зависит от `$app/forms` (SvelteKit-specific)
 
 ## Правила
@@ -47,7 +47,7 @@ src/
 - Только UI-компоненты и связанные утилиты. Никакого server code.
 - Deps: `emis-contracts`, `platform-core`, `platform-ui`, `maplibre-gl`, `pmtiles`, `@protomaps/basemaps`; peer: `svelte`.
 - `platform-datasets` is NOT a dependency — generic types like `JsonValue` come from `platform-core`.
-- Compatibility shims в `apps/web/src/lib/widgets/emis-map/` и `emis-status-bar/` re-exportят из этого пакета.
+- Compatibility shims for `emis-map` and `emis-status-bar` were removed during the extraction wave; new consumers import from `@dashboard-builder/emis-ui` directly.
 
 ## Известные follow-ups
 

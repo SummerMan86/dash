@@ -48,7 +48,7 @@ Short ledger of EMIS decisions that are frozen and should not be reopened casual
 ## 4. Frozen Technical Defaults
 
 - Offline basemap default: local `PMTiles` bundle с `auto` fallback.
-- Для новых `entities/features/widgets` по умолчанию используем плоский namespace `emis-*`.
+- Для новых app-local EMIS modules по умолчанию используем плоский namespace `emis-*`.
 - Новый EMIS UI по умолчанию пишем на Svelte 5 runes.
 
 ## 5. Not In This Document

@@ -6,16 +6,16 @@
 
 Краткий обзор ключевых модулей:
 
-- `packages/platform-ui` + `apps/web/src/app.css` — базовый design system на Svelte 5 + Tailwind 4
+- `packages/platform-ui` + `apps/web/src/lib/styles/` + `apps/web/src/app.css` — reusable UI primitives, app-owned token CSS/design-system guide, and app-shell wiring for the design system
 - `packages/platform-datasets` + `apps/web/src/routes/api/datasets/[id]/+server.ts` — BI/read-side path `DatasetQuery -> compile -> Provider`
 - `packages/platform-filters` + BI routes — декларативные фильтры, workspace runtime, URL sync и target-aware planner
-- `apps/web/src/lib/shared/api/fetchDataset.ts` — app-local BI data facade поверх dataset runtime
-- `apps/web/src/lib/features/dashboard-edit` — редактор дашбордов на GridStack
+- `apps/web/src/lib/api/fetchDataset.ts` — app-local BI data facade поверх dataset runtime
+- `apps/web/src/lib/dashboard-edit` — редактор дашбордов на GridStack
 - `apps/web/src/routes/dashboard/wildberries/*` и `apps/web/src/routes/dashboard/strategy/*` — прикладные аналитические страницы
 - `apps/web/src/lib/server/alerts` — серверный scheduler и уведомления
 - `apps/web/src/lib/server/emis/*` + `apps/web/src/routes/api/emis/*` — Postgres-first operational/server modules для EMIS без лишней generic IR-обвязки
 
-Оставшиеся `apps/web/src/lib/shared|features|widgets` — это app-local transitional folders, а не repo-wide architecture model.
+App-local code теперь живёт в плоских peer-модулях `apps/web/src/lib/*` (`api`, `fixtures`, `styles`, `dashboard-edit`, `emis-manual-entry`) и route-local slices вроде `routes/dashboard/wildberries/stock-alerts/*` и `routes/dashboard/emis/vessel-positions/EmisDrawer.svelte`.
 
 ## Стек
 

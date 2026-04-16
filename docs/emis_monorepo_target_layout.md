@@ -18,7 +18,7 @@ dashboard-builder/
 │   └── web/                          # Current SvelteKit app (single deployable)
 │       ├── src/
 │       │   ├── routes/               # All route trees stay here
-│       │   ├── lib/                  # App-local code (glue, config, fixtures)
+│       │   ├── lib/                  # App-local code (glue, peer modules, fixtures, styles)
 │       │   └── ...
 │       ├── static/
 │       ├── svelte.config.js
@@ -28,12 +28,12 @@ dashboard-builder/
 ├── packages/
 │   ├── platform-core/               # Generic utilities, helpers, shared non-UI code
 │   ├── platform-ui/                 # UI primitives, styles, design tokens
-│   ├── platform-datasets/           # Dataset contracts, IR, compilation, providers, fetchDataset
+│   ├── platform-datasets/           # Dataset contracts, IR, compilation, providers
 │   ├── platform-filters/            # Filter contracts, store, planner, filter widgets
 │   ├── db/                          # DB connection pool factory (getPgPool)
 │   ├── emis-contracts/              # EMIS entity DTOs, Zod schemas
 │   ├── emis-server/                 # EMIS domain backend (infra + semantic modules)
-│   ├── emis-ui/                     # Reusable EMIS UI package (map, status bar; app-local drawer/manual-entry stay in apps/web)
+│   ├── emis-ui/                     # Reusable EMIS UI package (map, status bar; route-local drawer and app-local manual-entry stay in apps/web)
 │   ├── bi-alerts/                   # Alert scheduler, channels, services (if reuse pressure justifies)
 │   └── bi-dashboards/              # Dashboard editor (if reuse pressure justifies)
 │
@@ -50,27 +50,23 @@ dashboard-builder/
 
 | Current path                                  | Target package                | Что содержит                                                                                     |
 | --------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------ |
-| `apps/web/src/lib/shared/utils/*`             | `packages/platform-core/`     | Generic utilities                                                                                |
-| `apps/web/src/lib/shared/lib/*`               | `packages/platform-core/`     | Shared helpers                                                                                   |
-| `apps/web/src/lib/shared/ui/*`                | `packages/platform-ui/`       | UI primitives: button, card, badge, input, select, sidebar, skeleton, data-table, chart wrappers |
-| `apps/web/src/lib/shared/styles/*`            | `packages/platform-ui/`       | Design tokens, style utils                                                                       |
-| `apps/web/src/lib/entities/dataset/*`         | `packages/platform-datasets/` | DatasetQuery, DatasetResponse, DatasetIr, provider contracts                                     |
-| `apps/web/src/lib/shared/api/fetchDataset.ts` | `packages/platform-datasets/` | Client-side dataset facade                                                                       |
+| `packages/platform-core/*`                    | `packages/platform-core/`     | Generic utilities and shared helpers                                                             |
+| `packages/platform-ui/*`                      | `packages/platform-ui/`       | UI primitives: button, card, badge, input, select, sidebar, skeleton, data-table, chart wrappers |
+| `packages/platform-datasets/*`                | `packages/platform-datasets/` | DatasetQuery, DatasetResponse, DatasetIr, provider contracts, compiler, providers                 |
 | `apps/web/src/lib/server/datasets/*`          | `packages/platform-datasets/` | compileDataset, dataset definitions, registry                                                    |
 | `apps/web/src/lib/server/providers/*`         | `packages/platform-datasets/` | postgresProvider, mockProvider, provider routing                                                 |
-| `apps/web/src/lib/entities/filter/*`          | `packages/platform-filters/`  | Filter contracts, store, createFilterStore, planner                                              |
-| `apps/web/src/lib/widgets/filters/*`          | `packages/platform-filters/`  | Filter UI widgets                                                                                |
+| `packages/platform-filters/*`                 | `packages/platform-filters/`  | Filter contracts, store, createFilterStore, planner, UI widgets                                 |
 | `apps/web/src/lib/server/db/*`                | `packages/db/`                | DB connection pool factory (`getPgPool`)                                                         |
 
 ### EMIS packages
 
 | Current path                                             | Target package             | Что содержит                                                                                                                                  |
 | -------------------------------------------------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/web/src/lib/entities/emis-*`                       | `packages/emis-contracts/` | emis-object, emis-news, emis-link, emis-dictionary, emis-geo, emis-map, emis-ship-route                                                       |
+| `packages/emis-contracts/*`                              | `packages/emis-contracts/` | emis-object, emis-news, emis-link, emis-dictionary, emis-geo, emis-map, emis-ship-route                                                       |
 | `apps/web/src/lib/server/emis/*`                         | `packages/emis-server/`    | `src/infra/*` и `src/modules/*` с module-local `queries.ts` / `repository.ts` / `service.ts`; app-owned `infra/http.ts` остается в `apps/web` |
-| `apps/web/src/lib/widgets/emis-map/`, `emis-status-bar/` | `packages/emis-ui/`        | EmisMap, EmisStatusBar (extracted in ST-7)                                                                                                    |
-| `apps/web/src/lib/features/emis-manual-entry/`           | stays in `apps/web`        | depends on `$app/forms` (ST-8 verdict)                                                                                                        |
-| `apps/web/src/lib/widgets/emis-drawer/`                  | stays in `apps/web`        | depends on `$widgets/filters` (ST-8 verdict)                                                                                                  |
+| `packages/emis-ui/*`                                      | `packages/emis-ui/`        | EmisMap, EmisStatusBar (extracted in ST-7)                                                                                                    |
+| `apps/web/src/lib/emis-manual-entry/`                     | stays in `apps/web`        | depends on `$app/forms` (ST-8 verdict)                                                                                                        |
+| `apps/web/src/routes/dashboard/emis/vessel-positions/EmisDrawer.svelte` | stays in `apps/web` | route-local detail panel for vessel positions                                                                                                 |
 
 ### Stays in apps/web/
 
@@ -78,12 +74,14 @@ dashboard-builder/
 | -------------------------------------------- | -------------------------------------------------------------- |
 | `apps/web/src/routes/*` (все route trees)    | Routes — app-level composition, не package code                |
 | ~~`apps/web/src/lib/shared/config/*`~~       | Deleted in ST-8 (was empty)                                    |
-| `apps/web/src/lib/shared/fixtures/*`         | Dev/mock data для app runtime                                  |
-| `apps/web/src/lib/features/dashboard-edit/*` | BI editor glue; выносить в package только при доказанном reuse |
+| `apps/web/src/lib/api/fetchDataset.ts`       | Thin app-local client facade over dataset runtime              |
+| `apps/web/src/lib/fixtures/*`                | Dev/mock data для app runtime                                  |
+| `apps/web/src/lib/styles/*`                  | App-level token CSS and design-system guide                    |
+| `apps/web/src/lib/dashboard-edit/*`          | BI editor glue; выносить в package только при доказанном reuse |
+| `apps/web/src/lib/emis-manual-entry/*`       | EMIS manual-entry forms; app-specific because of `$app/forms`  |
 | `apps/web/src/lib/server/alerts/*`           | Выносить в `packages/bi-alerts/` только при доказанном reuse   |
 | `apps/web/src/lib/server/strategy/*`         | Thin strategy helpers, app-specific                            |
-| `apps/web/src/lib/entities/charts/*`         | Chart entity, app-level                                        |
-| `apps/web/src/lib/widgets/stock-alerts/*`    | Alert UI, stays with alerts                                    |
+| `apps/web/src/routes/dashboard/wildberries/stock-alerts/*` | Alert UI, route-local to Wildberries dashboard              |
 
 ### Deleted placeholders (ST-8)
 
@@ -176,29 +174,24 @@ The following empty placeholder directories were deleted in ST-8 and no longer e
 
 ```js
 $lib     → apps/web/src/lib       (resolved relative to svelte.config.js)
-$shared  → apps/web/src/lib/shared
-$entities → apps/web/src/lib/entities
-$features → apps/web/src/lib/features
-$widgets  → apps/web/src/lib/widgets
 ```
 
 ### Rules during migration
 
-1. **Aliases сохраняются** до завершения extraction целевого package.
-2. Код, уже перемещённый в package, **не использует aliases**. Он импортирует через package name (e.g., `@dashboard-builder/platform-ui`).
-3. Код в `apps/web/`, который ещё не перемещён, **продолжает использовать aliases**.
+1. App-local code in `apps/web/` uses `$lib/*`.
+2. Code in `packages/*` does **not** use app aliases; it imports via package name (e.g. `@dashboard-builder/platform-ui`).
+3. Removed aliases (`$shared`, `$entities`, `$features`, `$widgets`) must not be reintroduced.
 4. **Нельзя** создавать новые aliases для промежуточных состояний.
-5. После полного extraction зоны соответствующий alias **удаляется** из `svelte.config.js`.
 
 ### Removal timeline
 
-| Alias       | Удаляется после extraction                                                                          |
-| ----------- | --------------------------------------------------------------------------------------------------- |
-| `$shared`   | `packages/platform-core/` + `packages/platform-ui/` полностью извлечены                             |
-| `$entities` | `packages/emis-contracts/` + `packages/platform-datasets/` + `packages/platform-filters/` извлечены |
-| `$features` | `packages/emis-ui/` извлечён (или features остались только в app)                                   |
-| `$widgets`  | `packages/emis-ui/` + `packages/platform-filters/` извлечены                                        |
-| `$lib`      | Последний, удаляется когда `apps/web/src/lib/` содержит только app-local код                        |
+| Alias       | Status                                                                                  |
+| ----------- | --------------------------------------------------------------------------------------- |
+| `$shared`   | Removed; do not reintroduce                                                             |
+| `$entities` | Removed; do not reintroduce                                                             |
+| `$features` | Removed after the flat `src/lib/*` app-local rename wave; do not reintroduce            |
+| `$widgets`  | Removed after route-local / package ownership cleanup; do not reintroduce               |
+| `$lib`      | Active app-local alias                                                                  |
 
 ## 5. Migration Policy
 
