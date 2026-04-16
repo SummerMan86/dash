@@ -27,8 +27,9 @@ Canonical artifact shapes only. Workflow policy, ownership, routing, and runtime
 - verification mode: `test-first` | `prototype-pin` | `verification-first`
 
 ## Branches
-- worker branch: agent/worker/<slug>
+- mode: `in-place` | `isolated`
 - integration branch: <feature/topic>
+- worker branch: <agent/worker/slug> | `N/A — in-place`
 
 ## Checks Evidence
 - <command>: <green|red> `fresh` | `not run` — <reason>
@@ -131,8 +132,9 @@ File: `docs/agents/lead-strategic/current_plan.md`
 - DO NOT touch: <files/modules out of scope>
 
 ## Branches
+- mode: `in-place` (default) | `isolated` (opt-in — record trigger from git-protocol.md §4)
 - integration branch: feature/<topic>
-- worker branch: agent/worker/<task-slug>
+- worker branch: agent/worker/<task-slug> | `N/A — in-place`
 - base commit: <sha>
 
 ## Bootstrap Reads
@@ -177,8 +179,8 @@ File: `docs/agents/lead-strategic/current_plan.md`
 - DO NOT touch: <files/modules out of scope>
 
 ## Branches
+- mode: `in-place` (default for micro-workers)
 - integration branch: feature/<topic>
-- worker branch: agent/worker/<task-slug>
 - base commit: <sha>
 
 ## Bootstrap Reads

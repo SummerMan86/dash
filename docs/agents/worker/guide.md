@@ -23,12 +23,18 @@ Before touching code:
 3. Read local `AGENTS.md` files for the touched zones.
 4. If the slice depends on previous work, read `Carry-Forward Context` before implementation.
 
-If you are running as `subagent + worktree`:
+If you are running in `isolated` mode (`subagent + worktree`):
 
 - `CLAUDE.md` is only a redirect; the task packet is the real source of truth.
 - If a worktree-local redirect is stale or conflicts with this guide, the task packet and this guide win.
 - `settings.json` and user profile are not available.
 - You work only in your assigned worker branch.
+
+If you are running in `in-place` mode (default):
+
+- You share the checkout with `orchestrator`.
+- Commit directly to the integration branch listed in the task packet, only within owned files.
+- `settings.json` and user profile may be visible, but you still follow the task packet, not ambient config.
 
 Do not start implementation if any required task-packet field is missing:
 
@@ -56,22 +62,26 @@ Escalate to `orchestrator` instead of guessing.
 
 ## 4. Mode Discipline
 
-### Subagent mode
+Mode is assigned by `orchestrator` in the task packet per `git-protocol.md` §3-4.
+Do not change modes yourself; escalate if the assigned mode looks wrong for the slice.
 
-Default for code-writing work.
+### In-place mode
+
+Default for all workers and micro-workers (sequential execution).
+
+- Work in the shared checkout.
+- Commit directly to the integration branch listed in the task packet.
+- Touch only owned files; if scope overlap appears, stop and escalate.
+- Do not create a separate worker branch.
+
+### Isolated mode
+
+Opt-in for Claude subagent workers when a `git-protocol.md` §4 trigger applies (parallel execution, schema/cross-layer touch, explicit isolation rationale).
 
 - Work only in `agent/worker/<slug>`.
 - Do not commit to the integration branch.
 - Do not reuse another worker's worktree.
 - `orchestrator` merges your branch after handoff.
-
-### Teammate mode
-
-Exception for docs-only, read-only, or governance-closeout work without product code.
-
-- Work directly in the assigned integration branch.
-- Touch only the owned files from the task packet.
-- If scope overlap appears, stop and escalate.
 
 ### Shared rules
 

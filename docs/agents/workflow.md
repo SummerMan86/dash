@@ -131,34 +131,27 @@ Codex plugin integration, thread continuity (`--resume` / `--fresh`), and compan
 - при недостаточном evidence запускается transparency request, re-review или verification/fix-worker;
 - при design/boundary ambiguity эскалация идёт в `lead-strategic`, а не в self-implementation loop.
 
-### Гибридная модель: isolated writers + fresh reviewers
+### Worker и reviewer execution shape
 
 | Роль | Технология | Почему |
 |---|---|---|
-| `worker` | subagent + worktree (default for code-writing); teammate only as shared-checkout exception | diff isolation, scope hygiene, reproducible handoff |
+| `worker` | in-place (default) или isolated `subagent + worktree` (opt-in) | sequential sharing для простоты; isolation по trigger'у |
 | `reviewer` | fresh subagent | дешёвый и воспроизводимый bounded review по diff |
 
-Workers как isolated subagents (default for code-writing):
+Workers:
 
-- получают отдельный worktree и `agent/worker/<slug>` branch;
-- дают diff-isolated handoff и review input без shared-checkout contamination;
-- позволяют `orchestrator` проверять scope по branch/diff boundaries;
+- по умолчанию работают sequentially в общем checkout (`feature/<topic>`);
+- isolated mode (отдельный worktree + `agent/worker/<slug>` branch) подключается только по trigger'у из `git-protocol.md` §4 (parallel execution, schema/cross-layer touch, explicit isolation rationale);
 - не ведут отдельный durable `memory.md`;
-- **контекст:** получают только prompt (task packet) + `CLAUDE.md` из worktree; протокол spawn и prompt composition — в `orchestrator/instructions.md` §Worker Spawn Protocol.
-
-Workers как teammates (shared-checkout exception):
-
-- видят `AGENTS.md`, локальные docs и репозиторий целиком;
-- допускаются только для docs-only, read-only investigation или governance-closeout slices без product code;
-- работают в том же checkout и integration branch; коммитят только в рамках assigned scope;
-- общаются с `orchestrator` через SendMessage;
-- не ведут отдельный durable `memory.md`.
+- **контекст:** получают только prompt (task packet); для isolated дополнительно видят `CLAUDE.md` из worktree (redirect-only); протокол spawn и prompt composition — `orchestrator/instructions.md` §Worker Spawn Protocol.
 
 Reviewers как fresh subagents:
 
 - стартуют заново на каждый review pass;
 - получают только diff, changed files и review scope;
 - не накапливают межзадачный review state.
+
+Полные правила mode selection, bootstrap и integration choreography — `git-protocol.md` §3-6.
 
 ## 2. Цикл задачи
 
@@ -213,9 +206,8 @@ Dispatch heuristic:
 - если change подпадает под `direct-fix`, выполняй его inline;
 - любой другой implementation slice идёт через worker;
 - если slice trivial и bounded, но уже не `direct-fix`, выбирай `micro-worker`;
-- parallel workers допустимы только для независимых ownership slices;
-- если workers идут параллельно, default и required mode = isolated `subagent + worktree`;
-- teammate/shared-checkout path не используется для parallel execution.
+- workers по умолчанию идут sequentially в in-place mode;
+- parallel execution — opt-in; требует явного rationale в task packet и автоматически переводит workers в isolated mode (`git-protocol.md` §4).
 
 `direct-fix` protocol:
 
@@ -494,8 +486,8 @@ Worker завершил slice
 
 **Execution context:**
 
-- **Teammate mode:** reviewer input по owned files из handoff + коммиты worker'а. Worker не включает чужие коммиты.
-- **Subagent mode:** worker запускает ревьюеров на полный diff своей branch от base commit.
+- **In-place mode:** reviewer input по owned files из handoff + коммиты worker'а в `feature/<topic>`. Worker не включает чужие коммиты.
+- **Isolated mode:** worker запускает ревьюеров на полный diff своей `agent/worker/<slug>` branch от base commit.
 
 ### 3.3. Integration Review
 
@@ -763,9 +755,9 @@ pane #2  worker B (если нужен)
 ```
 
 - `orchestrator` держит orchestration context и запускает reviewers как fresh subagents;
-- isolated code-writing workers по умолчанию живут в своих worktree/branch;
-- teammate panes — exception path для docs-only / read-only / governance-closeout work;
-- пользователь может зайти в pane teammate-worker'а напрямую.
+- sequential in-place workers разделяют checkout с `orchestrator` и коммитят в `feature/<topic>`;
+- isolated workers (opt-in per `git-protocol.md` §4) живут в отдельных worktree/branch;
+- пользователь может зайти в pane worker'а напрямую.
 
 ## 8. Memory Protocol
 

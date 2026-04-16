@@ -48,13 +48,13 @@ Canonical failure-path protocol для агентной команды.
 
 ## RP-2. Integration branch diverged from `main`
 
-> Worker branch conflict и rebase rules (шаги 5-6) применимы к default subagent workers с отдельными ветками. Teammate workers — exception path в shared checkout и не имеют отдельных веток.
+> Worker branch conflict и rebase rules (шаги 5-6) применимы только к `isolated` workers с отдельными ветками. `In-place` workers живут в shared checkout и не имеют отдельных веток.
 
 Примеры:
 
 - `main` ушёл вперёд;
 - rebase вызывает конфликты;
-- active subagent workers уже отданы на старый base.
+- active isolated workers уже отданы на старый base.
 
 Действия:
 
@@ -168,14 +168,16 @@ Canonical failure-path protocol для агентной команды.
 
 - 3 rejection cycles на один slice — автоматическая эскалация к пользователю.
 
-## RP-6. Teammate exception загрязнил integration branch за пределами scope
+## RP-6. In-place worker загрязнил integration branch за пределами scope
+
+Применимо к `in-place` workers в shared checkout.
 
 Примеры:
 
-- teammate закоммитил файлы вне owned scope из handoff;
-- teammate случайно изменил файлы `orchestrator` scope или другого slice.
+- worker закоммитил файлы вне owned scope из handoff;
+- worker случайно изменил файлы `orchestrator` scope или другого slice.
 
-Действия (ownership у `orchestrator`; code changes делает cleanup-worker, а не teammate):
+Действия (ownership у `orchestrator`; code changes делает cleanup-worker, а не исходный worker):
 
 1. `orchestrator` делает triage внутри integration branch (не discard/recreate).
 2. Определить: какие коммиты вне scope, какие в scope.
@@ -183,8 +185,8 @@ Canonical failure-path protocol для агентной команды.
 4. Если вне-scope изменения конфликтуют с другой работой — `orchestrator` эскалирует к пользователю или создаёт bounded conflict-resolution worker.
 5. `orchestrator` фиксирует в memory и report: что загрязнено, как восстановлено.
 
-Recovery ownership: `orchestrator`, не teammate.
-Teammate не делает revert самостоятельно — это может усугубить scope contamination.
+Recovery ownership: `orchestrator`, не исходный worker.
+Исходный worker не делает revert самостоятельно — это может усугубить scope contamination.
 
 Жёсткое правило:
 
