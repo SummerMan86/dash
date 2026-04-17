@@ -64,7 +64,7 @@ Isolated mode — единственный путь, если выполняет
 
 Если ни один trigger не сработал — используется in-place mode по умолчанию.
 
-Для Codex workers/micro-workers isolated mode не применяется: у Codex собственная session isolation через CLI, а параллельный запуск Codex в репозитории не поддерживается.
+Для Codex workers/micro-workers isolated mode не входит в текущий default model: используем sequential `in-place` execution в общем checkout. Companion runtime concurrency верифицирована, но parallel Codex code-writing workers в shared checkout остаются unproven и не считаются supported default.
 
 ## 5. Bootstrap перед запуском worker
 

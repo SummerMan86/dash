@@ -141,6 +141,7 @@ Codex plugin integration, thread continuity (`--resume` / `--fresh`), and compan
 Workers:
 
 - по умолчанию работают sequentially в общем checkout (`feature/<topic>`);
+- профиль `opus-orchestrated-codex-workers` не меняет этот default: Codex worker по умолчанию идёт `in-place`, без отдельного worktree и без automatic parallel fan-out;
 - isolated mode (отдельный worktree + `agent/worker/<slug>` branch) подключается только по trigger'у из `git-protocol.md` §4 (parallel execution, schema/cross-layer touch, explicit isolation rationale);
 - не ведут отдельный durable `memory.md`;
 - **контекст:** получают только prompt (task packet); для isolated дополнительно видят `CLAUDE.md` из worktree (redirect-only); протокол spawn и prompt composition — `orchestrator/instructions.md` §Worker Spawn Protocol.
