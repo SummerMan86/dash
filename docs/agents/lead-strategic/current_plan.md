@@ -6,7 +6,7 @@
 - wave status: `active`
 - priority: `high` — picks up directly where the `src/lib/` wave closed; aligns agent-docs with real operating practice before larger product waves
 - branch: `claude/review-agent-model-tAKki` (pushed)
-- recommended execution profile: `opus-orchestrated-codex-workers`
+- recommended execution profile: `opus-orchestrated-codex-workers` — through the canonical companion runtime path; shared-checkout parallel Codex workers remain unproven
 - recommended operating mode at open: `ordinary iterative` for A/B/C/E (low-risk doc slices), `high-risk iterative / unstable wave` for D (touches a core invariant) and F (code + baseline)
 - baseline status: `Yellow` (`pnpm lint:eslint` pre-existing baseline errors only; inherited from prior wave)
 - test baseline: `309` tests (`19` files)
@@ -23,6 +23,15 @@ Land bounded, high-leverage improvements to the agent workflow documentation and
 - `d32133e` — worker default flipped to `in-place`; `isolated` (subagent + worktree) is now opt-in only. Six files touched; net −2 lines.
 - `80540d6` — collapsed duplicated "three detection points" table in `invariants.md` §8 to a stage-labeled cross-ref. Net −6 lines.
 - `78b1cd8` — structured Carry-Forward Context fields (Slice A). Worker Handoff §1 "Continuation Notes" renamed to "Carry-Forward Context"; Task Packet §4 aligned; required on every code-writing handoff (not just dependent slices); cross-refs in `orchestrator/instructions.md` updated. Net −1 line.
+
+### Runtime delta since plan open (working tree; strategic acceptance pending)
+
+- canonical Codex runtime path switched to repo-local `./scripts/codex-companion.sh`; slash/plugin surface is now optional convenience only, not orchestration-critical path
+- active docs aligned to that runtime contract: `docs/codex-integration.md`, `docs/QUICKSTART.md`, `docs/agents/orchestrator/instructions.md`, `docs/agents/execution-profiles.md`, `docs/ops/usage-telemetry.md`, `scripts/AGENTS.md`
+- validated through companion path: strategic read-only, strategic write-capable, worker write-capable, background task, `review`, and `adversarial-review`
+- validated concurrency only at runtime level: concurrent background read-only jobs and concurrent write-to-`/tmp` jobs are green; parallel Codex workers in shared checkout remain intentionally unproven
+- new operational caveats now part of the live contract: `--resume` is gated by the workspace active-job registry; stable proof handle is `jobId + threadId`, not "latest finished"
+- follow-up signal only, not yet approved slice: wrapper hardening around env override trust and restricted writable-state behavior
 
 ### Invariants established by this wave (do not revert)
 
@@ -123,11 +132,13 @@ Land bounded, high-leverage improvements to the agent workflow documentation and
 - Do not restore the first table in `invariants.md` §8 (duplicate of `workflow.md` §2.3.1 / §3.3 / §5.1).
 - Do not reintroduce the old free-form `Continuation Notes` shape; the four structured Carry-Forward fields are canonical.
 - Do not treat `teammate mode` or `subagent mode as default` as current terminology.
+- Do not reintroduce `/codex:rescue` or other slash-command surfaces as the canonical orchestration path for Codex lanes; use `./scripts/codex-companion.sh`.
+- Do not rely on "latest completed" Codex status as proof; preserve `jobId + threadId` in artifacts / telemetry.
 - One slice per commit; no batched commits across slices.
 
 ## Expected Result
 
-Agent workflow docs reflect real operating practice: structured carry-forward, calibrated docs-severity escalation, adaptive strategic-reviewer cadence, explicit wave-journal recovery path, and (for D/F) a bounded code-blind orchestrator carve-out plus automated lint guardrails. Wave closes with baseline still at or better than `Yellow`, test baseline not shrunk, and no doc duplication regressions.
+Agent workflow docs reflect real operating practice: structured carry-forward, calibrated docs-severity escalation, adaptive strategic-reviewer cadence, explicit wave-journal recovery path, canonical Codex companion runtime with stable proof handles, and (for D/F) a bounded code-blind orchestrator carve-out plus automated lint guardrails. Wave closes with baseline still at or better than `Yellow`, test baseline not shrunk, and no doc duplication regressions.
 
 ## Для лид-стратега: что проверить перед pickup
 
@@ -153,4 +164,6 @@ Agent workflow docs reflect real operating practice: structured carry-forward, c
 - Operating-mode definitions: `docs/agents/workflow.md` §2.4
 - Strategic-reviewer cadence and risk signals: `docs/agents/workflow.md` §4.1
 - Worker mode selection (single SoT): `docs/agents/git-protocol.md` §3-4
+- Codex runtime contract: `docs/codex-integration.md`
+- Codex proof/telemetry contract: `docs/ops/usage-telemetry.md`
 - ESLint rule-introduction policy: `docs/agents/invariants.md` §10
