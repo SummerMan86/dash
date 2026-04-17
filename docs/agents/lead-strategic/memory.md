@@ -2,25 +2,24 @@
 
 ## Active State
 
-- active wave: Agent Model — bounded doc/code improvements (High Priority)
+- active wave: Cross-Model Architectural Audit — baseline-governor role
 - plan: `docs/agents/lead-strategic/current_plan.md`
-- branch: `claude/review-agent-model-tAKki` (pushed)
+- branch: `main` (at `a406984`)
 - profile: `opus-orchestrated-codex-workers` via canonical companion runtime `./scripts/codex-companion.sh`
-- operating mode (recommended): `ordinary iterative` for B/C/E; `high-risk iterative / unstable wave` for D and F
-- awaiting: strategic pickup — verify plan per `current_plan.md` §Для лид-стратега
-- last closed wave: Restructure `src/lib/` app-local surface and remove FSD-named buckets (closed `2026-04-16`, archived as `archive/plan_src_lib_dissolve_fsd_buckets_closed_2026-04-16.md`)
-- baseline status: `Yellow` (`pnpm lint:eslint` pre-existing)
+- operating mode: `high-risk iterative / unstable wave`
+- awaiting: strategic pickup — Phase 1 dispatch decision (architecture.md paired-reviewer audit)
+- last closed wave: Agent Model — bounded doc/code improvements (closed `2026-04-17`, archived as `archive/plan_agent_model_bounded_improvements_closed_2026-04-17.md`)
+- baseline status: `Yellow` (pre-existing `pnpm lint:eslint`; unchanged across wave)
 - test baseline: `309` tests (`19` files)
 
 ## Carry Forward
 
-- Slice A landed as `78b1cd8` (structured Carry-Forward fields); fresh docs-reviewer `OK`; strategic verification pending
-- Wave invariants (do not revert): single SoT for worker mode is `git-protocol.md` §3-4; `invariants.md` §8 first table stays removed; four structured Carry-Forward fields canonical; `in-place` default / `isolated` opt-in terminology
-- Codex runtime invariant: repo-local `./scripts/codex-companion.sh` is canonical; `/codex:*` slash/plugin surface is optional convenience only
+- baseline-governor merged into `main` at `a406984` as a checkpoint before cross-model review, per user direction; fix-forward (or revert as last resort) accepted if this wave finds `CRITICAL`
+- architecture.md has not been independently verified against current repo state recently; Phase 1 must complete before Phase 2 to make the "docs consistent with architecture" check meaningful
+- Codex runtime invariant: repo-local `./scripts/codex-companion.sh` is canonical; `/codex:*` slash surface is optional convenience only
 - Codex proof invariant: preserve `jobId + threadId`; do not treat "latest completed" status output as sufficient proof
-- Codex operations caveat: `--resume` is gated by the workspace active-job registry; recover stale dead jobs via `status` then `cancel`
-- Runtime validation is green for strategic read-only/write, worker write, background, review, adversarial-review, and concurrent background jobs; parallel Codex workers in shared checkout remain unproven
-- Prior-wave non-blocking baseline debt carries over: `pnpm lint:eslint` in packages/scripts, barrel/direct import inconsistency, broad peer-isolation glob, oversized `routes/emis/+page.svelte`
+- Parallel reviewer-lane concurrency empirically verified on prior wave's ST-B integration review (see `docs/codex-integration.md` §5 item 6); paired cross-model reviewer launches are canonical default for this wave
+- Prior-wave non-blocking baseline debt carries over unchanged: `pnpm lint:eslint` in packages/scripts, barrel/direct import inconsistency, broad peer-isolation glob, oversized `routes/emis/+page.svelte`
 
 ## Pruning Rule
 

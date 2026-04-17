@@ -1,100 +1,40 @@
-# Report: ST-B — Wave DoD docs WARNING escalation scope
+# Report: Wave closure — Agent Model bounded improvements + baseline-governor checkpoint
 
 ## Report Type
-`full`
 
-## Status
-done — slice accepted-ready; strategic final ACCEPT pending per operating mode (ordinary iterative). 5 review iterations + 1 strategic PCR resolved.
+`governance-closeout`
 
-## What Was Done
+## Wave
 
-| Commit | Role | Summary |
-|---|---|---|
-| `3ee7822` | worker (Codex `task-mo2oe3sj-zb8nos`) | Initial carve-out: §3.8 enumerated list (`RUNTIME_CONTRACT.md`, `db/schema_catalog.md`, `db/current_schema.sql`, invariants) + nav `AGENTS.md` carry-over sentence + §6.4 severity line updated |
-| `39dea43` | orchestrator direct-fix | Review #1 P2: added `db/applied_changes.md` to §3.8 enumerated list (pair with `db/current_schema.sql` per §6.1, invariants §4, worker/guide.md §5) |
-| `e5e61db` | orchestrator (strategic-authored wording) | Review #2 P1: narrowed §3.8 line 578 — carve-out restricted to pre-existing drift outside wave's touched directories, slice-level gate restated |
-| `af4806c` | orchestrator (strategic plan write) | `current_plan.md` ST-B acceptance criteria updated to match narrowed carve-out and add §6.1 cross-check |
-| `e35dbb2` | orchestrator direct-fix | Review #3 P2×2: added §6.2 Wave DoD bullet pointing to §3.8; added "pre-existing / outside touched dirs" qualifier to §6.4 summary |
-| `058eea6` | orchestrator direct-fix | Review #4 P2: "closed or escalated" → "closed (unresolved gaps block wave closure per §3.8)" — escalated contract-doc gaps are blockers, not acceptance state |
-| `b42bae4` | orchestrator direct-fix | Review #5 P2: restored "outside the wave's touched directories" qualifier in §6.2 bullet so Wave DoD matches §3.8 line 578 and §6.4 line 730 |
+Agent Model — bounded doc/code improvements (opened `2026-04-16`, closed `2026-04-17`). Plan archived to `docs/agents/lead-strategic/archive/plan_agent_model_bounded_improvements_closed_2026-04-17.md`.
 
-All changes land in `docs/agents/workflow.md` (7 content commits) + `docs/agents/lead-strategic/current_plan.md` (1 plan meta commit).
+## What landed
 
-## Plan Sync
-- `current_plan.md`: `updated` — ST-B entry rewritten by lead-strategic in thread `019d9aba-1603-7342-9c21-3c5cd9bf5d1b` (commit `af4806c`) to target narrowed carve-out and add §6.1 cross-check to verification intent.
-- plan change requests: orchestrator-initiated PCR resolved via strategic ACCEPT Option A in-thread; no formal PCR artifact required since strategic wrote the plan update directly.
-- operating mode: `ordinary iterative` — retained; strategic confirmed P1/P3 signaled wording slippage, not unstable governance surface.
-- mode change signal: `none`
+Final commits on `main`:
 
-## Review Disposition
-- minimum independent review floor: `N/A — no product code` (docs-only slice)
-- integration review: `N/A` — single-slice wave step, no cross-slice integration
-- rationale: 5 fresh docs-reviewer passes via `./scripts/codex-companion.sh review`. Each pass returned bounded precision findings on the narrowed carve-out wording propagation across §3.8 / §6.2 / §6.4; convergence reached after review #5 with only `P3 templates gap` remaining (strategic-deferred).
+- `bc6801d` — reviewer output deduplication (canonical Review Result contract in `templates.md` §6; role reviewer docs keep only local delta; `.claude/agents/*.md` collapsed to thin pointers); canonical anchor for `direct-fix` and minimum independent review floor (`workflow.md` §2.1 / §3.1); overlay numbering convention for `invariants.md`.
+- `a406984` — baseline-governor governance role introduction (new role guide `docs/agents/baseline-governor/instructions.md`, thin wrapper `.claude/agents/baseline-governor.md`, delegation in `workflow.md` §5.2 / `lead-strategic/instructions.md`, spawn section in `orchestrator/instructions.md`, governor row in `execution-profiles.md`).
 
-## Findings by Severity
+## Review disposition
 
-- `CRITICAL`: `none`
-- `WARNING` (closed):
-  - R#1 P2 `workflow.md:577` missing `db/applied_changes.md` — closed in `39dea43`
-  - R#2 P1 `workflow.md:578` carve-out vs slice-level gate contradiction — closed in `e5e61db` per strategic ACCEPT Option A
-  - R#3 P2 `workflow.md:729` §6.4 summary too broad — closed in `e35dbb2`
-  - R#3 P2 `workflow.md:691-704` §6.2 Wave DoD missing carry-over bullet — closed in `e35dbb2`
-  - R#4 P2 `workflow.md:705` "closed or escalated" ambiguity — closed in `058eea6`
-  - R#5 P2 `workflow.md:705` qualifier drop in §6.2 bullet — closed in `b42bae4`
-- `INFO` (open, strategic-deferred):
-  - R#2/R#5 P3 `workflow.md:578` — `templates.md` §1 Worker Handoff and §5 Reports have no structured `owner` / `expiry` field for docs waivers; carry-over metadata will live in ad hoc prose. Strategic decision (thread `019d9aba`): `truly deferred without registering a new slice now — adding a template-shape slice is scope growth, not required to accept ST-B`.
+- `bc6801d` — direct-reviewed conversationally against the pointer-pattern redesign; no independent reviewer subagent pass recorded at commit time. Rationale: docs-only, delta behavior already established; any drift is visible to downstream cross-model audit.
+- `a406984` — **not independently reviewed at commit time**. Merged as a checkpoint per user direction; cross-model architectural audit deferred to the next wave.
 
-## Reviewer Verdicts
-- architecture-reviewer: `N/A` — docs-only, no placement/boundary change
-- security-reviewer: `N/A` — no code, SQL, auth, secrets
-- docs-reviewer: 5 fresh Codex review passes (jobIds + threadIds in §Proof Tuples below); final converged state with only strategic-deferred P3 open
-- code-reviewer: `N/A` — no product code
-- ui-reviewer: `N/A` — no UI
+## Follow-up
 
-## Checks Evidence
-- `pnpm check`: `not run` — docs-only, no code touched
-- `pnpm build`: `not run` — docs-only, no code touched
-- `pnpm lint:boundaries`: `not run` — docs-only, no code touched
-- `git diff --stat 1c1dfde..HEAD` fresh: `docs/agents/lead-strategic/current_plan.md` (3+/3−) + `docs/agents/workflow.md` — only 2 files changed, only within scope
+A new wave is opened in `docs/agents/lead-strategic/current_plan.md`: "Cross-Model Architectural Audit — baseline-governor role". It pairs Claude Opus and Codex `gpt-5.4` at `high` effort across two phases:
 
-## Proof Tuples (Codex runtime — `docs/codex-integration.md` §4)
+1. Phase 1: `docs/architecture.md` sanity audit vs current repo state.
+2. Phase 2: baseline-governor delta consistency audit (architecture + docs lanes, paired cross-model).
 
-| Pass | jobId | threadId | Write | Outcome |
-|---|---|---|---|---|
-| Worker (initial) | `task-mo2oe3sj-zb8nos` | `019d9aa9-778c-79a2-8ffe-2ac1a8cdd476` | yes | commit `3ee7822`; nested docs-reviewer failed inside worker session (sandbox WS block) |
-| Review #1 | `review-mo2ok27d-ms4nff` | `019d9aad-a985-72e1-89f2-b25b0422a019` | no | P2 `db/applied_changes.md` |
-| Review #2 | `review-mo2oq6mz-2ivs2e` | `019d9ab2-059d-7b20-8125-89470a56b74f` | no | P1 carve-out contradiction + P3 templates gap |
-| Strategic PCR | `task-mo2p1gwl-3drma5` | `019d9aba-1603-7342-9c21-3c5cd9bf5d1b` | yes | ACCEPT Option A, revised wording, plan update commit `af4806c`, P3 deferred |
-| Review #3 | `review-mo2p64hr-k0pylm` | `019d9abd-5e63-7050-bec9-92af315f8d61` | no | P2 §6.2 + P2 §6.4 propagation |
-| Review #4 | `review-mo2pchjq-kmsx6m` | `019d9ac1-e68c-76b0-bc9d-efeb31b339de` | no | P2 "closed or escalated" ambiguity |
-| Review #5 | `review-mo2pi4s8-kgutky` | `019d9ac5-eb6e-7c51-b066-81b7f6973f04` | no | P2 qualifier drop + P3 (strategic-deferred, recurring) |
+The next orchestration session dispatches Phase 1.
 
-## Readiness
-`ready for strategic acceptance` — slice converged; only open finding (P3 templates gap) is strategic-deferred in thread `019d9aba`.
+## Baseline
 
-## Integration Review (parallel architecture + docs, Codex xhigh)
+- test baseline: `309` tests (`19` files) — unchanged.
+- baseline status: `Yellow`, pre-existing `pnpm lint:eslint` only. Governor is docs-only; does not affect baseline.
+- `pnpm check` on `main` at `a406984`: green.
 
-Parallel `task --fresh --effort xhigh` pair launched from orchestrator, both read-only:
+## Risk note
 
-| Role | jobId | threadId | Effort | Verdict | Wall time |
-|---|---|---|---|---|---|
-| architecture-reviewer | `task-mo2q28p7-dyxzsq` | `019d9ad4-43df-7921-9eba-046c34ca725c` | xhigh | request changes (1 WARNING) | 3m 14s |
-| docs-reviewer | `task-mo2q28p9-i6tr9w` | `019d9ad4-440b-7c81-b990-bf85de36034e` | xhigh | request changes (1 WARNING + 1 INFO deferred) | 3m 48s |
-
-Both converged independently on the same WARNING: `current_plan.md:61` still enumerated the 4-item contract-touching list (`RUNTIME_CONTRACT.md`, `db/schema_catalog.md`, `db/current_schema.sql`, new invariants) that strategic wrote at plan-update time, missing `db/applied_changes.md` that landed in `workflow.md:577` via commit `39dea43`. Closed in commit `06bd5b2`.
-
-Invariant integrity (architecture-reviewer): `git-protocol.md` §3-4, `invariants.md` §8 first-table removal, structured Carry-Forward fields, in-place default terminology, canonical Codex companion runtime — all preserved.
-
-Cross-ref integrity (docs-reviewer): §3.8 ↔ §6.1 ↔ §6.2 ↔ §6.4 consistent in `workflow.md`; cross-file drift flagged at `current_plan.md:61` (now closed); P3 templates gap remains strategically deferred.
-
-Observation: parallel xhigh launch cost 3m 48s wall-time vs an estimated ~7m sequentially. Confirms concurrent companion-task parallelism for reviewer lanes in shared checkout (intentional limit per `docs/codex-integration.md` §4 remains on *workers* in shared checkout, which is unproven).
-
-## Observations about this slice (for retrospective / next-wave calibration)
-
-- Worker's initial commit was directionally correct; 5 review cycles converged on precision wording propagation across §3.8 / §6.2 / §6.4. This is consistent with the slice's verification intent (cross-check §6.1 as well) but points to an under-specified task packet: the worker was given acceptance criteria but no explicit instruction to audit the full §3.8 / §6.1 / §6.2 / §6.4 web for wording symmetry.
-- Nested docs-reviewer launch from inside a running Codex worker session failed (websocket sandbox block). Launching reviewer from orchestrator context between worker commits was reliable. Worker spawn protocol for Codex lanes should prefer orchestrator-launched reviewer when nested calls are unproven in the sandbox.
-- The wave Tree of commits (7 content + 1 plan) violates the plan's "one slice per commit" soft preference but keeps history precise about what each fix addressed. Squash-on-merge at wave closure is the intended compaction path.
-
-## Questions / Escalations to lead-strategic
-- Final ACCEPT on ST-B slice (wording converged; P3 on record).
-- Do we formalize "docs waiver owner+expiry" as structured field in `templates.md` before F, or leave P3 deferred? Strategic already said defer — flagged here only for completeness, no blocker.
+Governor role is merged but not independently reviewed. If the next wave's audit surfaces `CRITICAL`, the resolution path is fix-forward by default; revert of `a406984` is the last-resort fallback. Documented here so the decision trail is preserved across sessions.
