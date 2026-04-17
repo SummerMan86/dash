@@ -61,6 +61,9 @@ Product code по умолчанию остаётся worker-owned.
    - **isolated (opt-in)** — worker получает worktree и `agent/worker/<slug>` branch; только по trigger'у из `git-protocol.md` §4 (parallel execution, schema/cross-layer touch, explicit isolation rationale)
    - parallel execution requires явный rationale в task packet и автоматически переводит workers в isolated
 6. **Сформируй task packet** по `templates.md` §4, если выбран worker path
+   - перенеси `verification intent` / `verification mode` из текущего slice plan'а; если mode отсутствует или неубедителен для фактического slice shape, выбери его по `docs/agents/skills/testing-strategy.md` до spawn
+   - добавь обязательную секцию `Verification`: `intent`, `mode`, `mode rules` (inline только для выбранного режима), `waiver rationale` when applicable
+   - `testing-strategy.md` — source of truth для orchestrator; task packet — source of truth для worker, поэтому не отправляй worker'у голую ссылку на skill без инлайн-правил режима
    - выбери runtime/model lane по `execution-profiles.md`
    - для Codex runtime используй repo-local entrypoint `./scripts/codex-companion.sh`; не полагайся на `/codex:rescue` или другие slash wrappers для orchestration-critical launches
    - для proof tuples, companion CLI guidance, and verification contract: `docs/codex-integration.md`
@@ -145,6 +148,7 @@ Bootstrap и integration choreography — `git-protocol.md` §5-6.
 - Task packet из `templates.md` §4 (или §4.1 для micro-worker) — единственный канал от orchestrator к worker.
 - `Bootstrap Reads` — обязательная секция; worker читает перечисленные файлы до начала реализации. Default = `worker/guide.md` + локальные `AGENTS.md`.
 - `Optional References` — документы, которые пригодятся worker'у при неясностях; не перегружай, 2-4 ссылки максимум.
+- `Verification` — обязательная секция для каждого implementation slice. Передай `verification intent`, выбранный `verification mode`, инлайн-правила только этого режима из `docs/agents/skills/testing-strategy.md`, и `waiver rationale`, если verification частично отложена или заменена другим evidence.
 - `Carry-Forward Context` — обязательная секция для любого code-writing slice; для dependent slice (где `depends on: ST-N` в плане) собирается из предыдущего handoff, для независимого указывается `none` в каждом неприменимом поле. Не отправляй worker читать весь `current_plan.md`.
 - Не переиспользуй старые worker worktrees как bootstrap surface: stale local redirects не считаются canonical context.
 
@@ -169,6 +173,7 @@ Model defaults per `execution-profiles.md`. When spawning workers/reviewers, use
 - [ ] worker mode выбран (`in-place` default или `isolated` с зафиксированным trigger из `git-protocol.md` §4)
 - [ ] `Bootstrap Reads` содержит `worker/guide.md` и локальные `AGENTS.md`
 - [ ] `Optional References` заполнен, если slice в нетривиальном контексте (domain, BI, cross-layer)
+- [ ] `Verification` заполнен: `intent`, `mode`, инлайн-правила выбранного режима; `waiver rationale` указан when applicable
 - [ ] `Carry-Forward Context` заполнен для code-writing slice (четыре поля; `none` в неприменимых; содержимое из предыдущего handoff для dependent slice)
 - [ ] integration branch и base commit указаны; worker branch указан только для isolated mode
 - [ ] owned files и out-of-scope files указаны

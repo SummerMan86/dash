@@ -42,6 +42,7 @@ Do not start implementation if any required task-packet field is missing:
 - scope and out-of-scope
 - integration branch and base commit
 - bootstrap reads
+- verification section (`intent`, `mode`, `mode rules`; `waiver rationale` when applicable)
 - acceptance criteria
 - required checks
 - required return artifacts

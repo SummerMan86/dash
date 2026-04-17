@@ -145,6 +145,13 @@ File: `docs/agents/lead-strategic/current_plan.md`
 ## Optional References
 - <2-4 docs if needed for context>
 
+## Verification
+- verification intent: <what must be proven for this slice>
+- verification mode: `test-first` | `prototype-pin` | `verification-first`
+- mode rules (inline only the selected mode from `docs/agents/skills/testing-strategy.md`; do not send a bare link):
+  - <3-6 concise bullets for the selected mode>
+- waiver rationale: `none` | <why verification is deferred, partial, or substituted>
+
 ## Carry-Forward Context (required for code-writing handoffs; `none` if empty)
 - previous slice: <ST-N> or `none` (independent slice)
 - carried_decisions: <from prior handoff>
@@ -187,6 +194,13 @@ File: `docs/agents/lead-strategic/current_plan.md`
 ## Bootstrap Reads
 - docs/agents/worker/guide.md
 - <local AGENTS.md in touched zones>
+
+## Verification
+- verification intent: <what must be proven for this slice>
+- verification mode: `test-first` | `prototype-pin` | `verification-first`
+- mode rules (inline only the selected mode from `docs/agents/skills/testing-strategy.md`; keep it short):
+  - <3-6 concise bullets for the selected mode>
+- waiver rationale: `none` | <why verification is deferred, partial, or substituted>
 
 ## Acceptance
 - <done-when criteria>

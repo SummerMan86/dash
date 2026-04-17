@@ -18,6 +18,7 @@
 4. **Readability:** логика не сложнее, чем необходимо
 5. **File shape:** разумная структура для размера изменения
 6. **Wasteful complexity:** нет accidental complexity
+7. **Test coverage for testable slices:** если diff трогает чистую логику в `packages/*` (compiler / planner / validator / pure utils) или фиксит воспроизводимый баг, и при этом в diff нет нового/обновлённого теста — WARNING с рекомендацией теста и коротким обоснованием. Не применяется к UI-компонентам, route handlers, schema/DB changes, docs-only, rename/move diffs.
 
 ## Hard rules
 
