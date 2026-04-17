@@ -58,12 +58,12 @@ Land bounded, high-leverage improvements to the agent workflow documentation and
 #### ST-B: Wave DoD docs WARNING escalation scope (recommended next)
 
 - scope: `docs/agents/workflow.md` §3.8 and §6.2
-- change: `WARNING → CRITICAL` auto-escalation at wave closure applies only to contract-touching docs (`RUNTIME_CONTRACT.md`, `db/schema_catalog.md`, `db/current_schema.sql`, new invariants). Navigation `AGENTS.md` drift is allowed to carry over with recorded owner + expiry.
+- change: `WARNING → CRITICAL` auto-escalation at wave closure applies only to contract-touching docs (`RUNTIME_CONTRACT.md`, `db/schema_catalog.md`, `db/current_schema.sql`, new invariants). Only pre-existing navigation `AGENTS.md` drift outside the current wave's touched directories may carry over with recorded owner + expiry; slice-level `AGENTS.md` gate for touched directories stays in force.
 - estimated delta: ~+3 lines
 - risk: low; relaxes rather than tightens governance
 - size: S
-- acceptance: §3.8 escalation matrix and §6.2 Wave DoD both carry the new carve-out; cross-refs consistent; fresh `docs-reviewer` verdict `OK`
-- verification intent: re-read §3.8 and §6.2 after edit; ensure no new contradiction with `worker/guide.md` "docs: <done | N/A | gap>" field or with the Docs Completeness table
+- acceptance: §3.8 escalation matrix and §6.2 Wave DoD both carry the narrowed carve-out; touched-directory `AGENTS.md` expectations remain unchanged at slice handoff; cross-refs consistent; fresh `docs-reviewer` verdict `OK`
+- verification intent: re-read §3.8, §6.1, and §6.2 after edit; ensure no new contradiction with `worker/guide.md` "docs: <done | N/A | gap>" field or with the Docs Completeness table
 - verification mode: `verification-first`
 
 #### ST-C: Strategic-reviewer adaptive cadence
