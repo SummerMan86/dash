@@ -192,6 +192,7 @@ Model defaults per `execution-profiles.md`. When spawning workers/reviewers, use
 - для любого code-writing slice minimum floor = хотя бы `code-reviewer`; skip допустим только для non-code work или `direct-fix`
 - integration review запускаешь ты, если он нужен
 - reviewers всегда fresh subagents
+- reviewer'ов на один diff запускай параллельно одним батчем; последовательно — только если output одного нужен в prompt другого. Контракт и proof: `docs/codex-integration.md` §5 item 6
 - если findings требуют правки, создавай fix-worker вместо self-fix
 
 ## Evidence Acceptance
