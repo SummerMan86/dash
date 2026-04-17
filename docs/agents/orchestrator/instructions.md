@@ -62,7 +62,9 @@ Product code по умолчанию остаётся worker-owned.
    - parallel execution requires явный rationale в task packet и автоматически переводит workers в isolated
 6. **Сформируй task packet** по `templates.md` §4, если выбран worker path
    - выбери runtime/model lane по `execution-profiles.md`
-   - для Codex plugin commands, proof tuples, companion CLI, and verification contract: `docs/codex-integration.md`
+   - для Codex runtime используй repo-local entrypoint `./scripts/codex-companion.sh`; не полагайся на `/codex:rescue` или другие slash wrappers для orchestration-critical launches
+   - для proof tuples, companion CLI guidance, and verification contract: `docs/codex-integration.md`
+   - при каждом Codex launch фиксируй `jobId` и `threadId` на уровне slice/reviewer pass; не используй "последний завершившийся job" как доказательство
 7. **Прими handoff** по `templates.md` §1, если выбран worker path:
    - scope соблюдён
    - change manifest понятен

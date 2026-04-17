@@ -4,7 +4,8 @@ Runtime integration between the agent workflow and the Codex CLI / GPT-5.4 famil
 
 Single owner of:
 
-- Plugin command mapping in Claude Code
+- Canonical repo runtime entrypoint for Codex lanes
+- Optional Claude Code slash-surface mapping
 - Proof tuples and runtime verification contracts
 - Companion CLI guidance
 - Codex prompting templates for strategic and autonomous passes
@@ -13,84 +14,100 @@ Process semantics (roles, ownership, review, governance): `docs/agents/workflow.
 Profile-to-model binding: `docs/agents/execution-profiles.md`.
 Autonomous-mode lifecycle: `docs/agents/autonomous-mode.md`.
 
-## 1. Plugin Command Mapping (Claude Code)
+## 1. Canonical Runtime Path
 
-Primary operational surface: `codex-plugin-cc`.
+For this repo, the canonical operational path for Codex lanes is the repo-local wrapper:
 
-| Command | Lane | Notes |
-|---|---|---|
-| `/codex:setup` | preflight | Verify Codex CLI readiness |
-| `/codex:rescue` | `worker` / `micro-worker` only | For code-writing slices: `--fresh --write` |
-| `/codex:review` | reviewer lanes only | |
-| `/codex:adversarial-review` | reviewer lanes only | |
-| `/codex:status` | tracking | Not final proof by itself |
-| `/codex:result` | result retrieval | |
+`./scripts/codex-companion.sh`
 
-`lead-strategic` and `strategic-reviewer` are **not** mapped to worker/reviewer slash commands. If the active surface has no dedicated strategic lane, record a truthful per-role exception, documented alternative runtime path, or blocker.
-
-On the current Claude Code surface, strategic passes use companion CLI `task` (§2); plugin-first slash mapping remains worker/reviewer-only.
-
-## 2. Companion CLI
-
-### Strategic passes
-
-On the current Claude Code surface, strategic Codex passes (`lead-strategic`, `strategic-reviewer`) use companion `task` as the documented runtime path.
+The wrapper resolves the installed `openai-codex` plugin runtime and shells into
+`codex-companion.mjs` directly. Use this path for `lead-strategic`,
+`strategic-reviewer`, `worker`, and `micro-worker` launches so orchestration does
+not depend on Claude Code slash-command / nested-subagent behavior.
 
 | Command | Use |
 |---|---|
-| `task --write --fresh` | Strategic pass that writes `current_plan.md`, `memory.md`, or governance artifact; new context |
-| `task --write --resume` | Follow-up in the same strategic thread |
-| `task --fresh` | New strategic pass, read-only |
-| `task --resume` | Continue existing strategic thread, read-only |
+| `./scripts/codex-companion.sh setup` | preflight; verify Codex runtime availability |
+| `./scripts/codex-companion.sh task --write --fresh` | new write-capable `lead-strategic` or worker pass |
+| `./scripts/codex-companion.sh task --write --resume` | continue a write-capable strategic/worker thread |
+| `./scripts/codex-companion.sh task --fresh` | new read-only strategic, reviewer-adjacent, or diagnosis pass |
+| `./scripts/codex-companion.sh task --resume` | continue an existing read-only thread |
+| `./scripts/codex-companion.sh review --wait ...` | reviewer lane |
+| `./scripts/codex-companion.sh adversarial-review --wait ...` | adversarial reviewer lane |
+| `./scripts/codex-companion.sh status [job-id] [--json]` | progress tracking |
+| `./scripts/codex-companion.sh result [job-id] [--json]` | final output retrieval |
+
+Role routing:
+
+- `lead-strategic` / `strategic-reviewer`: `task` only; add `--write` only when updating canonical artifacts
+- `worker` / `micro-worker`: `task`; default to `--write`; use `--fresh` for a new slice and `--resume` inside the same slice thread
+- reviewer lanes: `review` / `adversarial-review` when a diff-scoped review pass is specifically required
 
 Without `--write`, Codex reads and analyzes but does not commit canonical state.
 
-### Worker/reviewer proof retrieval
+## 2. Optional Claude Code Slash Surface
 
-| Command | Use |
-|---|---|
-| `status --json` | Machine-readable progress tracking |
-| `result` | Retrieve final output from a Codex run |
+If `codex-plugin-cc` is enabled in Claude Code, the following slash commands may
+exist as an interactive convenience surface:
 
-On the current Claude Code surface, reliable proof retrieval is via companion CLI, not the skill surface.
+| Command | Lane | Notes |
+|---|---|---|
+| `/codex:setup` | preflight | Interactive convenience only |
+| `/codex:rescue` | `worker` / `micro-worker` only | Not canonical for orchestrated waves in this repo |
+| `/codex:review` | reviewer lanes only | Interactive convenience only |
+| `/codex:adversarial-review` | reviewer lanes only | Interactive convenience only |
+| `/codex:status` | tracking | Not final proof by itself |
+| `/codex:result` | result retrieval | Interactive convenience only |
+
+`lead-strategic` and `strategic-reviewer` are **not** mapped to worker/reviewer slash commands.
+
+Treat the slash surface as optional and locally verifiable only. In this repo it is
+not the canonical orchestration path for worker or strategic lanes.
 
 ## 3. Thread Continuity
 
 | Flag | Behavior |
 |---|---|
 | `--resume` | Continue last Codex thread in this repo |
-| `--fresh` | Start new thread |
-| no flag | Tooling asks whether to continue or start new |
+| `--fresh` | Start new thread explicitly |
+| no flag | Start a fresh direct companion run; prefer explicit `--fresh` in artifacts |
 
 When to `--resume`:
 
 - iterative review/fix/re-review cycle
 - follow-up to an already open plan/report thread
+- only when the workspace has no unrelated active Codex job; `--resume` is gated by the workspace active-job registry
 
 When to `--fresh`:
 
 - new task or new plan owner context
 - governance-heavy pass when current thread is polluted
 
+If `./scripts/codex-companion.sh task --resume ...` errors with `Task <id> is still running`,
+run `./scripts/codex-companion.sh status` first. If the reported PID is already dead, recover
+with `./scripts/codex-companion.sh cancel <job-id>`, then retry `--resume`.
+
 ## 4. Runtime Verification Contract
 
-Minimum sufficient observable proof of a real plugin-mapped Codex run:
+Minimum sufficient observable proof of a real canonical Codex run:
 
-1. Role-appropriate slash launch (`/codex:rescue` for workers, `/codex:review` or `/codex:adversarial-review` for reviewers)
-2. Completed `/codex:result` for that same launch
-3. Returned Codex session ID or another stable Codex run ID recorded against the slice/reviewer role
+1. Role-appropriate launch through `./scripts/codex-companion.sh`
+2. Returned Codex thread ID or background job ID recorded against the slice / reviewer role
+3. Final foreground output or completed `./scripts/codex-companion.sh result <job-id>` for that same launch
 
-For code-writing worker slices, the recorded proof must also show that the launch was write-capable (`write: true` or equivalent). A read-only rescue run proves Codex execution but does not satisfy a code-writing worker claim.
+For code-writing worker or strategic slices, the recorded proof must also show that
+the launch was write-capable (`--write` or equivalent). A read-only task run proves
+Codex execution but does not satisfy a code-writing worker claim.
 
 Rules:
 
-- `/codex:status` is tracking only; not final proof.
-- Codex history may corroborate a run only when the same session/run ID is already known; history alone is not sufficient.
-- A bare session ID, codex-labeled subagent/helper name, or Claude-side relay acknowledgement is not sufficient proof.
-- If the surface cannot expose `/codex:result` + stable run ID, treat that lane as `unverified`.
-- For wrapper/debug runs outside plugin surface, `scripts/codex-exec-prompt.sh --json-file ...` is the fallback proof artifact.
+- `./scripts/codex-companion.sh status` is tracking only; not final proof.
+- Codex history may corroborate a run only when the same thread/job identity is already known; history alone is not sufficient.
+- Record `jobId` and `threadId` as the stable proof handle for each slice/reviewer pass; do not rely on "latest finished" or an unqualified status snapshot.
+- A bare Claude-side subagent/helper name or relay acknowledgement is not sufficient proof.
+- If the wrapper cannot launch the runtime or return stable thread/job identity, treat that lane as `blocked` or `unverified`.
+- Slash-command output may corroborate a locally verified run, but slash launches are not canonical proof in this repo.
 - If the surface cannot prove the requested Codex lane, do not claim `opus-orchestrated-codex-workers`; stay on `mixed-claude-workers` or record a per-role/per-slice exception truthfully.
-- If `/codex:rescue --fresh --write` resolves to `write: false` or ignores the flags, use companion `task --write --fresh` as explicit per-slice exception in report/telemetry.
 - Do not request `--effort minimal` for Codex worker/reviewer launches. Use the role default effort unless the slice truthfully needs higher.
 
 ## 5. Integration Constraints

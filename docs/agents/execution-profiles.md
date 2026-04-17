@@ -50,15 +50,15 @@ Status: supported; current practical default.
 | Role | Runtime | Default model | Effort | Fallback / escalation |
 |---|---|---|---|---|
 | `lead-strategic` | Codex | `gpt-5.4` | `high` for planning/acceptance; `medium` for bounded follow-up | Keep plan ownership on `gpt-5.4`; use `strategic-reviewer` as bounded second pass |
-| `strategic-reviewer` | Codex | `gpt-5.4-mini` default; `gpt-5.4` when pass widens | `medium` default; `high` when risk is high | Advisory only; unresolved ambiguity returns to `lead-strategic` |
+| `strategic-reviewer` | Codex | `gpt-5.4` default; `gpt-5.4` when pass widens | `medium` default; `high` when risk is high | Advisory only; unresolved ambiguity returns to `lead-strategic` |
 | `orchestrator` | Claude | `Opus` | runtime-managed | No silent fallback. If work cannot run on `Opus`, pause and escalate |
-| `worker` | Claude | `Opus` default; `Sonnet` for simpler slices | runtime-managed | If risk outgrows `Sonnet`, rerun on stronger default lane |
-| `micro-worker` | Claude | `Sonnet` | runtime-managed | Escalate to full `worker` when task is no longer trivial |
-| `code-reviewer` | Claude | `Sonnet` | runtime-managed | Escalate to `Opus` when bounded review stays ambiguous |
-| `docs-reviewer` | Claude | `Sonnet` | runtime-managed | Escalate to `Opus` when doc diff changes active contracts |
-| `security-reviewer` | Claude | `Sonnet` | runtime-managed | Escalate to `Opus` on auth/SQL/secret-handling ambiguity |
-| `architecture-reviewer` | Claude | `Sonnet` | runtime-managed | Escalate to `Opus` on boundary/schema/package-risk |
-| `ui-reviewer` | Claude | `Sonnet` smoke; `Opus` deep mode | runtime-managed | If confidence low, rerun deep mode on `Opus` |
+| `worker` | Claude | `Opus` default; `Sonnet` for simpler slices | runtime-managed | If risk outgrows `Opus`, rerun on stronger default lane |
+| `micro-worker` | Claude | `Opus` | runtime-managed | Escalate to full `worker` when task is no longer trivial |
+| `code-reviewer` | Claude | `Opus` | runtime-managed | Escalate to `Opus` when bounded review stays ambiguous |
+| `docs-reviewer` | Claude | `Opus` | runtime-managed | Escalate to `Opus` when doc diff changes active contracts |
+| `security-reviewer` | Claude | `Opus` | runtime-managed | Escalate to `Opus` on auth/SQL/secret-handling ambiguity |
+| `architecture-reviewer` | Claude | `Opus` | runtime-managed | Escalate to `Opus` on boundary/schema/package-risk |
+| `ui-reviewer` | Claude | `Opus` smoke; `Opus` deep mode | runtime-managed | If confidence low, rerun deep mode on `Opus` |
 
 ## Profile: `opus-orchestrated-codex-workers`
 
@@ -66,14 +66,16 @@ Status: supported; not default.
 
 This profile keeps the role model unchanged while moving worker/reviewer execution to the GPT-5.4 family where the slice is a good fit.
 
-Profile-readiness: the actual runtime surface must be able to launch or verify the Codex lane truthfully. Runtime verification contract: `docs/codex-integration.md` §4. If verification is not available, keep `mixed-claude-workers` as practical default.
+Profile-readiness: the actual runtime surface must be able to launch or verify the Codex lane truthfully. In this repo, use the canonical companion runtime path from `docs/codex-integration.md`. Runtime verification contract: `docs/codex-integration.md` §4. If verification is not available, keep `mixed-claude-workers` as practical default.
+
+Operational default in this repo: this profile changes runtime/model binding, not worker execution shape. Codex workers and micro-workers still run sequentially in the shared checkout (`in-place` per `docs/agents/git-protocol.md` §3); do not treat `opus-orchestrated-codex-workers` as automatic parallel fan-out or separate-worktree-by-default profile.
 
 | Role | Runtime | Default model | Effort | Fallback / escalation |
 |---|---|---|---|---|
 | `lead-strategic` | Codex | `gpt-5.4` | `high` | Raise pass depth instead of remapping ownership |
 | `strategic-reviewer` | Codex | `gpt-5.4-mini` default; `gpt-5.4` when pass widens | `medium` default; `high` when risk is high | Advisory only; unresolved ambiguity returns to `lead-strategic` |
 | `orchestrator` | Claude | `Opus` | runtime-managed | No silent fallback |
-| `worker` | Codex | `gpt-5.4` | `medium` | If surface dispatches `write: false`, use companion fallback as per-slice exception (`docs/codex-integration.md` §4) |
+| `worker` | Codex | `gpt-5.4` | `medium` | If the requested write-capable lane cannot be proven through the canonical companion path, record a truthful per-slice exception (`docs/codex-integration.md` §4) |
 | `micro-worker` | Codex | `gpt-5.4-mini` | `medium` | Escalate to full `worker` on `gpt-5.4` when task stops being trivial |
 | `code-reviewer` | Codex | `gpt-5.4-mini` | `medium` | Escalate to `gpt-5.4` on low confidence or broader diff |
 | `docs-reviewer` | Codex | `gpt-5.4-mini` | `medium` | Escalate to `gpt-5.4` on active contracts or cross-doc contradictions |

@@ -5,6 +5,7 @@
 Для Strategy DWH/BI текущего контура здесь важнее всего:
 
 - `db.mjs` (snapshot apply/reference seed/demo/reset/status)
+- `codex-companion.sh` (stable repo-local entrypoint to the installed Codex plugin runtime)
 - `db-export-current-schema.sh` (export live DB -> `db/current_schema.sql`)
 - `db-verify-current-schema.sh` (verify snapshot against `db/schema_catalog.md`)
 - `strategy-agent-queue.mjs` (очередь задач)
@@ -17,8 +18,9 @@ Legacy loader'ы Strategy v1 по-прежнему лежат в `archive/strate
 ## Как читать strategy scripts
 
 1. `db.mjs`
-2. `db-export-current-schema.sh`
-3. `db-verify-current-schema.sh`
-4. `strategy-agent-queue.mjs`
-5. `strategy-agent-intake.mjs`
-6. `strategy-registry-overlay-load.py`
+2. `codex-companion.sh`
+3. `db-export-current-schema.sh`
+4. `db-verify-current-schema.sh`
+5. `strategy-agent-queue.mjs`
+6. `strategy-agent-intake.mjs`
+7. `strategy-registry-overlay-load.py`

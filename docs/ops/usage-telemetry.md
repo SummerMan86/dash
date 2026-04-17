@@ -100,8 +100,10 @@ Recommended enums:
 Execution-profile tracing:
 
 - If the wave or slice runs under `opus-orchestrated-codex-workers`, include `execution_profile`.
-- If the slice claims a plugin-mapped Codex worker/reviewer lane, include `codex_lane_verification` plus `codex_proof_refs` or an explicit `execution_profile_exception`.
-- If a Codex strategic pass (`lead-strategic` or `strategic-reviewer`) ran through the documented companion `task` path, record that in `execution_profile_exception` plus `codex_proof_refs` with the command path and stable run/session identifier.
+- If the slice claims a Codex worker/reviewer lane through the canonical companion path, include `codex_lane_verification` plus `codex_proof_refs`.
+- If a Codex strategic pass (`lead-strategic` or `strategic-reviewer`) ran through the documented canonical companion path, include `codex_proof_refs` with the command path and stable run/session/job identifier.
+- Prefer `jobId` plus `threadId` as the stable proof handle inside `codex_proof_refs`; do not rely on "latest completed" status output without an explicit identifier.
+- Use `execution_profile_exception` only when the requested lane falls back, cannot be truthfully verified, or runs through a non-canonical surface for explicit local reasons.
 - For code-writing worker slices under `opus-orchestrated-codex-workers`, record write capability inside `codex_proof_refs` (`write=true|false` or equivalent); a read-only proof does not satisfy a code-writing worker claim.
 - If the run fell back because the requested Codex lane was not truthfully verifiable, record that as `unverified` or `blocked`, not as silent success.
 

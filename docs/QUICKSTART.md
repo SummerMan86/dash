@@ -70,6 +70,17 @@ For a simple local fix:
    claude
    ```
 
+4. Codex runtime smoke test:
+
+   ```bash
+   ./scripts/codex-companion.sh setup
+   ./scripts/codex-companion.sh task --fresh "Reply with exactly OK."
+   ```
+
+For this repo, orchestrated Codex lanes use `./scripts/codex-companion.sh` as the
+canonical runtime path. Treat `/codex:rescue` as an optional interactive surface,
+not as the primary worker or strategic launch path.
+
 ## Common Scenarios
 
 ### Continue work
