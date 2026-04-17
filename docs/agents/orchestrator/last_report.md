@@ -81,7 +81,7 @@ Parallel `task --fresh --effort xhigh` pair launched from orchestrator, both rea
 | architecture-reviewer | `task-mo2q28p7-dyxzsq` | `019d9ad4-43df-7921-9eba-046c34ca725c` | xhigh | request changes (1 WARNING) | 3m 14s |
 | docs-reviewer | `task-mo2q28p9-i6tr9w` | `019d9ad4-440b-7c81-b990-bf85de36034e` | xhigh | request changes (1 WARNING + 1 INFO deferred) | 3m 48s |
 
-Both converged independently on the same WARNING: `current_plan.md:61` still enumerated the 4-item contract-touching list (`RUNTIME_CONTRACT.md`, `db/schema_catalog.md`, `db/current_schema.sql`, new invariants) that strategic wrote at plan-update time, missing `db/applied_changes.md` that landed in `workflow.md:577` via commit `39dea43`. Closed in commit `<to-be-filled>`.
+Both converged independently on the same WARNING: `current_plan.md:61` still enumerated the 4-item contract-touching list (`RUNTIME_CONTRACT.md`, `db/schema_catalog.md`, `db/current_schema.sql`, new invariants) that strategic wrote at plan-update time, missing `db/applied_changes.md` that landed in `workflow.md:577` via commit `39dea43`. Closed in commit `06bd5b2`.
 
 Invariant integrity (architecture-reviewer): `git-protocol.md` §3-4, `invariants.md` §8 first-table removal, structured Carry-Forward fields, in-place default terminology, canonical Codex companion runtime — all preserved.
 
