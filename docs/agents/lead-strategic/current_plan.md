@@ -58,7 +58,7 @@ Land bounded, high-leverage improvements to the agent workflow documentation and
 #### ST-B: Wave DoD docs WARNING escalation scope (recommended next)
 
 - scope: `docs/agents/workflow.md` §3.8 and §6.2
-- change: `WARNING → CRITICAL` auto-escalation at wave closure applies only to contract-touching docs (`RUNTIME_CONTRACT.md`, `db/schema_catalog.md`, `db/current_schema.sql`, new invariants). Only pre-existing navigation `AGENTS.md` drift outside the current wave's touched directories may carry over with recorded owner + expiry; slice-level `AGENTS.md` gate for touched directories stays in force.
+- change: `WARNING → CRITICAL` auto-escalation at wave closure applies only to contract-touching docs (`RUNTIME_CONTRACT.md`, `db/schema_catalog.md`, `db/current_schema.sql`, `db/applied_changes.md`, new invariants). Only pre-existing navigation `AGENTS.md` drift outside the current wave's touched directories may carry over with recorded owner + expiry; slice-level `AGENTS.md` gate for touched directories stays in force.
 - estimated delta: ~+3 lines
 - risk: low; relaxes rather than tightens governance
 - size: S

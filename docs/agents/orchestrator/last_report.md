@@ -72,6 +72,23 @@ All changes land in `docs/agents/workflow.md` (7 content commits) + `docs/agents
 ## Readiness
 `ready for strategic acceptance` — slice converged; only open finding (P3 templates gap) is strategic-deferred in thread `019d9aba`.
 
+## Integration Review (parallel architecture + docs, Codex xhigh)
+
+Parallel `task --fresh --effort xhigh` pair launched from orchestrator, both read-only:
+
+| Role | jobId | threadId | Effort | Verdict | Wall time |
+|---|---|---|---|---|---|
+| architecture-reviewer | `task-mo2q28p7-dyxzsq` | `019d9ad4-43df-7921-9eba-046c34ca725c` | xhigh | request changes (1 WARNING) | 3m 14s |
+| docs-reviewer | `task-mo2q28p9-i6tr9w` | `019d9ad4-440b-7c81-b990-bf85de36034e` | xhigh | request changes (1 WARNING + 1 INFO deferred) | 3m 48s |
+
+Both converged independently on the same WARNING: `current_plan.md:61` still enumerated the 4-item contract-touching list (`RUNTIME_CONTRACT.md`, `db/schema_catalog.md`, `db/current_schema.sql`, new invariants) that strategic wrote at plan-update time, missing `db/applied_changes.md` that landed in `workflow.md:577` via commit `39dea43`. Closed in commit `<to-be-filled>`.
+
+Invariant integrity (architecture-reviewer): `git-protocol.md` §3-4, `invariants.md` §8 first-table removal, structured Carry-Forward fields, in-place default terminology, canonical Codex companion runtime — all preserved.
+
+Cross-ref integrity (docs-reviewer): §3.8 ↔ §6.1 ↔ §6.2 ↔ §6.4 consistent in `workflow.md`; cross-file drift flagged at `current_plan.md:61` (now closed); P3 templates gap remains strategically deferred.
+
+Observation: parallel xhigh launch cost 3m 48s wall-time vs an estimated ~7m sequentially. Confirms concurrent companion-task parallelism for reviewer lanes in shared checkout (intentional limit per `docs/codex-integration.md` §4 remains on *workers* in shared checkout, which is unproven).
+
 ## Observations about this slice (for retrospective / next-wave calibration)
 
 - Worker's initial commit was directionally correct; 5 review cycles converged on precision wording propagation across §3.8 / §6.2 / §6.4. This is consistent with the slice's verification intent (cross-check §6.1 as well) but points to an under-specified task packet: the worker was given acceptance criteria but no explicit instruction to audit the full §3.8 / §6.1 / §6.2 / §6.4 web for wording symmetry.
