@@ -11,7 +11,7 @@
 - Codex launch rule: companion runtime, not `/codex:rescue`, for orchestration-critical launches
 - Codex proof rule: record `jobId + threadId` per slice/reviewer pass; do not rely on "latest completed"
 - Codex resume rule: `--resume` safe only when no unrelated active job remains; recover dead jobs via `status` then `cancel`
-- Codex concurrency note: concurrent companion jobs green; parallel Codex workers in shared checkout unproven; nested docs-reviewer launch from inside a running Codex worker session fails on sandbox websocket block — prefer orchestrator-launched reviewer between worker commits
+- Codex concurrency note: concurrent companion jobs green; parallel Codex reviewer-lane tasks in shared checkout now empirically verified on ST-B integration review (2× xhigh task launches ran concurrently, wall time 3m 48s vs estimated 7m sequential; independently converged on same WARNING); parallel Codex workers in shared checkout still unproven; nested docs-reviewer launch from inside a running Codex worker session fails on sandbox websocket block — prefer orchestrator-launched reviewer between worker commits
 - test baseline: `309` tests (`19` files)
 - baseline status: `Yellow` (pre-existing `pnpm lint:eslint` errors only)
 
