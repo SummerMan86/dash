@@ -702,7 +702,7 @@ If change is `<= 20` lines, at most 2 files, no architectural surface, no schema
 - Operating mode valid for next wave
 - Both `memory.md` files rewritten to active state (~20 lines max)
 - Test baseline recorded for next wave
-- Docs `WARNING` escalation reviewed per §3.8: contract-touching docs closed or escalated; any pre-existing navigation `AGENTS.md` carry-over recorded with owner + expiry
+- Contract-touching docs closed (unresolved gaps block wave closure per §3.8); any pre-existing navigation `AGENTS.md` carry-over recorded with owner + expiry
 
 ### 6.3. Feature DoD (Level 3)
 
