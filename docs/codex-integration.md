@@ -117,6 +117,7 @@ Rules:
 3. The user remains decision owner for merge, scope changes, and CRITICAL escalations.
 4. Long Codex tasks can run in background, but execution ownership stays with `orchestrator`.
 5. Runtime-local ambient injections (`CLAUDE.md`, memory reminders, git-status summaries) do not invalidate a profile; they remain non-authoritative unless the packet/request explicitly makes them authoritative.
+6. Reviewer-lane tasks (`review`, `adversarial-review`, and read-only `task --fresh` role prompts such as `architecture-reviewer` + `docs-reviewer` on the same diff) may be dispatched concurrently in the shared checkout. Verified on ST-B integration review (2× `task --fresh --effort xhigh`, ~3m 48s wall time vs ~7m sequential; runtime serializes the first few seconds then runs in parallel). Worker-lane parallelism in the shared checkout remains unproven — use `isolated` mode per `docs/agents/git-protocol.md` §4 if parallel worker dispatch is required. `--effort xhigh` is valid for reviewer-lane `task` launches when integration confidence is the goal; standard `review` / `adversarial-review` lanes use runtime-managed effort and do not accept `--effort`.
 
 ## 6. Autonomous-Mode Codex Prompting
 
