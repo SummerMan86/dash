@@ -35,13 +35,8 @@ canonical for supported-profile mapping.
 
 ## Selection Rules
 
-- Choose one execution profile for a wave or explicitly record per-role or per-slice exceptions in the plan/report.
-- Full profile switch mid-wave is allowed only at a slice boundary after open worker/reviewer tasks are closed; record the switch and rationale.
 - Runtime substitution never changes role ownership.
-- Use the profile default first. If risk exceeds the default lane, apply the listed escalation rule and record it truthfully.
 - A profile that depends on Codex worker/reviewer lanes may be selected only on a runtime surface that can truthfully launch or verify that lane; runtime verification contract: `docs/codex-integration.md` §4.
-- If a role has no safe fallback in the selected profile, pause and escalate instead of inventing an ad hoc binding.
-- `ui-reviewer` stays the role name in every profile; deep UI review is a stronger lane, not a new reviewer role.
 
 ## Profile: `mixed-claude-workers`
 
