@@ -6,6 +6,12 @@ Canonical project invariants для всех агентных ролей.
 
 For domain-specific invariants, see the relevant overlay: `invariants-emis.md`, etc.
 
+Overlay numbering convention:
+- overlays extend this document; they do not replace it
+- overlay sections reuse the base family number and add a domain suffix where needed
+- example: `invariants-emis.md` uses `2e`, `3e`, `5e`, `7e` as EMIS-specific extensions to §§2, 3, 5, 7 here
+- untouched families may be omitted in the overlay; severity and generic enforcement semantics still come from this file
+
 ## 1. Архитектура (layers and boundaries)
 
 > `apps/web/src/lib/` теперь flat-by-responsibility: `server/`, `api/`, `fixtures/`, `styles/` и first-level app-local modules (`dashboard-edit/`, `emis-manual-entry/`, etc.). Reusable бизнес-логика, контракты и server-side код живут в `packages/*`. Не возвращаем FSD buckets (`shared/features/widgets/entities`) как живые архитектурные слои.

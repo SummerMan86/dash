@@ -159,8 +159,8 @@ File: `docs/agents/lead-strategic/current_plan.md`
 - <what to run>
 
 ## Review Floor
-- minimum: `code-reviewer` for any code-writing slice
-- extra: `security` / `architecture` / `docs` / `ui` as applicable
+- minimum: per `workflow.md` §3.1
+- selected reviewers: per `workflow.md` §3.2
 
 ## Return Artifacts
 - change manifest, boundary notes, review disposition, next action
@@ -333,6 +333,10 @@ Findings:
 Required follow-ups:
 - <what to fix> or "none"
 ```
+
+Base shape above is canonical.
+Role-specific reviewer instructions may narrow the allowed verdict set and add a small local delta
+(for example extra finding subfields such as `Detail`, `Fix`, `Console`, or `Screenshot`).
 
 ## 7. Strategic Review Request / Result
 

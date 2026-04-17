@@ -9,6 +9,7 @@ Standard recovery protocols: `recovery.md`.
 Important:
 
 - Autonomous mode removes user-in-the-loop but does not expand `orchestrator` product-code ownership beyond standard `direct-fix`.
+- Canonical `direct-fix` definition, verification, and review waiver live in `workflow.md` §2.1 and §3.1.
 - Canonical path for autonomous decision log: `docs/agents/orchestrator/decision-log.md`.
 - Runtime/model binding: `execution-profiles.md`.
 

@@ -61,22 +61,14 @@ Before reviewing, you must have:
 
 ## Output
 
-Canonical format (единый для всех ревьюеров):
+Base format: `docs/agents/templates.md` §6 "Review Result".
 
-```
-# Review: architecture-reviewer
+Local delta for `architecture-reviewer`:
 
-Verdict: OK | request changes | needs design decision
-
-Findings:
-- [CRITICAL|WARNING|INFO] file:line — описание
-  Detail: что не так
-  Fix: предложение
-- или "No issues found."
-
-Required follow-ups:
-- <что нужно исправить> или "none"
-```
+- heading: `# Review: architecture-reviewer`
+- verdicts: `OK | request changes | needs design decision`
+- findings use `file:line`
+- add `Detail: ...` and `Fix: ...` when the finding needs architectural explanation
 
 Severity:
 

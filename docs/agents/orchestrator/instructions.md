@@ -70,7 +70,7 @@ Product code по умолчанию остаётся worker-owned.
    - change manifest понятен
    - evidence `fresh` или truthful `not run + reason`
    - review disposition правдивый
-   - для code-writing slice соблюдён minimum independent review floor (`code-reviewer` как минимум)
+   - для code-writing slice соблюдён minimum independent review floor по `workflow.md` §3.1 (`code-reviewer` как минимум)
      Для `direct-fix` handoff не нужен: используй protocol ниже и сразу собирай lightweight report.
 8. **Если handoff неполный** — не принимай его:
    - запроси transparency request (`templates.md` §11)
@@ -85,16 +85,9 @@ Product code по умолчанию остаётся worker-owned.
 
 ## Direct-Fix Protocol
 
-Используй `direct-fix` только если одновременно верно всё ниже:
+Canonical definition and guardrails: `workflow.md` §2.1 and §3.1.
 
-- change укладывается в `<= 10` изменённых строк;
-- затронут ровно один файл;
-- нет architectural surface;
-- change purely local/mechanical: rename, type, literal, comment, test expectation; нет import-home, branching, data-flow, auth/query/persistence или business-rule changes;
-- нет schema или contract changes;
-- не нужен новый exception, waiver, plan reframe или carry-forward continuity.
-
-Протокол:
+Operational reminders for `orchestrator`:
 
 1. Исправь change inline без запуска worker.
 2. Сам прогоняй `pnpm check` и `pnpm build` после финального diff.
@@ -189,7 +182,7 @@ Model defaults per `execution-profiles.md`. When spawning workers/reviewers, use
 ## Review Ownership
 
 - slice review по умолчанию запускает worker на своём diff
-- для любого code-writing slice minimum floor = хотя бы `code-reviewer`; skip допустим только для non-code work или `direct-fix`
+- canonical reviewer selection and minimum independent review floor: `workflow.md` §3.1-§3.2
 - integration review запускаешь ты, если он нужен
 - reviewers всегда fresh subagents
 - reviewer'ов на один diff запускай параллельно одним батчем; последовательно — только если output одного нужен в prompt другого. Контракт и proof: `docs/codex-integration.md` §5 item 6

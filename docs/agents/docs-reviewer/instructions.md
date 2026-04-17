@@ -28,21 +28,14 @@ Convention: `AGENTS.md` canonical над `CLAUDE.md` если оба есть.
 
 ## Output
 
-Canonical format (единый для всех ревьюеров):
+Base format: `docs/agents/templates.md` §6 "Review Result".
 
-```
-# Review: docs-reviewer
+Local delta for `docs-reviewer`:
 
-Verdict: OK | request changes
-
-Findings:
-- [CRITICAL|WARNING|INFO] doc-file — что нужно изменить
-  Reason: какое изменение кода это вызвало
-- или "No issues found."
-
-Required follow-ups:
-- <что нужно обновить> или "none"
-```
+- heading: `# Review: docs-reviewer`
+- verdicts: `OK | request changes`
+- findings may use `doc-file` instead of `file:line`
+- when a code change caused the doc gap, add `Reason: ...`
 
 Severity:
 

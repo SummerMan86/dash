@@ -207,7 +207,7 @@ Timeout: 30 минут
 
 1. Прочитай reference implementation
 2. Создай mini-plan в docs/agents/orchestrator/decision-log.md
-3. direct-fix только если change соответствует; иначе 1 isolated worker
+3. direct-fix только если change соответствует `workflow.md` §2.1 и §3.1; иначе 1 isolated worker
 4. Review Gate (code-reviewer + security-reviewer минимум)
 5. Коммит + decision-log
 EOF

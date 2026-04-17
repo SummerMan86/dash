@@ -28,21 +28,14 @@
 
 ## Output
 
-Canonical format (единый для всех ревьюеров):
+Base format: `docs/agents/templates.md` §6 "Review Result".
 
-```
-# Review: code-reviewer
+Local delta for `code-reviewer`:
 
-Verdict: OK | request changes
-
-Findings:
-- [CRITICAL|WARNING|INFO] file:line — description
-  Recommendation: how to fix
-- или "No issues found."
-
-Required follow-ups:
-- <что нужно исправить> или "none"
-```
+- heading: `# Review: code-reviewer`
+- verdicts: `OK | request changes`
+- findings use `file:line`
+- when recommending a fix, add `Recommendation: ...`
 
 ## Не делай
 
