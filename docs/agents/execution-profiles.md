@@ -54,6 +54,7 @@ Status: supported; current practical default.
 | `security-reviewer` | Claude | `Opus` | runtime-managed | Escalate to `Opus` on auth/SQL/secret-handling ambiguity |
 | `architecture-reviewer` | Claude | `Opus` | runtime-managed | Escalate to `Opus` on boundary/schema/package-risk |
 | `ui-reviewer` | Claude | `Opus` smoke; `Opus` deep mode | runtime-managed | If confidence low, rerun deep mode on `Opus` |
+| `baseline-governor` | Claude | `Opus` | runtime-managed | No silent fallback — baseline gate stays on stronger lane |
 
 ## Profile: `opus-orchestrated-codex-workers`
 
@@ -77,6 +78,7 @@ Operational default in this repo: this profile changes runtime/model binding, no
 | `security-reviewer` | Codex | `gpt-5.4-mini` | `medium` | Escalate to `gpt-5.4` on risk-heavy slices |
 | `architecture-reviewer` | Codex | `gpt-5.4-mini` | `medium` | Escalate to `gpt-5.4` for boundary/schema/package-risk |
 | `ui-reviewer` | Codex smoke; Claude deep | `gpt-5.4-mini` smoke; `Opus` deep | `medium` Codex; runtime-managed Claude | Rerun deep mode on `Opus` if smoke finds likely issue |
+| `baseline-governor` | Claude | `Opus` | runtime-managed | No silent fallback — baseline gate stays on Claude lane |
 
 ## Escalation Rules
 

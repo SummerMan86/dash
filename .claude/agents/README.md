@@ -1,6 +1,6 @@
 # Субагенты проекта
 
-Этот каталог содержит только reviewer-subagents для Claude Code runtime.
+Этот каталог содержит stateless subagents для Claude Code runtime: reviewer-lane пассы и governance gates (baseline-governor). У всех общий жизненный цикл — fresh spawn, без durable memory.
 Canonical docs:
 
 - [workflow.md](../../docs/agents/workflow.md) — процесс, роли, review model, governance, DoD, memory
@@ -25,6 +25,14 @@ Canonical docs:
 | `ui-reviewer.md`           | Sonnet + Chrome | `docs/agents/ui-reviewer/instructions.md`                   |
 | `ui-reviewer-deep.md`      | Opus + Chrome   | `docs/agents/ui-reviewer/instructions.md` — секция Deep Mode |
 
+## Governance subagents
+
+| Файл                       | Модель | Canonical instructions                              |
+| -------------------------- | ------ | --------------------------------------------------- |
+| `baseline-governor.md`     | Opus   | `docs/agents/baseline-governor/instructions.md`     |
+
+Spawn — только orchestrator на wave close (`docs/agents/workflow.md` §5.2). Stateless, read-only для code, но имеет `Bash` для запуска canonical checks (`pnpm check`, `pnpm build`, `pnpm lint:boundaries`).
+
 ## Жизненный цикл
 
 ```
@@ -33,7 +41,7 @@ Canonical docs:
 Новая сессия:            то же правило
 ```
 
-Ревьюеры **read-only** — не редактируют файлы.
+Ревьюеры **read-only** — не редактируют файлы. Governance subagents тоже не пишут код, но могут запускать canonical checks.
 
 ## Как создать нового субагента
 

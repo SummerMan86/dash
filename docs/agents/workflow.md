@@ -648,21 +648,23 @@ Timing: default event-driven; end-of-wave только если волна ре�
 
 Checklist: `lead-strategic/instructions.md` §Governance Passes > Architecture Pass.
 
-### 5.2. Baseline Pass
+### 5.2. Baseline Pass → Baseline-Governor
 
-Подключается в stabilization / baseline-control waves.
+Независимый governance gate (separation of duties от lead-strategic).
+Исполнитель: `baseline-governor` — spawnable stateless agent.
 
-Timing: default end-of-wave; ранний pass допустим как gate перед следующей large feature wave.
+Timing: default end-of-wave; ранний pass допустим как gate перед следующей large feature wave; по запросу при спорном baseline state.
 
 Проверяет: baseline status (`Red | Yellow | Green`); truthful status canonical checks; consistency docs/ownership/code; registry known exceptions.
 
-Не делает: не декомпозирует product work; не пишет код; не заменяет Review Gate.
+Не делает: не декомпозирует product work; не пишет код; не заменяет Review Gate; не заменяет lead-strategic.
 
 Полномочия: пометить baseline как `not closed`; блокировать запуск новых large feature slices; требовать owner + expiry для exception.
 
 Практическое правило: `baseline pass = end-of-wave default`; `architecture pass = event-driven, end-of-wave optional`.
 
-Checklist: `lead-strategic/instructions.md` §Governance Passes > Baseline Pass.
+Role guide: `baseline-governor/instructions.md`.
+Verdict template: `templates.md` §8.
 
 ### 5.3. Pre-Implementation Architecture Audit
 
@@ -724,6 +726,7 @@ If change is `<= 20` lines, at most 2 files, no architectural surface, no schema
 | Architecture boundaries | worker | architecture-reviewer | lead-strategic |
 | AGENTS.md | worker | docs-reviewer | orchestrator |
 | Architecture docs | worker/orchestrator | docs-reviewer | lead-strategic |
+| Baseline status | orchestrator | baseline-governor | lead-strategic |
 | Wave governance | orchestrator | governance passes | lead-strategic |
 | Memory updates | each role | — | self |
 

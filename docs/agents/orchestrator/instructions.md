@@ -82,6 +82,7 @@ Product code по умолчанию остаётся worker-owned.
 13. **Запиши** usage telemetry
 14. **Обнови** `docs/agents/orchestrator/memory.md`
 15. **Если это последний slice волны** — проверь Wave DoD из `workflow.md` §6.2 перед записью финального report
+16. **Baseline gate** — при wave close или перед открытием новой large feature wave спавни `baseline-governor` для независимого verdict (см. `workflow.md` §5.2)
 
 ## Direct-Fix Protocol
 
@@ -187,6 +188,22 @@ Model defaults per `execution-profiles.md`. When spawning workers/reviewers, use
 - reviewers всегда fresh subagents
 - reviewer'ов на один diff запускай параллельно одним батчем; последовательно — только если output одного нужен в prompt другого. Контракт и proof: `docs/codex-integration.md` §5 item 6
 - если findings требуют правки, создавай fix-worker вместо self-fix
+
+## Baseline-Governor Spawn
+
+`baseline-governor` — независимый stateless governance gate (separation of duties от lead-strategic). Спавнит **только orchestrator**.
+
+Когда спавнить:
+
+- wave close (default gate, per `workflow.md` §5.2) — в том числе final wave plan'а
+- перед открытием новой large feature wave
+- если `lead-strategic` запросил baseline recheck при спорном state — спавн инициирует orchestrator, lead-strategic не спавнит напрямую
+
+Spawn: fresh subagent, без worktree, без memory. Governor только прогоняет checks, читает docs и exceptions — не пишет код.
+
+Prompt: передай текущий overlay context (если applicable) и ссылку на `baseline-governor/instructions.md` в Bootstrap Reads.
+
+Verdict: governor возвращает Baseline Verdict по `templates.md` §8. Передай verdict в report для `lead-strategic`.
 
 ## Evidence Acceptance
 

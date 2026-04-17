@@ -103,17 +103,16 @@ Event-driven, not end-of-wave ritual. Triggered when change touches ownership be
 
 **Hard rules:** don't replace architecture-reviewer as diff reviewer; don't replace baseline pass as baseline status owner; don't reopen frozen topology decisions without new runtime/ops pressure; every approved exception goes to overlay registry.
 
-### Baseline Pass
+### Baseline Pass → Baseline-Governor
 
-Wave-close gate for stabilization. Verdicts: `baseline not closed` | `baseline conditionally open` | `baseline closed`.
+Wave-close gate for stabilization. **Делегируется `baseline-governor`** — независимый stateless agent (separation of duties).
 
-**Checklist:**
+Ты запрашиваешь spawn baseline-governor'а через orchestrator. Governor прогоняет checks, проверяет boundaries и exceptions, выносит verdict. Ты принимаешь или оспариваешь verdict, но не выносишь его сам.
 
-1. Checks: repo-wide core (`pnpm check`, `pnpm build`, `pnpm lint:boundaries`) + overlay-specific routine. If a check was not run, record `not run`.
-2. Boundaries: active docs match active package-era ownership, no forbidden imports "allowed by silence"
-3. Exceptions: each live exception has id, owner, why allowed, expiry/target wave, removal condition
+Verdicts: `baseline not closed` | `baseline conditionally open` | `baseline closed`.
 
-**Green requires all of:** canonical checks green or justified not-required; docs match boundaries; exceptions registry exists or confirmed absent; live exceptions closed or at managed minimum; team can open next large feature wave without hidden foundation risk.
+Role guide: `baseline-governor/instructions.md`.
+Verdict template: `templates.md` §8.
 
 ## После приёмки задачи
 
