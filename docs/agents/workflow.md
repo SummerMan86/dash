@@ -702,6 +702,7 @@ If change is `<= 20` lines, at most 2 files, no architectural surface, no schema
 - Operating mode valid for next wave
 - Both `memory.md` files rewritten to active state (~20 lines max)
 - Test baseline recorded for next wave
+- Docs `WARNING` escalation reviewed per §3.8: contract-touching docs closed or escalated; any pre-existing navigation `AGENTS.md` carry-over recorded with owner + expiry
 
 ### 6.3. Feature DoD (Level 3)
 
@@ -726,7 +727,7 @@ If change is `<= 20` lines, at most 2 files, no architectural surface, no schema
 | Wave governance | orchestrator | governance passes | lead-strategic |
 | Memory updates | each role | — | self |
 
-Severity escalation: unresolved docs `WARNING` at slice level auto-escalates to `CRITICAL` at wave closure only per the contract-touching carve-out in §3.8; navigation `AGENTS.md` drift may carry over with recorded owner + expiry.
+Severity escalation: unresolved docs `WARNING` at slice level auto-escalates to `CRITICAL` at wave closure only per the contract-touching carve-out in §3.8; pre-existing navigation `AGENTS.md` drift outside the wave's touched directories may carry over with recorded owner + expiry (see §3.8).
 
 ## 7. Коммуникация и артефакты
 
