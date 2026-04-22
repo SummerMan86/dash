@@ -6,7 +6,7 @@
 
 - `AGENTS.md` (root)
 - `docs/AGENTS.md`
-- Domain-specific docs per overlay (e.g. `docs/emis_*` for EMIS)
+- Domain-specific docs per overlay (e.g. `docs/emis/*` for EMIS)
 - `db/current_schema.sql`
 - `db/applied_changes.md`
 - `db/schema_catalog.md`
