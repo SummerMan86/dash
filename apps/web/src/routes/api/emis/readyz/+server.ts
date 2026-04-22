@@ -12,7 +12,7 @@
  *   200 { status: 'ready', checks: {...} }            — all critical checks pass
  *   503 { status: 'not_ready', checks: {...}, failures: [...] } — any critical check fails
  *
- * Canonical contract: docs/emis_observability_contract.md section 3.2.
+ * Canonical contract: docs/emis/operations.md.
  */
 
 import { json, type RequestHandler } from '@sveltejs/kit';

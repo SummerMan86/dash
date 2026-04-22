@@ -44,7 +44,7 @@ This section is the FE/BE agreement on how EMIS APIs are designed.
 ### Errors & logging
 
 - All errors are `{ error, code }` (see “Error shape” below).
-- Error logging/correlation rules live in `docs/emis_observability_contract.md`.
+- Error logging/correlation rules live in `docs/emis/operations.md`.
 - `handleEmisRoute()` provides request correlation (`x-request-id`) and structured error logging (see below).
 
 ### Request correlation
@@ -219,7 +219,7 @@ Return type is `EmisWriteContext` (same as before). Downstream service/repositor
 
 ### Canonical reference
 
-Full write-policy contract, role semantics and operating model: `docs/emis_access_model.md`.
+Full write-policy contract, role semantics and operating model: `docs/emis/access_model.md`.
 
 ## Audit contract
 
@@ -384,7 +384,7 @@ UI page: `/emis/admin/users`.
 
 ### Canonical reference
 
-Full auth contract: `docs/emis_access_model.md` section 5.
+Full auth contract: `docs/emis/access_model.md`.
 
 ## Ingestion namespace (Wave 1) — frozen contract
 

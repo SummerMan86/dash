@@ -12,7 +12,7 @@
  *   4. Invalidate all OTHER sessions for this user (keep current session).
  *   5. Return 200 { ok: true }.
  *
- * Canonical contract: docs/emis_access_model.md section 5 (AUTH-6).
+ * Canonical contract: docs/emis/access_model.md.
  * No SQL in this file. DB queries delegated to emis-server repositories.
  */
 

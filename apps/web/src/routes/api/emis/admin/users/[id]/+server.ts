@@ -7,7 +7,7 @@
  * Admin role enforced by hooks.server.ts (isAdminApiRoute check).
  * Writes go through assertWriteContext() for audit + role validation.
  *
- * Canonical contract: docs/emis_access_model.md section 5 (AUTH-5).
+ * Canonical contract: docs/emis/access_model.md.
  */
 
 import { json, type RequestHandler } from '@sveltejs/kit';

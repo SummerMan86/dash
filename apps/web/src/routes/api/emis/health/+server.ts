@@ -59,11 +59,11 @@ export const GET: RequestHandler = async () => {
 			demoFixtureFiles: demoFixtures
 		},
 		docs: {
-			bootstrap: '/docs/emis_session_bootstrap.md',
-			accessModel: '/docs/emis_access_model.md',
-			observability: '/docs/emis_observability_contract.md',
-			readModels: '/docs/emis_read_models_contract.md',
-			productContract: '/docs/emis_mve_product_contract.md',
+			bootstrap: '/docs/emis/README.md',
+			accessModel: '/docs/emis/access_model.md',
+			observability: '/docs/emis/operations.md',
+			readModels: '/docs/emis/architecture.md',
+			productContract: '/docs/emis/product_scope.md',
 			implementationReference: '/docs/archive/emis/emis_implementation_reference_v1.md',
 			runtimeContract: '/src/lib/server/emis/infra/RUNTIME_CONTRACT.md'
 		}

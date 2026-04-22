@@ -2,7 +2,7 @@
  * Session Repository — DB-backed session persistence for EMIS auth.
  *
  * All SQL for `emis.sessions` lives here.
- * Canonical contract: docs/emis_access_model.md section 5.
+ * Canonical contract: docs/emis/access_model.md.
  *
  * Session shape stored in DB:
  *   id (UUID PK), user_id (UUID FK -> emis.users), role (text),

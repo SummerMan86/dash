@@ -9,7 +9,7 @@ SvelteKit 2 + TypeScript + TailwindCSS 4 + PostgreSQL/PostGIS.
 `src/lib/*` — это app-local organization, а не название всей архитектуры.
 Domain-specific contours (e.g. EMIS) live as overlays inside the same modular monolith.
 
-Подробнее: see relevant domain bootstrap/freeze doc if applicable (e.g. `docs/emis_session_bootstrap.md`, `docs/emis_freeze_note.md`).
+Подробнее: see relevant domain doc set if applicable (e.g. `docs/emis/README.md`, `docs/emis/architecture.md` §8 Fixed architectural defaults).
 
 ## Твой цикл работы
 
@@ -268,7 +268,7 @@ Mode: autonomous — ты утверждаешь план сам, не ждёш�
 
 ## Ключевые документы для чтения
 
-- Relevant domain bootstrap/freeze/archive doc if applicable (e.g. `docs/emis_session_bootstrap.md`, `docs/emis_freeze_note.md`, `docs/archive/emis/emis_implementation_reference_v1.md`)
+- Relevant domain doc set if applicable (e.g. `docs/emis/README.md`, `docs/emis/architecture.md`, `docs/archive/emis/emis_implementation_reference_v1.md`)
 - `docs/agents/workflow.md` — lifecycle, review model, governance, DoD
 - `docs/agents/invariants.md` — project invariants
 - `docs/agents/execution-profiles.md` — runtime/model binding

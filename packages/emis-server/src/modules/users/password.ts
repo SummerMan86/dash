@@ -4,7 +4,7 @@
  * Uses bcryptjs (pure JS, no native compilation needed).
  * All functions are async to avoid blocking the event loop.
  *
- * Canonical contract: docs/emis_access_model.md section 5.
+ * Canonical contract: docs/emis/access_model.md.
  */
 
 import bcrypt from 'bcryptjs';

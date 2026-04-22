@@ -83,9 +83,9 @@ Default expectation для новых задач:
 
 ## 7. Reading order
 
-1. `../../../docs/emis_session_bootstrap.md`
+1. `../../../docs/emis/README.md`
 2. `../../../docs/agents/workflow.md`
 3. `../../../docs/agents/templates.md`
-4. `../../../docs/emis_architecture_review.md`
+4. `../../../docs/emis/architecture.md`
 5. `../../../src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
 6. `packages/emis-ui/` - если change касается map runtime (extracted from widgets/emis-map)

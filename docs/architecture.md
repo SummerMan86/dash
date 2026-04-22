@@ -4,7 +4,7 @@ Canonical repo-wide architecture doc. Current-state only.
 
 ## Scope
 - Covers: system topology, package map, import rules, deployment, shared infrastructure
-- Does not cover: BI-specific execution paths (see architecture_dashboard_bi.md), EMIS-specific operational paths (see architecture_emis.md)
+- Does not cover: BI-specific execution paths (see architecture_dashboard_bi.md), EMIS-specific operational paths (see emis/architecture.md)
 
 ## 1. Architectural Principles
 
@@ -68,7 +68,7 @@ Three architecture lenses define the system at different levels:
 
 ### 1.9. Deployment & Runtime
 
-- **Design for one deployable process on a small box.** The system runs as a single SvelteKit/Node app with one PostgreSQL pool and limited memory (~1 GB). *In practice:* avoid per-request heavy caches, uncontrolled background workers, and behaviors that assume microservice isolation.
+- **Design for one deployable process.** The system runs as a single SvelteKit/Node app with one PostgreSQL pool and a bounded memory budget. *In practice:* avoid per-request heavy caches, uncontrolled background workers, and behaviors that assume microservice isolation. Concrete deployment constraints (host sizing, memory budget) live in §6, not here.
 
 - **Runtime must stay deterministic and bootstrap-safe.** Long-lived services start in controlled places (`hooks.server.ts`), features must not depend on "eventually initialized" side effects. *In practice:* background schedulers, cleanup loops, and startup probes are single-entry and gracefully stoppable.
 
@@ -80,10 +80,12 @@ Three architecture lenses define the system at different levels:
 
 ### Known Transitional Debt
 
-Two BI transition seams still remain and should be treated as migration debt, not as durable architecture:
+The principles above describe the durable target. Migration debt is tracked per vertical, not duplicated here:
 
-1. Legacy filter merging still exists in the compatibility path of `fetchDataset.ts`, and some custom dataset definitions still read `query.filters` instead of the flat canonical `query.params`.
-2. `packages/platform-datasets/src/server/compile.ts` still acts as a family-switch compiler beside the registry, so dataset identity lives in both the registry and the legacy compiler until the remaining custom compile cases are absorbed cleanly.
+- BI vertical: [architecture_dashboard_bi.md §9 Migration Debt Register](./architecture_dashboard_bi.md#9-migration-debt-register)
+- EMIS vertical: inline within [emis/architecture.md](./emis/architecture.md) where relevant
+
+Repo-wide cross-cutting debt (multi-tenancy enforcement, scheduler lock vs single-process reconciliation) is tracked in [architecture_improvements_backlog.md](./architecture_improvements_backlog.md).
 
 ## 2. System Topology
 
@@ -149,7 +151,7 @@ Session-based auth with role hierarchy (viewer/editor/admin), enforced in `hooks
 
 > **Module boundary.** EMIS is a self-contained domain module (contracts + server + UI + operational routes) that may be extracted into a separate repository. Analytical dashboards that visualize EMIS data (`/dashboard/emis/`) are **not** part of this module — they belong to the BI platform (see above).
 
-See [architecture_emis.md](./architecture_emis.md) for execution paths.
+See [emis/architecture.md](./emis/architecture.md) for execution paths.
 
 ### Alerts / ops
 
@@ -161,19 +163,20 @@ See [architecture_dashboard_bi.md](./architecture_dashboard_bi.md) for the sched
 
 ### Package dependency graph
 
-```
-                       apps/web  (leaf consumer, imports everything)
-                          |
-        +-----------------+-----------------+
-        |                 |                 |
-     emis-ui         emis-server      platform-filters
-        |                 |                 |
-        v                 v          +------+------+
-  emis-contracts    emis-contracts   |             |
-        |                 |       platform-ui  platform-datasets
-        v                 v          |             |
-  platform-core      db, platform-core   platform-core, db
-```
+Layered "can import" relationships. Arrows point to allowed dependencies.
+
+- **Leaves** (no internal deps): `platform-core`, `db`
+- **Platform tier**:
+  - `platform-ui` → `platform-core`
+  - `platform-datasets` → `platform-core`, `db`
+  - `platform-filters` → `platform-core`, `platform-ui`, `platform-datasets`
+- **EMIS tier**:
+  - `emis-contracts` → `platform-core`
+  - `emis-server` → `emis-contracts`, `platform-core`, `platform-datasets`, `db`
+  - `emis-ui` → `emis-contracts`, `platform-core`, `platform-ui`, `platform-filters`
+- **App**: `apps/web` may import from any package; no package imports from `apps/web`
+
+The table below is the authoritative `Can import from` / `Cannot import from` matrix.
 
 ### Explicit package rules
 
@@ -322,9 +325,9 @@ Memory budget: ~590 MB used (OS + PG + Docker + Node + nginx), ~410 MB free + 51
 |---|---|
 | `docs/architecture.md` (this file) | Repo-wide foundation architecture |
 | `docs/architecture_dashboard_bi.md` | BI vertical architecture |
-| `docs/architecture_emis.md` | EMIS vertical architecture |
-| `docs/emis_session_bootstrap.md` | EMIS current state and reading order |
-| `docs/emis_working_contract.md` | EMIS working rules and decision discipline |
+| `docs/emis/architecture.md` | EMIS vertical architecture |
+| `docs/emis/README.md` | EMIS entry point and doc map |
+| `docs/emis/change_policy.md` | EMIS working rules, review triggers, DoD |
 | `db/schema_catalog.md` | App DB schema catalog |
 | `db/current_schema.sql` | Active DDL snapshot |
 | `packages/*/AGENTS.md` | Package-local navigation and rules |
@@ -334,7 +337,7 @@ Memory budget: ~590 MB used (OS + PG + Docker + Node + nginx), ~410 MB free + 51
 
 ### Domain overlays (active supporting docs)
 
-`emis_access_model.md`, `emis_observability_contract.md`, `emis_read_models_contract.md`, `emis_mve_product_contract.md`, `emis_offline_maps_ops.md`, `emis_monorepo_target_layout.md`, `emis_next_tasks_2026_03_22.md`.
+`emis/access_model.md`, `emis/operations.md`, `emis/product_scope.md`, `emis/structural_migration.md`.
 
 ### Archive
 
@@ -351,7 +354,7 @@ Memory budget: ~590 MB used (OS + PG + Docker + Node + nginx), ~410 MB free + 51
 | `pnpm lint:eslint` | Full ESLint semantic lint (unused vars, type safety, Svelte best practices). Not boundary-only |
 | `pnpm lint:format` | Prettier formatting check |
 | `pnpm lint` | Aggregate: `lint:format` + `lint:eslint` |
-| `pnpm test` | Vitest (`packages/*/src/**/*.test.ts`). 127 tests across 10 files (registry, executeDatasetQuery, genericCompile, providerCache, contract, client, schema). `passWithNoTests: true` for packages without tests |
+| `pnpm test` | Vitest (`packages/*/src/**/*.test.ts`). Covers registry, executeDatasetQuery, genericCompile, providerCache, contract, client, schema. `passWithNoTests: true` for packages without tests. Current count tracked per wave in `docs/agents/lead-strategic/current_plan.md` |
 | `pnpm emis:smoke` | 40-check read-side and runtime contract verification |
 | `pnpm emis:write-smoke` | 7-flow write-side + audit verification |
 | `pnpm emis:offline-smoke` | 9-check offline basemap smoke test |
@@ -403,5 +406,5 @@ Pattern for adding a new domain (like EMIS was added):
 | If your task involves... | Read |
 |---|---|
 | BI datasets, providers, filters, DWH integrations, extension points | [architecture_dashboard_bi.md](./architecture_dashboard_bi.md) |
-| EMIS operational paths, contracts, ingestion, PostGIS, auth | [architecture_emis.md](./architecture_emis.md) |
+| EMIS operational paths, contracts, ingestion, PostGIS, auth | [emis/architecture.md](./emis/architecture.md) |
 | Both BI and EMIS | Read both vertical docs; shared rules are in this file |

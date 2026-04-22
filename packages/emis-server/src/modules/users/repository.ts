@@ -1,7 +1,7 @@
 /**
  * EMIS User Repository — SQL queries for emis.users.
  *
- * Canonical contract: docs/emis_access_model.md section 5.
+ * Canonical contract: docs/emis/access_model.md.
  *
  * IMPORTANT: password_hash is NEVER returned by public query functions
  * (listUsers, getUserById, getUserByUsername). Use getUserWithHash()

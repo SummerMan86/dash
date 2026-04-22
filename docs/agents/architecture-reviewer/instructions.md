@@ -8,7 +8,7 @@
 Before reviewing, you must have:
 - repo-wide guardrails: `docs/agents/invariants.md`
 - relevant domain overlay (e.g. `docs/agents/invariants-emis.md`) — overlay's canonical homes, boundaries, execution-path rules
-- overlay's exceptions registry, if the overlay maintains one (e.g. `docs/emis_known_exceptions.md`)
+- overlay's exceptions registry, if the overlay maintains one (e.g. `docs/emis/change_policy.md` §6 Exception policy)
 
 ## Scope
 
@@ -48,7 +48,7 @@ Before reviewing, you must have:
 5. **Exceptions / waivers:**
    - новый exception или waiver не может появиться без owner + expiry + removal condition
    - существующий exception не должен расширяться молча за пределы задокументированного scope
-   - long-lived complexity waiver должен быть явно назван в report и, при необходимости, в overlay's exceptions registry (e.g. `docs/emis_known_exceptions.md`)
+   - long-lived complexity waiver должен быть явно назван в report и, при необходимости, в overlay's exceptions registry (e.g. `docs/emis/change_policy.md` §6 Exception policy)
 
 6. **Import aliases:**
    - app code uses `$lib/*`, not fragile `../../` through boundaries
@@ -85,7 +85,7 @@ Severity:
 1. `orchestrator` эскалирует finding к `lead-strategic` (или architecture pass, `workflow.md` §5.1)
 2. Решение согласуется и фиксируется в architecture doc **до merge**:
    - `architecture_dashboard_bi.md` для BI-решений
-   - `architecture_emis.md` для EMIS-решений
+   - `emis/architecture.md` для EMIS-решений
    - `architecture.md` для repo-wide решений
 3. Если решение создаёт enforceable rule → обновляется `invariants.md`
 4. Если решение создаёт migration debt → обновляется debt register (§9 `architecture_dashboard_bi.md`)

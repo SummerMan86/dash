@@ -44,4 +44,4 @@ API design rules, limits, error shape, meta format, sort defaults, parameter par
 
 For the FE/BE contract entrypoint on errors and logging:
 
-- `docs/emis_observability_contract.md`
+- `docs/emis/operations.md`

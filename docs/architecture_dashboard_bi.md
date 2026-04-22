@@ -10,7 +10,7 @@ For completed rollout sequencing see [archive/bi/bi_refactor_rollout.md](./archi
 - Covers: dataset runtime, filter wire contract, IR policy, client-side query model, BI-adjacent operational paths, storage ownership, provider extension path, schema introspection
 - Does not cover: EMIS operational paths, repo-wide rules, detailed rollout timeline
 - First migration wave covers non-EMIS analytics (`wildberries`, `strategy`, generic dashboard runtime). EMIS analytics pages (`/dashboard/emis/`) may adopt the same contracts later, but they do not block the first refactor wave
-- **EMIS read-model datasets** (`emis.*`) are now registered in the BI dataset registry and served via `executeDatasetQuery` middleware (including provider-owned caching from CA-12). EMIS operational paths remain separate (see `architecture_emis.md`)
+- **EMIS read-model datasets** (`emis.*`) are now registered in the BI dataset registry and served via `executeDatasetQuery` middleware (including provider-owned caching from CA-12). EMIS operational paths remain separate (see `emis/architecture.md`)
 
 ## Document Hierarchy
 

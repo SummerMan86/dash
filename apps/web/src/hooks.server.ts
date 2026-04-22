@@ -155,13 +155,13 @@ export const handle: Handle = async ({ event, resolve }) => {
 				}
 
 				// Admin API routes require admin role for all methods
-				// (docs/emis_access_model.md section 5 — /api/emis/admin/* is admin-only)
+				// (docs/emis/access_model.md — /api/emis/admin/* is admin-only)
 				if (isAdminApiRoute(pathname) && !hasMinRole(session.role, 'admin')) {
 					return emisAuthError(event.request, pathname, 403, 'FORBIDDEN', 'Admin access required');
 				}
 
 				// Dictionary API write routes require admin role
-				// (docs/emis_access_model.md:31 — dictionary management is admin-only)
+				// (docs/emis/access_model.md — dictionary management is admin-only)
 				if (
 					isDictionaryApiRoute(pathname) &&
 					event.request.method !== 'GET' &&

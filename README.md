@@ -150,7 +150,7 @@ Monorepo-style layout: единое SvelteKit-приложение в `apps/web/
 - `db` — DB helpers и schema
 - `emis-contracts`, `emis-server`, `emis-ui` — EMIS domain packages
 
-Single-deployable: один runtime, но code ownership и import boundaries разделены по package границам. Подробнее — `docs/architecture.md` и `docs/emis_monorepo_target_layout.md`.
+Single-deployable: один runtime, но code ownership и import boundaries разделены по package границам. Подробнее — `docs/architecture.md` и `docs/emis/structural_migration.md`.
 
 Важно: исторические `src/lib/shared|features|widgets` не стоит читать как FSD-layer contract. Для новой non-EMIS разработки canonical model — `routes/*` для page composition и `packages/*` для reusable logic.
 

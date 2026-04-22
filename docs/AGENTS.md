@@ -3,7 +3,7 @@
 Этот файл - единственный полный каталог документации в репозитории.
 Canonical repo-wide foundation: [architecture.md](./architecture.md).
 BI vertical: [architecture_dashboard_bi.md](./architecture_dashboard_bi.md).
-EMIS vertical: [architecture_emis.md](./architecture_emis.md).
+EMIS vertical: [emis/README.md](./emis/README.md) (doc set entry).
 Historical BI archive: [archive/bi/architecture_dashboard_bi.md](./archive/bi/architecture_dashboard_bi.md).
 Модульная навигация и contour entry points: корневой [AGENTS.md](../AGENTS.md).
 `README.md` отвечает только за quick start и описание приложения.
@@ -35,7 +35,7 @@ Historical BI archive: [archive/bi/architecture_dashboard_bi.md](./archive/bi/ar
 | ---------------------------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------- |
 | `architecture.md`                                                                  | canonical repo-wide foundation               | topology, package map, import rules, deployment, shared infrastructure            |
 | `architecture_dashboard_bi.md`                                                     | BI vertical architecture                     | dataset runtime, filter contract, BI-adjacent ops paths, DWH integrations, extension points |
-| `architecture_emis.md`                                                             | EMIS vertical architecture                   | operational paths, contracts, ingestion, PostGIS, auth                             |
+| `emis/architecture.md`                                                             | EMIS vertical architecture                   | operational paths, contracts, ingestion, PostGIS, auth                             |
 | `../apps/web/src/routes/dashboard/wildberries/dwh_for_wildberries_requirements.md` | Wildberries DWH contract                     | полный контракт с DWH: витрины, колонки, фильтры, алерты, требования к качеству |
 | `strategy/bi_strategy.md`                                                          | local dashboard-builder BI strategy contract | как переложить Power BI strategy/BSC постановку в MVE-архитектуру               |
 | `../apps/web/src/routes/dashboard/strategy/AGENTS.md`                              | strategy route development contract          | current pages, grain rules, filter contract и rollout path                      |
@@ -67,18 +67,20 @@ Historical BI archive: [archive/bi/architecture_dashboard_bi.md](./archive/bi/ar
 
 ## 3. EMIS документация
 
+Consolidated EMIS doc set lives in `docs/emis/`. Each file owns one axis; there is no overlap with repo-wide `architecture.md`.
+
 ### Canonical
 
 | Документ                                                    | Владеет                                    | Source of truth для                                                                                           |
 | ----------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| `architecture.md`                                           | canonical repo-wide foundation             | topology, package map, import rules, deployment, shared infrastructure |
-| `architecture_emis.md`                                      | EMIS vertical architecture                 | operational paths, contracts, ingestion, PostGIS, auth |
-| `emis_session_bootstrap.md`                                 | текущее состояние и start-here entry point | где EMIS находится сейчас, что в фокусе и что читать дальше по типу задачи                                    |
-| `emis_working_contract.md`                                  | short EMIS working rules                   | decision path, non-negotiables, review triggers, DoD                                                          |
-| `emis_access_model.md`                                      | EMIS access model                          | viewer/editor/admin, write guardrails и где enforce                                                           |
-| `emis_observability_contract.md`                            | EMIS observability contract                | readiness/health endpoints, error logging, request correlation                                                |
-| `emis_read_models_contract.md`                              | EMIS BI/read-side contract                 | published read-models (views/marts), datasets и BI routes coupling                                            |
-| `emis_mve_product_contract.md`                              | MVE product contract                       | product scope, invariants и acceptance                                                                        |
+| `architecture.md`                                           | canonical repo-wide foundation             | topology, package map, import rules, deployment, shared infrastructure                                        |
+| `emis/README.md`                                            | EMIS entry point + doc map                 | current truth, module boundary, what to read next by task type                                                |
+| `emis/architecture.md`                                      | EMIS vertical architecture                 | operational/BI paths, storage ownership, contracts, published read-models, fixed defaults                     |
+| `emis/product_scope.md`                                     | EMIS product scope                         | in/out of scope, product invariants, UX expectations                                                          |
+| `emis/access_model.md`                                      | EMIS access model                          | supported modes, roles, sessions, write-policy helper, env vars                                               |
+| `emis/change_policy.md`                                     | EMIS governance                            | decision path, non-negotiables, review triggers, exception policy, DoD                                        |
+| `emis/operations.md`                                        | EMIS ops runbook                           | readiness/health, error logging, offline maps, post-deploy verification                                       |
+| `emis/structural_migration.md`                              | target layout и migration policy           | target package layout, import direction rules, alias policy                                                   |
 | `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md` | runtime/API conventions                    | API design conventions, error shape, list meta, audit contract, query limits/sorts                            |
 | `../packages/emis-contracts/AGENTS.md`                      | EMIS contracts package navigation          | где лежат canonical entity contracts, DTO и Zod schemas                                                       |
 | `../packages/emis-server/AGENTS.md`                         | EMIS server package navigation             | где лежат canonical infra helpers и backend modules                                                           |
@@ -86,27 +88,20 @@ Historical BI archive: [archive/bi/architecture_dashboard_bi.md](./archive/bi/ar
 | `../apps/web/src/routes/emis/AGENTS.md`                     | EMIS workspace route contract              | что остается в `/emis` route layer и что выносится из workspace                                               |
 | `../apps/web/src/routes/dashboard/emis/AGENTS.md`           | EMIS BI routes contract                    | границы BI route layer, dataset path и extraction rules                                                       |
 
-### Active
-
-| Документ                         | Владеет                          | Source of truth для                                                                         |
-| -------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------- |
-| `emis_monorepo_target_layout.md` | target layout и migration policy | future package layout, import direction rules, alias policy; не current-state ownership map |
-| `emis_freeze_note.md`            | frozen decisions и conventions   | что не нужно переоткрывать без причины; не current ownership map                            |
-| `emis_review_gate.md`            | EMIS review gate                 | lifecycle review, mandatory approve cases, approve checklist                                |
-| `emis_offline_maps_ops.md`       | offline maps ops-runbook         | эксплуатация MapTiler/PMTiles и production caveats                                          |
-| `emis_next_tasks_2026_03_22.md`  | backlog                          | remaining tasks и polish stack                                                              |
-
 ### Archive
 
-| Документ                                                     | Владеет                           | Source of truth для                                                                |
-| ------------------------------------------------------------ | --------------------------------- | ---------------------------------------------------------------------------------- |
-| `archive/emis/emis_external_object_ingestion.md`             | completed ingestion design        | historical wave-1 design for external object ingestion after rollout completion    |
-| `archive/emis/emis_external_object_ingestion_lead_tactical_handoff.md` | completed ingestion handoff | historical tactical handoff for wave-1 ingestion                                   |
-| `archive/emis/emis_implementation_reference_v1.md`           | archived implementation rationale | retained implementation decisions, API/data assumptions и historical rollout order |
-| `archive/emis/emis_vessel_current_positions_handoff_plan.md` | completed task handoff            | completed slice `layer=vessels` / current positions в `/emis`                      |
-| `archive/emis/emis_todo_vessel_markers.md`                   | completed task notes              | historical vessel marker TODO notes                                                |
-| `archive/emis/emis_handoff_2026_03_17.md`                    | archived EMIS snapshot            | историческое состояние репозитория на 17 марта 2026                                |
-| `archive/emis/emis_pmtiles_validation_wave.md`               | archived validation note          | historical context по PMTiles spike/validation wave                                |
+| Документ                                                               | Владеет                           | Source of truth для                                                                |
+| ---------------------------------------------------------------------- | --------------------------------- | ---------------------------------------------------------------------------------- |
+| `archive/emis/emis_session_bootstrap.md`                               | pre-consolidation bootstrap       | историческая start-here страница с журналом Phase 3/4/5 и ingestion Wave 1         |
+| `archive/emis/emis_next_tasks_2026_03_22.md`                           | completed backlog                 | закрытый post-MVE backlog (MVE closeout, P1/P2, Phase 3/4/5)                       |
+| `archive/emis/emis_vessel_track_contract.md`                           | frozen P1.1 feature contract      | historical behavior contract для vessel historical track integration               |
+| `archive/emis/emis_external_object_ingestion.md`                       | completed ingestion design        | historical wave-1 design for external object ingestion after rollout completion    |
+| `archive/emis/emis_external_object_ingestion_lead_tactical_handoff.md` | completed ingestion handoff       | historical tactical handoff for wave-1 ingestion                                   |
+| `archive/emis/emis_implementation_reference_v1.md`                     | archived implementation rationale | retained implementation decisions, API/data assumptions и historical rollout order |
+| `archive/emis/emis_vessel_current_positions_handoff_plan.md`           | completed task handoff            | completed slice `layer=vessels` / current positions в `/emis`                      |
+| `archive/emis/emis_todo_vessel_markers.md`                             | completed task notes              | historical vessel marker TODO notes                                                |
+| `archive/emis/emis_handoff_2026_03_17.md`                              | archived EMIS snapshot            | историческое состояние репозитория на 17 марта 2026                                |
+| `archive/emis/emis_pmtiles_validation_wave.md`                         | archived validation note          | historical context по PMTiles spike/validation wave                                |
 
 ## 3a. Agent Workflow документация
 
@@ -175,25 +170,18 @@ Historical BI archive: [archive/bi/architecture_dashboard_bi.md](./archive/bi/ar
 ### Для EMIS
 
 1. `architecture.md` (canonical repo-wide foundation)
-2. `architecture_emis.md` (EMIS vertical)
-3. `emis_session_bootstrap.md`
-4. `emis_working_contract.md`
+2. `emis/README.md` (EMIS entry point + doc map)
+3. `emis/architecture.md` (operational/BI paths, storage, contracts, fixed defaults)
+4. `emis/change_policy.md` (decision path, review triggers, DoD)
 5. `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`
-6. `emis_mve_product_contract.md` — если нужен product scope
+6. `emis/product_scope.md` — если нужен product scope
 
 Опционально по задаче:
 
-- `emis_access_model.md` - если задача затрагивает writes, роли, guardrails
-- `emis_observability_contract.md` - если задача про health/readiness/error logging
-- `emis_read_models_contract.md` - если задача про BI/read-models/datasets/contracts
-- `emis_monorepo_target_layout.md` - если задача про structural migration, import rules или alias policy
-- `emis_freeze_note.md` - если нужно понять, какие решения не нужно переоткрывать
-- `emis_review_gate.md` - если нужен approve checklist или review verdict
-- `emis_offline_maps_ops.md` - если работа про offline maps или PMTiles
-- `emis_next_tasks_2026_03_22.md` - если нужен backlog
-- `archive/emis/emis_external_object_ingestion.md` - если нужен historical design context по completed ingestion wave
-- `archive/emis/emis_external_object_ingestion_lead_tactical_handoff.md` - если нужен historical tactical handoff по completed ingestion wave
-- `archive/emis/emis_implementation_reference_v1.md` - если нужен historical rollout context или retained implementation rationale
+- `emis/access_model.md` - если задача затрагивает writes, роли, sessions, guardrails
+- `emis/operations.md` - если задача про health/readiness, error logging или offline maps/PMTiles
+- `emis/architecture.md` §6 - если задача про BI/read-models/datasets/contracts
+- `emis/structural_migration.md` - если задача про structural migration, import rules или alias policy
 - `agents/workflow.md` - если нужен core agent lifecycle, review model, governance passes, DoD
 - `agents/recovery.md` - если выполнение ушло с happy path
 - `agents/autonomous-mode.md` - если задача в autonomous mode
@@ -209,7 +197,7 @@ Historical BI archive: [archive/bi/architecture_dashboard_bi.md](./archive/bi/ar
 - `../packages/emis-ui/AGENTS.md` - если change касается map/status UI package
 - `../apps/web/src/routes/emis/AGENTS.md` - если работа про `/emis` workspace layer
 - `../apps/web/src/routes/dashboard/emis/AGENTS.md` - если работа про BI/dashboard routes
-- `archive/emis/emis_vessel_current_positions_handoff_plan.md` - если нужен historical handoff по vessel current positions slice
+- `archive/emis/emis_session_bootstrap.md`, `archive/emis/emis_next_tasks_2026_03_22.md`, `archive/emis/emis_vessel_track_contract.md` - если нужен historical wave journal или frozen feature contract
 - `archive/emis/*`, `archive/agents/*` и `archive/strategy-v1/*` - только если нужен historical context
 
 ## 5. Правило ownership
@@ -217,6 +205,6 @@ Historical BI archive: [archive/bi/architecture_dashboard_bi.md](./archive/bi/ar
 - Этот файл владеет полным каталогом документации.
 - `architecture.md` владеет canonical repo-wide foundation architecture.
 - `architecture_dashboard_bi.md` владеет BI vertical architecture.
-- `architecture_emis.md` владеет EMIS vertical architecture.
+- `emis/architecture.md` владеет EMIS vertical architecture.
 - Корневой `AGENTS.md` владеет развилкой по контурам и navigation entry points.
 - `README.md` не должен дублировать doc map; он только отправляет сюда.

@@ -15,7 +15,7 @@
  *   - Fallback: in-memory Map if DB is unreachable (graceful degradation)
  *   - Sessions survive server restart when DB is available
  *
- * Canonical contract: docs/emis_access_model.md section 5.
+ * Canonical contract: docs/emis/access_model.md.
  *
  * No SQL in this file. DB queries delegated to emis-server repositories.
  */
@@ -330,7 +330,7 @@ export function isSessionAuthReady(): boolean {
 /**
  * Authenticate a user by username and password.
  *
- * Resolution order (AUTH-3 contract, docs/emis_access_model.md section 5):
+ * Resolution order (docs/emis/access_model.md):
  *   1. If DB users exist: look up by username, verify with bcrypt.compare()
  *   2. If DB empty/unreachable AND EMIS_USERS env set: plaintext compare (backward compat)
  *
@@ -695,12 +695,12 @@ export function isAdminRoute(pathname: string): boolean {
 	return pathname.startsWith('/emis/admin/') || pathname === '/emis/admin';
 }
 
-/** Dictionary API routes — writes require admin role (docs/emis_access_model.md:31). */
+/** Dictionary API routes — writes require admin role (docs/emis/access_model.md). */
 export function isDictionaryApiRoute(pathname: string): boolean {
 	return pathname.startsWith('/api/emis/dictionaries/');
 }
 
-/** Admin API routes — all methods require admin role (docs/emis_access_model.md section 5). */
+/** Admin API routes — all methods require admin role (docs/emis/access_model.md). */
 export function isAdminApiRoute(pathname: string): boolean {
 	return pathname.startsWith('/api/emis/admin/');
 }

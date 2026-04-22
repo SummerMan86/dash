@@ -5,7 +5,7 @@
  * configurable policy enforcement. This is the single checkpoint for write
  * authorization.
  *
- * Canonical contract: docs/emis_access_model.md sections 4 and 5.
+ * Canonical contract: docs/emis/access_model.md.
  *
  * Supports two auth modes (EMIS_AUTH_MODE):
  *   - none (default): actor from headers, write-policy from EMIS_WRITE_POLICY
@@ -39,7 +39,7 @@ export type { EmisWriteSource, EmisWriteContext };
  *   - `EMIS_WRITE_POLICY` env var is exactly `"strict"`, OR
  *   - `NODE_ENV` is `"production"` (unless explicitly overridden with `EMIS_WRITE_POLICY=permissive`).
  *
- * This matches the frozen contract in docs/emis_access_model.md and RUNTIME_CONTRACT.md.
+ * This matches the frozen contract in docs/emis/access_model.md and RUNTIME_CONTRACT.md.
  */
 function isStrictMode(): boolean {
 	const policy = process.env.EMIS_WRITE_POLICY;

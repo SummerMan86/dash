@@ -1,7 +1,7 @@
 /**
  * EMIS User Zod schemas for request validation.
  *
- * Canonical contract: docs/emis_access_model.md section 5.
+ * Canonical contract: docs/emis/access_model.md.
  */
 
 import { z } from 'zod';

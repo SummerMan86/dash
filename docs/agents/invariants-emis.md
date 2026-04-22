@@ -35,7 +35,7 @@ Generic repo-wide guardrails и severity rules живут в `invariants.md`.
 
 ## 5e. EMIS complexity exceptions
 
-- long-lived waiver отражается в report и в `docs/emis_known_exceptions.md`
+- long-lived waiver отражается в report и в `docs/emis/change_policy.md` (Exception policy)
 
 ## 7e. EMIS technologies
 
