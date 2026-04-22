@@ -1,0 +1,165 @@
+- Проверить, что мы не потяреяли старую архитектуру по EMIS(до доработок по dashboard-builder)
+- Правила работы с текущей архитектурой, структурой папок и пакетов и роутов, добавляем в линтер. Может, добавить лучшее из fsd, чистой архитектуры, доменно-ориентированной архитектуры? Проект будет сильно дорабатываться, нужна архитектура не под текущее состояние, а под большие доработки(фичи, новые источники, широкие функционал дашбордов)
+- нужны отдельные папки в доках: еимис, bi и общая папка(фундамент).
+- не забыть обновить инструкции для агентов по новым документам
+- в конце пройтись по всей документации - уточнить замечания и предложения
+- добавить агента юи с гугл плагином
+- убрать в архив legacy, упоминание старой архитектуры и пр.
+- емис также привести к единообразию архитектуры
+- сделать высокоуровневый документ по архитектуре(для читателя) а также перевести на русский текущие документы.
+
+ ## Замечания по работе агентов:
+Общая оценка                                                                                                                                                 
+                                                                                                                                                               
+  Модель зрелая и продуманная. Это одна из наиболее полных агентных workflow-документаций, которые я видел для AI-assisted разработки. Основные решения        
+  (разделение ролей, review gate, recovery protocols, governance passes) — корректны и хорошо формализованы.                                                   
+                                                                                                                                                               
+  Структура файлов и context-efficiency                                                                                                                        
+                                               
+  Плюсы:                                                                                                                                                       
+                                        
+  1. Разделение на concern-based файлы — каждый агент читает только то, что ему нужно:                                                                         
+    - Worker читает: worker/guide.md + локальные AGENTS.md (2-3 файла)
+    - Reviewer читает: только свой instructions.md + prompt (1 файл)                                                                                           
+    - Orchestrator читает: current_plan.md + memory.md + orchestrator/instructions.md (3-4 файла)                                                              
+    - lead-strategic читает: memory.md + instructions.md + current_plan.md (3 файла)                                                                           
+  2. Subagent guard в CLAUDE.md — worker'ы и reviewer'ы блокируются от чтения корневого AGENTS.md и всей навигационной цепочки. Это правильно.                 
+  3. Bootstrap Reads как explicit contract — orchestrator точно указывает, что worker должен прочитать. Нет неуправляемого "прочитай всё".                     
+  4. Overlay pattern (invariants.md + invariants-emis.md) — домен-специфичные правила отдельно от generic, читаются только при необходимости.                  
+                                                                                                                                                               
+  Критические замечания                                                                                                                                        
+                                                                                                                                                               
+  1. Отсутствие ui-reviewer/instructions.md и ui-reviewer-deep/instructions.md                                                                                 
+                                               
+  В docs/agents/ есть директории ui-reviewer/ и ui-reviewer-deep/, их instructions.md я не проверил — они существуют как файлы, но не прочитаны. Стоит         
+  убедиться, что они content-complete и следуют тому же canonical format, что и остальные reviewer'ы.
+                                                                                                                                                               
+  2. Не критическое, но заметное дублирование правил                                                                                                           
+                                               
+  Несколько правил продублированы дословно или почти дословно:                                                                                                 
+  - direct-fix protocol описан в workflow.md §2.1, orchestrator/instructions.md, review-gate.md §1
+  - Worker guardrails в worker/guide.md §5 — это сокращённая выборка из invariants.md §1-5, §9. Есть disclaimer "canonical source wins", но при расхождении    
+  worker может не знать об этом                                                                                                                            
+  - Transparency request types перечислены в orchestrator/instructions.md, templates.md §13, и lead-strategic/instructions.md                                  
+                                                                                                                             
+  Это не критическая проблема — disclaimers на месте, и single-source-of-truth указан. Но при обновлении нужно помнить про все 3 места.                        
+                                                                                                                                                               
+  3. Размер templates.md (1116 строк)                                                                                                                          
+                                                                                                                                                               
+  Это самый большой файл модели. Worker'у нужны только §3 и §3.1, orchestrator'у — всё, но он и так несёт тяжёлый контекст. Если контекстное окно будет        
+  проблемой — можно разделить на templates-worker.md, templates-report.md, templates-governance.md. Пока не критично.
+                                                                                                                                                               
+  4. Размер workflow.md (~517 строк)    
+                                               
+  Тоже крупный файл, но его читает только orchestrator полностью. Worker'ы и reviewer'ы его не читают. Приемлемо.                                              
+   
+  5. Legacy aliases всё ещё в нескольких местах                                                                                                                
+                                        
+  lead-tactical упоминается как legacy alias, есть compatibility wrapper файлы. Не критическая проблема, но это мёртвый вес:                                   
+  - docs/agents/lead-tactical/memory.md 
+  - docs/agents/lead-tactical/last_report.md                                                                                                                   
+  - docs/agents/lead-tactical/instructions.md
+                                                                                                                                                               
+  Структурные наблюдения (не критические)
+                                                                                                                                                               
+  6. skills/ — два файла (debugging.md, testing-strategy.md)                                                                                                   
+                                                                                                                                                               
+  Хорошее решение: reusable playbooks, которые worker читает по необходимости, а не обязательно. Можно расширять.                                              
+                                               
+  7. Autonomous protocol (autonomous-protocol.md, 669 строк)                                                                                                   
+                                        
+  Самодостаточный и хорошо спроектирован. Два уровня (lightweight/full) — правильная градация. Но это тоже крупный файл; его читает только orchestrator при    
+  autonomous entry.                     
+                                                                                                                                                               
+  8. Usage telemetry — file-first V1                                                                                                                           
+                                               
+  Прагматичное решение. usage-log.ndjson — append-only, не перегружает workflow. Schema уже формализована.                                                     
+                                        
+  Ответ на ключевые вопросы                                                                                                                                    
+                                        
+  Будет ли каждый агент читать только то, что ему нужно?                                                                                                       
+                                        
+  Да, с оговорками:                                                                                                                                            
+  - Worker: 2-4 файла (guide + AGENTS.md + carry-forward). Оптимально.
+  - Reviewer: 1 файл (instructions) + prompt. Оптимально.                                                                                                      
+  - Orchestrator: 4-7 файлов при старте (instructions, plan, memory, workflow). Приемлемо для Opus.
+  - Lead-strategic: 3-5 файлов. Приемлемо для GPT-5.4.                                                                                                         
+                                                                                                                                                               
+  Переполнения контекста не будет?                                                                                                                             
+                                                                                                                                                               
+  Для worker'ов и reviewer'ов — нет, они максимально lean. Для orchestrator'а — зависит от количества slices в wave; при 8+ slices с rich handoff'ами контекст 
+  может расти. Auto-compact recovery protocol для этого есть.                                                                                                  
+                                                                                                                                                               
+  Рекомендации (необязательные)                                                                                                                                
+                                               
+  1. Рассмотреть удаление lead-tactical/ legacy wrappers — если старые scripts/prompts уже обновлены, три файла-заглушки можно убрать.                         
+  2. Добавить line count аннотацию в docs/AGENTS.md таблицу для agent docs — чтобы быстро оценить budget контекста при чтении.
+  3. templates.md > 1000 строк — если станет проблемой, декомпозировать; пока работает.                                                                        
+                                                                                                                                                               
+  Итог                                                                                                                                                         
+                                                                                                                                                               
+  Модель production-ready. Критических проблем, которые могут сломать workflow, нет. Структура файлов оптимальна: каждый агент имеет чёткий bounded context,   
+  переполнения контекста не ожидается при нормальном использовании. Дублирование контролируемое — с disclaimers на canonical source. Основной risk — размер
+  templates.md и workflow.md, но оба читаются только orchestrator'ом, у которого достаточно контекстного бюджета.
+
+
+  Работаем от чистой базы `HEAD 180bf0b` в `docs/agents/*`.
+
+  Нужно сделать lean cleanup для `gpt-5.4` как worker.
+
+  Целевой contract:
+  - `docs/agents/worker/guide.md` — единственный canonical worker context contract;
+  - `docs/agents/templates-orchestration.md` — единственный canonical task-packet template;
+  - `docs/agents/execution-profiles.md` — только runtime/model/effort/fallback mapping;
+  - `docs/agents/workflow.md`, `docs/agents/review-gate.md`, `docs/agents/user-guide.md`, `docs/agents/
+  orchestrator/instructions.md` — только короткие правила и ссылки на canonical docs.
+
+  Требования:
+  - prefer deletion/compression over addition;
+  - убрать duplicate/stale summaries;
+  - не добавлять новые transport/relay artifacts без строгой необходимости;
+  - не фиксировать непроверенное runtime behavior GPT/Codex как факт;
+  - явно различать:
+    - canonical semantics;
+    - canonical template artifact;
+    - runtime/profile mapping;
+    - user-facing usage notes;
+  - не менять ownership model;
+  - не расширять agent model новыми ролями, lanes или protocol layers.
+
+  Non-goals:
+  - не проектировать подробный relay protocol, если это можно оставить implementation concern;
+  - не лечить проблему добавлением новых summary-блоков рядом с уже существующими canonical sections.
+
+  Порядок работы:
+  1. Сначала проанализируй текущие docs и покажи короткий cleanup plan:
+     - какие файлы остаются canonical;
+     - какие файлы должны только ссылаться;
+     - какие секции нужно удалить, сжать или оставить.
+  2. До этого плана правки не вноси.
+  3. Если после анализа нет blocker’ов, сразу внеси минимальный diff.
+  4. В финале покажи:
+     - что стало canonical;
+     - что удалено как duplicate;
+     - какие runtime assumptions сознательно НЕ были зафиксированы в docs.
+
+  Формат:
+  - в cleanup plan и в финале ссылайся на конкретные файлы/секции;
+  - если какое-то runtime behavior не подтверждено, помечай это как `unknown` или `implementation concern`, а не
+  как canonical rule.
+
+  Критерий качества:
+  - если для ответа на вопрос о worker context, task packet или runtime mapping всё ещё нужно читать 3-4 документа,
+  задача считается невыполненной.    
+  И еще 2 блока критически важных дополнений: 
+  1. Guardrail:
+  - не ломать и не переопределять текущую working model для `mixed-claude-workers`;
+  - для `Claude`-worker допустимы только compression/deduplication edits без изменения semantics;
+  - если секция уже корректно описывает current practical default для `Claude`, её не нужно перепроектировать ради
+  `gpt-5.4`;
+  - любое изменение, которое меняет поведение `mixed-claude-workers`, считать out of scope, если для этого нет
+  отдельного строгого обоснования.
+  2. Acceptance:
+  - после cleanup остаётся очевидно, что `mixed-claude-workers` — текущий practical default;
+  - текущий worker contract для `Claude` не расширен и не ослаблен;
+  - cleanup улучшает только каноничность и компактность docs, а не меняет `Claude` execution model.

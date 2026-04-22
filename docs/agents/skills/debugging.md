@@ -2,6 +2,10 @@
 
 Reusable playbook for workers and `orchestrator` when diagnosing and fixing bugs or unexpected behavior.
 
+## Contract surface
+
+For worker-owned diagnostic/bugfix/regression slices, `orchestrator` materializes this playbook in the task packet `Debugging` section (`docs/agents/templates.md` §4/§4.1). `worker` returns the result in `Debugging Outcome` (`docs/agents/templates.md` §1/§2). Do not rely on a bare link to this file as the execution contract.
+
 ## When to use
 
 - Bug report or failing test with no obvious cause

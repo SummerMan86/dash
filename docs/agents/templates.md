@@ -26,6 +26,12 @@ Canonical artifact shapes only. Workflow policy, ownership, routing, and runtime
 - verification intent: <what was verified>
 - verification mode: `test-first` | `prototype-pin` | `verification-first`
 
+## Debugging Outcome (required when `orchestrator` routed this slice through `Debugging`; omit otherwise)
+- reproduction rerun result: <pass|fail|blocked> — <scenario/command and observed result>
+- root cause: <brief causal explanation>
+- why the fix is correct: <why this change addresses the root cause>
+- related regression check run: <command/test/check> `fresh` | `not run` — <reason>
+
 ## Branches
 - mode: `in-place` | `isolated`
 - integration branch: <feature/topic>
@@ -79,6 +85,12 @@ Per `workflow.md` §6.1. Report only gaps or N/A; green items implied:
 
 ## Checks Evidence
 - <command>: <green|red> `fresh` | `not run` — <reason>
+
+## Debugging Outcome (required when `orchestrator` routed this slice through `Debugging`; omit otherwise)
+- reproduction rerun result: <pass|fail|blocked> — <scenario/command and observed result>
+- root cause: <brief causal explanation>
+- why the fix is correct: <why this change addresses the root cause>
+- related regression check run: <command/test/check> `fresh` | `not run` — <reason>
 
 ## Review Disposition
 - code-reviewer: <OK | findings summary>
@@ -152,6 +164,14 @@ File: `docs/agents/lead-strategic/current_plan.md`
   - <3-6 concise bullets for the selected mode>
 - waiver rationale: `none` | <why verification is deferred, partial, or substituted>
 
+## Debugging (required when `orchestrator` chooses the debugging path; typical triggers: `bug report` | `failing test` | `regression`)
+- trigger: `bug report` | `failing test` | `regression`
+- reproduction scenario: <command/input/path; expected vs actual>
+- known-good comparison path: <working test/route/commit/fixture> | `none` — <reason>
+- current hypothesis / first hypothesis: <what to validate first> | `none yet — diagnose first`
+- escalation trigger: <when worker must stop and escalate>
+- expected regression check after fix: <related test/check to rerun>
+
 ## Carry-Forward Context (required for code-writing handoffs; `none` if empty)
 - previous slice: <ST-N> or `none` (independent slice)
 - carried_decisions: <from prior handoff>
@@ -171,6 +191,7 @@ File: `docs/agents/lead-strategic/current_plan.md`
 
 ## Return Artifacts
 - change manifest, boundary notes, review disposition, next action
+- include `Debugging Outcome` if this task packet included `Debugging`
 - use Worker Handoff template (§1) or Micro-Worker Handoff (§2)
 ```
 
@@ -202,6 +223,14 @@ File: `docs/agents/lead-strategic/current_plan.md`
   - <3-6 concise bullets for the selected mode>
 - waiver rationale: `none` | <why verification is deferred, partial, or substituted>
 
+## Debugging (required when `orchestrator` chooses the debugging path; typical triggers: `bug report` | `failing test` | `regression`)
+- trigger: `bug report` | `failing test` | `regression`
+- reproduction scenario: <command/input/path; expected vs actual>
+- known-good comparison path: <working test/route/commit/fixture> | `none` — <reason>
+- current hypothesis / first hypothesis: <what to validate first> | `none yet — diagnose first`
+- escalation trigger: <when worker must stop and escalate>
+- expected regression check after fix: <related test/check to rerun>
+
 ## Acceptance
 - <done-when criteria>
 
@@ -209,6 +238,7 @@ File: `docs/agents/lead-strategic/current_plan.md`
 - <what to run>
 
 ## Return Artifacts
+- include `Debugging Outcome` if this task packet included `Debugging`
 - use Micro-Worker Handoff template (§2)
 ```
 
