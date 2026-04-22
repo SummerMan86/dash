@@ -22,19 +22,20 @@ Before touching code:
 2. Read every file listed in `Bootstrap Reads`.
 3. Read local `AGENTS.md` files for the touched zones.
 4. If the slice depends on previous work, read `Carry-Forward Context` before implementation.
+5. If the task packet includes `Debugging`, treat it as required execution context before changing code.
 
-If you are running in `isolated` mode (`subagent + worktree`):
+If you are running in `isolated` mode (opt-in per `git-protocol.md` §4):
 
-- `CLAUDE.md` is only a redirect; the task packet is the real source of truth.
-- If a worktree-local redirect is stale or conflicts with this guide, the task packet and this guide win.
-- `settings.json` and user profile are not available.
+- The task packet is the only source of truth; any worktree-local navigation doc (e.g. redirect file) is informational.
+- If a redirect is stale or conflicts with this guide, the task packet and this guide win.
+- Ambient runtime config (settings, profiles) is not guaranteed.
 - You work only in your assigned worker branch.
 
 If you are running in `in-place` mode (default):
 
 - You share the checkout with `orchestrator`.
 - Commit directly to the integration branch listed in the task packet, only within owned files.
-- `settings.json` and user profile may be visible, but you still follow the task packet, not ambient config.
+- Ambient runtime config may be visible, but you still follow the task packet, not ambient config.
 
 Do not start implementation if any required task-packet field is missing:
 
@@ -43,6 +44,7 @@ Do not start implementation if any required task-packet field is missing:
 - integration branch and base commit
 - bootstrap reads
 - verification section (`intent`, `mode`, `mode rules`; `waiver rationale` when applicable)
+- debugging section when the packet routes the slice through debugging path (`trigger`, `reproduction scenario`, `known-good comparison path`, `current hypothesis / first hypothesis`, `escalation trigger`, `expected regression check after fix`)
 - acceptance criteria
 - required checks
 - required return artifacts
@@ -60,6 +62,16 @@ Escalate to `orchestrator` instead of guessing.
 6. Fix local non-critical findings when the fix is clear and still in scope.
 7. Commit to the assigned branch.
 8. Return a truthful handoff with evidence, review disposition, and risks.
+
+### Debugging discipline
+
+If the task packet includes `Debugging`, that section is the concrete execution contract distilled from `docs/agents/skills/debugging.md`.
+
+- Reproduce the issue first, or truthfully record why reproduction was not possible before editing code.
+- Use the known-good comparison path and first hypothesis as the starting point; do not jump to stacked fixes.
+- Validate one hypothesis at a time; if confidence in root cause drops or scope expands, escalate per the task packet.
+- Re-run the original reproduction after the fix and record the result in `Debugging Outcome`.
+- Handoff must include `Debugging Outcome`: reproduction rerun result, root cause, why the fix is correct, and related regression check run.
 
 ## 4. Mode Discipline
 
@@ -175,6 +187,7 @@ Canonical handoff templates: `docs/agents/templates.md` §1-§2.
 The task packet specifies which template to use. Key handoff contract:
 
 - **Required:** task summary, change manifest, checks evidence, review disposition, next action requested; Carry-Forward Context on code-writing handoffs
+- **Required for debug slices:** `Debugging Outcome` with reproduction rerun result, root cause, why the fix is correct, and related regression check run
 - **Micro-worker:** shortened format — what changed, manifest, checks, review, next action
 - If a field is not applicable, mark it `N/A` with a reason; do not silently omit
 

@@ -38,26 +38,16 @@ Runtime/model binding for supported profiles lives in
 
 Codex plugin integration, thread continuity (`--resume` / `--fresh`), and companion CLI guidance: `docs/codex-integration.md`.
 
-**Role map:**
+**Role map** (runtime binding → `execution-profiles.md`; durable state → §8 Memory Protocol):
 
-| Роль workflow | Реализация | Основная ответственность |
-|---|---|---|
-| `lead-strategic` | profile-selected Codex lane | canonical owner `current_plan.md`, strategic acceptance, architecture-docs-first при планировании |
-| `strategic-reviewer` | bounded pass внутри `lead-strategic` context | strategic acceptance/reframe safety net по `plan/report/diff` |
-| `orchestrator` | profile-selected orchestration lane | code-blind execution flow, worker dispatch, Review Gate, Architecture Readiness Check, report |
-| `worker` | profile-selected implementation lane | реализация одного slice |
-| `micro-worker` | profile-selected implementation lane | реализация одного trivial bounded slice под worker contract |
-| `*-reviewer` | profile-selected review lane | diff review по своей зоне |
-| `architecture-reviewer` (audit mode) | profile-selected reviewer lane | pre-implementation readiness assessment по planned scope |
-
-**Persistence:**
-
-| Role | Durable state |
+| Роль | Ответственность |
 |---|---|
-| `lead-strategic` | `lead-strategic/memory.md` |
-| `orchestrator` | `orchestrator/memory.md` + `last_report.md` |
-| `worker` | none (session context + handoff) |
-| reviewers | none (fresh per pass) |
+| `lead-strategic` | canonical owner `current_plan.md`, strategic acceptance, architecture-docs-first |
+| `strategic-reviewer` | bounded acceptance/reframe safety-net pass внутри `lead-strategic` context |
+| `orchestrator` | code-blind execution flow, worker dispatch, Review Gate, Architecture Readiness Check, report |
+| `worker` / `micro-worker` | реализация одного bounded slice per task packet (worker contract — `worker/guide.md`) |
+| `*-reviewer` | fresh diff review по своей зоне |
+| `architecture-reviewer` (audit mode) | pre-implementation readiness assessment по planned scope |
 
 ### 1.2. Ручная модель (fallback, deprecated)
 
@@ -79,80 +69,28 @@ Codex plugin integration, thread continuity (`--resume` / `--fresh`), and compan
 
 ### Протокол оркестрации (`orchestrator`)
 
-`orchestrator` — отдельная top-level execution role.
+`orchestrator` — top-level execution role. Детали cycle, direct-fix, transparency, worker spawn, baseline-governor spawn, memory — `orchestrator/instructions.md`.
 
-**Что `orchestrator` читает по умолчанию:**
+Core invariants:
 
-- `current_plan.md`;
-- свою durable memory в `orchestrator/memory.md`;
-- worker handoff notes;
-- reviewer verdicts;
-- checks evidence;
-- changed-files inventory;
-- branch/checkpoint metadata;
-- короткие diff/impact summaries.
-
-**Что `orchestrator` не делает:**
-
-- не пишет product code вне `direct-fix` protocol;
-- не открывает source files и raw diff hunks по умолчанию вне `direct-fix` triage;
-- не запускает product checks (`check/build/test/lint`) для implementation slices сам вне `direct-fix`;
-- не делает `git add/commit` для product changes;
-- не исправляет reviewer findings сам;
-- не компенсирует плохой handoff тем, что "сам быстро посмотрит код".
-
-**Когда делегировать Codex:**
-
-- создание или обновление `current_plan.md`;
-- strategic acceptance review;
-- bounded strategic acceptance/reframe pass;
-- semantic reframe через `Plan Change Request`;
-- governance decision, если change упирается в placement, waiver или baseline state.
-
-**Что `orchestrator` делает сам:**
-
-- координация execution flow;
-- сборка report;
-- обновление memory и usage telemetry;
-- strategic backfill при необходимости;
-- `direct-fix`, если change подпадает под fast path.
-
-**Когда dispatch worker обязателен:**
-
-- любой implementation slice, который не подпадает под `direct-fix`;
-- любые product checks и runtime verification;
-- любые code changes по findings;
-- любые уточнения, которые требуют открыть код или diff.
-
-**Как `orchestrator` держит контекст чистым:**
-
-- `direct-fix` используй только для `<= 10` строк в одном файле без architectural surface;
-- если trivial change не подпадает под `direct-fix`, он идёт через `micro-worker`, а не через self-execution;
-- при недостаточном evidence запускается transparency request, re-review или verification/fix-worker;
-- при design/boundary ambiguity эскалация идёт в `lead-strategic`, а не в self-implementation loop.
+- owner execution flow, не semantic owner плана;
+- product code остаётся worker-owned; единственное исключение — `direct-fix` protocol (`<= 10` строк, один файл, без architectural surface);
+- orchestrator не запускает product checks и не делает `git add/commit` для implementation slices вне `direct-fix`;
+- reviewer findings не исправляются self-fix'ом — fix-worker или re-review;
+- при недостаточном evidence — transparency request / re-review / verification-worker, не "сам быстро посмотрю код";
+- design/boundary ambiguity эскалируется к `lead-strategic`;
+- Codex worker-reviewer execution без proof per `docs/codex-integration.md` §4 не считается состоявшимся.
 
 ### Worker и reviewer execution shape
 
-| Роль | Технология | Почему |
+| Роль | Runtime surface | Context |
 |---|---|---|
-| `worker` | in-place (default) или isolated `subagent + worktree` (opt-in) | sequential sharing для простоты; isolation по trigger'у |
-| `reviewer` | fresh subagent | дешёвый и воспроизводимый bounded review по diff |
+| `worker` / `micro-worker` | in-place (default) или isolated worktree (opt-in per `git-protocol.md` §4) | task packet only; local `AGENTS.md` per Bootstrap Reads; persistent memory none |
+| `reviewer` | fresh per pass | diff, changed files, review scope; no межзадачный state |
 
-Workers:
+Workers по умолчанию идут sequentially в общем checkout (`feature/<topic>`); профиль `opus-orchestrated-codex-workers` это не меняет — default остаётся in-place, без automatic parallel fan-out.
 
-- по умолчанию работают sequentially в общем checkout (`feature/<topic>`);
-- профиль `opus-orchestrated-codex-workers` не меняет этот default: Codex worker по умолчанию идёт `in-place`, без отдельного worktree и без automatic parallel fan-out;
-- isolated mode (отдельный worktree + `agent/worker/<slug>` branch) подключается только по trigger'у из `git-protocol.md` §4 (parallel execution, schema/cross-layer touch, explicit isolation rationale);
-- не ведут отдельный durable `memory.md`;
-- **контекст:** получают только prompt (task packet); для isolated дополнительно видят `CLAUDE.md` из worktree (redirect-only); протокол spawn и prompt composition — `orchestrator/instructions.md` §Worker Spawn Protocol.
-
-Reviewers как fresh subagents:
-
-- стартуют заново на каждый review pass;
-- получают только diff, changed files и review scope;
-- не накапливают межзадачный review state.
-
-Полные правила mode selection, bootstrap и integration choreography — `git-protocol.md` §3-6.
+Mode selection, bootstrap, prompt composition и integration choreography — `worker/guide.md`, `git-protocol.md` §3-6, `orchestrator/instructions.md` §Worker Spawn Protocol.
 
 ## 2. Цикл задачи
 
@@ -209,6 +147,8 @@ Dispatch heuristic:
 - если slice trivial и bounded, но уже не `direct-fix`, выбирай `micro-worker`;
 - workers по умолчанию идут sequentially в in-place mode;
 - parallel execution — opt-in; требует явного rationale в task packet и автоматически переводит workers в isolated mode (`git-protocol.md` §4).
+
+Debugging is not universal for every slice. When `orchestrator` routes a diagnostic/bugfix/regression slice through the debugging path, the task packet carries a conditional `Debugging` block (`templates.md` §4/§4.1) derived from `skills/debugging.md`, and the worker handoff returns `Debugging Outcome` (`templates.md` §1/§2).
 
 `direct-fix` protocol:
 
@@ -316,6 +256,7 @@ Transparency request throttle: after 2 transparency requests for the same handof
 2. Реализует slice, прогоняет self-check и slice review.
 3. Фиксит локальные non-critical findings.
 4. Возвращает `orchestrator` summary, change manifest, checks evidence и review disposition/results.
+   Для debug slices handoff также включает reproduction rerun result, root cause, why the fix is correct, и related regression check run.
 5. `orchestrator` принимает или отклоняет handoff на основе артефактов, затем передаёт slice result в strategic loop.
 6. `lead-strategic` делает post-slice reframe и, в зависимости от operating mode, запускает bounded `strategic-reviewer` pass или ограничивается direct strategic acceptance.
 7. Вердикт:
@@ -688,7 +629,7 @@ If change is `<= 20` lines, at most 2 files, no architectural surface, no schema
 
 **Quality:** no hardcoded secrets; no speculative abstractions; file complexity within guardrails; minimum independent review floor satisfied for code-writing slices; security-relevant changes ran `security-reviewer`.
 
-**Evidence:** every check is `fresh` or `not run + reason`; change manifest truthful; review disposition recorded; no fabricated evidence.
+**Evidence:** every check is `fresh` or `not run + reason`; change manifest truthful; review disposition recorded; no fabricated evidence. For debug slices, handoff also records reproduction rerun result, root cause, why the fix is correct, and related regression check run.
 
 ### 6.2. Wave DoD (Level 2)
 

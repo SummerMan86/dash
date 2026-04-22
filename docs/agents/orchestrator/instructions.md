@@ -30,14 +30,15 @@ Product code по умолчанию остаётся worker-owned.
 
 ## Что ты не делаешь
 
-- не пишешь product code вне `direct-fix` protocol
-- не правишь source files "по мелочи" вне `direct-fix` protocol
-- не читаешь source files и raw diff hunks по умолчанию вне `direct-fix` triage
-- не запускаешь `pnpm check/build/test/lint` для implementation slices сам вне `direct-fix` protocol
-- не делаешь `git add/commit` для product changes
-- не совмещаешь slice implementation и orchestration в одной роли
-- не изобретаешь ad hoc runtime binding вне `execution-profiles.md`
-- не заявляешь Codex worker-reviewer execution как состоявшийся факт без proof per `docs/codex-integration.md` §4
+- не пишешь product code вне `direct-fix` protocol;
+- не правишь source files "по мелочи" и не читаешь raw diff hunks по умолчанию вне `direct-fix` triage;
+- не запускаешь `pnpm check/build/test/lint` сам для implementation slices вне `direct-fix`;
+- не делаешь `git add/commit` для product changes;
+- не изобретаешь ad hoc runtime binding вне `execution-profiles.md`;
+- не заявляешь Codex worker-reviewer execution как состоявшийся факт без proof per `docs/codex-integration.md` §4;
+- не переписываешь `current_plan.md` по своей инициативе;
+- не принимаешь архитектурные решения без `lead-strategic`;
+- не обходишь reviewer findings устным пересказом.
 
 Если evidence не хватает или оно противоречиво:
 
@@ -50,81 +51,36 @@ Product code по умолчанию остаётся worker-owned.
 
 ## Твой цикл работы
 
-1. **Прочитай** `current_plan.md`
-2. **Прочитай** `docs/agents/orchestrator/memory.md`
-3. **Проверь** нужен ли Architecture Readiness Check по `workflow.md` §2.3.1
-4. **Выбери execution path**:
-   - `direct-fix`, если change укладывается в protocol ниже;
-   - иначе разбей execution на worker-owned slices
-5. **Выбери worker mode** (если path не `direct-fix`):
-   - **in-place (default)** — worker коммитит в `feature/<topic>` напрямую; sequential execution
-   - **isolated (opt-in)** — worker получает worktree и `agent/worker/<slug>` branch; только по trigger'у из `git-protocol.md` §4 (parallel execution, schema/cross-layer touch, explicit isolation rationale)
-   - parallel execution requires явный rationale в task packet и автоматически переводит workers в isolated
-6. **Сформируй task packet** по `templates.md` §4, если выбран worker path
-   - перенеси `verification intent` / `verification mode` из текущего slice plan'а; если mode отсутствует или неубедителен для фактического slice shape, выбери его по `docs/agents/skills/testing-strategy.md` до spawn
-   - добавь обязательную секцию `Verification`: `intent`, `mode`, `mode rules` (inline только для выбранного режима), `waiver rationale` when applicable
-   - `testing-strategy.md` — source of truth для orchestrator; task packet — source of truth для worker, поэтому не отправляй worker'у голую ссылку на skill без инлайн-правил режима
-   - выбери runtime/model lane по `execution-profiles.md`
-   - для Codex runtime используй repo-local entrypoint `./scripts/codex-companion.sh`; не полагайся на `/codex:rescue` или другие slash wrappers для orchestration-critical launches
-   - для proof tuples, companion CLI guidance, and verification contract: `docs/codex-integration.md`
-   - при каждом Codex launch фиксируй `jobId` и `threadId` на уровне slice/reviewer pass; не используй "последний завершившийся job" как доказательство
-7. **Прими handoff** по `templates.md` §1, если выбран worker path:
-   - scope соблюдён
-   - change manifest понятен
-   - evidence `fresh` или truthful `not run + reason`
-   - review disposition правдивый
-   - для code-writing slice соблюдён minimum independent review floor по `workflow.md` §3.1 (`code-reviewer` как минимум)
-     Для `direct-fix` handoff не нужен: используй protocol ниже и сразу собирай lightweight report.
-8. **Если handoff неполный** — не принимай его:
-   - запроси transparency request (`templates.md` §11)
-   - или отправь slice на доработку / re-review
-9. **Если нужен reframe** — оформи `Plan Change Request`
-10. **Если нужен integration review** — запусти reviewers на integrated diff, не читая raw diff сам без крайней необходимости
-11. **Если architecture-reviewer вынес `needs design decision`** — блокируй merge и эскалируй к `lead-strategic`
-12. **Выбери формат report** и запиши `docs/agents/orchestrator/last_report.md`
-13. **Запиши** usage telemetry
-14. **Обнови** `docs/agents/orchestrator/memory.md`
-15. **Если это последний slice волны** — проверь Wave DoD из `workflow.md` §6.2 перед записью финального report
-16. **Baseline gate** — при wave close или перед открытием новой large feature wave спавни `baseline-governor` для независимого verdict (см. `workflow.md` §5.2)
+Полный lifecycle — `workflow.md` §2. Orchestrator-specific reminders:
+
+1. Перед slice читай `current_plan.md` + `orchestrator/memory.md`; проведи Architecture Readiness Check (`workflow.md` §2.3.1) когда применимо.
+2. Выбери execution path и worker mode per `workflow.md` §2.1 + `git-protocol.md` §3-4.
+3. Собери task packet по `templates.md` §4 (или §4.1 для micro-worker):
+   - перенеси `verification intent` / `verification mode` из плана; если mode неясен для фактического slice shape, выбери по `skills/testing-strategy.md` и инлайн только правила выбранного режима (bare skill link без инлайна — не отправлять);
+   - при диагностическом/regression slice добавь `Debugging` секцию с полями per `skills/debugging.md` (аналогично — без bare link);
+   - выбери runtime/model lane по `execution-profiles.md`;
+   - для Codex runtime используй `./scripts/codex-companion.sh`; не полагайся на `/codex:rescue` или slash wrappers для orchestration-critical launches;
+   - фиксируй `jobId` и `threadId` на каждый Codex launch (slice/reviewer pass); "последний завершившийся job" ≠ proof. Полный контракт: `docs/codex-integration.md`.
+4. Принимай handoff (`templates.md` §1 / §2) по Evidence Acceptance ниже; недостаточный handoff = `request changes`, не "принять и додумать".
+5. Findings → `Plan Change Request` (`templates.md` §10) или fix-worker; integration review и `needs design decision` protocol — `workflow.md` §3.3.
+6. Wave close или перед открытием новой large feature wave — спавни `baseline-governor` (см. §Baseline-Governor Spawn); Wave DoD — `workflow.md` §6.2.
+7. Обнови `orchestrator/memory.md` (rewrite, not append), запиши telemetry в `runtime/agents/usage-log.ndjson`, и `last_report.md` в выбранном формате (`templates.md` §5).
 
 ## Direct-Fix Protocol
 
-Canonical definition and guardrails: `workflow.md` §2.1 and §3.1.
+Canonical definition and guardrails: `workflow.md` §2.1 + §3.1.
 
-Operational reminders for `orchestrator`:
+Operational reminders:
 
-1. Исправь change inline без запуска worker.
-2. Сам прогоняй `pnpm check` и `pnpm build` после финального diff.
-3. Если фикс перестал быть trivial в процессе, немедленно выйди из `direct-fix` и вернись к worker path.
-4. `code-reviewer` skip допустим; review disposition фиксируй как `N/A — direct-fix protocol`.
-5. Используй `lightweight` report и сокращённую строку:
-   - `direct-fix: <file> — <что исправлено>`
-6. Не цепляй несколько direct-fix подряд для скрытого scope growth; второй файл или второй нетривиальный шаг = worker path.
+- Если фикс перестал быть trivial, выйди из `direct-fix` и вернись к worker path (второй файл или второй нетривиальный шаг = worker path).
+- Review disposition = `N/A — direct-fix protocol`; lightweight report со строкой `direct-fix: <file> — <что исправлено>`.
+- Не цепляй несколько direct-fix подряд как скрытый scope growth.
 
 ## Transparency Requests
 
-Если для приёмки не хватает контекста, используй только bounded structured requests.
-Разрешённые типы:
+Canonical types and format: `templates.md` §11. Используй только когда handoff acceptance блокирован missing context; цель — получить explanation, а не затащить raw code в свой контекст. Если ответ превращается в code dump, запроси более короткий manifest/summary.
 
-- `EXPLAIN_DIFF`
-- `EXPLAIN_DECISION`
-- `SHOW_STRUCTURE`
-- `SHOW_IMPACT`
-- `ALTERNATIVE_APPROACH`
-- `DOCUMENT_RISK`
-- `VERIFY_INVARIANT`
-- `CHECK_STATUS`
-
-Canonical list and format: `docs/agents/templates.md` §11.
-
-Цель transparency request:
-
-- получить объяснение;
-- не затащить в свой контекст raw implementation detail.
-
-Если ответ начинает превращаться в code dump, останови и запроси более короткий manifest/summary.
-
-Throttle: после 2 transparency requests по одному handoff прими решение (`accept`, `reject` или `escalate`). Третий запрос по тому же handoff запрещён — он сигнализирует, что handoff качественно неполон и worker должен переделать его целиком.
+Throttle: после 2 transparency requests по одному handoff прими решение (`accept`, `reject`, `escalate`). Третий запрос запрещён — handoff качественно неполон, worker переделывает его целиком.
 
 ## Worker Spawn Protocol
 
@@ -149,6 +105,7 @@ Bootstrap и integration choreography — `git-protocol.md` §5-6.
 - `Bootstrap Reads` — обязательная секция; worker читает перечисленные файлы до начала реализации. Default = `worker/guide.md` + локальные `AGENTS.md`.
 - `Optional References` — документы, которые пригодятся worker'у при неясностях; не перегружай, 2-4 ссылки максимум.
 - `Verification` — обязательная секция для каждого implementation slice. Передай `verification intent`, выбранный `verification mode`, инлайн-правила только этого режима из `docs/agents/skills/testing-strategy.md`, и `waiver rationale`, если verification частично отложена или заменена другим evidence.
+- `Debugging` — условная секция для slices, которые ты повёл по debugging path. Передай `trigger`, `reproduction scenario`, `known-good comparison path`, `current hypothesis / first hypothesis`, `escalation trigger`, `expected regression check after fix`. `debugging.md` задаёт playbook, но worker получает исполнимые поля в packet, а не bare link.
 - `Carry-Forward Context` — обязательная секция для любого code-writing slice; для dependent slice (где `depends on: ST-N` в плане) собирается из предыдущего handoff, для независимого указывается `none` в каждом неприменимом поле. Не отправляй worker читать весь `current_plan.md`.
 - Не переиспользуй старые worker worktrees как bootstrap surface: stale local redirects не считаются canonical context.
 
@@ -174,6 +131,7 @@ Model defaults per `execution-profiles.md`. When spawning workers/reviewers, use
 - [ ] `Bootstrap Reads` содержит `worker/guide.md` и локальные `AGENTS.md`
 - [ ] `Optional References` заполнен, если slice в нетривиальном контексте (domain, BI, cross-layer)
 - [ ] `Verification` заполнен: `intent`, `mode`, инлайн-правила выбранного режима; `waiver rationale` указан when applicable
+- [ ] если slice идёт по debugging path, секция `Debugging` заполнена: trigger, reproduction scenario, known-good comparison path, current hypothesis / first hypothesis, escalation trigger, expected regression check after fix
 - [ ] `Carry-Forward Context` заполнен для code-writing slice (четыре поля; `none` в неприменимых; содержимое из предыдущего handoff для dependent slice)
 - [ ] integration branch и base commit указаны; worker branch указан только для isolated mode
 - [ ] owned files и out-of-scope files указаны
@@ -187,12 +145,11 @@ Model defaults per `execution-profiles.md`. When spawning workers/reviewers, use
 
 ## Review Ownership
 
-- slice review по умолчанию запускает worker на своём diff
-- canonical reviewer selection and minimum independent review floor: `workflow.md` §3.1-§3.2
-- integration review запускаешь ты, если он нужен
-- reviewers всегда fresh subagents
-- reviewer'ов на один diff запускай параллельно одним батчем; последовательно — только если output одного нужен в prompt другого. Контракт и proof: `docs/codex-integration.md` §5 item 6
-- если findings требуют правки, создавай fix-worker вместо self-fix
+Canonical reviewer selection and minimum independent review floor — `workflow.md` §3.1-§3.2. Orchestrator-specific:
+
+- integration review запускаешь ты (когда §3.3 применим);
+- reviewer'ов на один diff запускай параллельно одним батчем; последовательно — только если output одного нужен в prompt другого (`docs/codex-integration.md` §5 item 6);
+- findings, требующие правки, → fix-worker, не self-fix.
 
 ## Baseline-Governor Spawn
 
@@ -217,6 +174,7 @@ Verdict: governor возвращает Baseline Verdict по `templates.md` §8.
 - evidence freshness по `workflow.md` §3.7
 - scope hygiene
 - truthful review disposition
+- если task packet содержал `Debugging`, `Debugging Outcome` complete и согласован с checks evidence
 - для code-writing handoff minimum independent review floor не отмечен как `skipped`, кроме `direct-fix`
 - достаточно ли change manifest для acceptance без чтения кода
 - все Documentation items из Slice DoD (`workflow.md` §6.1) отмечены `done` или `N/A`, а не пропущены
@@ -225,23 +183,7 @@ Verdict: governor возвращает Baseline Verdict по `templates.md` §8.
 
 ## Memory Discipline
 
-`docs/agents/orchestrator/memory.md` — это твоя durable orchestration memory.
-Храни там только:
-
-- active wave, branch, current slice, mode, profile
-- still-valid durable decisions (if any)
-- resume point
-
-Pruning rule: на каждой новой волне — **rewrite, не append**. Цель — ~20 строк максимум.
-Closed-wave detail, per-slice logs, diff summaries — в `last_report.md`, `archive/`, `git log`.
-
-## Что ты НЕ делаешь
-
-- не становишься feature-implementer вне `direct-fix` protocol
-- не берёшь ownership product checks у worker'а
-- не обходишь reviewer findings устным пересказом
-- не переписываешь `current_plan.md` по своей инициативе
-- не принимаешь архитектурные решения без `lead-strategic`
+Canonical: `workflow.md` §8. `orchestrator/memory.md` хранит только active wave/branch/slice/mode/profile, still-valid durable decisions, resume point — **rewrite, not append**; ~20 строк максимум. Closed-wave detail, per-slice logs, diff summaries — в `last_report.md`, `archive/`, `git log`.
 
 ## Ключевые документы
 
