@@ -9,7 +9,7 @@
 - рекомендации из `architecture_improvements_backlog.md`;
 - итоговую приоритизацию: что делать сейчас, что зафиксировать как триггер, а что оставить на полировку.
 
-Документ задуман как практическое дополнение к `docs/architecture.md` и `docs/architecture_dashboard_bi.md`, без пересборки уже работающего архитектурного ядра.
+Документ задуман как практическое дополнение к `docs/architecture.md` и `docs/bi/architecture.md`, без пересборки уже работающего архитектурного ядра.
 
 ---
 
@@ -178,7 +178,7 @@ BI doc уже задает полезный минимум telemetry fields (`da
   - `compileDataset -> DatasetIr` заменить на актуальный runtime path;
   - `DatasetIr` в foundation doc либо убрать из канонического BI narrative, либо явно оставить как legacy / internal terminology;
   - `planFiltersForDataset` заменить на текущую planner terminology;
-- в `docs/architecture_dashboard_bi.md` убрать внутреннюю рассинхронизацию между `planFiltersForTarget(s)` и `planFiltersForDataset()`;
+- в `docs/bi/architecture.md` убрать внутреннюю рассинхронизацию между `planFiltersForTarget(s)` и `planFiltersForDataset()`;
 - проверить `Verification Hooks`, чтобы в foundation doc не оставались устаревшие счетчики и прошлые baseline-артефакты.
 
 **Статус рекомендации:** принять без споров.
@@ -492,7 +492,7 @@ type DatasetGovernance = {
 
 ---
 
-## 7.2. Изменения в `docs/architecture_dashboard_bi.md`
+## 7.2. Изменения в `docs/bi/architecture.md`
 
 ### Обязательно
 
@@ -660,4 +660,3 @@ type DatasetGovernance = {
 - аккуратно добить migration debt.
 
 То есть правильная стратегия — **эволюционное усиление текущего modular BI monolith**, а не архитектурный разворот.
-

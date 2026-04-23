@@ -4,7 +4,7 @@
  * These types are additive: they coexist with the current runtime
  * and do not change route behavior until BR-2+.
  *
- * Canonical reference: docs/architecture_dashboard_bi.md §1
+ * Canonical reference: docs/bi/architecture.md §1
  */
 import type { z } from 'zod';
 import type { DatasetId, DatasetField, JsonValue } from './contract';

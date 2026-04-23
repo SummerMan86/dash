@@ -35,7 +35,7 @@ Product code по умолчанию остаётся worker-owned.
 - не запускаешь `pnpm check/build/test/lint` сам для implementation slices вне `direct-fix`;
 - не делаешь `git add/commit` для product changes;
 - не изобретаешь ad hoc runtime binding вне `execution-profiles.md`;
-- не заявляешь Codex worker-reviewer execution как состоявшийся факт без proof per `docs/codex-integration.md` §4;
+- не заявляешь Codex worker-reviewer execution как состоявшийся факт без proof per `./docs/agents/codex-integration.md` §4;
 - не переписываешь `current_plan.md` по своей инициативе;
 - не принимаешь архитектурные решения без `lead-strategic`;
 - не обходишь reviewer findings устным пересказом.
@@ -60,7 +60,7 @@ Product code по умолчанию остаётся worker-owned.
    - при диагностическом/regression slice добавь `Debugging` секцию с полями per `skills/debugging.md` (аналогично — без bare link);
    - выбери runtime/model lane по `execution-profiles.md`;
    - для Codex runtime используй `./scripts/codex-companion.sh`; не полагайся на `/codex:rescue` или slash wrappers для orchestration-critical launches;
-   - фиксируй `jobId` и `threadId` на каждый Codex launch (slice/reviewer pass); "последний завершившийся job" ≠ proof. Полный контракт: `docs/codex-integration.md`.
+   - фиксируй `jobId` и `threadId` на каждый Codex launch (slice/reviewer pass); "последний завершившийся job" ≠ proof. Полный контракт: `./docs/agents/codex-integration.md`.
 4. Принимай handoff (`templates.md` §1 / §2) по Evidence Acceptance ниже; недостаточный handoff = `request changes`, не "принять и додумать".
 5. Findings → `Plan Change Request` (`templates.md` §10) или fix-worker; integration review и `needs design decision` protocol — `workflow.md` §3.3.
 6. Wave close или перед открытием новой large feature wave — спавни `baseline-governor` (см. §Baseline-Governor Spawn); Wave DoD — `workflow.md` §6.2.
@@ -148,7 +148,7 @@ Model defaults per `execution-profiles.md`. When spawning workers/reviewers, use
 Canonical reviewer selection and minimum independent review floor — `workflow.md` §3.1-§3.2. Orchestrator-specific:
 
 - integration review запускаешь ты (когда §3.3 применим);
-- reviewer'ов на один diff запускай параллельно одним батчем; последовательно — только если output одного нужен в prompt другого (`docs/codex-integration.md` §5 item 6);
+- reviewer'ов на один diff запускай параллельно одним батчем; последовательно — только если output одного нужен в prompt другого (`./docs/agents/codex-integration.md` §5 item 6);
 - findings, требующие правки, → fix-worker, не self-fix.
 
 ## Baseline-Governor Spawn
@@ -191,6 +191,6 @@ Canonical: `workflow.md` §8. `orchestrator/memory.md` хранит только
 - `docs/agents/templates.md`
 - `docs/agents/git-protocol.md`
 - `docs/agents/invariants.md`
-- `docs/codex-integration.md`
+- `./docs/agents/codex-integration.md`
 - `docs/agents/lead-strategic/current_plan.md`
 - `docs/agents/orchestrator/memory.md`

@@ -14,7 +14,7 @@
  *   7. Execute IR via provider (entry-owned metadata) + populate cache on success
  *   8. Return DatasetResponse
  *
- * Canonical reference: docs/architecture_dashboard_bi.md §1
+ * Canonical reference: docs/bi/architecture.md §1
  */
 import type { DatasetId, DatasetQuery, DatasetResponse, DatasetErrorCode, DatasetIr } from '../model';
 import type { Provider, ServerContext } from '../model';

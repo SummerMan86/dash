@@ -1,6 +1,10 @@
 # Quickstart — Agent Workflow
 
-Operator runbook. Process truth: `docs/agents/workflow.md`. Runtime integration: `docs/codex-integration.md`.
+> **Audience:** human operator.
+> Агенты (orchestrator, lead-strategic, workers, reviewers) — не грузи этот файл в контекст.
+> Process truth для агентов: [`docs/agents/workflow.md`](./agents/workflow.md).
+
+Operator runbook. Process truth: `docs/agents/workflow.md`. Runtime integration: `./docs/agents/codex-integration.md`.
 
 ## How It Works
 
@@ -62,15 +66,7 @@ For a simple local fix:
 
 2. Codex plugin configured (check with preflight).
 
-3. tmux running:
-
-   ```bash
-   tmux new-session -s agents
-   cd ~/shared_folder/apps/dashboard-builder
-   claude
-   ```
-
-4. Codex runtime smoke test:
+3. Codex runtime smoke test:
 
    ```bash
    ./scripts/codex-companion.sh setup
@@ -83,26 +79,7 @@ not as the primary worker or strategic launch path.
 
 ## Common Scenarios
 
-### Continue work
-
-```text
-Продолжи работу. Восстановись как orchestrator:
-- docs/agents/orchestrator/memory.md
-- docs/agents/lead-strategic/memory.md
-- docs/agents/orchestrator/instructions.md
-- docs/agents/lead-strategic/current_plan.md
-```
-
-### After auto-compact
-
-```text
-Ты — orchestrator. Восстановись:
-1. Прочитай docs/agents/orchestrator/memory.md
-2. Прочитай docs/agents/lead-strategic/memory.md
-3. Прочитай docs/agents/orchestrator/instructions.md
-4. Прочитай docs/agents/lead-strategic/current_plan.md
-Продолжи работу.
-```
+> Recovery после auto-compact и continue-work протокол — в `CLAUDE.md` (§Восстановление после auto-compact).
 
 ### Escalation from Claude
 
@@ -158,13 +135,3 @@ Don't fix process issues verbally. Ask `orchestrator` to follow `docs/agents/rec
 | **Handoff** | Formal result delivery from worker to orchestrator |
 | **Escalation** | Agent asks you for a decision |
 | **Operating mode** | `high-risk iterative`, `ordinary iterative`, or `batch/low-risk` |
-
-## Tmux Navigation
-
-| Action | Key |
-|---|---|
-| Next pane | `Shift+Down` |
-| Previous pane | `Shift+Up` |
-| New window | `Ctrl+B, C` |
-| Detach (session lives) | `Ctrl+B, D` |
-| Reattach | `tmux attach -t agents` |

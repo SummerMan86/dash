@@ -2,8 +2,8 @@
 
 Deferred improvements to `docs/architecture.md` and repo-wide architectural surface. Items here are **not blocking current work**; they are tracked so they surface when their trigger arrives or when a doc polish wave is scheduled.
 
-Canonical root: [architecture.md](./architecture.md).
-Companion verticals: [architecture_dashboard_bi.md](./architecture_dashboard_bi.md), [architecture_emis.md](./architecture_emis.md).
+Canonical root: [../architecture.md](../architecture.md).
+Companion verticals: [../bi/architecture.md](../bi/architecture.md), [../emis/architecture.md](../emis/architecture.md).
 
 ## Priority model
 
@@ -41,7 +41,7 @@ Companion verticals: [architecture_dashboard_bi.md](./architecture_dashboard_bi.
 
 ### P2.2. Table of contents
 
-- **What.** Add a TOC at the top, mirroring `architecture_dashboard_bi.md:25-36` style.
+- **What.** Add a TOC at the top, mirroring the style used in `docs/bi/architecture.md`.
 - **Why.** §1 has 10 subsections + 10 top-level sections; TOC halves scroll cost for reviewers.
 - **Cost.** ~5 minutes.
 
@@ -71,7 +71,7 @@ Companion verticals: [architecture_dashboard_bi.md](./architecture_dashboard_bi.
 
 ### P3.1. Repo-wide observability conventions
 
-- **What.** Section on: log format, levels, `x-request-id` propagation repo-wide (today scoped to EMIS only), health/readyz convention, structured telemetry minimum fields (the BI doc has a good template at `architecture_dashboard_bi.md:512-536`).
+- **What.** Section on: log format, levels, `x-request-id` propagation repo-wide (today scoped to EMIS only), health/readyz convention, structured telemetry minimum fields (the BI doc has a good template in `docs/bi/architecture.md` under Query Observability).
 - **Why.** Today cross-cutting observability lives per vertical; a repo-wide baseline would prevent drift.
 
 ### P3.2. Time/timezone policy

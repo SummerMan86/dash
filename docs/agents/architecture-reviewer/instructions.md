@@ -84,11 +84,11 @@ Severity:
 
 1. `orchestrator` эскалирует finding к `lead-strategic` (или architecture pass, `workflow.md` §5.1)
 2. Решение согласуется и фиксируется в architecture doc **до merge**:
-   - `architecture_dashboard_bi.md` для BI-решений
+   - `bi/architecture.md` для BI-решений
    - `emis/architecture.md` для EMIS-решений
    - `architecture.md` для repo-wide решений
 3. Если решение создаёт enforceable rule → обновляется `invariants.md`
-4. Если решение создаёт migration debt → обновляется debt register (§9 `architecture_dashboard_bi.md`)
+4. Если решение создаёт migration debt → обновляется debt register (§9 `bi/architecture.md`)
 5. После фиксации в docs → re-review (architecture-reviewer) подтверждает, что diff соответствует зафиксированному решению
 
 Решение, обнаруженное post-implementation, не должно мержиться "задним числом". Протокол: **остановить → согласовать → зафиксировать в docs → продолжить**.
@@ -102,7 +102,7 @@ Severity:
 ### Required input (audit mode)
 
 - `docs/agents/invariants.md` (§1-9)
-- `docs/architecture_dashboard_bi.md` (§8 guardrails + §9 debt register) — если BI scope
+- `docs/bi/architecture.md` (§8 guardrails + §9 debt register) — если BI scope
 - relevant domain overlay (e.g. `docs/agents/invariants-emis.md`) — если domain scope
 - planned scope: описание фичи, planned files, architectural surface
 - overlay's exceptions registry, if applicable
@@ -110,12 +110,12 @@ Severity:
 ### Checks (audit mode)
 
 1. **Compliance с текущими guardrails:**
-   - BI: page decomposition, paramsSchema explicit, fetchDataset migration path, caching symmetry, chart configuration (`architecture_dashboard_bi.md` §8)
+   - BI: page decomposition, paramsSchema explicit, fetchDataset migration path, caching symmetry, chart configuration (`bi/architecture.md` §8)
    - Общие: layer boundaries, placement, server isolation, execution-path boundaries, stabilization state, technologies (`invariants.md` §1-9)
    - Domain: domain-specific rules from overlay
 
 2. **Migration debt impact:**
-   - Planned scope пересекается с migration debt zone (`architecture_dashboard_bi.md` §9)?
+   - Planned scope пересекается с migration debt zone (`bi/architecture.md` §9)?
    - Если да — какой debt resolution включить в slice budget
 
 3. **New architectural decisions needed:**

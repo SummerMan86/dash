@@ -3,7 +3,7 @@
 Delta appendix to `workflow.md` for autonomous execution without user-in-the-loop.
 
 Standard process (roles, review, governance, DoD): `workflow.md`.
-Codex commands and prompting templates: `docs/codex-integration.md`.
+Codex commands and prompting templates: `./docs/agents/codex-integration.md`.
 Standard recovery protocols: `recovery.md`.
 
 Important:
@@ -68,7 +68,7 @@ Timeout: 60 минут
 Guardrails: default
 ```
 
-Headless CLI templates and Codex prompting: `docs/codex-integration.md` §6.
+Headless CLI templates and Codex prompting: `./docs/agents/codex-integration.md` §6.
 
 ### Autonomy parameters
 
@@ -232,7 +232,7 @@ No memory update — lightweight tasks do not change strategic context.
 ### Full — startup
 
 1. Create decision-log
-2. Invoke Codex for strategic planning (`docs/codex-integration.md` §6)
+2. Invoke Codex for strategic planning (`./docs/agents/codex-integration.md` §6)
 3. `lead-strategic` creates `current_plan.md` + self-approves
 4. Begin execution loop
 
@@ -243,7 +243,7 @@ Per slice:
 1. Dispatch worker (as standard)
 2. Worker: implement + slice review + handoff
 3. Check handoff, run Review Gate
-4. Invoke Codex for autonomous acceptance (`docs/codex-integration.md` §6)
+4. Invoke Codex for autonomous acceptance (`./docs/agents/codex-integration.md` §6)
 5. `lead-strategic`: verdict + reframe
 6. Check guardrails + timeout
 7. REJECT → return to worker / simplify; ACCEPT → next slice

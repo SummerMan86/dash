@@ -134,7 +134,7 @@ Live backlog: [docs/emis_next_tasks_2026_03_22.md](./emis_next_tasks_2026_03_22.
 ## 7. Read Next
 
 - Если нужны repo-wide boundaries: [docs/architecture.md](./architecture.md)
-- Если нужна EMIS-specific architecture: [docs/architecture_emis.md](./architecture_emis.md)
+- Если нужна EMIS-specific architecture: [docs/emis/architecture.md](../../emis/architecture.md)
 - Если нужна краткая рабочая decision discipline:
   [docs/emis_working_contract.md](./emis_working_contract.md)
 - Если задача про runtime/API behavior:

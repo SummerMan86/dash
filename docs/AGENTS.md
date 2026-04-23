@@ -2,7 +2,7 @@
 
 Этот файл - единственный полный каталог документации в репозитории.
 Canonical repo-wide foundation: [architecture.md](./architecture.md).
-BI vertical: [architecture_dashboard_bi.md](./architecture_dashboard_bi.md).
+BI vertical: [bi/architecture.md](./bi/architecture.md).
 EMIS vertical: [emis/README.md](./emis/README.md) (doc set entry).
 Historical BI archive: [archive/bi/architecture_dashboard_bi.md](./archive/bi/architecture_dashboard_bi.md).
 Модульная навигация и contour entry points: корневой [AGENTS.md](../AGENTS.md).
@@ -34,7 +34,7 @@ Historical BI archive: [archive/bi/architecture_dashboard_bi.md](./archive/bi/ar
 | Документ                                                                           | Владеет                                      | Source of truth для                                                             |
 | ---------------------------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------- |
 | `architecture.md`                                                                  | canonical repo-wide foundation               | topology, package map, import rules, deployment, shared infrastructure            |
-| `architecture_dashboard_bi.md`                                                     | BI vertical architecture                     | dataset runtime, filter contract, BI-adjacent ops paths, DWH integrations, extension points |
+| `bi/architecture.md`                                                               | BI vertical architecture                     | dataset runtime, filter contract, BI-adjacent ops paths, DWH integrations, extension points |
 | `emis/architecture.md`                                                             | EMIS vertical architecture                   | operational paths, contracts, ingestion, PostGIS, auth                             |
 | `../apps/web/src/routes/dashboard/wildberries/dwh_for_wildberries_requirements.md` | Wildberries DWH contract                     | полный контракт с DWH: витрины, колонки, фильтры, алерты, требования к качеству |
 | `strategy/bi_strategy.md`                                                          | local dashboard-builder BI strategy contract | как переложить Power BI strategy/BSC постановку в MVE-архитектуру               |
@@ -111,7 +111,7 @@ Consolidated EMIS doc set lives in `docs/emis/`. Each file owns one axis; there 
 | --------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------ |
 | `agents/workflow.md`                          | core agent lifecycle, review model, governance, DoD, memory protocol | процесс, plan ownership, execution loop, review gate, governance passes, DoD, durable memory |
 | `agents/execution-profiles.md`                | runtime/model binding per profile            | which runtime, model, effort, fallback per role per profile              |
-| `../docs/codex-integration.md`                | Codex CLI integration                        | plugin commands, proof tuples, companion CLI, Codex prompting templates  |
+| `.././docs/agents/codex-integration.md`                | Codex CLI integration                        | plugin commands, proof tuples, companion CLI, Codex prompting templates  |
 | `agents/autonomous-mode.md`                   | autonomous execution delta                   | autonomous mode lifecycle, decision framework, guardrails, recovery      |
 | `agents/templates.md`                         | all agent communication templates            | plan, task, handoff, report, governance, transparency templates          |
 | `agents/invariants.md`                        | generic project invariants                   | repo-wide architecture/data/schema/complexity guardrails                 |
@@ -151,7 +151,7 @@ Consolidated EMIS doc set lives in `docs/emis/`. Each file owns one axis; there 
 
 1. `README.md`
 2. `architecture.md` (canonical repo-wide foundation)
-3. `architecture_dashboard_bi.md` (BI vertical)
+3. `bi/architecture.md` (BI vertical)
 4. `../db/schema_catalog.md`
 5. если задача про Wildberries DWH - `../apps/web/src/routes/dashboard/wildberries/dwh_for_wildberries_requirements.md`
 6. если задача про strategy dashboards - `strategy/bi_strategy.md`
@@ -204,7 +204,7 @@ Consolidated EMIS doc set lives in `docs/emis/`. Each file owns one axis; there 
 
 - Этот файл владеет полным каталогом документации.
 - `architecture.md` владеет canonical repo-wide foundation architecture.
-- `architecture_dashboard_bi.md` владеет BI vertical architecture.
+- `bi/architecture.md` владеет BI vertical architecture.
 - `emis/architecture.md` владеет EMIS vertical architecture.
 - Корневой `AGENTS.md` владеет развилкой по контурам и navigation entry points.
 - `README.md` не должен дублировать doc map; он только отправляет сюда.

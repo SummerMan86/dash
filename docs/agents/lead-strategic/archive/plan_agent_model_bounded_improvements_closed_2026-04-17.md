@@ -27,7 +27,7 @@ Land bounded, high-leverage improvements to the agent workflow documentation and
 ### Runtime delta since plan open (working tree; strategic acceptance pending)
 
 - canonical Codex runtime path switched to repo-local `./scripts/codex-companion.sh`; slash/plugin surface is now optional convenience only, not orchestration-critical path
-- active docs aligned to that runtime contract: `docs/codex-integration.md`, `docs/QUICKSTART.md`, `docs/agents/orchestrator/instructions.md`, `docs/agents/execution-profiles.md`, `docs/ops/usage-telemetry.md`, `scripts/AGENTS.md`
+- active docs aligned to that runtime contract: `./docs/agents/codex-integration.md`, `docs/QUICKSTART.md`, `docs/agents/orchestrator/instructions.md`, `docs/agents/execution-profiles.md`, `docs/ops/usage-telemetry.md`, `scripts/AGENTS.md`
 - validated through companion path: strategic read-only, strategic write-capable, worker write-capable, background task, `review`, and `adversarial-review`
 - validated concurrency only at runtime level: concurrent background read-only jobs and concurrent write-to-`/tmp` jobs are green; parallel Codex workers in shared checkout remain intentionally unproven
 - new operational caveats now part of the live contract: `--resume` is gated by the workspace active-job registry; stable proof handle is `jobId + threadId`, not "latest finished"
@@ -164,6 +164,6 @@ Agent workflow docs reflect real operating practice: structured carry-forward, c
 - Operating-mode definitions: `docs/agents/workflow.md` §2.4
 - Strategic-reviewer cadence and risk signals: `docs/agents/workflow.md` §4.1
 - Worker mode selection (single SoT): `docs/agents/git-protocol.md` §3-4
-- Codex runtime contract: `docs/codex-integration.md`
+- Codex runtime contract: `./docs/agents/codex-integration.md`
 - Codex proof/telemetry contract: `docs/ops/usage-telemetry.md`
 - ESLint rule-introduction policy: `docs/agents/invariants.md` §10

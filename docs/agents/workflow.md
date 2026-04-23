@@ -11,7 +11,7 @@ Supporting docs:
 - `git-protocol.md` — branches, worktrees, integration choreography
 - `autonomous-mode.md` — autonomous execution delta
 - `templates.md` — all templates (plan, task, handoff, report, governance, transparency)
-- `docs/codex-integration.md` — Codex runtime integration, plugin commands, proof tuples
+- `./docs/agents/codex-integration.md` — Codex runtime integration, plugin commands, proof tuples
 
 ## 1. Модель работы
 
@@ -36,7 +36,7 @@ orchestrator
 Runtime/model binding for supported profiles lives in
 `execution-profiles.md`.
 
-Codex plugin integration, thread continuity (`--resume` / `--fresh`), and companion CLI guidance: `docs/codex-integration.md`.
+Codex plugin integration, thread continuity (`--resume` / `--fresh`), and companion CLI guidance: `./docs/agents/codex-integration.md`.
 
 **Role map** (runtime binding → `execution-profiles.md`; durable state → §8 Memory Protocol):
 
@@ -79,7 +79,7 @@ Core invariants:
 - reviewer findings не исправляются self-fix'ом — fix-worker или re-review;
 - при недостаточном evidence — transparency request / re-review / verification-worker, не "сам быстро посмотрю код";
 - design/boundary ambiguity эскалируется к `lead-strategic`;
-- Codex worker-reviewer execution без proof per `docs/codex-integration.md` §4 не считается состоявшимся.
+- Codex worker-reviewer execution без proof per `./docs/agents/codex-integration.md` §4 не считается состоявшимся.
 
 ### Worker и reviewer execution shape
 
@@ -187,12 +187,12 @@ Bootstrap hints (`--low-risk`) не создают sanctioned exception:
 - фича затрагивает BI vertical (datasets, providers, filters, BI pages);
 - фича вводит новый dataset, provider или BI-страницу;
 - фича затрагивает cross-layer boundaries (package ↔ app, server ↔ client);
-- фича затрагивает зону с известным migration debt (см. `architecture_dashboard_bi.md` §9);
+- фича затрагивает зону с известным migration debt (см. `bi/architecture.md` §9);
 - unfamiliar code или новый домен.
 
 **Что проверяется:**
 
-1. Соответствие planned change текущим architectural guardrails (`architecture_dashboard_bi.md` §8, `invariants.md` §1-9).
+1. Соответствие planned change текущим architectural guardrails (`bi/architecture.md` §8, `invariants.md` §1-9).
 2. Не попадает ли planned scope в зону migration debt — если да, миграция включается в scope.
 3. Нужны ли новые архитектурные решения, которых нет в текущей документации.
 
@@ -202,7 +202,7 @@ Bootstrap hints (`--low-risk`) не создают sanctioned exception:
 
 1. Решение фиксируется в соответствующем architecture doc **до начала реализации**.
 2. Если решение создаёт новый инвариант — он добавляется в `invariants.md`.
-3. Если решение меняет migration debt — обновляется §9 `architecture_dashboard_bi.md`.
+3. Если решение меняет migration debt — обновляется §9 `bi/architecture.md`.
 4. Если решение требует governance — эскалируется через architecture pass (§5.1).
 
 **Output:** `CLEAR | CLEAR WITH DEBT | DOCS FIRST | ESCALATE`.

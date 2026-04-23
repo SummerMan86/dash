@@ -7,7 +7,7 @@ Branch: `feature/bi-refactor-wave1` (merged). 109 tests, 30+ review passes, 5-ch
 
 ## Цель
 
-Привести non-EMIS BI contour (`wildberries`, `strategy`, generic dashboard runtime) к canonical BI architecture из `docs/architecture_dashboard_bi.md`, сохранив low-ops single-deployable delivery для клиентов без собственной техподдержки.
+Привести non-EMIS BI contour (`wildberries`, `strategy`, generic dashboard runtime) к canonical BI architecture из `docs/bi/architecture.md`, сохранив low-ops single-deployable delivery для клиентов без собственной техподдержки.
 
 **Цель достигнута.** Target architecture реализована. Reference migration: `/dashboard/strategy/scorecard/`.
 
@@ -81,7 +81,7 @@ Current mode: `high-risk iterative / unstable wave` for `BR-1` -> `BR-8`.
 - scope change: slice потребовал работу за пределами заявленного scope wave (например, EMIS spillover, новая schema migration, новый external dependency)
 - `REJECT` verdict после 2+ cycles (recovery path RP-5)
 - новый exception / waiver, не покрытый existing invariants
-- решение, которое меняет durable BI architecture (не plan sequencing, а сам `docs/architecture_dashboard_bi.md`)
+- решение, которое меняет durable BI architecture (не plan sequencing, а сам `docs/bi/architecture.md`)
 - финальный merge wave в main после BR-8 или BR-10
 
 ### Structural Reframe Checkpoints

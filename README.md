@@ -138,6 +138,7 @@ pnpm lint:boundaries
 - `docs/architecture.md` - canonical repo-wide architecture contract: topology, ownership, execution paths, import rules
 - `AGENTS.md` - корневая точка входа по репозиторию, контурам и архитектурным правилам
 - `docs/AGENTS.md` - единственный полный каталог документации и reading order
+- `docs/QUICKSTART.md` - operator runbook: как ставить задачи agent team (для человека, не для агентов)
 - `db/schema_catalog.md` + `db/current_schema.sql` - snapshot-first source of truth по активной структуре БД
 - `CLAUDE.md` - compatibility redirect на `AGENTS.md`
 - локальные `AGENTS.md` / `CLAUDE.md` в подпапках - точечные правила по подсистемам

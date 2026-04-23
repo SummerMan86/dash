@@ -5,7 +5,7 @@
  * Lazy pool initialization on first use.
  * Timeout + best-effort statement cancellation.
  *
- * Canonical reference: docs/architecture_dashboard_bi.md §7
+ * Canonical reference: docs/bi/architecture.md §7
  */
 import oracledb from 'oracledb';
 import type { DatasetFieldType, DatasetResponse, JsonValue } from '../../model';

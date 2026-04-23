@@ -56,7 +56,7 @@ This wave restructures docs to match the mental model: process-centric, not gove
 ## User decisions already locked
 
 - Autonomous protocol → slim appendix: `docs/agents/autonomous-mode.md`
-- Codex runtime plumbing → external runtime doc: `docs/codex-integration.md`
+- Codex runtime plumbing → external runtime doc: `./docs/agents/codex-integration.md`
 
 ## Success metrics
 
@@ -99,7 +99,7 @@ These 18 files are the canonical docs budget inside `docs/agents/`:
 ### Runtime / ops docs target
 
 Outside `docs/agents/`:
-- `docs/codex-integration.md`
+- `./docs/agents/codex-integration.md`
 - `docs/QUICKSTART.md`
 - optional `docs/ops/usage-telemetry.md` only if a repo-wide grep proves there is still an active consumer
 
@@ -108,7 +108,7 @@ Outside `docs/agents/`:
 - Zero live refs to deleted docs.
 - `workflow.md` contains no plugin-command details, proof retrieval mechanics, or concrete model names.
 - `execution-profiles.md` is the **single source of truth for model assignments** (Opus, Sonnet, gpt-5.4, etc.). All other docs use role names only (worker, lead-strategic, etc.), never model names.
-- `docs/codex-integration.md` owns plugin-specific commands, proof tuples, companion CLI (implementation-level runtime plumbing).
+- `./docs/agents/codex-integration.md` owns plugin-specific commands, proof tuples, companion CLI (implementation-level runtime plumbing).
 - Historical refs to old docs are allowed only inside archived files.
 
 ## Canonical ownership after the rewrite
@@ -117,7 +117,7 @@ Outside `docs/agents/`:
 |---|---|
 | `workflow.md` | End-to-end process, role responsibilities, execution paths, review floor, reviewer selection, acceptance, user-in-loop operating modes, DoD, escalation, memory protocol |
 | `execution-profiles.md` | Profile tables (role → runtime/model/effort mapping), selection rules, fallback policies. **The only file that names concrete models** (Opus, Sonnet, gpt-5.4, etc.). All other docs refer to roles only (worker, lead-strategic, etc.), never to model names. Extensible for future profiles. |
-| `docs/codex-integration.md` | Plugin commands, proof tuples, companion CLI, runtime caveats. Implementation-level "how to invoke the lane". |
+| `./docs/agents/codex-integration.md` | Plugin commands, proof tuples, companion CLI, runtime caveats. Implementation-level "how to invoke the lane". |
 | `docs/agents/autonomous-mode.md` | No-user-in-loop autonomous overlay only; autonomous-only deltas relative to `workflow.md`; no duplicated lifecycle |
 | `templates.md` | Handoff/report shapes only |
 | `git-protocol.md` | Worktree / branch / merge mechanics only |
@@ -130,8 +130,8 @@ Outside `docs/agents/`:
 | File | Now | Target | Key change |
 |---|---:|---:|---|
 | `workflow.md` | 553 | ~240–280 | Full rewrite. Process truth only. Absorbs role map, review model core, DoD, memory protocol. **Does not absorb runtime/model tables.** |
-| `execution-profiles.md` | 127 | ~80–100 | Keep profile tables, selection rules, fallback policies. Strip plugin commands, proof tuples, companion CLI → `docs/codex-integration.md`. Extensible for future profiles. |
-| `orchestrator/instructions.md` | 248 | ~110–130 | Keep work cycle, direct-fix rules, escalation, evidence discipline. Runtime details move to `docs/codex-integration.md`. |
+| `execution-profiles.md` | 127 | ~80–100 | Keep profile tables, selection rules, fallback policies. Strip plugin commands, proof tuples, companion CLI → `./docs/agents/codex-integration.md`. Extensible for future profiles. |
+| `orchestrator/instructions.md` | 248 | ~110–130 | Keep work cycle, direct-fix rules, escalation, evidence discipline. Runtime details move to `./docs/agents/codex-integration.md`. |
 | `lead-strategic/instructions.md` | 290 | ~110–130 | Keep planning cadence, acceptance, governance passes. Remove autonomous/runtime prompt surface. |
 | `worker/guide.md` | 229 | ~120–140 | Remove duplicated BI guardrails and duplicated DoD. Keep worker loop only. |
 | `templates.md` | 410 | ~150–180 | Artifact shapes only. Remove routing table, governance prose, telemetry schema. |
@@ -152,7 +152,7 @@ Outside `docs/agents/`:
 | File | Lines | What |
 |---|---:|---|
 | `docs/agents/autonomous-mode.md` | ~80–100 | Delta-only appendix: when autonomous mode is allowed, lightweight vs full, decision framework, guardrails, decision log, recovery deltas. |
-| `docs/codex-integration.md` | ~80–120 | Plugin-level runtime plumbing: plugin commands, proof tuples, companion CLI, runtime caveats. Profile tables stay in `execution-profiles.md`. Outside `docs/agents/`. |
+| `./docs/agents/codex-integration.md` | ~80–120 | Plugin-level runtime plumbing: plugin commands, proof tuples, companion CLI, runtime caveats. Profile tables stay in `execution-profiles.md`. Outside `docs/agents/`. |
 | `docs/QUICKSTART.md` | ~80–120 | Human/operator runbook extracted from `user-guide.md`. Outside `docs/agents/`. |
 | `docs/ops/usage-telemetry.md` | ~40–80 | **Conditional.** Create only if repo-wide grep shows a real consumer remains after the simplification. Otherwise delete telemetry doc completely. |
 
@@ -203,7 +203,7 @@ These should stay content-stable unless repointing is absolutely required:
 
 ## Overview
 Mental model paragraph. Role table with responsibility only.
-Runtime pointer goes to docs/codex-integration.md.
+Runtime pointer goes to ./docs/agents/codex-integration.md.
 
 ## 1. Roles and entrypoints
 Who starts what. Which role owns which decision.
@@ -227,7 +227,7 @@ Single canonical owner for:
 
 ## 5. Acceptance and operating modes
 Strategic pass triggers, reframe, lightweight / standard / full modes.
-Runtime details are only a pointer to docs/codex-integration.md.
+Runtime details are only a pointer to ./docs/agents/codex-integration.md.
 
 ## 6. Finalize
 Wave close, report, merge.
@@ -242,7 +242,7 @@ orchestrator → lead-strategic vs → user.
 Slice / wave / feature DoD. Documentation items must be explicit done or N/A.
 
 ## 10. Pointers
-execution-profiles.md, templates.md, docs/codex-integration.md,
+execution-profiles.md, templates.md, ./docs/agents/codex-integration.md,
 autonomous-mode.md, git-protocol.md, recovery.md, invariants.md.
 ```
 
@@ -266,7 +266,7 @@ autonomous-mode.md, git-protocol.md, recovery.md, invariants.md.
 
 ### Slice 1: establish the new canon
 
-- Create `docs/codex-integration.md` (plugin-level plumbing extracted from execution-profiles.md and other sources)
+- Create `./docs/agents/codex-integration.md` (plugin-level plumbing extracted from execution-profiles.md and other sources)
 - Rewrite `workflow.md` from scratch
 - Rewrite `execution-profiles.md` (keep profile tables + selection rules; strip plugin commands → codex-integration.md)
 - Create `docs/agents/autonomous-mode.md`
@@ -284,7 +284,7 @@ autonomous-mode.md, git-protocol.md, recovery.md, invariants.md.
   - integration review trigger
   - post-review re-review rule
   - DoD explicitness rule
-- `autonomous-mode.md` is delta-only and points back to `workflow.md`, `docs/codex-integration.md`, and `recovery.md`.
+- `autonomous-mode.md` is delta-only and points back to `workflow.md`, `./docs/agents/codex-integration.md`, and `recovery.md`.
 
 ### Slice 2: repoint bootstrap docs
 
@@ -300,7 +300,7 @@ autonomous-mode.md, git-protocol.md, recovery.md, invariants.md.
 **Slice 2 acceptance:**
 - No default bootstrap doc points to `review-gate.md`, `roles.md`, `execution-profiles.md`, `autonomous-protocol.md`, or `user-guide.md`.
 - `templates.md` contains only artifact shapes.
-- Role docs point runtime questions only to `docs/codex-integration.md`.
+- Role docs point runtime questions only to `./docs/agents/codex-integration.md`.
 - `orchestrator/instructions.md`, `lead-strategic/instructions.md`, `worker/guide.md`, and `templates.md`
   do not restate, weaken, or override:
   - review floor
@@ -313,7 +313,7 @@ autonomous-mode.md, git-protocol.md, recovery.md, invariants.md.
   - runtime commands
   - proof retrieval mechanics
 - Model assignments are owned only by `execution-profiles.md`.
-- Plugin-level runtime details are owned only by `docs/codex-integration.md`.
+- Plugin-level runtime details are owned only by `./docs/agents/codex-integration.md`.
 
 ### Slice 3: slim support docs + refresh live state
 
@@ -333,7 +333,7 @@ autonomous-mode.md, git-protocol.md, recovery.md, invariants.md.
 **Slice 3 acceptance:**
 - Live state docs do not cite deleted canon.
 - Any telemetry note that remains lives outside `docs/agents/`.
-- Navigation points to `workflow.md`, `docs/codex-integration.md`, and `docs/QUICKSTART.md`.
+- Navigation points to `workflow.md`, `./docs/agents/codex-integration.md`, and `docs/QUICKSTART.md`.
 - `lead-strategic/current_plan.md` and `orchestrator/last_report.md`
   must continue to exist at their current active paths after refresh.
   Archiving old content without creating a replacement active file is not allowed.
@@ -377,7 +377,7 @@ Target: `~1,850–2,050`
   - companion CLI command recipes
   - model-default tables
   - proof tuple retrieval mechanics
-- `docs/codex-integration.md` owns runtime/profile/proof details
+- `./docs/agents/codex-integration.md` owns runtime/profile/proof details
 
 ### Semantic verification
 
@@ -391,8 +391,8 @@ These are mandatory, not optional:
 ### Bootstrap verification
 
 Use realistic bootstrap, not one-file fantasy:
-- `lead-strategic` bootstrap: `workflow.md` + `lead-strategic/instructions.md` (+ `docs/codex-integration.md` when runtime details matter)
-- `orchestrator` bootstrap: `workflow.md` + `orchestrator/instructions.md` + `templates.md` + `execution-profiles.md` (+ `docs/codex-integration.md` when plugin-level details matter)
+- `lead-strategic` bootstrap: `workflow.md` + `lead-strategic/instructions.md` (+ `./docs/agents/codex-integration.md` when runtime details matter)
+- `orchestrator` bootstrap: `workflow.md` + `orchestrator/instructions.md` + `templates.md` + `execution-profiles.md` (+ `./docs/agents/codex-integration.md` when plugin-level details matter)
 - `worker` bootstrap: `workflow.md` + `worker/guide.md` + `invariants.md`
 
 ## Non-goals
@@ -420,7 +420,7 @@ Use realistic bootstrap, not one-file fantasy:
 
 ### Create
 - `docs/agents/autonomous-mode.md`
-- `docs/codex-integration.md`
+- `./docs/agents/codex-integration.md`
 - `docs/QUICKSTART.md`
 - optional `docs/ops/usage-telemetry.md`
 

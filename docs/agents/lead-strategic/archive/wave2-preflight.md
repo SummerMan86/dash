@@ -52,7 +52,7 @@ All three exist and are in repoint scope (ST-3):
 | File | Action | Notes |
 |------|--------|-------|
 | `autonomous-mode.md` | create | Delta appendix pointing to workflow.md, codex-integration.md, recovery.md |
-| `docs/codex-integration.md` | create | Plugin commands, proof tuples, companion CLI — outside `docs/agents/` |
+| `./docs/agents/codex-integration.md` | create | Plugin commands, proof tuples, companion CLI — outside `docs/agents/` |
 
 ### Deprecate then Delete (ST-1 header → ST-4 delete)
 

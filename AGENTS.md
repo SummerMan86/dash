@@ -23,7 +23,7 @@
 
 1. `README.md`
 2. `docs/architecture.md` (canonical repo-wide foundation doc)
-3. `docs/architecture_dashboard_bi.md` (BI vertical: dataset IR, providers, filters, DWH)
+3. `docs/bi/architecture.md` (BI vertical: dataset runtime, filters, providers, DWH)
 4. локальный `AGENTS.md` в нужной папке
 5. `docs/archive/platform/current-project-analysis.md`, если нужен historical context до package-era
 6. локальный `CLAUDE.md`, если рядом нет `AGENTS.md`
@@ -54,19 +54,20 @@
 
 ### Agent workflow (работа в команде агентов)
 
-Если задача выполняется через agent workflow stack:
+**Для человека-оператора:** [docs/QUICKSTART.md](./docs/QUICKSTART.md) — промпты и сценарии постановки задач agent team. Агенты этот файл не читают.
 
-1. [docs/QUICKSTART.md](./docs/QUICKSTART.md) — **для пользователя: промпты и сценарии**
-2. [docs/agents/workflow.md](./docs/agents/workflow.md) — core process, lifecycle, review model, governance, DoD, memory protocol
-3. [docs/agents/execution-profiles.md](./docs/agents/execution-profiles.md) — runtime/model binding per profile
-4. [docs/codex-integration.md](./docs/codex-integration.md) — Codex CLI integration, plugin commands, proof tuples
-5. [docs/agents/autonomous-mode.md](./docs/agents/autonomous-mode.md) — autonomous execution delta
-6. [docs/agents/templates.md](./docs/agents/templates.md) — all templates (plan, task, handoff, report, governance)
-7. [docs/agents/invariants.md](./docs/agents/invariants.md) — project guardrails
-8. [docs/agents/git-protocol.md](./docs/agents/git-protocol.md) — branches, worktrees, checkpoints
-9. [docs/agents/recovery.md](./docs/agents/recovery.md) — failure-path protocols
-10. `docs/agents/{role}/instructions.md` — role-specific instructions
-11. `docs/agents/lead-strategic/memory.md` и `docs/agents/orchestrator/memory.md` — durable memory (see workflow.md §8)
+Если задача выполняется через agent workflow stack (для агентов):
+
+1. [docs/agents/workflow.md](./docs/agents/workflow.md) — core process, lifecycle, review model, governance, DoD, memory protocol
+2. [docs/agents/execution-profiles.md](./docs/agents/execution-profiles.md) — runtime/model binding per profile
+3. [./docs/agents/codex-integration.md](././docs/agents/codex-integration.md) — Codex CLI integration, plugin commands, proof tuples
+4. [docs/agents/autonomous-mode.md](./docs/agents/autonomous-mode.md) — autonomous execution delta
+5. [docs/agents/templates.md](./docs/agents/templates.md) — all templates (plan, task, handoff, report, governance)
+6. [docs/agents/invariants.md](./docs/agents/invariants.md) — project guardrails
+7. [docs/agents/git-protocol.md](./docs/agents/git-protocol.md) — branches, worktrees, checkpoints
+8. [docs/agents/recovery.md](./docs/agents/recovery.md) — failure-path protocols
+9. `docs/agents/{role}/instructions.md` — role-specific instructions
+10. `docs/agents/lead-strategic/memory.md` и `docs/agents/orchestrator/memory.md` — durable memory (see workflow.md §8)
 
 EMIS-активный контур сейчас находится здесь:
 
@@ -87,7 +88,7 @@ EMIS-активный контур сейчас находится здесь:
 
 - `README.md` - что это за приложение, стек, быстрый старт, env и маршруты
 - `docs/architecture.md` - canonical repo-wide foundation architecture doc
-- `docs/architecture_dashboard_bi.md` - BI vertical architecture (dataset IR, providers, filters, DWH)
+- `docs/bi/architecture.md` - BI vertical architecture (dataset runtime, filters, providers, DWH)
 - `docs/emis/` - EMIS documentation set (README, architecture, product_scope, access_model, change_policy, operations, structural_migration)
 - `AGENTS.md` в корне - выбрать контур, увидеть reading path и конвенцию навигационных файлов
 - `docs/AGENTS.md` - единственный полный каталог документации и reading order
@@ -129,7 +130,7 @@ These paths no longer exist. Do not recreate them without explicit architectural
 Repo-wide architecture contract для этого состояния зафиксирован в:
 
 → [docs/architecture.md](./docs/architecture.md) (canonical repo-wide foundation)
-→ [docs/architecture_dashboard_bi.md](./docs/architecture_dashboard_bi.md) (BI vertical)
+→ [docs/bi/architecture.md](./docs/bi/architecture.md) (BI vertical)
 → [docs/emis/architecture.md](./docs/emis/architecture.md) (EMIS vertical)
 
 ### Target layout и migration rules
@@ -145,7 +146,7 @@ Canonical target layout для monorepo-style separation:
 Подробный repo-wide contract:
 
 → [docs/architecture.md](./docs/architecture.md) (canonical repo-wide foundation)
-→ [docs/architecture_dashboard_bi.md](./docs/architecture_dashboard_bi.md) (BI vertical)
+→ [docs/bi/architecture.md](./docs/bi/architecture.md) (BI vertical)
 → [docs/emis/architecture.md](./docs/emis/architecture.md) (EMIS vertical)
 
 ### Non-EMIS BI read-side
@@ -164,7 +165,7 @@ Canonical target layout для monorepo-style separation:
 
 ### EMIS architecture rules
 
-Для EMIS действуют repo-wide package/app boundaries (see `docs/architecture.md`), два канонических execution path (`docs/architecture_dashboard_bi.md`, `docs/emis/architecture.md`) и current EMIS package/app placement:
+Для EMIS действуют repo-wide package/app boundaries (see `docs/architecture.md`), два канонических execution path (`docs/bi/architecture.md`, `docs/emis/architecture.md`) и current EMIS package/app placement:
 
 - `packages/emis-contracts/` - контракты, DTO, базовые доменные типы, Zod schemas
 - `packages/emis-server/src/infra/*` - server infrastructure
@@ -216,7 +217,7 @@ Canonical docs:
 
 - [workflow.md](./docs/agents/workflow.md) — lifecycle, review model, governance, DoD, memory protocol
 - [execution-profiles.md](./docs/agents/execution-profiles.md) — runtime/model binding per profile
-- [codex-integration.md](./docs/codex-integration.md) — Codex CLI integration, plugin commands, proof tuples
+- [codex-integration.md](././docs/agents/codex-integration.md) — Codex CLI integration, plugin commands, proof tuples
 - [autonomous-mode.md](./docs/agents/autonomous-mode.md) — autonomous execution delta
 - [templates.md](./docs/agents/templates.md) — all templates
 - [invariants.md](./docs/agents/invariants.md) — project guardrails

@@ -81,7 +81,7 @@ Overlay numbering convention:
 
 | Инвариант | Enforcement | Current enforcement / path to automation |
 | --- | --- | --- |
-| Архитектурное решение фиксируется в соответствующем architecture doc (`architecture_dashboard_bi.md`, `emis/architecture.md`, `architecture.md`) | `review-only` | Добавить architecture-pass artifact schema с обязательным target-doc field |
+| Архитектурное решение фиксируется в соответствующем architecture doc (`bi/architecture.md`, `emis/architecture.md`, `architecture.md`) | `review-only` | Добавить architecture-pass artifact schema с обязательным target-doc field |
 | Решение, создающее enforceable rule, добавляет соответствующий инвариант | `review-only` | Добавить governance checklist linter, который требует invariant follow-up для flagged rules |
 | Решение, создающее migration debt, добавляет entry в debt register соответствующего architecture doc | `review-only` | Добавить docs diff check для debt-register update, когда review pass помечает debt impact |
 | Architecture Readiness Check обязателен для фичи с architectural surface | `manual` | Добавить pre-execution checklist validator в orchestration artifacts |
@@ -90,7 +90,7 @@ Overlay numbering convention:
 
 ## 9. BI Vertical Invariants
 
-Canonical reference: `docs/architecture_dashboard_bi.md` §8 (BI Code Quality Guardrails) and §9 (Migration Debt Register).
+Canonical reference: `docs/bi/architecture.md` §8 (BI Code Quality Guardrails) and §9 (Migration Debt Register).
 
 ### Data contract
 

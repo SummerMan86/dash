@@ -2,37 +2,16 @@
 
 Canonical BI architecture doc. Current-state only.
 Wave 1 (BR-1..BR-10) is implemented and merged; the stable core described here is the active BI architecture.
-For pre-refactor legacy context see [archive/bi/architecture_dashboard_bi.md](./archive/bi/architecture_dashboard_bi.md).
-For completed rollout sequencing see [archive/bi/bi_refactor_rollout.md](./archive/bi/bi_refactor_rollout.md).
+Canonical repo-wide foundation: [architecture.md](../architecture.md).
+Historical BI context: [archive/bi/architecture_dashboard_bi.md](../archive/bi/architecture_dashboard_bi.md) and [archive/bi/bi_refactor_rollout.md](../archive/bi/bi_refactor_rollout.md).
 
 ## Scope
 
-- Covers: dataset runtime, filter wire contract, IR policy, client-side query model, BI-adjacent operational paths, storage ownership, provider extension path, schema introspection
-- Does not cover: EMIS operational paths, repo-wide rules, detailed rollout timeline
-- First migration wave covers non-EMIS analytics (`wildberries`, `strategy`, generic dashboard runtime). EMIS analytics pages (`/dashboard/emis/`) may adopt the same contracts later, but they do not block the first refactor wave
-- **EMIS read-model datasets** (`emis.*`) are now registered in the BI dataset registry and served via `executeDatasetQuery` middleware (including provider-owned caching from CA-12). EMIS operational paths remain separate (see `emis/architecture.md`)
-
-## Document Hierarchy
-
-Read BI architecture at three levels:
-
-1. [architecture.md](./architecture.md) — repo-wide foundation
-2. this document — active BI vertical architecture
-3. archive docs when historical context is needed:
-   - [archive/bi/architecture_dashboard_bi.md](./archive/bi/architecture_dashboard_bi.md) — pre-refactor BI vertical
-   - [archive/bi/bi_refactor_rollout.md](./archive/bi/bi_refactor_rollout.md) — completed rollout sequencing
-
-## Sections
-
-1. [Dataset Runtime](#1-dataset-runtime) — registry, providers, execution, errors, observability
-2. [Filter Wire Contract](#2-filter-wire-contract) — flat params, planner, scope/apply tiers, migration
-3. [IR Policy](#3-ir-policy-honest-read-model-fetch-contract) — SelectIr cleanup, offset, client reshaping boundary
-4. [Client-Side Architecture](#4-client-side-architecture) — page model, data flow, async state, caching, output typing
-5. [BI-Adjacent Operational Paths](#5-bi-adjacent-operational-paths) — alerts scheduler, WB price proxy
-6. [Data / Storage Ownership](#6-data--storage-ownership-bi-relevant) — marts, alerts, external DWHs
-7. [Provider and Backend Extension Path](#7-provider-and-backend-extension-path) — new datasets, new providers, lifecycle, testing
-8. [BI Code Quality Guardrails](#8-bi-code-quality-guardrails) — page decomposition, paramsSchema, fetchDataset migration, caching symmetry, chart configuration
-9. [Migration Debt Register](#9-migration-debt-register) — tracked debts with resolution triggers
+- Covers: dataset runtime, shared filter wire contract, IR policy, client-side query model, BI-adjacent operational paths, BI-relevant storage ownership, provider extension path, schema introspection
+- Does not cover: repo-wide topology and dependency rules, EMIS operational module internals, detailed rollout timeline
+- Owns the dataset and filter runtime used by BI pages and EMIS read-side datasets under `/dashboard/emis/*`
+- `emis.*` read-model datasets are part of the BI dataset registry and execution pipeline; EMIS operational paths remain separate
+- EMIS operational routes, auth, ingestion, and map runtime stay in [docs/emis/architecture.md](../emis/architecture.md)
 
 ## High-Level Model
 
@@ -53,11 +32,11 @@ Page → fetchDataset(datasetId, { params }) → POST /api/datasets/:id
 
 Every dataset is described by one `DatasetRegistryEntry`: source descriptor, field catalog, Zod params schema, optional custom compile. Most datasets use declarative mode with explicit query bindings; custom compile is an escape hatch, not the norm.
 
-Filters reach the server as flat `DatasetQuery.params`. The planner resolves filter specs into per-target server params client-side; the server contract carries no filter provenance or legacy merge semantics.
+Flat `DatasetQuery.params` is the canonical caller shape. The planner resolves filter specs into per-target server params client-side; new pages and migrated pages send only `params`. The live server contract still accepts deprecated top-level `DatasetQuery.filters` for non-target migration callers, and those remaining surfaces are tracked in §9.
 
 `SelectIr` is an honest read-model fetch contract: select, where, order, limit, offset. No groupBy, no aggregation calls. Analytical workloads belong in published backend views or a future separate `AnalyticalIr` path.
 
-Providers implement one method: `execute(ir, entry, ctx) → DatasetResponse`. Backend-specific concerns (connection pools, caching, dialect differences) stay inside the provider. The architecture extends by adding registry entries and provider implementations, not by modifying central routers or capability matrices.
+Providers implement one method: `execute(ir, entry, ctx) → DatasetResponse`. Backend-specific concerns (connection pools, dialect differences, backend execution semantics) stay inside the provider. Server-side cache orchestration is package-owned in `executeDatasetQuery()` and driven by `entry.cache`; the architecture extends by adding registry entries and provider implementations, not by modifying central routers or capability matrices.
 
 ---
 
@@ -65,7 +44,7 @@ Providers implement one method: `execute(ir, entry, ctx) → DatasetResponse`. B
 
 **Wave 1 (BR-1..BR-10) is complete and merged.** The stable core below is now implemented, not just designed. Reference migration: `/dashboard/strategy/scorecard/`.
 
-This document defines the durable BI architecture for active read-side work. It also retains the implementation rationale that led from the pre-refactor BI slice to the current stable core.
+This document is the BI source of truth for active read-side work. Historical rationale stays in archive docs; current-state contracts stay here.
 
 ### Stable core
 
@@ -76,7 +55,7 @@ The following decisions should be treated as the durable foundation unless there
 - low-ops first-wave delivery by default: bounded in-process cache and app-owned PostgreSQL persistence remain the baseline, while external analytical layers stay optional
 - registry-first dataset execution
 - explicit Zod-based params normalization per dataset
-- one flat canonical wire contract through `DatasetQuery.params`
+- flat `DatasetQuery.params` as the canonical caller contract, with deprecated top-level `filters` still live during migration
 - one canonical `DatasetRegistryEntry` per dataset
 - minimal `source` descriptor that says where data lives, not full provider-owned catalogs
 - explicit query bindings for declarative generic compilation
@@ -84,9 +63,9 @@ The following decisions should be treated as the durable foundation unless there
 - declarative dataset definitions by default, custom compile only as an escape hatch
 - honest, read-model-focused `SelectIr`
 - thin route / package-owned orchestration
-- registry-owned coarse-grained dataset access policy
+- registry-owned coarse-grained dataset access placeholder
 - minimal BI query observability
-- provider-owned server-side caching hints, plus client-side request dedup for UX
+- registry-owned cache hints with package-orchestrated server-side caching, plus client-side request dedup for UX
 - page-owned async query state, not global dataset stores
 - static code registration, not runtime plugin loading
 - flat app-local `src/lib/*` peer modules plus route-local ownership are secondary organization only; package-first placement rules still govern BI architecture
@@ -213,8 +192,8 @@ Important ownership rules:
 - `paramsSchema` validates and normalizes canonical wire params
 - `queryBindings` are the canonical source of param-to-field mapping for `genericCompile()`
 - `compile` exists only when declarative mode is insufficient
-- `access` defines coarse-grained dataset visibility at the registry/orchestration layer
-- `cache` is a provider hint for server-side caching and refresh behavior
+- `access` defines the coarse-grained dataset visibility contract at the registry/orchestration layer; current enforcement is still placeholder-only
+- `cache` defines package-orchestrated server-side cache hints and refresh behavior
 - `execution` contains dataset-level limits/timeouts, not generic backend capabilities
 
 ### No `CapabilityProfile` in First-Wave Target
@@ -332,21 +311,26 @@ Orchestration lives in `platform-datasets`, not in the route handler.
 executeDatasetQuery(datasetId, query, ctx) -> DatasetResponse
   1. entry = registry.get(datasetId)
   2. assertDatasetAccess(entry, ctx)
-  3. typedParams = entry.paramsSchema.parse(query.params ?? {})
-  4. ir = entry.compile
-       ? entry.compile(typedParams)
+  3. typedParams = entry.paramsSchema.parse({ ...query.filters, ...query.params })
+  4. cache hit check (when entry.cache.ttlMs > 0)
+  5. ir = entry.compile
+       ? entry.compile(datasetId, typedParams)
        : genericCompile(entry, typedParams)
-  5. response = providers[entry.source.kind].execute(ir, entry, ctx)
-  6. return response
+  6. provider = providers[entry.source.kind]
+  7. response = provider.execute(ir, entry, ctx) + populate cache on success
+  8. return response
 ```
 
-This keeps the first-wave flow small:
+This keeps the first-wave flow small while matching the live package entrypoint:
 
 - lookup
 - access check
-- parse
+- parse merged params
+- cache lookup
 - compile
+- provider resolve
 - execute
+- cache populate
 - return
 
 ### Server Context
@@ -383,9 +367,10 @@ type DatasetAccess = {
 
 Rules:
 
-- access checks happen in `executeDatasetQuery()` before compile/execute
-- `/api/datasets/:id/schema` applies the same access policy as `/api/datasets/:id`
+- `access` lives on the registry entry and the intended gate location is `executeDatasetQuery()` before compile/execute
+- `/api/datasets/:id/schema` is intended to use the same gate position as `/api/datasets/:id`
 - dataset access is coarse-grained only; row-level security stays in published read models or provider/query logic
+- current implementation keeps both gates as placeholders/comments; the contract shape exists, but enforcement is not active yet
 
 ### Dataset ID Convention
 
@@ -398,8 +383,8 @@ Examples:
 - `payments.transactions_live`
 - `ifts.system_parameters`
 - `ifts.payment_stats`
+- `ifts.message_stats`
 - `ifts.operday_state`
-- `ifts.pay_docs_hourly`
 
 The target direction is to keep ids:
 
@@ -411,42 +396,41 @@ Template-literal TypeScript unions per family may be added later, but they are n
 
 ### Schema Introspection
 
-The registry must support schema lookup without executing a query:
+The registry supports schema lookup without executing a query:
 
 ```ts
 getDatasetSchema(datasetId) -> {
-  fields: DatasetFieldDef[];
-  paramsSchema: z.ZodTypeAny;
-} | null
+  datasetId: DatasetId;
+  fields: DatasetSchemaField[];
+  source: { kind: SourceDescriptor['kind'] };
+}
 ```
 
-Initial delivery path:
+Current delivery path:
 
 - server-side lookup first
 - HTTP endpoint for dynamic UI:
 
 ```txt
 GET /api/datasets/:id/schema
-  -> { fields, paramsSchemaJsonSchema }
+  -> { datasetId, fields, source: { kind } }
 ```
 
 This supports:
 
 - auto-generated column pickers
-- dataset-aware filter builders
 - admin/debug tooling
-- simple metadata-driven query builders over registered datasets
-- dynamic UI that needs to know params or fields before the first query executes
+- dynamic UI that needs to know fields and backend kind before the first query executes
 
 This is the current contract for an embedded query builder in low-ops deployments.
-It operates only over registered datasets, declared fields, and exported params schemas; it is not a home for arbitrary SQL authoring.
+It operates only over registered datasets and declared public fields; it is not a home for arbitrary SQL authoring.
 
 Schema introspection must not bypass access policy:
 
 - unauthorized datasets (access check fails) must not expose their schema through `/api/datasets/:id/schema`
 - fields with `hidden: true` are suppressed from the schema response; this is field-level visibility, not dataset-level
 - dataset-level visibility is governed solely by the `access` gate (`requiredScopes`); there is no separate dataset-level `hidden` / `discoverable` flag in the first-wave contract
-- introspection exports the public input contract, not internal transformed compiler state
+- introspection exports minimal public dataset metadata, not internal transformed compiler state
 
 ### Route Handler Contract
 
@@ -539,6 +523,8 @@ Rules:
 
 ## 2. Filter Wire Contract
 
+This section defines the shared dataset-facing filter contract for BI pages and EMIS read-side datasets. EMIS operational CRUD paths do not introduce a separate filter transport contract.
+
 ### Historical Problems This Contract Closed
 
 - `fetchDataset` merges legacy filter snapshots, planner-produced params, and explicit overrides with spread semantics
@@ -548,67 +534,73 @@ Rules:
 
 ### Durable Contract: One Canonical Wire Contract
 
-`DatasetQuery.params` remains the only dataset input bag.
-The wire contract stays flat; planner provenance is resolved before transport:
+The canonical wire contract stays flat, but the live transport shape still carries one deprecated compatibility field during migration:
 
 ```ts
 type DatasetQuery = {
 	contractVersion: ContractVersion;
 	requestId?: string;
+	filters?: Record<string, JsonValue>; // deprecated top-level compatibility bag
 	params?: Record<string, JsonValue>;
 };
 ```
 
 Rules:
 
-- planner-owned server filters and page/widget-owned input are merged client-side before transport
-- target end-state has no top-level `.filters` field on `DatasetQuery`
+- planner-owned server filters and page/widget-owned input are merged client-side before transport on the canonical path
+- target end-state is `params`-only; current runtime still accepts top-level `.filters` as a transitional compatibility bag
 - planner provenance stays in UI/planner code, not in the server contract
-- transport helpers must not hide merge precedence; final params are composed intentionally
+- transport helpers must not hide merge precedence; the live merge rule is `{ ...query.filters, ...query.params }`, so `params` wins on collision
 - new datasets and migrated pages target flat `params` directly
 
 ### Canonical Planning Path
 
 ```txt
 FilterSpec
-  -> planFiltersForTargets(targetIds, filterValues, runtimeCtx)
-  -> Map<TargetId, FilterPlan>
+  -> planFiltersForTarget(targetId, filterValues, runtimeCtx)
+  -> or planFiltersForTargets(targetIds, filterValues, runtimeCtx)
+  -> FilterPlan or Map<TargetId, FilterPlan>
   -> dataset-specific plan.serverParams
   -> page-local dataset input
   -> explicit merge into flat DatasetQuery.params
 ```
 
-The package should expose two levels:
+The package surface should be described with one canonical primitive, one ergonomic batch helper, and one compatibility alias:
 
 ```ts
 planFiltersForTarget(targetId, values, ctx) -> FilterPlan
 planFiltersForTargets(targetIds, values, ctx) -> Map<TargetId, FilterPlan>
+planFiltersForDataset(datasetId, values, ctx) -> FilterPlan
 ```
 
 Guidance:
 
 - `planFiltersForTarget()` is the primitive
 - `planFiltersForTargets()` is the ergonomic helper pages/workspaces should normally use when several datasets share the same effective filters
+- `planFiltersForDataset()` is a compatibility alias for dataset-centric route callers; document it as alias, not as a peer canonical primitive
 - use `targetId`, not only `datasetId`, because the planner can also address semantic targets beyond datasets
 - planner output and page-local input should use distinct param names by default; intentional overrides must be explicit in caller code
 
 ### Supported Scope / Apply Combinations
 
-The current BI contract explicitly narrows the supported combinations.
+The current runtime supports a wider surface than the default narrative for new BI work.
 
-Tier 1, supported:
+Canonical defaults for new BI work:
 
 - `workspace + server`
 - `owner + server`
 - `workspace + client`
 
-Deferred, not part of the current durable contract:
+Supported live runtime surface:
 
-- `shared + *`
-- `* + hybrid`
+- `shared + server` remains active in current Wildberries and EMIS routes
+- `shared + client` remains supported when a workspace shares the same effective filter state
+- `hybrid` remains a supported planner/runtime mode; it is not the default direction for new pages, but it is not legacy-only either
 
-This does not mean the runtime must instantly delete other combinations during migration.
-It means new BI work and the target architecture should treat only the tier-1 combinations as canonical.
+The contract guidance is therefore:
+
+- new BI work should prefer the canonical defaults above
+- current runtime behavior still includes `shared` scope and `hybrid` apply, so docs must describe them as supported live surface rather than deferred fiction
 
 ### Dataset-Level Input Parsing
 
@@ -661,8 +653,9 @@ Rules:
 During migration:
 
 - `DatasetQuery.filters` may temporarily exist for backward compatibility
-- legacy filter bags may temporarily be adapted into flat `params` before parse
-- legacy `FilterState` wrappers may call the new planner and then merge `plan.serverParams` into flat `params`
+- `fetchDataset({ filterContext })` remains a transitional compatibility seam for non-target callers
+- legacy filter bags may temporarily be adapted into flat `params` before parse or merged into deprecated top-level `filters` on the compatibility path
+- legacy `FilterState` wrappers may call `planFiltersForDataset()` as a compatibility alias and then merge planner output into the legacy request shape
 
 But new datasets and migrated pages should target the flat `params` contract directly.
 
@@ -884,13 +877,18 @@ The facade must not own:
 - shared global data stores
 - dataset-specific view-model logic
 
+Current caller split:
+
+- canonical callers use `fetchDataset({ id, params })`
+- `fetchDataset({ filterContext })` is transitional compatibility only for the non-target migration queue in §9
+
 ### Cache Strategy
 
 Caching exists at two layers with different ownership:
 
 #### Server-side app cache
 
-- provider-owned
+- package-orchestrated
 - driven by `entry.cache`
 - bounded in-memory TTL cache inside the app process is the default first-wave implementation for single-node / low-ops deployments
 - especially relevant for Oracle real-time datasets
@@ -901,7 +899,7 @@ Caching exists at two layers with different ownership:
 
 **Current implementation** (OC wave, 2026-04-10):
 
-Shared LRU cache helper at `packages/platform-datasets/src/server/providerCache.ts` (internal, not in the public `./server` export). See [`packages/platform-datasets/AGENTS.md`](../packages/platform-datasets/AGENTS.md) for file map.
+Shared LRU cache helper at `packages/platform-datasets/src/server/providerCache.ts` (internal, not in the public `./server` export). See [`packages/platform-datasets/AGENTS.md`](../../packages/platform-datasets/AGENTS.md) for file map.
 
 - `createProviderCache({ maxEntries })` — factory; default 200 entries, true LRU eviction via `lru-cache` v11
 - `buildCacheKey(datasetId, params, tenantId)` — deterministic key; segments separated by `\0`; `requestId` excluded
@@ -909,7 +907,7 @@ Shared LRU cache helper at `packages/platform-datasets/src/server/providerCache.
 - `structuredClone` on both set and get — callers cannot mutate cached data
 - `meta.cacheAgeMs` derived from `cachedAt` timestamp stored alongside each entry
 
-Oracle provider (`oracleProvider.ts`) is the first adopter. Postgres provider and future backends can reuse the same helper when they need server-side caching. The helper is provider-internal: routes, UI, and `fetchDataset()` do not interact with it directly.
+The live cache instance is a package-level singleton owned by `executeDatasetQuery.ts`, not a provider-internal cache. Oracle IFTS datasets are the first registry entries that activate it by declaring `cache.ttlMs`; Postgres and future backends can reuse the same package helper when they need server-side caching. Routes, UI, and `fetchDataset()` do not interact with it directly.
 
 #### Client-side request dedup
 
@@ -921,8 +919,8 @@ Minimum contract:
 
 - identical in-flight requests are deduplicated inside `fetchDataset()`
 - when `staleWhileRevalidate` is enabled, providers may serve cached data immediately and refresh in the background, but they must not leave stale entries alive indefinitely without a refresh budget
-- provider cache key includes dataset id + deterministic query material (post-compile SQL text + bind values, or normalized params — provider-determined) + relevant server context
-- relevant server context for cache identity must be explicit; typically `tenantId` and access-sensitive scope markers participate, while `requestId` never does
+- current package cache key is `{datasetId}\0{tenantId}\0{sortedParams}`
+- current cache identity uses the dataset id, tenant id, and deterministic sorted params; `requestId` is excluded and no additional scope markers participate today
 - `requestId` does not participate in cache identity
 
 ### Output Typing
@@ -1009,10 +1007,10 @@ Rules:
 
 ### App-owned schemas
 
-| Schema | Purpose | Key objects |
-|---|---|---|
-| `mart` | Published BI-facing views | `emis_news_flat`, `emis_object_news_facts`, `emis_objects_dim`, `emis_ship_route_vessels` |
-| `alerts` | Alert rules, recipients, history, locks | `rules`, `recipients`, `rule_recipients`, `history`, `scheduler_locks` |
+| Schema   | Purpose                                 | Key objects                                                                               |
+| -------- | --------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `mart`   | Published BI-facing views               | `emis_news_flat`, `emis_object_news_facts`, `emis_objects_dim`, `emis_ship_route_vessels` |
+| `alerts` | Alert rules, recipients, history, locks | `rules`, `recipients`, `rule_recipients`, `history`, `scheduler_locks`                    |
 
 Snapshot-first management: `db/current_schema.sql` is the active DDL truth; changes are tracked in `db/applied_changes.md`; live deltas go to `db/pending_changes.sql`.
 
@@ -1122,7 +1120,7 @@ The stable core declares "explicit Zod-based params normalization per dataset" a
 - `looseParams` is acceptable only as a temporary compatibility shim during migration, not as a permanent state.
 - Explicit schemas enable contract-level validation: bad params are caught at step 3 (`paramsSchema.parse`) before compile/execute, not at SQL execution time.
 
-Current status: 4 of 17 datasets use explicit schemas (`strategy.*`). The remaining 13 use `looseParams`.
+Current status: 18 datasets are registered. 14 use explicit schemas (`wildberries` 2, `strategy` 4, `payment` 4, `ifts` 4). The remaining 4 EMIS datasets use `emisLooseParams`.
 
 ### `fetchDataset()` Canonical Path
 
@@ -1131,20 +1129,22 @@ The canonical data-fetching path is the default: call `fetchDataset()` **without
 Rules for new pages:
 
 - **New BI pages must not pass `filterContext`.** No legacy filter merge, no `getFilterSnapshot()` side-effect.
-- Pages call `planFiltersForDataset()` directly, merge `plan.serverParams` + page-local params into `params`, and pass to `fetchDataset({ id, params })`.
-- Reference implementations: all WB pages (`office-day`, `product-analytics`, `stock-alerts`), `strategy/scorecard`, `demo`.
+- Pages call `planFiltersForTarget()` or `planFiltersForTargets()` directly, merge `plan.serverParams` + page-local params into `params`, and pass to `fetchDataset({ id, params })`.
+- `planFiltersForDataset()` may still appear in compatibility callers, but it is an alias around `planFiltersForTarget()`, not the canonical primitive.
+- Canonical reference callers in active docs: `strategy/scorecard` and `wildberries/office-day`.
 
-Current status: all BI pages use the canonical path. Legacy path (deprecated, gated by `filterContext`) is still used by strategy cascade/overview/performance/scorecard_v2 and EMIS analytics pages.
+Current status: the canonical flat-params path is the default for new BI work. The legacy path (deprecated, gated by `filterContext`) remains only in the migration queue tracked in §9.
 
-The legacy path will be removed when strategy/EMIS pages are migrated. It is not a supported pattern for new work.
+The legacy path will be removed after the migration queue closes. It is not a supported pattern for new work.
 
 ### Provider Caching Symmetry
 
 Server-side caching must be provider-agnostic:
 
 - The `providerCache.ts` helper is available to all providers, not only Oracle.
+- The live cache is owned by package orchestration in `executeDatasetQuery.ts`; providers participate through `entry.cache`, not by owning separate cache infrastructure.
 - When Postgres datasets need caching (e.g., heavy mart views), they must use the same helper, not a custom implementation.
-- Cache key must be stable and deterministic. Current key is `{datasetId}\0{params}\0{tenantId}` — this is provider-determined but must exclude `requestId`.
+- Cache key must be stable and deterministic. Current key is `{datasetId}\0{tenantId}\0{sortedParams}` and must exclude `requestId`.
 
 ### Chart Configuration
 
@@ -1160,14 +1160,25 @@ Chart options (ECharts) should be built through preset functions, not assembled 
 
 Tracked migration debts in the BI vertical. Each entry has a trigger for when it should be resolved.
 
-| # | Debt | Current State | Trigger for Resolution | Durable Target |
-|---|------|---------------|------------------------|----------------|
-| 1 | `looseParams` on 13/17 datasets | `z.record(z.unknown())` bypasses validation | When dataset is touched for any change | Explicit Zod schema per dataset |
-| 2 | Legacy filter path in `fetchDataset.ts` | Canonical flat-params is default; legacy path deprecated, gated by `filterContext`. Strategy/EMIS still use legacy | When strategy/EMIS pages migrate | Remove deprecated `filterContext` path and legacy imports |
-| 3 | `DatasetQuery.filters` field | Deprecated; still populated on legacy path. Custom compiles use `{ ...filters, ...params }` merge | After all pages migrate to flat params | Remove from wire contract |
-| 4 | `product-analytics/+page.svelte` ~~god component~~ | **Resolved (CA-1):** 778→256 lines. PriceEditor, ProductTable, ProductDetail extracted. PriceEditor (operational) co-located — waiver | If PriceEditor moves to dedicated route | Relocate PriceEditor to non-analytics scope |
-| 5 | `assertDatasetAccess()` placeholder | Comment-only, no enforcement | When multi-tenant or role-based access is needed | Enforce `entry.access.requiredScopes` |
-| 6 | Postgres provider has no server-side caching | Only Oracle uses `providerCache` | When Postgres dataset needs caching | Use shared `providerCache` helper |
-| 7 | Dataset definitions duplicated | Compile functions in both `packages/platform-datasets/src/server/definitions/` and `apps/web/src/lib/server/datasets/definitions/` | Next cleanup pass | Single canonical location in package |
-| 8 | EMIS datasets use `emisLooseParams` | `z.record(z.unknown())` bypasses validation for all 4 EMIS datasets | When EMIS datasets are touched for any change | Explicit Zod schema per EMIS dataset |
-| 9 | `DatasetQuery.filters` field in `executeDatasetQuery` | Deprecated; merged into flat params before compile. Compile functions never see `query.filters` directly | After all pages confirmed on flat params | Remove `filters` field from `DatasetQuery` wire contract |
+Migration queue framing:
+
+- `filterContext` and top-level `DatasetQuery.filters` are transitional compatibility surfaces, not a supported dual path
+- non-target callers still on that seam:
+  - `strategy/overview`
+  - `strategy/performance`
+  - `strategy/cascade`
+  - `strategy/scorecard_v2`
+  - EMIS BI read-side under `/dashboard/emis/*` — separate, later migration track
+- BI runtime maturity is reached when the `strategy.*` compatibility pages move to the flat-params path
+- EMIS BI migration does not block that BI maturity call-out; it is a separate domain track
+
+| #   | Debt                                                                       | Current State                                                                                                                                                                                               | Trigger for Resolution                                                                                                   | Durable Target                                                                              |
+| --- | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| 1   | `emisLooseParams` on 4/18 datasets                                         | 14 datasets already use explicit schemas; all remaining loose schemas belong to EMIS datasets                                                                                                               | When an EMIS dataset is touched for any change                                                                           | Explicit Zod schema per EMIS dataset                                                        |
+| 2   | Legacy filter path in `fetchDataset.ts`                                    | Canonical flat-params is default; `filterContext` remains only for the non-target migration queue (`strategy/overview`, `strategy/performance`, `strategy/cascade`, `strategy/scorecard_v2`; EMIS BI later) | BI maturity: when the `strategy.*` compatibility pages migrate to flat params. EMIS BI follows on a separate later track | Remove deprecated `filterContext` path and legacy imports                                   |
+| 3   | `DatasetQuery.filters` field                                               | Deprecated; still populated on legacy path. Custom compiles use `{ ...filters, ...params }` merge                                                                                                           | After all pages migrate to flat params                                                                                   | Remove from wire contract                                                                   |
+| 4   | `product-analytics/+page.svelte` ~~god component~~                         | **Resolved (CA-1):** 778→256 lines. PriceEditor, ProductTable, ProductDetail extracted. PriceEditor (operational) co-located — waiver                                                                       | If PriceEditor moves to dedicated route                                                                                  | Relocate PriceEditor to non-analytics scope                                                 |
+| 5   | Dataset access enforcement placeholder                                     | `entry.access.requiredScopes` exists as contract shape, but both query and schema paths still keep the gate as a placeholder                                                                                | When multi-tenant or role-based access is needed                                                                         | Enforce `entry.access.requiredScopes` consistently in query and schema paths                |
+| 6   | Shared cache helper is activated only where datasets declare `entry.cache` | Package-level cache exists today; Oracle IFTS entries are the first live adopters                                                                                                                           | When a Postgres or other dataset needs bounded server-side caching                                                       | Reuse the shared `providerCache` helper through `entry.cache`, not a backend-specific cache |
+| 7   | Dataset definitions duplicated                                             | Compile functions in both `packages/platform-datasets/src/server/definitions/` and `apps/web/src/lib/server/datasets/definitions/`                                                                          | Next cleanup pass                                                                                                        | Single canonical location in package                                                        |
+| 8   | `DatasetQuery.filters` merge inside `executeDatasetQuery`                  | Deprecated top-level `filters` is still merged into flat params before parse; compile functions never see `query.filters` directly                                                                          | After all compatibility callers leave the legacy path                                                                    | Remove legacy merge and make the runtime `params`-only                                      |

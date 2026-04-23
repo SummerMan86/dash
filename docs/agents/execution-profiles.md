@@ -9,7 +9,7 @@ and memory ownership stay canonical in:
 - `docs/agents/git-protocol.md`
 
 Plugin command mapping, proof tuples, companion CLI guidance, and runtime
-verification contract: `docs/codex-integration.md`.
+verification contract: `./docs/agents/codex-integration.md`.
 
 This file answers only this question:
 
@@ -36,7 +36,7 @@ canonical for supported-profile mapping.
 ## Selection Rules
 
 - Runtime substitution never changes role ownership.
-- A profile that depends on Codex worker/reviewer lanes may be selected only on a runtime surface that can truthfully launch or verify that lane; runtime verification contract: `docs/codex-integration.md` §4.
+- A profile that depends on Codex worker/reviewer lanes may be selected only on a runtime surface that can truthfully launch or verify that lane; runtime verification contract: `./docs/agents/codex-integration.md` §4.
 
 ## Profile: `mixed-claude-workers`
 
@@ -62,7 +62,7 @@ Status: supported; not default.
 
 This profile keeps the role model unchanged while moving worker/reviewer execution to the GPT-5.4 family where the slice is a good fit.
 
-Profile-readiness: the actual runtime surface must be able to launch or verify the Codex lane truthfully. In this repo, use the canonical companion runtime path from `docs/codex-integration.md`. Runtime verification contract: `docs/codex-integration.md` §4. If verification is not available, keep `mixed-claude-workers` as practical default.
+Profile-readiness: the actual runtime surface must be able to launch or verify the Codex lane truthfully. In this repo, use the canonical companion runtime path from `./docs/agents/codex-integration.md`. Runtime verification contract: `./docs/agents/codex-integration.md` §4. If verification is not available, keep `mixed-claude-workers` as practical default.
 
 Operational default in this repo: this profile changes runtime/model binding, not worker execution shape. Codex workers and micro-workers still run sequentially in the shared checkout (`in-place` per `docs/agents/git-protocol.md` §3); do not treat `opus-orchestrated-codex-workers` as automatic parallel fan-out or separate-worktree-by-default profile.
 
@@ -71,7 +71,7 @@ Operational default in this repo: this profile changes runtime/model binding, no
 | `lead-strategic` | Codex | `gpt-5.4` | `high` | Raise pass depth instead of remapping ownership |
 | `strategic-reviewer` | Codex | `gpt-5.4-mini` default; `gpt-5.4` when pass widens | `medium` default; `high` when risk is high | Advisory only; unresolved ambiguity returns to `lead-strategic` |
 | `orchestrator` | Claude | `Opus` | runtime-managed | No silent fallback |
-| `worker` | Codex | `gpt-5.4` | `medium` | If the requested write-capable lane cannot be proven through the canonical companion path, record a truthful per-slice exception (`docs/codex-integration.md` §4) |
+| `worker` | Codex | `gpt-5.4` | `medium` | If the requested write-capable lane cannot be proven through the canonical companion path, record a truthful per-slice exception (`./docs/agents/codex-integration.md` §4) |
 | `micro-worker` | Codex | `gpt-5.4-mini` | `medium` | Escalate to full `worker` on `gpt-5.4` when task stops being trivial |
 | `code-reviewer` | Codex | `gpt-5.4-mini` | `medium` | Escalate to `gpt-5.4` on low confidence or broader diff |
 | `docs-reviewer` | Codex | `gpt-5.4-mini` | `medium` | Escalate to `gpt-5.4` on active contracts or cross-doc contradictions |

@@ -41,7 +41,7 @@ Spawn constraint: **only orchestrator** spawns the governor. Primary trigger = w
 
 ## Operating principle for this wave
 
-Cross-model review-lane concurrency is the canonical default for reviewer passes per `docs/codex-integration.md` §5 item 6. Both phases use paired reviewer launches (one Claude, one Codex) running in parallel. Disagreement between models is treated as signal, not noise: findings are unioned, and the stricter severity wins on the same item.
+Cross-model review-lane concurrency is the canonical default for reviewer passes per `./docs/agents/codex-integration.md` §5 item 6. Both phases use paired reviewer launches (one Claude, one Codex) running in parallel. Disagreement between models is treated as signal, not noise: findings are unioned, and the stricter severity wins on the same item.
 
 ## Slices
 
@@ -101,7 +101,7 @@ Blocked by Phase 1 verdict. If Phase 1 = `DOCS FIRST`, Phase 2 does not run unti
   - union of findings triaged
   - verdict = `OK` | `request changes`
 
-ST-2a and ST-2b run in parallel (4 reviewer subagents in one batch per `docs/codex-integration.md` §5 item 6).
+ST-2a and ST-2b run in parallel (4 reviewer subagents in one batch per `./docs/agents/codex-integration.md` §5 item 6).
 
 ### Phase 3 — findings resolution (conditional)
 
@@ -128,7 +128,7 @@ Only if Phase 1 or Phase 2 produces any finding above `INFO`.
 ## Out of scope
 
 - Changes to governor's canonical checks list (those stay as defined in `baseline-governor/instructions.md`)
-- Extending the audit to overlays (`architecture_dashboard_bi.md`, `architecture_emis.md`) unless Phase 1 surfaces a root-doc gap that explicitly requires overlay re-verification
+- Extending the audit to overlays (`bi/architecture.md`, `emis/architecture.md`) unless Phase 1 surfaces a root-doc gap that explicitly requires overlay re-verification
 - Product code changes in apps/web or packages/*
 
 ## Risk notes

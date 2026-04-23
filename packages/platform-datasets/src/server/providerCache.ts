@@ -2,8 +2,8 @@
  * Shared bounded LRU cache for provider responses.
  *
  * Internal to platform-datasets — not exported from the public ./server entrypoint.
- * Cache key contract: docs/architecture_dashboard_bi.md §4 (Cache Strategy).
- * Provider extension rules: docs/architecture_dashboard_bi.md §7.
+ * Cache key contract: docs/bi/architecture.md §4 (Cache Strategy).
+ * Provider extension rules: docs/bi/architecture.md §7.
  */
 import { LRUCache } from 'lru-cache';
 import type { DatasetResponse } from '../model';

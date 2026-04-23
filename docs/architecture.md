@@ -1,410 +1,387 @@
 # Architecture: Repository Foundation
 
-Canonical repo-wide architecture doc. Current-state only.
+Canonical repo-wide foundation architecture doc. Current-state only.
 
 ## Scope
-- Covers: system topology, package map, import rules, deployment, shared infrastructure
-- Does not cover: BI-specific execution paths (see architecture_dashboard_bi.md), EMIS-specific operational paths (see emis/architecture.md)
 
-## 1. Architectural Principles
+- Covers: system shape, topology, package map, dependency and placement rules, deployment model, documentation ownership, verification hooks
+- Does not cover: BI runtime specifics (see `bi/architecture.md`), EMIS operational module specifics (see `emis/architecture.md`), historical rollout notes
 
-Three architecture lenses define the system at different levels:
+## 1. Foundation Decisions
 
-- **Repo/app level: Package-first modular SvelteKit architecture.** Reusable logic lives in `packages/*`. `apps/web` is a leaf composition shell — it owns routes, page composition, and server transport, but not domain logic or reusable contracts.
+### 1.1. System Shape
 
-- **App composition model: route-first UI + package-first reusable logic.** Routes own page/workspace composition and page-local BI state. Packages own reusable contracts, data execution, and server logic. This is the governing architecture for active development.
+- One deployable `SvelteKit 2` application in a pnpm workspace monorepo.
+- `apps/web` is the only deployable. It is a leaf composition shell: routes, page composition, HTTP transport, startup glue.
+- Reusable logic lives in `packages/*`.
+- The system is a modular monolith. It is not a microservice split and not a runtime-plugin system.
+- **Monorepo stance.** The system is one deployable SvelteKit app in a pnpm workspace monorepo; package boundaries are monorepo-ready code boundaries, not a commitment to a physical split in this wave.
+- **Package extraction rule.** Promote code to `packages/*` when it owns a reusable contract, execution boundary, or cross-route/domain capability that should remain app-independent; number of subfolders is never a packaging criterion.
 
-- **App-local folders: flat peer modules, not FSD layers.** `src/lib/` now uses flat peer modules such as `api`, `fixtures`, `styles`, `dashboard-edit`, and `emis-manual-entry`. `entities/`, `shared/`, `features/`, and `widgets/` are removed and must not drive placement or naming decisions.
+### 1.2. Canonical Execution Paths
 
-- **Server pattern: BFF transport over package-owned services.** SvelteKit routes (`+server.ts`, `+page.server.ts`) are thin HTTP transport. Business logic, SQL, and domain rules live in `packages/emis-server`, `packages/platform-datasets`, etc. Routes parse HTTP, validate, delegate to package entrypoints, and map errors.
+- BI / read-side:
+  `page or widget -> fetchDataset() -> /api/datasets/:id -> executeDatasetQuery() -> compile to SelectIr -> Provider.execute() -> DatasetResponse`
+- EMIS operational:
+  `route or page -> app-owned auth and transport glue -> packages/emis-server/src/modules/* -> parameterized SQL -> PostgreSQL / PostGIS`
+- Alerts / ops:
+  `hooks.server.ts -> app-local scheduler or service -> pg and external channels`
 
-### 1.1. Data Flow
+These paths are architectural boundaries, not implementation trivia. BI pages do not call EMIS operational modules directly. EMIS operational routes do not embed BI dataset logic.
 
-- **Canonical paths are part of the architecture.** BI reads go `widget → fetchDataset → /api/datasets/:id → compileDataset → DatasetIr → Provider.execute`. EMIS operational flows go `route → emis-server module → parameterized SQL`. This separation exists so analytical reads and operational writes evolve independently. *In practice:* dashboard code must not call `emis-server/modules/*`; EMIS analytics pages only consume published read models/views.
-
-- **Transport is never the domain.** Routes may parse HTTP, validate input, derive server context, and shape responses — but SQL, PostGIS logic, and business rules live in packages or `src/lib/server/*`. *In practice:* SQL in route files and HTTP objects in services/repositories are forbidden.
-
-### 1.2. Boundary Discipline
-
-- **`packages/*` own reusable logic; `apps/web` is a leaf composition shell.** This keeps the deployable app thin and makes domain logic portable. *In practice:* nobody imports from `apps/web`; new reusable code goes into packages first.
-
-- **Boundaries are one-way and enforced, not advisory.** `platform-*` stays domain-agnostic, `emis-server` never imports UI, client layers never import server code, BI never crosses into EMIS operational internals. *In practice:* violating the ESLint boundary graph is an architectural error, not a style issue.
+- **Transitional BI compatibility surface.** The `filterContext` path is non-target and scheduled for rework. Canonical flat-params reference callers are `strategy/scorecard` and `wildberries/office-day`.
+- Current non-target callers scheduled for rework: `strategy/overview`, `strategy/performance`, `strategy/cascade`, `strategy/scorecard_v2`, and EMIS BI read-side. BI runtime maturity means migrating `strategy.*` pages from the `filterContext` path to the flat-params path; EMIS BI is a separate, later migration track.
 
 ### 1.3. Contract Model
 
-- **External communication happens through explicit contracts.** `DatasetQuery`/`DatasetResponse`, `FilterSpec`, Zod request/response schemas, and `RUNTIME_CONTRACT` are the surfaces teams code against. `DatasetIr` and provider ports stay server-internal. *In practice:* UI talks `DatasetQuery`, not IR or SQL.
+- External surfaces are explicit contracts: `DatasetQuery`, `DatasetResponse`, `FilterSpec`, Zod request and response schemas, EMIS runtime conventions.
+- IRs, provider ports, repositories, and SQL are execution internals, not UI contracts.
+- A contract may expose only what the execution path can actually honor.
 
-- **Contracts must be honest about capabilities.** A contract may only expose features that the execution path can actually honor. *In practice:* unsupported IR features, undocumented response shapes, and silent behavioral drift are treated as migration debt immediately.
+### 1.4. Boundary and Dependency Discipline
 
-### 1.4. State Management
+- `packages/*` own reusable logic. `apps/web` may consume packages; packages never import from `apps/web`.
+- `platform-*` stays domain-agnostic.
+- Client layers do not import server-only code.
+- `emis-server` never imports UI.
+- BI reads EMIS data only through published DB contracts and BI runtime seams.
 
-- **Server is the source of truth for business data; client state drives interaction.** Client stores hold filters, view state, and request orchestration — not authoritative domain records. *In practice:* widgets derive data from fetch/load/API calls, not long-lived client-side copies.
+Boundary violations are architectural errors, not style issues.
 
-- **Client state is scoped explicitly and derived whenever possible.** The filter runtime models `shared`, `workspace`, and `owner` scopes. *In practice:* duplicated state blobs, hidden cross-page globals, and ad-hoc store coupling are forbidden.
+### 1.5. State and Runtime Discipline
 
-### 1.5. Extension Model
+- Server is the source of truth for business data.
+- Client state owns interaction: filters, view state, async orchestration, local presentation state.
+- Filter planning and dataset transport use one shared platform mechanism. Vertical docs own the exact current server contract and supported combinations for that mechanism.
+- Long-lived services start in controlled bootstrap points and must remain deterministic and stoppable.
+- Single-process constraints are real: bounded caches, one PG pool, and predictable memory use are defaults.
 
-- **Extend by adding registrations and bounded modules, not by poking holes through layers.** New datasets add definition modules and provider mappings; new domains follow the `contracts → server → ui → routes → read-model` pattern. *In practice:* "just add a special case in the route" is the wrong default.
+### 1.6. Security, Resilience, and Validation
 
-- **Composition is static, not plugin-driven at runtime.** The system is designed for build-time known modules and explicit registration because the runtime is a single constrained process. *In practice:* dynamic provider discovery and runtime plugin loading are out of bounds.
+- Auth and authorization are server gates, never client conventions.
+- Payload validation happens at ingress. SQL stays parameterized. Identifiers stay allowlisted.
+- HTTP boundaries return typed, stable error shapes and correlation identifiers when available.
+- Explicit degraded modes are allowed only when documented and safe.
 
-### 1.6. Error & Resilience
+### 1.7. Testing and Verification
 
-- **Failures must be explicit, typed, and correlatable.** All endpoints return stable `{ error, code }`, EMIS routes propagate `x-request-id`. *In practice:* thrown raw errors at the HTTP boundary are forbidden.
-
-- **Degradation is allowed only when documented and safe.** Missing schema, missing `DATABASE_URL`, auth fallback, scheduler disablement — each is an explicit mode. *In practice:* if a component cannot meet its contract, it returns a clear error, not guessed data.
-
-### 1.7. Security Model
-
-- **Auth and authorization are server gates, never client conventions.** Identity, role, and actor attribution come from session/cookies resolved on the server. *In practice:* every EMIS write path calls `assertWriteContext()` before mutation.
-
-- **Validation and SQL safety happen at ingress and execution boundaries.** Payloads parsed by Zod, SQL parameterized, identifiers allowlisted by `isSafeIdent()`. *In practice:* raw SQL fragments from request data are forbidden.
-
-### 1.8. Testing Philosophy
-
-- **Test the decision points, not just the screens.** Pure planners, compilers, registries, and contract parsers carry architectural behavior. *In practice:* `planFiltersForDataset`, dataset compilation, param parsing, and write-policy logic are covered before cosmetic component tests.
-
-- **Use smoke tests for cross-layer confidence.** Important failures are usually at boundaries: auth, schema readiness, read models, route contracts. *In practice:* boundary lint, type/build checks, and EMIS smoke suites are mandatory verification for architectural work.
-
-### 1.9. Deployment & Runtime
-
-- **Design for one deployable process.** The system runs as a single SvelteKit/Node app with one PostgreSQL pool and a bounded memory budget. *In practice:* avoid per-request heavy caches, uncontrolled background workers, and behaviors that assume microservice isolation. Concrete deployment constraints (host sizing, memory budget) live in §6, not here.
-
-- **Runtime must stay deterministic and bootstrap-safe.** Long-lived services start in controlled places (`hooks.server.ts`), features must not depend on "eventually initialized" side effects. *In practice:* background schedulers, cleanup loops, and startup probes are single-entry and gracefully stoppable.
-
-### 1.10. Naming & Conventions
-
-- **Names reveal boundary and role.** Package names (`platform-*`, `emis-*`), module names (`queries.ts`, `repository.ts`, `service.ts`), route namespaces (`/api/emis/*`, `/dashboard/*`) show where logic belongs. *In practice:* new files fit the existing architectural vocabulary instead of inventing parallel structures.
-
-- **URL, JSON, and dataset naming are contracts, not preferences.** Operational APIs use kebab-case paths and camelCase payload names. Dataset rows mirror SQL/read-model names in snake_case. *In practice:* do not normalize one side into the other unless the contract says so.
+- Test decision points: planners, compilers, registries, parsers, providers, write-policy logic.
+- Use smoke tests for cross-layer confidence at auth, route, schema, and read-model boundaries.
+- Architectural work is not complete without verification against the hooks in §8.
 
 ### Known Transitional Debt
 
-The principles above describe the durable target. Migration debt is tracked per vertical, not duplicated here:
-
-- BI vertical: [architecture_dashboard_bi.md §9 Migration Debt Register](./architecture_dashboard_bi.md#9-migration-debt-register)
-- EMIS vertical: inline within [emis/architecture.md](./emis/architecture.md) where relevant
-
-Repo-wide cross-cutting debt (multi-tenancy enforcement, scheduler lock vs single-process reconciliation) is tracked in [architecture_improvements_backlog.md](./architecture_improvements_backlog.md).
+- BI-specific migration debt lives in [docs/bi/architecture.md §9](./bi/architecture.md#9-migration-debt-register).
+- EMIS-specific architectural debt lives inline in [docs/emis/architecture.md](./emis/architecture.md).
+- Cross-cutting repo debt drafts live in [docs/archive/architecture_improvements_backlog.md](./archive/architecture_improvements_backlog.md) (archive; not canonical).
 
 ## 2. System Topology
 
-Single-deployable SvelteKit 2 application built as a pnpm workspace monorepo.
+Single-deployable SvelteKit application built as a pnpm workspace monorepo.
 
-```
+```txt
 dashboard-builder/            (workspace root)
   apps/web/                   (SvelteKit app -- the only deployable)
   packages/
     platform-core/            (leaf foundation: format, types, utils)
     platform-ui/              (UI primitives, ECharts presets, design tokens)
-    platform-datasets/        (DatasetQuery/Response/IR, compiler, providers)
+    platform-datasets/        (DatasetQuery/Response, registry, executeDatasetQuery, SelectIr-based compiler, providers)
     platform-filters/         (filter store, planner, widgets)
     db/                       (PG pool via pg, leaf foundation)
     emis-contracts/           (EMIS entity types, Zod schemas, DTOs)
     emis-server/              (EMIS server infra + domain modules)
-    emis-ui/                  (EMIS map/status UI: MapLibre, PMTiles)
+    emis-ui/                  (EMIS map and status UI)
   db/                         (schema snapshots, catalog, applied changes)
   scripts/                    (smoke tests, DB tooling, boundary lint)
-  docs/                       (architecture, contracts, plans)
+  docs/                       (architecture, contracts, plans, runbooks)
 ```
 
-One runtime process. One build (`vite build` via `@sveltejs/adapter-node`). No microservices.
+One runtime process. One build. No microservice decomposition.
 
 ## 3. Package Map
 
-| Package | npm name | Purpose | Key deps |
-|---|---|---|---|
-| `platform-core` | `@dashboard-builder/platform-core` | Format helpers, shared TS types (`JsonPrimitive`, `JsonValue`), `useDebouncedLoader` | Svelte (peer) |
-| `platform-ui` | `@dashboard-builder/platform-ui` | UI primitives, ECharts chart presets, TailwindCSS design tokens, `clsx`/`tailwind-merge` | `platform-core`, `echarts`, Svelte (peer) |
-| `platform-datasets` | `@dashboard-builder/platform-datasets` | `DatasetQuery`/`DatasetResponse` contract, `DatasetIr` AST, `compileDataset` router, `postgresProvider` | `platform-core`, `db`, `pg` |
-| `platform-filters` | `@dashboard-builder/platform-filters` | Filter store (Svelte stores + runes), `FilterSpec`/`FilterPlan` types, `planFiltersForDataset`, filter widgets | `platform-core`, `platform-ui`, `platform-datasets`, Svelte (peer) |
-| `db` | `@dashboard-builder/db` | `getPgPool()` -- single PG connection pool factory | `pg` |
-| `emis-contracts` | `@dashboard-builder/emis-contracts` | EMIS entity types and Zod validation schemas. Subpath exports per domain: `emis-geo`, `emis-dictionary`, `emis-news`, `emis-object`, `emis-link`, `emis-ship-route`, `emis-map`, `emis-user`, `emis-ingestion` | `zod` |
-| `emis-server` | `@dashboard-builder/emis-server` | Server-only EMIS infra (`getDb`, `EmisError`, audit, map config, PMTiles) and domain modules (news, objects, links, dictionaries, map, ship-routes, sessions, users, ingestion). Pattern: queries/repository/service per module | `emis-contracts`, `db`, `zod`, `bcryptjs`, `pg` (peer) |
-| `emis-ui` | `@dashboard-builder/emis-ui` | `EmisMap` (MapLibre GL JS + PMTiles), layer config, popup renderers, feature normalizers, `EmisStatusBar` | `emis-contracts`, `platform-core`, `platform-ui`, `maplibre-gl`, `pmtiles`, Svelte (peer) |
+| Package             | npm name                               | Purpose                                                                                                           | Key deps                                                                                                         |
+| ------------------- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `platform-core`     | `@dashboard-builder/platform-core`     | Format helpers, shared TS types, `useDebouncedLoader`                                                             | Svelte (peer)                                                                                                    |
+| `platform-ui`       | `@dashboard-builder/platform-ui`       | UI primitives, ECharts presets, design tokens                                                                     | `platform-core`, `echarts`, Svelte (peer)                                                                        |
+| `platform-datasets` | `@dashboard-builder/platform-datasets` | `DatasetQuery`/`DatasetResponse`, dataset registry, `executeDatasetQuery()`, `SelectIr`-based compiler, providers | `platform-core`, `db`, `pg`                                                                                      |
+| `platform-filters`  | `@dashboard-builder/platform-filters`  | Filter store, filter planner, widgets, `FilterSpec`/`FilterPlan`                                                  | `platform-ui`, `platform-datasets`, Svelte (peer)                                                                |
+| `db`                | `@dashboard-builder/db`                | `getPgPool()` and shared PG infra                                                                                 | `pg`                                                                                                             |
+| `emis-contracts`    | `@dashboard-builder/emis-contracts`    | EMIS DTOs, entity types, Zod validation schemas                                                                   | `zod`, `@types/geojson`                                                                                          |
+| `emis-server`       | `@dashboard-builder/emis-server`       | EMIS server infra and domain modules                                                                              | `emis-contracts`, `db`, `zod`, `bcryptjs`, `pg` (peer)                                                           |
+| `emis-ui`           | `@dashboard-builder/emis-ui`           | `EmisMap`, layer config, popup renderers, status bar                                                              | `emis-contracts`, `platform-core`, `platform-ui`, `maplibre-gl`, `pmtiles`, `@protomaps/basemaps`, Svelte (peer) |
 
-Canonical home rules: new reusable code goes into `packages/*`. App-specific composition (routes, lifecycle, glue) stays in `apps/web`. Nobody imports from `apps/web`.
+Canonical home rule: new reusable code goes into `packages/*`. App-specific composition stays in `apps/web`.
 
 ## 4. Domain Contours
 
-### Platform / shared
+### 4.1. Platform / Shared
 
-Foundation packages consumed by all domains: `platform-core`, `platform-ui`, `platform-datasets`, `platform-filters`, `db`. No business logic. No EMIS or Wildberries awareness.
+Foundation packages consumed by multiple domains: `platform-core`, `platform-ui`, `platform-datasets`, `platform-filters`, `db`.
 
-### BI / read-side
+Rules:
 
-Analytical dashboards and KPI pages. Three active domain slices:
+- no business-specific EMIS or Wildberries behavior
+- no route ownership
+- no app-specific page composition
 
-- **Wildberries** (`/dashboard/wildberries/`): office-day stock, product analytics, stock alerts. Data from `mart_marketplace` (external DWH).
-- **Strategy / BSC** (`/dashboard/strategy/`): entity overview, cascade, scorecard, performance. Data from `mart_strategy` (external DWH wrappers).
-- **EMIS analytics** (`/dashboard/emis/`): news provenance, ship routes, vessel positions, objects dim. Data from `mart.emis_*` and `mart_emis.*` views (app-owned).
+### 4.2. BI / Read-Side
 
-All BI slices share the same execution path (see [architecture_dashboard_bi.md](./architecture_dashboard_bi.md)).
+Analytical dashboards and KPI pages.
 
-> **Boundary note.** "EMIS analytics" pages are part of the **BI platform**, not part of the EMIS module. They consume EMIS data exclusively through published mart views and use BI infrastructure (datasets, providers, filters). They do not import from `emis-server/modules/*`. If EMIS is extracted into a separate repository, these BI pages remain in dashboard-builder.
+Active slices:
 
-### EMIS operational
+- `wildberries`: `/dashboard/wildberries/office-day`, `/dashboard/wildberries/product-analytics`, `/dashboard/wildberries/stock-alerts`
+- `strategy` under `/dashboard/strategy/`
+- `emis` analytics under `/dashboard/emis/`
 
-Operational CRUD workspace: object/news catalogs, search, map, dictionaries, manual entry, ship routes, vessel tracking, ingestion pipeline. Lives under `/emis/` (pages) and `/api/emis/` (transport). Packages: `emis-contracts`, `emis-server`, `emis-ui`.
+All BI slices use the BI runtime owned by [docs/bi/architecture.md](./bi/architecture.md).
 
-Session-based auth with role hierarchy (viewer/editor/admin), enforced in `hooks.server.ts`.
+Boundary note:
 
-> **Module boundary.** EMIS is a self-contained domain module (contracts + server + UI + operational routes) that may be extracted into a separate repository. Analytical dashboards that visualize EMIS data (`/dashboard/emis/`) are **not** part of this module — they belong to the BI platform (see above).
+- EMIS analytics pages are part of the BI platform, not part of the EMIS operational module
+- they consume EMIS data only through published read-models and the shared dataset runtime
+- if EMIS is extracted later, these BI pages remain in dashboard-builder
 
-See [emis/architecture.md](./emis/architecture.md) for execution paths.
+### 4.3. EMIS Operational
 
-### Alerts / ops
+Operational workspace under `/emis/*` and `/api/emis/*`.
 
-Server-side alert scheduler: evaluates SQL conditions against mart data, sends Telegram notifications, keeps history. App-local in `apps/web/src/lib/server/alerts/`. Started by `hooks.server.ts` on boot.
+Owned packages and app seams:
 
-See [architecture_dashboard_bi.md](./architecture_dashboard_bi.md) for the scheduler path.
+- `packages/emis-contracts`
+- `packages/emis-server`
+- `packages/emis-ui`
+- `apps/web/src/routes/emis/*`
+- `apps/web/src/routes/api/emis/*`
+- `apps/web/src/lib/server/emis/infra/*`
 
-## 5. Import and Dependency Rules
+See [docs/emis/architecture.md](./emis/architecture.md) for the vertical contract.
 
-### Package dependency graph
+### 4.4. Alerts / Ops
 
-Layered "can import" relationships. Arrows point to allowed dependencies.
+Server-side alert scheduler and related operational transport stay app-local in `apps/web/src/lib/server/alerts/*`.
 
-- **Leaves** (no internal deps): `platform-core`, `db`
-- **Platform tier**:
-  - `platform-ui` → `platform-core`
-  - `platform-datasets` → `platform-core`, `db`
-  - `platform-filters` → `platform-core`, `platform-ui`, `platform-datasets`
-- **EMIS tier**:
-  - `emis-contracts` → `platform-core`
-  - `emis-server` → `emis-contracts`, `platform-core`, `platform-datasets`, `db`
-  - `emis-ui` → `emis-contracts`, `platform-core`, `platform-ui`, `platform-filters`
-- **App**: `apps/web` may import from any package; no package imports from `apps/web`
+Rules:
 
-The table below is the authoritative `Can import from` / `Cannot import from` matrix.
+- scheduler bootstraps from `hooks.server.ts`
+- BI pages may consume alert outputs, but the scheduler itself is not part of the dataset runtime
+- the owning vertical description lives in [docs/bi/architecture.md](./bi/architecture.md#5-bi-adjacent-operational-paths)
 
-### Explicit package rules
+## 5. Import, Placement, and App-Local Rules
 
-| Package | Can import from | Cannot import from |
-|---|---|---|
-| `platform-core` | (leaf) | everything else |
-| `db` | (leaf) | everything else |
-| `platform-ui` | `platform-core` | emis-*, datasets, filters, db, apps |
-| `platform-datasets` | `platform-core`, `db` | emis-*, platform-ui, apps |
-| `platform-filters` | `platform-core`, `platform-ui`, `platform-datasets` | emis-*, apps |
-| `emis-contracts` | `platform-core` (types only) | emis-server, emis-ui, apps |
-| `emis-server` | `emis-contracts`, `platform-core`, `platform-datasets`, `db` | emis-ui, apps |
-| `emis-ui` | `emis-contracts`, `platform-core`, `platform-ui`, `platform-filters` | emis-server, apps |
-| `apps/web` | all packages | (nobody imports from app) |
+### 5.1. Package Dependency Graph
 
-### Non-negotiable boundaries
+Allowed internal dependencies:
+
+- Leaves: `platform-core`, `db`, `emis-contracts`
+- Platform tier:
+  - `platform-ui` -> `platform-core`
+  - `platform-datasets` -> `platform-core`, `db`
+  - `platform-filters` -> `platform-ui`, `platform-datasets`
+- EMIS tier:
+  - `emis-server` -> `emis-contracts`, `db`
+  - `emis-ui` -> `emis-contracts`, `platform-core`, `platform-ui`
+- App tier:
+  - `apps/web` may import packages
+  - no package imports from `apps/web`
+
+### 5.2. Explicit Package Rules
+
+| Package             | Can import from                                  | Cannot import from                                         |
+| ------------------- | ------------------------------------------------ | ---------------------------------------------------------- |
+| `platform-core`     | (leaf)                                           | everything else                                            |
+| `db`                | (leaf)                                           | everything else                                            |
+| `platform-ui`       | `platform-core`                                  | emis-\*, datasets, filters, db, apps                       |
+| `platform-datasets` | `platform-core`, `db`                            | emis-\*, platform-ui, apps                                 |
+| `platform-filters`  | `platform-ui`, `platform-datasets`               | platform-core, emis-\*, db, apps                           |
+| `emis-contracts`    | (leaf)                                           | platform-\*, db, emis-server, emis-ui, apps                |
+| `emis-server`       | `emis-contracts`, `db`                           | platform-\*, emis-ui, apps                                 |
+| `emis-ui`           | `emis-contracts`, `platform-core`, `platform-ui` | platform-datasets, platform-filters, emis-server, db, apps |
+| `apps/web`          | all packages                                     | nobody imports from app                                    |
+
+### 5.3. Non-Negotiable Boundaries
 
 1. `platform-*` never imports from `emis-*`.
-2. BI routes never import EMIS operational modules (`emis-server/modules/*`). EMIS data enters BI only through published DB views.
+2. BI routes never import EMIS operational modules. EMIS data enters BI through published DB contracts and BI runtime seams.
 3. `emis-server` never imports from `emis-ui`.
-4. Nobody imports from `apps/web`.
+4. Packages never import from `apps/web`.
 
-### App-Local Structure (Current State + Target Policy)
+### 5.4. App-Local Structure
 
-The app-local `src/lib/` layer is now flat by responsibility. Historical FSD-like buckets under `src/lib/shared/`, `src/lib/features/`, and `src/lib/widgets/` were removed and are not the governing architecture model.
+The app-local `src/lib/` layer is flat by responsibility. Historical FSD-like buckets are removed and must not return as the governing model.
 
-For active development, placement is decided by responsibility first:
+| Layer                                          | Path                         | Contains                                                    | Status                      |
+| ---------------------------------------------- | ---------------------------- | ----------------------------------------------------------- | --------------------------- |
+| `api`                                          | `src/lib/api/`               | App-local client transport facades such as `fetchDataset()` | Active                      |
+| `fixtures`                                     | `src/lib/fixtures/`          | Mock, demo, and test data                                   | Active                      |
+| `styles`                                       | `src/lib/styles/`            | App-level tokens, global CSS, style docs                    | Active                      |
+| `dashboard-edit`                               | `src/lib/dashboard-edit/`    | Dashboard editor                                            | Active app-local module     |
+| `emis-manual-entry`                            | `src/lib/emis-manual-entry/` | EMIS manual-entry forms                                     | Active app-local module     |
+| `server`                                       | `src/lib/server/`            | App-owned server glue and operational helpers               | Formal server-only boundary |
+| `entities` / `shared` / `features` / `widgets` | `src/lib/*`                  | Legacy placeholders                                         | Deleted; do not recreate    |
 
-- Page/workspace composition belongs to `src/routes/...`
-- Reusable contracts, data execution, and server logic belong to `packages/*`
-- Thin app-local glue may stay in `src/lib/*` when it is neither page-local nor package-worthy
+Placement rules:
 
-| Layer | Path | Alias | Contains | Status |
-|---|---|---|---|---|
-| `api` | `src/lib/api/` | `$lib/*` | App-local BI facade (`fetchDataset`) | Active app-local module |
-| `fixtures` | `src/lib/fixtures/` | `$lib/*` | Mock, demo, and test data | Active app-local module |
-| `styles` | `src/lib/styles/` | `$lib/*` | App-level token CSS and style docs | Active app-local module |
-| `dashboard-edit` | `src/lib/dashboard-edit/` | `$lib/*` | Dashboard editor | Active app-local peer module |
-| `emis-manual-entry` | `src/lib/emis-manual-entry/` | `$lib/*` | EMIS manual-entry forms | Active app-local peer module |
-| `entities` | `src/lib/entities/` | -- | Removed in TD-2 | Deleted; do not recreate |
-| `routes` | `src/routes/` | -- | Pages, API endpoints, layouts | Canonical home for UI composition |
-| `server` | `src/lib/server/` | -- | BFF: datasets, providers, alerts, strategy | Server-only; never imported from client |
+- page or workspace composition -> `src/routes/...`
+- reusable contracts, execution logic, and domain logic -> `packages/*`
+- app-specific cross-route glue -> `src/lib/<module>/`
+- client transport facades -> `src/lib/api/`
+- server-only glue -> `src/lib/server/`
 
-**Placement guidance for new code:**
-- New page-scoped BI UI goes into route-local files under `src/routes/dashboard/<domain>/...`
-- New reusable logic, contracts, and data execution go into `packages/*`
-- Route-local UI such as `routes/dashboard/wildberries/stock-alerts/*` and `routes/dashboard/emis/vessel-positions/EmisDrawer.svelte` stays with its owning route instead of moving into generic app buckets
-- ESLint peer isolation is enforced for `src/lib/dashboard-edit/*` and `src/lib/emis-manual-entry/*`
-- Clear import boundaries still matter even if the structure already hints at them; “obvious from folders” is not a substitute for boundary discipline
+Scaling rules:
 
-**Target non-EMIS app-local shape:**
+- keep `src/lib/` flat by module, not by type
+- do not introduce new top-level `shared`, `entities`, `features`, or `widgets`
+- if two app-local peer modules need shared logic, promote that logic into `packages/*` or move it into a narrower route-local home
 
-```txt
-src/lib/
-  server/              # server-only boundary
-  api/                 # client API / transport facades
-  fixtures/            # mock, demo, and test data
-  styles/              # app-level design system: tokens, global CSS, style docs
-  dashboard-edit/      # app-local module
-  <module>/            # each additional app-local module is a first-level peer
-```
+### 5.5. Design-System Split
 
-Rules for this shape:
-- Flat by module, not layered by type
-- Do not introduce new top-level `shared`, `entities`, `features`, or `widgets` folders under `src/lib/`
-- Each first-level module under `src/lib/` is an app-local unit with an explicit responsibility
-- Keep `server/` as-is; it is already semantic and accurate
-- If a folder mixes unrelated responsibilities, split it by responsibility instead of renaming one catch-all bucket into another catch-all bucket
+- `@dashboard-builder/platform-ui` owns reusable UI primitives, chart presets, and generic styling contracts
+- `src/lib/styles/` owns app-shell-specific tokens, global CSS, typography utilities, and style docs
+- promote from `src/lib/styles/` to `platform-ui` only when the piece becomes package-worthy and reusable beyond the current app shell
 
-**Decision tree for new code:**
-- Reusable across domains/projects -> `packages/*`
-- Used by exactly one page/workspace -> route-local files under `src/routes/...`
-- Used by multiple routes but still app-specific -> `src/lib/<module-name>/`
-- Thin client facade to HTTP/BFF -> `src/lib/api/`
-- Server-only logic -> `src/lib/server/`
+### 5.6. Alias and Server Boundary Policy
 
-**Module lifecycle:**
-1. Route-local: code lives next to the page/workspace that owns it
-2. App-local module: once the code is used by 2+ routes and is still app-specific, promote it to `src/lib/<module-name>/`
-3. Package: once the module grows broader contracts, related submodules, or cross-domain/project reuse, promote it to `packages/<name>/`
+- keep `$lib`
+- do not reintroduce `$shared`, `$features`, `$widgets`, or `$entities`
+- prefer explicit imports such as `$lib/api/fetchDataset`, `$lib/styles/...`, `$lib/fixtures/...`
 
-Each promotion is a response to actual growth, not speculative pre-design.
+Server boundary rules:
 
-**Grouping and scaling model:**
-- `packages/*` is the primary grouping and scaling mechanism for the repository
-- New domains normally appear as new packages (`{domain}-contracts`, `{domain}-server`, `{domain}-ui`, or additions to existing platform packages)
-- `apps/web/src/routes/*` owns page composition and route-local code
-- `apps/web/src/lib/*` stays intentionally thin: `server/`, `api/`, `fixtures/`, `styles/`, and a small number of app-local peer modules
-- Do not introduce extra grouping layers inside `src/lib/` to simulate package boundaries; if grouping pressure appears, that is usually the signal to extract a package
+- `src/lib/server/**` is a formal server-only boundary
+- allowed consumers: `src/routes/api/**`, `+page.server.ts`, `+layout.server.ts`, `hooks.server.ts`, other `src/lib/server/**`
+- `src/lib/server/**` must not import app-local UI modules, `.svelte` components, `platform-ui`, `emis-ui`, or client runtime/store modules
+- route handlers stay thin adapters: parse transport input, derive context, call package or server entrypoints, map result or error
 
-**Design-system split:**
-- `@dashboard-builder/platform-ui` owns reusable UI primitives, chart presets, and generic component-level styling contracts
-- `src/lib/styles/` owns the app-level design system assets that are specific to this SvelteKit app shell: global token CSS, typography utility classes, `app.css` wiring, and the design-system guide
-- Promote design-system pieces from `src/lib/styles/` into `platform-ui` only when they become package-worthy and reusable beyond this app shell
-- Route and app-local code should consume the design system through reusable components from `@dashboard-builder/platform-ui` plus tokenized styles from `src/lib/styles/`; avoid hardcoded visual values when a token or shared primitive already exists
+`src/lib/` dependency rules:
 
-**Alias policy for the target shape:**
-- Keep `$lib`
-- `$shared`, `$features`, `$widgets`, and `$entities` are removed and must not be reintroduced
-- Prefer explicit imports such as `$lib/api/fetchDataset`, `$lib/styles/...`, `$lib/fixtures/...`, `$lib/dashboard-edit`
-
-**Compact boundary rules:**
-- Routes own page/workspace composition
-- Route-local `components/`, `view-model.ts`, and `filters.ts` are page-scoped and should not become cross-route shared modules
-- Packages own reusable contracts, data execution, and server/domain logic
-- App-local shared UI primitives may live in neutral folders such as `src/lib/components/` or in `platform-ui`, but they must not know about concrete pages
-- `packages/*` must not import app code
-- Routes and app-local UI must not reach into package-private server internals; they use public package entrypoints and documented route/BFF seams
-- App-local peer modules under `src/lib/<module>/` should not import each other; if two modules need shared code, that code belongs either in `packages/*` or in a narrower route-local shared home
-
-**Server boundary and transport policy:**
-- `src/lib/server/**` is a formal server-only boundary. Allowed consumers: `src/routes/api/**`, `+page.server.ts`, `+layout.server.ts`, `hooks.server.ts`, and other `src/lib/server/**` modules.
-- `src/lib/server/**` may import server-safe packages (`@dashboard-builder/*/server`, `@dashboard-builder/db`), `@sveltejs/kit` transport APIs, and server-safe utilities. It must not import app-local UI peer modules, `.svelte` components, `platform-ui`, `emis-ui`, or Svelte client runtime/store modules.
-- `routes/api/**/+server.ts` and server load files stay thin adapters: parse request/params/session, derive context, call package or server entrypoints, map result/error to HTTP or load output.
-- Put code into `packages/*` when it is reusable, contract-bearing, or domain logic. Put code into `src/lib/server/**` only for app-owned server concerns and glue (`alerts`, mock provider, EMIS SvelteKit transport helpers).
-- BI dataset definitions executed at runtime live in `packages/platform-datasets/src/server/definitions/*`. `apps/web/src/lib/server/datasets/definitions/*` are migration copies/reference only and are not the runtime source of truth for `/api/datasets/:id`.
-
-**`src/lib/` dependency rules:**
-- `src/lib/server/**` may import packages and server-safe utilities; it must not import `src/lib/api/**` or app-local UI modules
-- `src/lib/api/**` may import packages and client-safe transport utilities; it must not import `src/lib/server/**` or peer app-local modules
-- `src/lib/styles/**` is for tokens, CSS, and style docs only; no business logic
+- `src/lib/server/**` may import server-safe packages; it must not import `src/lib/api/**` or app-local UI peer modules
+- `src/lib/api/**` may import client-safe packages and transport utilities; it must not import `src/lib/server/**`
+- `src/lib/styles/**` is for styles and tokens only
 - `src/lib/<module>/**` may import packages, `src/lib/api/**`, and `src/lib/styles/**`; it should not import other peer app-local modules
+
+### 5.7. Naming Conventions
+
+- Route and URL segments use kebab-case, for example `/dashboard/wildberries/office-day`, `/dashboard/wildberries/stock-alerts`, `/api/datasets/:id`.
+- Workspace packages use domain-prefixed kebab-case names under `@dashboard-builder/*`, for example `@dashboard-builder/platform-datasets` and `@dashboard-builder/emis-server`.
+- App-local peer modules stay flat under `src/lib/<module>/` and use kebab-case names such as `api`, `dashboard-edit`, `emis-manual-entry`, `server`, `styles`.
+- Runtime type and schema names use PascalCase (`DatasetQuery`, `DatasetResponse`, `FilterSpec`); JSON and transport keys use camelCase (`contractVersion`, `requestId`, `datasetId`, `tenantId`, `sourceKind`).
+- Dataset ids are dotted runtime identifiers such as `strategy.scorecard_overview`; they are runtime names, not folder-naming conventions.
 
 ## 6. Deployment Model
 
-Production deployment: **labinsight.ru** on Beget Cloud VPS (1 vCPU, 1 GB RAM, Ubuntu 24.04).
+Production deployment: `labinsight.ru` on Beget Cloud VPS.
 
-```
+```txt
 Internet -> nginx (443/SSL, certbot) -> Node.js app (127.0.0.1:3000) -> PostgreSQL 16 + PostGIS 3.4
 ```
 
-- **PostgreSQL**: native apt install (no Docker overhead on constrained RAM).
-- **Node.js app**: Docker container (`@sveltejs/adapter-node` build), `network_mode: host`.
-- **Nginx**: native reverse proxy + Let's Encrypt SSL.
-- **Build**: performed on dev machine (OOM risk on 1 GB VPS), image transferred via `docker save | gzip | ssh`.
+Current deployment defaults:
 
-Key files: `Dockerfile` (multi-stage, node:20-alpine, pnpm@10), `docker-compose.prod.yml`, `deploy/nginx.conf`, `deploy/setup.sh`, `deploy/push.sh`.
+- PostgreSQL: native apt install
+- Node.js app: Docker container with `@sveltejs/adapter-node`
+- nginx: native reverse proxy with Let's Encrypt SSL
+- build: produced on the dev machine, then transferred to the VPS
 
-Memory budget: ~590 MB used (OS + PG + Docker + Node + nginx), ~410 MB free + 512 MB swap.
+Key files:
 
-## 7. Documentation Taxonomy
+- `Dockerfile`
+- `docker-compose.prod.yml`
+- `deploy/nginx.conf`
+- `deploy/setup.sh`
+- `deploy/push.sh`
 
-### Canonical (current-state truth)
+The runtime is sized for one constrained node. Memory budget and startup behavior must stay compatible with that assumption.
 
-| Document | Owns |
-|---|---|
-| `docs/architecture.md` (this file) | Repo-wide foundation architecture |
-| `docs/architecture_dashboard_bi.md` | BI vertical architecture |
-| `docs/emis/architecture.md` | EMIS vertical architecture |
-| `docs/emis/README.md` | EMIS entry point and doc map |
-| `docs/emis/change_policy.md` | EMIS working rules, review triggers, DoD |
-| `db/schema_catalog.md` | App DB schema catalog |
-| `db/current_schema.sql` | Active DDL snapshot |
-| `packages/*/AGENTS.md` | Package-local navigation and rules |
-| `apps/web/src/routes/dashboard/strategy/AGENTS.md` | Strategy dashboard contract |
-| `apps/web/src/routes/dashboard/wildberries/dwh_for_wildberries_requirements.md` | Wildberries DWH contract |
-| `apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md` | EMIS API runtime conventions |
+## 7. Documentation Ownership
 
-### Domain overlays (active supporting docs)
+### 7.1. Canonical Current-State Docs
 
-`emis/access_model.md`, `emis/operations.md`, `emis/product_scope.md`, `emis/structural_migration.md`.
+| Document                                                 | Owns                                     |
+| -------------------------------------------------------- | ---------------------------------------- |
+| `docs/architecture.md`                                   | repo-wide foundation architecture        |
+| `docs/bi/architecture.md`                                | BI vertical architecture                 |
+| `docs/emis/architecture.md`                              | EMIS vertical architecture               |
+| `docs/emis/README.md`                                    | EMIS entry point and doc map             |
+| `docs/emis/change_policy.md`                             | EMIS working rules, review triggers, DoD |
+| `db/schema_catalog.md`                                   | app DB schema catalog                    |
+| `db/current_schema.sql`                                  | active DDL snapshot                      |
+| `apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md` | EMIS API runtime conventions             |
 
-### Archive
+### 7.2. Active Supporting Docs
 
-`docs/archive/bi/*`, `docs/archive/emis/*`, `docs/archive/platform/*`, `docs/archive/strategy-v1/*`, `docs/archive/agents/*` -- historical context only.
+- `docs/emis/access_model.md`
+- `docs/emis/operations.md`
+- `docs/emis/product_scope.md`
+- `docs/emis/structural_migration.md`
+
+### 7.3. Archive
+
+`docs/archive/bi/*`, `docs/archive/emis/*`, `docs/archive/platform/*`, `docs/archive/strategy-v1/*`, `docs/archive/agents/*` are historical context only.
 
 ## 8. Verification Hooks
 
-| Command | What it checks |
-|---|---|
-| `pnpm check` | `svelte-kit sync` + `svelte-check` -- type and parse verification across all Svelte/TS files |
-| `pnpm check:packages` | Per-package type checking (`tsc --noEmit` for TS, `svelte-check` for Svelte packages) |
-| `pnpm build` | Full production build via `vite build`. Catches import errors, missing modules, build-time failures |
-| `pnpm lint:boundaries` | Runs ESLint on packages and app layers, reports only `no-restricted-imports` violations. Enforces package dependency graph |
-| `pnpm lint:eslint` | Full ESLint semantic lint (unused vars, type safety, Svelte best practices). Not boundary-only |
-| `pnpm lint:format` | Prettier formatting check |
-| `pnpm lint` | Aggregate: `lint:format` + `lint:eslint` |
-| `pnpm test` | Vitest (`packages/*/src/**/*.test.ts`). Covers registry, executeDatasetQuery, genericCompile, providerCache, contract, client, schema. `passWithNoTests: true` for packages without tests. Current count tracked per wave in `docs/agents/lead-strategic/current_plan.md` |
-| `pnpm emis:smoke` | 40-check read-side and runtime contract verification |
-| `pnpm emis:write-smoke` | 7-flow write-side + audit verification |
-| `pnpm emis:offline-smoke` | 9-check offline basemap smoke test |
-| `pnpm emis:auth-smoke` | 10-check auth flow verification (login, RBAC, change-password, redirect) |
+| Command                   | What it checks                                                       |
+| ------------------------- | -------------------------------------------------------------------- |
+| `pnpm check`              | `svelte-kit sync` plus `svelte-check` across all Svelte and TS files |
+| `pnpm check:packages`     | per-package type checking                                            |
+| `pnpm build`              | full production build                                                |
+| `pnpm lint:boundaries`    | package and app boundary enforcement                                 |
+| `pnpm lint:eslint`        | semantic ESLint checks                                               |
+| `pnpm lint:format`        | Prettier formatting check                                            |
+| `pnpm lint`               | aggregate format plus ESLint                                         |
+| `pnpm test`               | Vitest package tests                                                 |
+| `pnpm emis:smoke`         | EMIS read-side and runtime contract smoke suite                      |
+| `pnpm emis:write-smoke`   | EMIS write-side and audit smoke suite                                |
+| `pnpm emis:offline-smoke` | offline basemap smoke suite                                          |
+| `pnpm emis:auth-smoke`    | auth flow smoke suite                                                |
 
 ### 8.1. Lint Governance Policy
 
-**Mandatory per-slice checks** (must pass for every architectural slice):
+Mandatory per-slice checks:
 
-| Check | Required state |
-|---|---|
-| `pnpm check` | 0 errors |
-| `pnpm build` | success |
-| `pnpm lint:boundaries` | 0 violations |
-| `pnpm test` | all green, ≥ baseline count |
+| Check                  | Required state                        |
+| ---------------------- | ------------------------------------- |
+| `pnpm check`           | 0 errors                              |
+| `pnpm build`           | success                               |
+| `pnpm lint:boundaries` | 0 violations                          |
+| `pnpm test`            | all green, at or above baseline count |
 
-**Monitored checks** (explicit baseline, "don't worsen touched files"):
+Monitored checks:
 
-| Check | Policy |
-|---|---|
-| `pnpm lint:eslint` | Errors in touched files must not increase. Warnings are informational — fix when convenient |
-| `pnpm lint:format` | Not mandatory per-slice; run before integration merge |
+| Check              | Policy                                    |
+| ------------------ | ----------------------------------------- |
+| `pnpm lint:eslint` | errors in touched files must not increase |
+| `pnpm lint:format` | run before integration merge              |
 
-**Rule severity tiers in `eslint.config.js`:**
+Rule severity tiers in `eslint.config.js`:
 
-| Tier | Severity | Examples | Policy |
-|---|---|---|---|
-| Boundary / safety | `error` | `no-restricted-imports`, `no-unused-vars`, `no-explicit-any` | Blocking. Fix in touched files |
-| Svelte 5 migration | `warn` | `require-each-key`, `no-navigation-without-resolve`, `prefer-svelte-reactivity` | Informational. Fix opportunistically when touching the file |
+| Tier               | Severity | Examples                                                                        | Policy                               |
+| ------------------ | -------- | ------------------------------------------------------------------------------- | ------------------------------------ |
+| Boundary / safety  | `error`  | `no-restricted-imports`, `no-unused-vars`, `no-explicit-any`                    | blocking in touched files            |
+| Svelte 5 migration | `warn`   | `require-each-key`, `no-navigation-without-resolve`, `prefer-svelte-reactivity` | informational; fix opportunistically |
 
-**Baseline (captured 2026-04-11):** 46 errors, 187 warnings. Errors are real issues (unused vars, explicit any); warnings are Svelte 5 migration debt.
+Baseline captured on 2026-04-11: 46 errors, 187 warnings.
 
-**Growth rule:** new ESLint rules are added only through the docs-first rule-introduction policy documented in `docs/agents/invariants.md` §10.
+## 9. Adding a New Vertical
 
-## 9. New Domain Overlay Pattern
+Use this pattern for new domains:
 
-Pattern for adding a new domain (like EMIS was added):
+1. `packages/<domain>-contracts/` for types and validation
+2. `packages/<domain>-server/` for server modules
+3. `packages/<domain>-ui/` for reusable UI if needed
+4. route layer in `apps/web/src/routes/<domain>/` and `apps/web/src/routes/api/<domain>/`
+5. BI integration through published DB views or read-models consumed through the shared dataset registry/runtime
+6. invariants overlay in `docs/agents/invariants-<domain>.md` when needed
+7. vertical architecture doc at `docs/<domain>/architecture.md`
 
-1. `packages/{domain}-contracts/` for types and validation
-2. `packages/{domain}-server/` for server modules
-3. `packages/{domain}-ui/` for reusable UI (if needed)
-4. Route layer in `apps/web/src/routes/{domain}/` and `apps/web/src/routes/api/{domain}/`
-5. BI integration through published DB views consumed via dataset definitions
-6. Domain invariants overlay: `docs/agents/invariants-{domain}.md`
-7. Architecture vertical doc: `docs/architecture_{domain}.md`
+Favor folder-based vertical docs for new and updated architecture documents.
 
 ## 10. Read Next
 
-| If your task involves... | Read |
-|---|---|
-| BI datasets, providers, filters, DWH integrations, extension points | [architecture_dashboard_bi.md](./architecture_dashboard_bi.md) |
-| EMIS operational paths, contracts, ingestion, PostGIS, auth | [emis/architecture.md](./emis/architecture.md) |
-| Both BI and EMIS | Read both vertical docs; shared rules are in this file |
+| If your task involves...                                            | Read                                                    |
+| ------------------------------------------------------------------- | ------------------------------------------------------- |
+| BI datasets, providers, filters, DWH integrations, extension points | [docs/bi/architecture.md](./bi/architecture.md)         |
+| EMIS operational paths, contracts, ingestion, PostGIS, auth         | [docs/emis/architecture.md](./emis/architecture.md)     |
+| Both BI and EMIS                                                    | read both vertical docs; shared rules stay in this file |

@@ -1,6 +1,6 @@
 # Agent Templates
 
-Canonical artifact shapes only. Workflow policy, ownership, routing, and runtime rules live in `workflow.md`, role instructions, and `docs/codex-integration.md`.
+Canonical artifact shapes only. Workflow policy, ownership, routing, and runtime rules live in `workflow.md`, role instructions, and `./docs/agents/codex-integration.md`.
 
 ---
 

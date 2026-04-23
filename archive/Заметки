@@ -1,3 +1,50 @@
+небольшую волну docs-as-skills: 4-6 тонких skills, а не один большой. Кандидаты: architecture-audit, docs-drift-triage, placement-decision,
+    bi-change-bootstrap, emis-change-bootstrap.
+
+Замечания
+
+  - WARNING docs/agents/lead-strategic/current_plan.md:97 vs docs/agents/lead-strategic/current_plan.md:179: внутри плана есть противоречие. В risk flags сказано, что
+    apply-scope должен идти только из фактических findings ST-1, но в ST-6 уже заранее зашиты конкретные code/runtime follow-up’ы (assertDatasetAccess(), /api/
+    datasets/:id/schema, governance metadata). Это рано фиксирует решения до аудита.
+  - WARNING docs/agents/lead-strategic/current_plan.md:85, docs/agents/lead-strategic/current_plan.md:87, docs/agents/lead-strategic/current_plan.md:119, docs/agents/lead-
+    strategic/current_plan.md:173, docs/agents/skills/brainstorming.md:102: OQ-1 и OQ-3 реально влияют на topology и foundation narrative, но финально уезжают в ST-6. Это
+    создаёт риск делать ST-2/ST-3 на provisional assumptions, а потом переоткрывать. Я бы разделил decision prerequisites и wave-close triage, и всё, что влияет на
+    структуру документов, закрыл не позже ST-2.
+  - WARNING docs/agents/lead-strategic/current_plan.md:45, docs/agents/lead-strategic/current_plan.md:86, docs/agents/lead-strategic/current_plan.md:173: OQ-2 про роль
+    архитектора и видимость architecture docs для worker’а ортогонален этой волне. Он уже сам помечен как likely follow-up, но всё ещё висит в active plan и размывает
+    docs-alignment wave.
+  - INFO docs/agents/lead-strategic/current_plan.md:15, docs/agents/lead-strategic/instructions.md:18, docs/agents/skills/brainstorming.md:28: в файле нет явной строки
+    Brainstorm: completed|skipped .... Для нового диалога это важно: сейчас видно содержимое brainstorm-секций, но не видно, это user-confirmed framing или просто
+    зафиксированные допущения.
+  - INFO docs/agents/lead-strategic/current_plan.md:107: ST-1 просит claims-vs-reality, но не называет явный артефакт. Для стабилизации и новых чатов лучше иметь отдельный
+    audit ledger/matrix, а не рассчитывать, что выводы останутся “в воздухе”.
+
+  В целом направление хорошее: audit-first, жёсткие non-goals, freeze rule и разделение as-is / follow-up здесь правильные.
+
+  Подход
+
+  - Основной принцип: source of truth должен оставаться в репозитории, а skills должны быть не хранилищем истины, а тонким слоем навигации и workflow.
+  - Я бы держал 3 уровня. docs/*.md и docs/*/architecture.md — canonical truth. Локальные AGENTS.md и точечные RUNTIME_CONTRACT.md — локальные границы и reading order.
+    Skills — task-oriented entrypoints: что читать, что проверить, что не ломать.
+  - Не надо превращать всю документацию в skills. Иначе получится второй, более хрупкий слой документации. Хороший skill должен быть коротким: when to use, bootstrap
+    reads, guardrails, deliverable, verification.
+  - Частные архитектурные особенности стоит класть ближе к коду, но только если это реально локальное правило зоны. Cross-cutting инварианты должны жить в canonical docs,
+    а не расползаться по локальным заметкам.
+  - Лучший критерий размещения такой: repo-wide правило — docs/architecture.md или vertical doc; локальная граница модуля — ближайший AGENTS.md; жёсткий runtime/API
+    contract — RUNTIME_CONTRACT.md; повторяемый task flow — skill.
+  - Оптимизировать надо не “объём читаемого”, а “retrieval path”. Новому диалогу тяжело не потому, что текста много, а потому что не всегда быстро понятно, какие 2-4 файла
+    canonical именно для этой задачи.
+
+  Практически
+
+  - Сначала я бы дожал текущую волну и подчистил сам план: вынес OQ-2 в явный follow-up уже сейчас, закрыл OQ-1/OQ-3 к ST-2, убрал заранее прошитые code-follow-up’ы,
+    добавил Brainstorm: marker и отдельный ST-1 audit artifact.
+  - После этого уже делал бы небольшую волну docs-as-skills: 4-6 тонких skills, а не один большой. Кандидаты: architecture-audit, docs-drift-triage, placement-decision,
+    bi-change-bootstrap, emis-change-bootstrap.
+  - Важно: repo-specific knowledge не стоит прятать только во внешние skill-файлы. Лучше, чтобы skill ссылался на versioned repo docs, а не заменял их.
+
+
+
 - Проверить, что мы не потяреяли старую архитектуру по EMIS(до доработок по dashboard-builder)
 - Правила работы с текущей архитектурой, структурой папок и пакетов и роутов, добавляем в линтер. Может, добавить лучшее из fsd, чистой архитектуры, доменно-ориентированной архитектуры? Проект будет сильно дорабатываться, нужна архитектура не под текущее состояние, а под большие доработки(фичи, новые источники, широкие функционал дашбордов)
 - нужны отдельные папки в доках: еимис, bi и общая папка(фундамент).

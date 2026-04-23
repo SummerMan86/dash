@@ -2,7 +2,7 @@
 
 Archived pre-refactor BI architecture.
 Historical context only; this file is not source of truth for active BI work.
-Current BI architecture lives in [../../architecture_dashboard_bi.md](../../architecture_dashboard_bi.md).
+Current BI architecture lives in [../../bi/architecture.md](../../bi/architecture.md).
 Completed rollout sequencing lives in [bi_refactor_rollout.md](./bi_refactor_rollout.md).
 
 BI-specific architecture for dashboard-builder. Current-state only.
@@ -10,7 +10,7 @@ For repo-wide foundation see [../../architecture.md](../../architecture.md).
 
 ## Scope
 - Covers: dataset IR path, providers, filters, widgets, DWH integrations, extension points for Oracle/CubeJS
-- Does not cover: EMIS operational paths (see [../../architecture_emis.md](../../architecture_emis.md)), repo-wide rules (see [../../architecture.md](../../architecture.md))
+- Does not cover: EMIS operational paths (see [../../emis/architecture.md](../../emis/architecture.md)), repo-wide rules (see [../../architecture.md](../../architecture.md))
 
 ## 1. BI Dataset Path
 
@@ -102,5 +102,5 @@ New dataset: add a definition module in `platform-datasets/src/server/definition
 ## Read Next
 
 - [../../architecture.md](../../architecture.md) — repo-wide foundation, package map, import rules
-- [../../architecture_emis.md](../../architecture_emis.md) — EMIS operational vertical
-- [../../architecture_dashboard_bi.md](../../architecture_dashboard_bi.md) — current BI architecture
+- [../../emis/architecture.md](../../emis/architecture.md) — EMIS operational vertical
+- [../../bi/architecture.md](../../bi/architecture.md) — current BI architecture

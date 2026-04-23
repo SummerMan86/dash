@@ -1,208 +1,227 @@
-# EMIS Architecture
+# Architecture: EMIS Vertical
 
-Текущий current-state контракт для архитектуры EMIS.  
-Документ отвечает на вопросы:
+Canonical EMIS vertical architecture doc. Current-state only.
+Canonical repo-wide foundation: [docs/architecture.md](../architecture.md).
+BI runtime reference for `/dashboard/emis/*`: [docs/bi/architecture.md](../bi/architecture.md).
 
-- где проходит граница модуля EMIS;
-- какие execution paths считаются каноническими;
-- какие storage/contract surfaces считаются owned;
-- через что EMIS связан с BI и платформой.
+## Scope
 
-## 1. Scope
+- Covers: EMIS module boundary, operational execution path, storage ownership, contract surfaces, published read-model bridge to BI, extension points, fixed defaults
+- Does not cover: repo-wide topology and dependency rules, generic BI dataset runtime details, historical rollout notes, step-by-step runbooks
+- `/dashboard/emis/*` analytics pages use the BI runtime and shared filter mechanism defined in `docs/bi/architecture.md`; this document owns the operational side and the bridge points only
 
-Покрывает:
+## 1. Module Boundary
 
-- EMIS operational routes и UI under `/emis/*` и `/api/emis/*`;
-- `emis-contracts`, `emis-server`, `emis-ui`;
-- auth, ingestion, map/runtime integration;
-- EMIS-owned storage и EMIS-facing published read-models.
+EMIS is a self-contained domain inside one deployable application.
 
-Не покрывает:
+Inside the EMIS module:
 
-- repo-wide platform rules;
-- generic dataset runtime details;
-- исторические rollout notes;
-- пошаговые ops runbooks.
+- `packages/emis-contracts/` for DTOs, entity types, and Zod schemas
+- `packages/emis-server/` for backend and domain services
+- `packages/emis-ui/` for reusable EMIS UI slices
+- `apps/web/src/routes/emis/*` for workspace composition
+- `apps/web/src/lib/emis-manual-entry/*` for app-local EMIS manual-entry forms
+- `apps/web/src/routes/api/emis/*` for thin HTTP transport
+- `apps/web/src/lib/server/emis/infra/*` for app-owned EMIS transport and runtime glue
 
-## 2. Module boundary
+Outside the EMIS operational module:
 
-EMIS — self-contained domain внутри одного deployable приложения.
+- `/dashboard/emis/*` analytics pages
+- BI dataset definitions and providers that serve EMIS read-models
+- repo-wide topology, package graph, deployment, and verification rules
 
-Внутрь EMIS входят:
+Boundary note:
 
-- domain DTO и schemas — `packages/emis-contracts/`;
-- backend/domain services — `packages/emis-server/`;
-- reusable UI slices — `packages/emis-ui/`;
-- app-level composition и transport glue — `apps/web/src/routes/emis/*`, `apps/web/src/routes/api/emis/*`, `apps/web/src/lib/server/emis/infra/*`.
+- `/dashboard/emis/*` belongs to the BI platform layer, not to EMIS operational
+- those pages consume EMIS data through published read-models and BI runtime seams
+- they do not import `packages/emis-server/src/modules/*`
 
-Аналитические dashboards под `/dashboard/emis/*` не являются operational частью EMIS.  
-Они относятся к BI platform-layer и читают данные через published read-models, а не через `emis-server`.
+## 2. Canonical Execution Paths
 
-## 3. Canonical execution paths
+### 2.1. Operational Path
 
-### 3.1. Operational path
-
-```text
-/emis/* или /api/emis/*
-  -> SvelteKit route handler / page
-  -> app-owned HTTP/auth glue
+```txt
+/emis/* or /api/emis/*
+  -> SvelteKit route handler or page
+  -> app-owned auth and transport glue
   -> packages/emis-server/src/modules/*
   -> parameterized SQL via pg
   -> PostgreSQL / PostGIS
 ```
 
-Правила:
+Rules:
 
-- route handlers остаются thin transport;
-- business logic живёт в `emis-server`;
-- SQL не должен попадать в route files;
-- SvelteKit-specific glue остаётся в app layer.
+- route handlers stay thin transport
+- business logic lives in `emis-server`
+- SQL does not live in route files
+- SvelteKit-specific auth and transport glue stays in the app layer
 
-### 3.2. BI / read-side path
+### 2.2. BI / Read-Side Bridge
 
-```text
+This section documents the current EMIS BI overlay only. It is a non-target compatibility
+surface scheduled for rework; the BI runtime rules and migration queue for EMIS callers
+live in [docs/bi/architecture.md §9](../bi/architecture.md#9-migration-debt-register).
+
+```txt
 /dashboard/emis/*
-  -> fetchDataset(...)
-  -> /api/datasets/:id
-  -> compileDataset(...)
-  -> DatasetIr
-  -> Provider
-  -> published view / mart
+  -> shared BI runtime (see docs/bi/architecture.md)
+  -> `emis.*` dataset registry entry
+  -> published `mart` contract
 ```
 
-Правила:
+Rules:
 
-- BI не ходит напрямую в operational SQL через route layer;
-- published read-model считается отдельным контрактом;
-- EMIS operational code и BI code эволюционируют независимо, пока published contract стабилен.
+- `/dashboard/emis/*` belongs to the BI platform layer, not EMIS operational
+- current `/dashboard/emis/*` BI callers still pass `filterContext` through `fetchDataset()`
+  on the compatibility path tracked in `docs/bi/architecture.md §9`
+- BI does not call EMIS operational SQL directly
+- the EMIS-specific bridge contract is the `emis.*` dataset registration plus the published
+  SQL contract behind it
+- published read-models are a separate contract from operational tables and services
 
-### 3.3. Structural migration path
+### 2.3. Structural Migration Path
 
-```text
+```txt
 current zone
-  -> target package
+  -> target package or target app seam
   -> temporary compatibility shim
   -> shim removal
 ```
 
-Структурные перемещения описаны детально в `structural_migration.md`.  
-Они не должны смешиваться с поведенческим переписыванием домена.
+Structural moves are described in `structural_migration.md`. They should not be mixed with domain-behavior rewrites.
 
-## 4. Storage ownership
+## 3. Storage Ownership
 
-### 4.1. App-owned schemas
+### 3.1. App-Owned Schemas
 
-| Schema | Назначение | Примеры объектов |
-|---|---|---|
-| `emis` | write-side operational tables | `objects`, `news_items`, `news_object_links`, `audit_log`, `countries`, `object_types`, `sources`, `users`, `sessions`, `object_source_refs` |
-| `stg_emis` | staging для ingestion | `vsl_load_batch`, `vsl_position_raw`, `vsl_position_latest`, `vsl_ships_hbk`, `obj_import_run`, `obj_import_candidate`, `obj_candidate_match` |
-| `mart_emis` | derived read-models для ship routes | `vsl_route_point_hist`, `vsl_route_segment_hist` |
+| Schema      | Purpose                                                            | Example objects                                                                                                                               |
+| ----------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `emis`      | write-side operational tables                                      | `objects`, `news_items`, `news_object_links`, `audit_log`, `countries`, `object_types`, `sources`, `users`, `sessions`, `object_source_refs`  |
+| `stg_emis`  | staging for ingestion                                              | `vsl_load_batch`, `vsl_position_raw`, `vsl_position_latest`, `vsl_ships_hbk`, `obj_import_run`, `obj_import_candidate`, `obj_candidate_match` |
+| `mart_emis` | operational-derived ship-route read models outside the BI registry | `vsl_route_point_hist`, `vsl_route_segment_hist`                                                                                              |
 
-### 4.2. DB truth
+Ownership note:
 
-Active DDL truth остаётся snapshot-first:
+- `mart` is the BI-published SQL contract home for current `emis.*` datasets
+- `mart_emis` remains an operational-derived schema and not a BI-registered dataset home by default
+
+### 3.2. DB Truth
+
+Active DDL truth remains snapshot-first:
 
 - `db/current_schema.sql`
 - `db/schema_catalog.md`
 - `db/applied_changes.md`
-- `db/pending_changes.sql` — только как live delta при необходимости
+- `db/pending_changes.sql` only as a temporary live delta when needed
 
-EMIS-документы не дублируют полный DDL; они фиксируют только смысловые границы.
+This document does not duplicate full DDL. It records semantic ownership and architectural boundaries.
 
-## 5. Contract surfaces
+## 4. Contract Surfaces
 
-| Контракт | Где живёт | Для чего нужен |
-|---|---|---|
-| EMIS Zod schemas | `packages/emis-contracts/src/*` | request/response validation, shared DTOs |
-| Runtime/API conventions | `apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md` | error shape, list meta, audit/correlation conventions |
-| Route/BFF boundary | `apps/web/src/routes/api/emis/*` | thin HTTP transport, без business logic |
-| Dataset/read-model contracts | dataset definitions + DB views | BI integration без direct coupling к operational code |
+| Surface                            | Where it lives                                                                     | Purpose                                                                                                       |
+| ---------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| EMIS Zod schemas and DTOs          | `packages/emis-contracts/src/*`                                                    | request and response validation, shared domain DTOs                                                           |
+| EMIS runtime and API conventions   | `apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md`                           | error shape, list meta, audit, correlation conventions                                                        |
+| EMIS HTTP transport boundary       | `apps/web/src/routes/api/emis/*`                                                   | thin HTTP transport without business logic                                                                    |
+| Published BI read-model contracts  | `packages/platform-datasets/src/server/registry/index.ts` + published `mart` views | current-state runtime source of truth for `emis.*` datasets and their BI SQL contracts                        |
+| Legacy app-local EMIS dataset copy | `apps/web/src/lib/server/datasets/definitions/emisMart.ts`                         | legacy / reference-only compatibility artifact; not the runtime source of truth                               |
+| BI dataset and filter runtime      | `docs/bi/architecture.md`                                                          | authoritative BI runtime rules for `/dashboard/emis/*`; this document records EMIS-specific bridge facts only |
 
-## 6. Published read-models and datasets
+## 5. Published Read-Models and Datasets
 
-Текущие app-facing dataset ids и соответствующие SQL contracts:
+This section documents the current EMIS BI overlay only. It is a migration-queue caller
+scheduled for rework, not a canonical BI reference implementation; see
+[docs/bi/architecture.md §9](../bi/architecture.md#9-migration-debt-register).
 
-| Dataset id | SQL contract |
-|---|---|
-| `emis.news_flat` | `mart.emis_news_flat` |
-| `emis.object_news_facts` | `mart.emis_object_news_facts` |
-| `emis.objects_dim` | `mart.emis_objects_dim` |
+Current app-facing dataset ids are registered in
+`packages/platform-datasets/src/server/registry/index.ts` and map to these published
+`mart` contracts:
+
+| Dataset id                | SQL contract                   |
+| ------------------------- | ------------------------------ |
+| `emis.news_flat`          | `mart.emis_news_flat`          |
+| `emis.object_news_facts`  | `mart.emis_object_news_facts`  |
+| `emis.objects_dim`        | `mart.emis_objects_dim`        |
 | `emis.ship_route_vessels` | `mart.emis_ship_route_vessels` |
 
-Правила для новых BI/read-side slices:
+Rules for new EMIS read-side slices:
 
-1. Сначала фиксируется published SQL contract в `mart` или `mart_emis`.
-2. Затем обновляются snapshot-first DB документы.
-3. Затем добавляется dataset definition и provider mapping.
-4. Затем строится BI route под `/dashboard/emis/*`.
-5. Если изменился discoverability map — обновляется `README.md`.
+1. Publish the BI SQL contract in `mart`
+2. Treat `mart_emis` as an operational-derived surface outside the BI dataset registry by default; any future BI use requires an explicit exception with rationale
+3. Update snapshot-first DB docs
+4. Update the `emis.*` registry entry in `packages/platform-datasets/src/server/registry/index.ts`; `apps/web/src/lib/server/datasets/definitions/emisMart.ts` stays legacy / reference-only
+5. Build the BI route under `/dashboard/emis/*`
+6. Update `README.md` if the discoverability map changed
 
-Breaking changes для published read-models требуют явного migration plan, если меняются:
+Breaking changes to published read-models require an explicit migration plan when they change:
 
-- имена или удаление колонок;
-- grain/semantics набора;
-- сортировки/фильтры, которые ломают dataset contract.
+- column names or column removal
+- dataset grain or semantics
+- sort and filter behavior that breaks the dataset contract
 
-## 7. Extension points
+## 6. Extension Points
 
-### 7.1. Ingestion adapters
+### 6.1. Ingestion Adapters
 
-`emis-server/modules/ingestion/adapters/` использует registry pattern.  
-Новый источник добавляется через новый adapter + регистрацию в registry.
+`packages/emis-server/src/modules/ingestion/adapters/` uses a registry pattern.
 
-### 7.2. Auth integration
+Adding a new source means:
 
-Auth остаётся app-integrated, но EMIS-owned:
+- add a new adapter
+- register it in the ingestion registry
 
-- основной режим — session-based;
-- session storage — `emis.sessions`;
-- user store — `emis.users` с transition fallback;
-- route/page enforcement — app layer;
-- actor attribution и audit остаются обязательными.
+### 6.2. Auth Integration
 
-Подробности — в `access_model.md`.
+Auth remains app-integrated, but EMIS-owned:
 
-### 7.3. Maps
+- primary mode is session-based
+- session storage lives in `emis.sessions`
+- user store lives in `emis.users` with transition fallback where still needed
+- route and page enforcement stays in the app layer
+- actor attribution and audit stay mandatory
 
-Basemap modes:
+See `access_model.md` for detailed access rules.
+
+### 6.3. Maps
+
+Supported basemap modes:
 
 - `online`
 - `offline`
 - `auto`
 
-Локальный offline контур построен вокруг `PMTiles` bundle.  
-Runtime/ops детали вынесены в `operations.md`.
+The offline path is built around the PMTiles bundle. Runtime and ops details live in `operations.md`.
 
-## 8. Fixed architectural defaults
+## 7. Fixed Architectural Defaults
 
-Ниже — решения, которые считаются текущим default и не переоткрываются без причины:
+These defaults are current decisions, not open questions:
 
-- EMIS остаётся внутри текущего `SvelteKit` приложения.
-- High-level style — `modular monolith`.
-- Reusable EMIS code живёт в `packages/*`, app composition — в `apps/web`.
-- BI consumes EMIS only through published read-models.
-- `PostgreSQL + PostGIS` являются базовым фундаментом.
-- `packages/emis-server` не импортирует UI.
-- `packages/emis-ui` не импортирует server.
-- `apps/web` остаётся leaf consumer и не является library.
+- EMIS stays inside the current SvelteKit application
+- the high-level style remains a modular monolith
+- reusable EMIS code lives in `packages/*`; app composition lives in `apps/web`
+- BI consumes EMIS through published read-models only
+- `PostgreSQL + PostGIS` is the default storage foundation
+- `packages/emis-server` does not import UI
+- `packages/emis-ui` does not import server code
+- `apps/web` remains a leaf consumer and not a library
 
-## 9. Boundary rules
+## 8. Boundary Rules
 
-- `apps/web/src/routes/api/emis/*` — transport only.
-- `packages/emis-server/*` — без HTTP и без client/UI code.
-- `packages/emis-ui/*` — reusable UI, без server imports.
-- `platform-*` не знает о `emis-*`.
-- `bi-*` не импортирует `emis-*`; связь идёт через DB contracts.
-- Compatibility shims временные и не считаются ownership truth.
+- `apps/web/src/routes/api/emis/*` is transport only
+- `packages/emis-server/*` contains no HTTP logic and no client or UI code
+- `packages/emis-ui/*` contains reusable UI and no server imports
+- `platform-*` does not know about `emis-*`
+- BI read-side code does not import EMIS operational modules; the connection goes through DB contracts and BI runtime seams
+- compatibility shims are temporary and never become ownership truth
 
-## 10. Что не должно жить в этом документе
+## 9. What Stays Out of This Document
 
-Не стоит снова превращать этот документ в смесь разных осей:
+Do not turn this file into a mixed backlog, runbook, and architecture note again.
 
-- backlog/waves/status closure;
-- review-process details;
-- auth flow pseudocode;
-- offline maps пошаговые runbooks;
-- feature-specific frozen behavior contracts.
+Keep these elsewhere:
 
-Для этого есть отдельные документы.
+- rollout waves and status-closure notes
+- review-process details
+- auth flow pseudocode
+- offline maps operational runbooks
+- feature-specific frozen behavior contracts

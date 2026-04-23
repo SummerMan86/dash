@@ -63,7 +63,7 @@
 - Не подключать shared cache helper к `postgresProvider` в этой wave; rollout remains Oracle-first.
 - Не менять registry dataset set и не переопределять current `ifts.*` cache hints, если это не нужно для сохранения текущей semantics.
 - Не вводить `staleWhileRevalidate`, `refreshIntervalMs` automation, proactive warmup, Redis/external cache tier, или env-configurable cache sizing.
-- Сохранять bounded in-process memory model из `docs/architecture.md` и `docs/architecture_dashboard_bi.md`.
+- Сохранять bounded in-process memory model из `docs/architecture.md` и `docs/bi/architecture.md`.
 
 ## Ожидаемый результат
 

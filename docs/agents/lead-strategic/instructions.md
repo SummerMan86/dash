@@ -9,7 +9,7 @@ SvelteKit 2 + TypeScript + TailwindCSS 4 + PostgreSQL/PostGIS.
 `src/lib/*` — это app-local organization, а не название всей архитектуры.
 Domain-specific contours (e.g. EMIS) live as overlays inside the same modular monolith.
 
-Подробнее: see relevant domain doc set if applicable (e.g. `docs/emis/README.md`, `docs/emis/architecture.md` §8 Fixed architectural defaults).
+Подробнее: see relevant domain doc set if applicable (e.g. `docs/emis/README.md`, `docs/emis/architecture.md` §7 Fixed architectural defaults).
 
 ## Твой цикл работы
 
@@ -275,5 +275,5 @@ Mode: autonomous — ты утверждаешь план сам, не ждёш�
 - `docs/agents/autonomous-mode.md` — autonomous execution delta (если задача в autonomous mode)
 - `docs/agents/skills/brainstorming.md` — interactive problem-framing до написания плана
 - `docs/agents/skills/debugging.md`, `docs/agents/skills/testing-strategy.md` — reusable playbooks
-- `docs/codex-integration.md` — Codex commands and prompting templates
+- `./docs/agents/codex-integration.md` — Codex commands and prompting templates
 - `docs/agents/lead-strategic/memory.md` — твоя память
