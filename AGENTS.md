@@ -8,12 +8,14 @@
 `dashboard-builder` уже не demo-конструктор в узком смысле, а единое SvelteKit-приложение, в котором живут:
 
 - platform/shared слой с UI, styles, utils и API facade;
-- BI/read-side data layer для датасетов;
+- BI/read-side контур для датасетов, фильтров и аналитических экранов;
 - filter runtime и reusable filter widgets;
 - dashboard editor;
 - прикладные аналитические страницы;
 - server-side alerts;
-- EMIS как отдельный доменный контур внутри того же приложения.
+- EMIS как отдельный продуктовый/операционный доменный контур внутри того же приложения.
+
+Важно: EMIS не считается "частью BI". BI-поверхность над EMIS существует только как отдельный read-side bridge над опубликованными read-models и не является дефолтной поверхностью для EMIS-разработки.
 
 ## 2. Сначала выбери контур
 
@@ -46,11 +48,13 @@
 Стартовая дорожка:
 
 1. `docs/architecture.md` (canonical repo-wide foundation doc)
-2. `docs/emis/README.md` (EMIS entry point + doc map)
-3. `docs/emis/architecture.md` (operational/BI paths, storage, contracts, fixed defaults)
+2. `docs/emis/README.md` (EMIS entry point + default reading path without BI prerequisites)
+3. `docs/emis/architecture.md` (EMIS domain boundary, operational path, storage, contracts, optional BI bridge)
 4. `docs/emis/change_policy.md` (decision path, review triggers, DoD)
 5. `docs/AGENTS.md` - полный каталог EMIS docs, ownership и reading order
 6. локальный `AGENTS.md` в `apps/web/src/lib/server/emis/`, `apps/web/src/routes/api/emis/`, `apps/web/src/routes/emis/` и соседних active зонах
+
+Для обычной EMIS-разработки `docs/bi/architecture.md` читать не нужно. Он нужен только если change затрагивает `/dashboard/emis/*`, `platform-datasets`, shared filter/dataset runtime или published BI read-model contract.
 
 ### Agent workflow (работа в команде агентов)
 
@@ -75,14 +79,19 @@ EMIS-активный контур сейчас находится здесь:
 - `packages/emis-server/` — server infra + modules (canonical)
 - `packages/emis-ui/` — map widgets, status bar (canonical)
 - `apps/web/src/lib/server/emis/*` — app-local server layer (infra, modules, queries, repositories)
-- `apps/web/src/routes/dashboard/emis/vessel-positions/EmisDrawer.svelte` — route-local detail panel
 - `apps/web/src/lib/emis-manual-entry/` — app-local (depends on `$app/forms`)
 - `apps/web/src/routes/api/emis/*` — thin HTTP transport (stays in app)
 - `apps/web/src/routes/emis/*` — UI/workspace (stays in app)
-- `apps/web/src/routes/dashboard/emis*`
 - `db/schema_catalog.md`
 - `db/current_schema.sql`
 - `db/pending_changes.sql`
+
+EMIS BI/read-side overlay, если он вообще затронут, читается отдельно:
+
+- `apps/web/src/routes/dashboard/emis/*`
+- `apps/web/src/routes/dashboard/emis/vessel-positions/EmisDrawer.svelte`
+- `docs/bi/architecture.md`
+- `apps/web/src/routes/dashboard/emis/AGENTS.md`
 
 ## 3. Кто за что отвечает в навигации
 
@@ -125,7 +134,9 @@ These paths no longer exist. Do not recreate them without explicit architectural
 
 - platform/shared слой;
 - текущий BI/analytics контур;
-- EMIS operational и BI-contour поверх него.
+- EMIS domain contour.
+
+Если поверх EMIS нужен BI/read-side, это считается отдельным bridge-слоем над published read-models, а не частью default EMIS development surface.
 
 Repo-wide architecture contract для этого состояния зафиксирован в:
 
@@ -162,10 +173,14 @@ Canonical target layout для monorepo-style separation:
   `routes/api/emis/* -> packages/emis-server/src/modules/* -> queries/service/repository -> PostgreSQL/PostGIS`
 - simple Postgres-first implementation считается нормой
 - если нужен BI/read-model поверх EMIS, сначала публикуем documented views/read models и только потом подключаем dataset layer
+- EMIS-разработка по умолчанию не требует чтения BI vertical; BI doc нужен только для bridge-поверхности `/dashboard/emis/*` и shared dataset/runtime seams
 
 ### EMIS architecture rules
 
 Для EMIS действуют repo-wide package/app boundaries (see `docs/architecture.md`), два канонических execution path (`docs/bi/architecture.md`, `docs/emis/architecture.md`) и current EMIS package/app placement:
+
+- EMIS сам по себе считается отдельным доменным контуром, а не подмножеством BI
+- BI-поверхность над EMIS — это внешний consumer published read-models, а не canonical home для EMIS business logic
 
 - `packages/emis-contracts/` - контракты, DTO, базовые доменные типы, Zod schemas
 - `packages/emis-server/src/infra/*` - server infrastructure

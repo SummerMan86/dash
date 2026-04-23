@@ -9,10 +9,11 @@ BI runtime reference for `/dashboard/emis/*`: [docs/bi/architecture.md](../bi/ar
 - Covers: EMIS module boundary, operational execution path, storage ownership, contract surfaces, published read-model bridge to BI, extension points, fixed defaults
 - Does not cover: repo-wide topology and dependency rules, generic BI dataset runtime details, historical rollout notes, step-by-step runbooks
 - `/dashboard/emis/*` analytics pages use the BI runtime and shared filter mechanism defined in `docs/bi/architecture.md`; this document owns the operational side and the bridge points only
+- Default reader is an EMIS developer working on domain and operational code. BI vertical details remain delegated to `docs/bi/architecture.md` and are not prerequisite reading for ordinary EMIS changes.
 
 ## 1. Module Boundary
 
-EMIS is a self-contained domain inside one deployable application.
+EMIS is a self-contained domain inside one deployable application. It is not a BI submodule.
 
 Inside the EMIS module:
 
@@ -56,11 +57,13 @@ Rules:
 - SQL does not live in route files
 - SvelteKit-specific auth and transport glue stays in the app layer
 
-### 2.2. BI / Read-Side Bridge
+### 2.2. Optional BI / Read-Side Bridge
 
 This section documents the current EMIS BI overlay only. It is a non-target compatibility
 surface scheduled for rework; the BI runtime rules and migration queue for EMIS callers
 live in [docs/bi/architecture.md §9](../bi/architecture.md#9-migration-debt-register).
+
+This bridge is not part of the default EMIS development surface. Most EMIS changes do not require BI vertical docs. Read `docs/bi/architecture.md` only when the change touches `/dashboard/emis/*`, the shared dataset/filter runtime, or published BI read-model behavior.
 
 ```txt
 /dashboard/emis/*
@@ -198,7 +201,9 @@ These defaults are current decisions, not open questions:
 
 - EMIS stays inside the current SvelteKit application
 - the high-level style remains a modular monolith
+- EMIS is a separate domain contour; it is not defined as a BI submodule
 - reusable EMIS code lives in `packages/*`; app composition lives in `apps/web`
+- EMIS development is operational-first by default; the BI overlay is an optional consumer over published read-models
 - BI consumes EMIS through published read-models only
 - `PostgreSQL + PostGIS` is the default storage foundation
 - `packages/emis-server` does not import UI

@@ -7,6 +7,41 @@ Canonical repo-wide foundation architecture doc. Current-state only.
 - Covers: system shape, topology, package map, dependency and placement rules, deployment model, documentation ownership, verification hooks
 - Does not cover: BI runtime specifics (see `bi/architecture.md`), EMIS operational module specifics (see `emis/architecture.md`), historical rollout notes
 
+## System Summary
+
+`dashboard-builder` is a single-deployable `SvelteKit 2` modular monolith that hosts three contours in one runtime:
+
+- platform/shared foundation
+- BI/read-side dashboards and dataset runtime
+- EMIS operational workspace and APIs
+
+Physical split is not the current goal. Package boundaries are used to keep ownership, contracts, and execution paths explicit so the app can keep growing without turning `apps/web` into the canonical home for reusable logic. If BI and EMIS are split later into separate apps/packages inside one monorepo, the shared surface should stay explicit and narrow rather than leak through app-local cross-imports.
+
+## Context Diagram
+
+```txt
+Browser
+  -> nginx
+  -> SvelteKit / Node (`apps/web`, the only deployable)
+     -> app PostgreSQL / PostGIS
+     -> BI backends via `platform-datasets` (`Postgres`, `Oracle`, `ClickHouse`, `Cube`, `mock`)
+     -> app integrations (`WB Prices API`, `Telegram`)
+     -> map sources (`MapTiler` online or `PMTiles` offline bundle)
+```
+
+## Foundation Principles
+
+Treat the following as the durable default stance unless an explicit architecture decision reopens them:
+
+- one deployable application; package boundaries are code boundaries, not a promise of immediate physical split
+- `apps/web` is a leaf composition shell; reusable contracts, execution logic, and cross-route/domain capabilities live in `packages/*`
+- execution paths stay separate: BI read-side uses the dataset runtime, EMIS operational uses `emis-server`, alerts and ops stay app-local
+- BI and EMIS are separate domain contours; BI over EMIS is an integration seam over published read-models, not the default EMIS development surface
+- external surfaces are explicit contracts; IRs, repositories, SQL, and provider details stay internal to their execution path
+- server owns business truth; client owns interaction, orchestration, and presentation reshaping
+- DB truth is snapshot-first: `db/current_schema.sql`, `db/schema_catalog.md`, `db/applied_changes.md`
+- architecture docs are updated before merge when a change introduces or reopens a boundary, contract, fixed default, or migration debt
+
 ## 1. Foundation Decisions
 
 ### 1.1. System Shape
@@ -139,11 +174,11 @@ All BI slices use the BI runtime owned by [docs/bi/architecture.md](./bi/archite
 
 Boundary note:
 
-- EMIS analytics pages are part of the BI platform, not part of the EMIS operational module
-- they consume EMIS data only through published read-models and the shared dataset runtime
+- `/dashboard/emis/*` is a BI consumer of published EMIS read-models, not the canonical home of EMIS business logic
+- it consumes EMIS data only through published read-models and the shared dataset runtime
 - if EMIS is extracted later, these BI pages remain in dashboard-builder
 
-### 4.3. EMIS Operational
+### 4.3. EMIS Domain
 
 Operational workspace under `/emis/*` and `/api/emis/*`.
 
@@ -155,6 +190,13 @@ Owned packages and app seams:
 - `apps/web/src/routes/emis/*`
 - `apps/web/src/routes/api/emis/*`
 - `apps/web/src/lib/server/emis/infra/*`
+
+Rules:
+
+- EMIS is a separate domain contour, not a BI submodule
+- the default EMIS development surface is operational/domain code plus EMIS-owned contracts and UI
+- the BI overlay over EMIS read-models under `/dashboard/emis/*` is a consumer seam, not part of the default EMIS reading path
+- EMIS work does not require BI vertical docs unless the change touches `/dashboard/emis/*`, `platform-datasets`, or the shared filter/dataset runtime
 
 See [docs/emis/architecture.md](./emis/architecture.md) for the vertical contract.
 
@@ -380,8 +422,9 @@ Favor folder-based vertical docs for new and updated architecture documents.
 
 ## 10. Read Next
 
-| If your task involves...                                            | Read                                                    |
-| ------------------------------------------------------------------- | ------------------------------------------------------- |
-| BI datasets, providers, filters, DWH integrations, extension points | [docs/bi/architecture.md](./bi/architecture.md)         |
-| EMIS operational paths, contracts, ingestion, PostGIS, auth         | [docs/emis/architecture.md](./emis/architecture.md)     |
-| Both BI and EMIS                                                    | read both vertical docs; shared rules stay in this file |
+| If your task involves...                                            | Read                                                                                           |
+| ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| BI datasets, providers, filters, DWH integrations, extension points | [docs/bi/architecture.md](./bi/architecture.md)                                                |
+| EMIS operational paths, contracts, ingestion, PostGIS, auth         | [docs/emis/README.md](./emis/README.md) -> [docs/emis/architecture.md](./emis/architecture.md) |
+| EMIS BI overlay under `/dashboard/emis/*` or shared dataset runtime | read the EMIS docs above, then [docs/bi/architecture.md](./bi/architecture.md)                 |
+| Both BI and EMIS                                                    | read both vertical docs; shared rules stay in this file                                        |

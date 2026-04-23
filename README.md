@@ -1,6 +1,6 @@
-# Dashboard Builder / BI Platform
+# Dashboard Builder / Platform + BI + EMIS
 
-Текущий репозиторий содержит SvelteKit-приложение, которое уже вышло за рамки простого "builder demo". По факту это заготовка BI/аналитической платформы с общими UI-компонентами, BFF-слоем для датасетов, системой фильтров, редактором дашбордов и несколькими прикладными аналитическими модулями.
+Текущий репозиторий содержит single-deployable `SvelteKit` modular monolith, в котором сейчас сосуществуют три контура: platform/shared foundation, BI/read-side и EMIS как отдельный доменный модуль. Это уже не "builder demo" и не "только BI-приложение": BI и EMIS живут в одном runtime, но описываются и развиваются как отдельные архитектурные поверхности.
 
 ## Что уже есть
 
@@ -118,8 +118,10 @@ pnpm lint:boundaries
 
 - страница объявляет `FilterSpec[]`
 - страница создает runtime через `useFilterWorkspace({ workspaceId, ownerId, specs })`
+- страница при необходимости вызывает `planFiltersForTarget()` / `planFiltersForTargets()` и получает `plan.serverParams`
+- страница явно мержит `plan.serverParams` с page-local params и вызывает `fetchDataset({ id, params })`
 - `FilterPanel` рендерится с `runtime={...}`
-- `fetchDataset(...)` получает явный `filterContext.snapshot`
+- legacy `filterContext` остается только для немигрированных compatibility callers
 
 Система поддерживает три scope:
 
@@ -135,7 +137,8 @@ pnpm lint:boundaries
 
 ## Документация
 
-- `docs/architecture.md` - canonical repo-wide architecture contract: topology, ownership, execution paths, import rules
+- `docs/architecture.md` - canonical repo-wide foundation contract: system summary, foundation principles, topology, ownership, execution paths, import rules
+- `docs/emis/README.md` - EMIS entry point; обычная EMIS-разработка начинается отсюда и не требует чтения BI vertical docs, если не затрагивается `/dashboard/emis/*` или shared dataset runtime
 - `AGENTS.md` - корневая точка входа по репозиторию, контурам и архитектурным правилам
 - `docs/AGENTS.md` - единственный полный каталог документации и reading order
 - `docs/QUICKSTART.md` - operator runbook: как ставить задачи agent team (для человека, не для агентов)

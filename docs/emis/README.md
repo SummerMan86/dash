@@ -9,11 +9,13 @@
 
 - EMIS живёт внутри текущего `SvelteKit` приложения как **single deployable app**.
 - Архитектурный стиль: **modular monolith**.
+- EMIS считается отдельным доменным контуром, а не подмножеством BI.
 - Reusable EMIS-код имеет canonical home в:
   - `packages/emis-contracts/`
   - `packages/emis-server/`
   - `packages/emis-ui/`
 - Operational path и BI/read-side path остаются разными execution paths.
+- Обычная EMIS-разработка начинается с этого doc set и не требует чтения BI vertical docs, пока change не затрагивает `/dashboard/emis/*`, `platform-datasets` или shared filter/dataset runtime.
 - Production auth включён **по умолчанию**:
   - `EMIS_AUTH_MODE=session` — основной режим;
   - `EMIS_AUTH_MODE=none` — только dev/smoke.
@@ -37,17 +39,24 @@ BI-маршруты потребляют EMIS только через published 
 
 ## 3. Какие документы читать
 
-| Если нужен ответ на вопрос                                                  | Документ                  |
-| --------------------------------------------------------------------------- | ------------------------- |
-| Что сейчас считается правдой, где искать дальше                             | `README.md`               |
-| Как устроен EMIS, где проходят границы, как идут operational/BI потоки      | `architecture.md`         |
-| Как изменять EMIS без архитектурного дрейфа                                 | `change_policy.md`        |
-| Что входит в продуктовый scope, что не входит, какие инварианты обязательны | `product_scope.md`        |
-| Кто и как получает доступ, какие роли и write-правила действуют             | `access_model.md`         |
-| Как проверять readiness, логи, offline maps и post-deploy состояние         | `operations.md`           |
-| Как делать structural migration и не ломать зависимости                     | `structural_migration.md` |
+| Если нужен ответ на вопрос                                                  | Документ                                                                                       |
+| --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Что сейчас считается правдой, где искать дальше                             | `этот README.md`                                                                               |
+| Как устроен EMIS, где проходят границы, как идут operational/BI потоки      | `architecture.md`                                                                              |
+| Как изменять EMIS без архитектурного дрейфа                                 | `change_policy.md`                                                                             |
+| Что входит в продуктовый scope, что не входит, какие инварианты обязательны | `product_scope.md`                                                                             |
+| Кто и как получает доступ, какие роли и write-правила действуют             | `access_model.md`                                                                              |
+| Как проверять readiness, логи, offline maps и post-deploy состояние         | `operations.md`                                                                                |
+| Как делать structural migration и не ломать зависимости                     | `structural_migration.md`                                                                      |
+| Когда нужен BI vertical doc                                                 | только при работе с `/dashboard/emis/*`, `platform-datasets` или shared filter/dataset runtime |
 
 Исторические и feature-specific материалы вынесены в `archive/`.
+
+### Default stance for EMIS development
+
+- Сначала читать `docs/emis/*`, а не `docs/bi/architecture.md`.
+- Считать `/emis/*`, `/api/emis/*`, `packages/emis-*` и EMIS app-local modules канонической рабочей поверхностью.
+- Рассматривать `/dashboard/emis/*` как отдельный BI consumer published read-models, а не как default EMIS surface.
 
 ## 4. Короткая карта архитектуры
 
@@ -62,7 +71,7 @@ BI-маршруты потребляют EMIS только через published 
   -> PostgreSQL / PostGIS
 ```
 
-### BI / read-side path
+### Optional BI / read-side bridge
 
 ```text
 /dashboard/emis/*
@@ -127,6 +136,7 @@ CHOKIDAR_USEPOLLING=1 pnpm emis:write-smoke
 Этот набор не заменяет:
 
 - `docs/architecture.md` — repo-wide architecture;
+- `docs/bi/architecture.md` — только если change реально затрагивает BI/read-side bridge или shared dataset runtime;
 - `db/current_schema.sql`, `db/schema_catalog.md`, `db/applied_changes.md` — активная DB truth;
 - `apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md` — runtime/API conventions.
 

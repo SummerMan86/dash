@@ -31,21 +31,21 @@ Historical BI archive: [archive/bi/architecture_dashboard_bi.md](./archive/bi/ar
 
 ### Canonical
 
-| Документ                                                                           | Владеет                                      | Source of truth для                                                             |
-| ---------------------------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------- |
-| `architecture.md`                                                                  | canonical repo-wide foundation               | topology, package map, import rules, deployment, shared infrastructure            |
-| `bi/architecture.md`                                                               | BI vertical architecture                     | dataset runtime, filter contract, BI-adjacent ops paths, DWH integrations, extension points |
-| `emis/architecture.md`                                                             | EMIS vertical architecture                   | operational paths, contracts, ingestion, PostGIS, auth                             |
-| `../apps/web/src/routes/dashboard/wildberries/dwh_for_wildberries_requirements.md` | Wildberries DWH contract                     | полный контракт с DWH: витрины, колонки, фильтры, алерты, требования к качеству |
-| `strategy/bi_strategy.md`                                                          | local dashboard-builder BI strategy contract | как переложить Power BI strategy/BSC постановку в MVE-архитектуру               |
-| `../apps/web/src/routes/dashboard/strategy/AGENTS.md`                              | strategy route development contract          | current pages, grain rules, filter contract и rollout path                      |
-| `../apps/web/src/lib/server/datasets/AGENTS.md`                                    | dataset layer routing contract               | как `strategy.*` datasets подключаются в app runtime                            |
-| `../packages/platform-datasets/AGENTS.md`                                          | dataset runtime package contract             | registry-driven pipeline, Postgres + Oracle providers, shared LRU cache, definitions |
-| `../apps/web/src/lib/server/providers/AGENTS.md`                                   | provider mapping contract                    | как `strategy.*` datasets маппятся на `mart_strategy.slobi_*`                   |
-| `../db/schema_catalog.md`                                                          | active app DB catalog                        | какие app-схемы и SQL-объекты считаются рабочими                                |
-| `../db/current_schema.sql`                                                         | active app DB snapshot                       | текущая структура схем `emis`, `stg_emis`, `mart_emis`, `mart`                  |
-| `../db/applied_changes.md`                                                         | active app DB structural log                 | журнал DDL-изменений после snapshot baseline                                    |
-| `ops/beget_deployment_plan.md`                                                     | deployment runbook                           | production deployment plan для `labinsight.ru`                                  |
+| Документ                                                                           | Владеет                                      | Source of truth для                                                                                           |
+| ---------------------------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `architecture.md`                                                                  | canonical repo-wide foundation               | system summary, foundation principles, topology, package map, import rules, deployment, shared infrastructure |
+| `bi/architecture.md`                                                               | BI vertical architecture                     | dataset runtime, filter contract, BI-adjacent ops paths, DWH integrations, extension points                   |
+| `emis/architecture.md`                                                             | EMIS vertical architecture                   | operational paths, contracts, ingestion, PostGIS, auth                                                        |
+| `../apps/web/src/routes/dashboard/wildberries/dwh_for_wildberries_requirements.md` | Wildberries DWH contract                     | полный контракт с DWH: витрины, колонки, фильтры, алерты, требования к качеству                               |
+| `strategy/bi_strategy.md`                                                          | local dashboard-builder BI strategy contract | как переложить Power BI strategy/BSC постановку в MVE-архитектуру                                             |
+| `../apps/web/src/routes/dashboard/strategy/AGENTS.md`                              | strategy route development contract          | current pages, grain rules, filter contract и rollout path                                                    |
+| `../apps/web/src/lib/server/datasets/AGENTS.md`                                    | dataset layer routing contract               | как `strategy.*` datasets подключаются в app runtime                                                          |
+| `../packages/platform-datasets/AGENTS.md`                                          | dataset runtime package contract             | registry-driven pipeline, Postgres + Oracle providers, shared LRU cache, definitions                          |
+| `../apps/web/src/lib/server/providers/AGENTS.md`                                   | provider mapping contract                    | как `strategy.*` datasets маппятся на `mart_strategy.slobi_*`                                                 |
+| `../db/schema_catalog.md`                                                          | active app DB catalog                        | какие app-схемы и SQL-объекты считаются рабочими                                                              |
+| `../db/current_schema.sql`                                                         | active app DB snapshot                       | текущая структура схем `emis`, `stg_emis`, `mart_emis`, `mart`                                                |
+| `../db/applied_changes.md`                                                         | active app DB structural log                 | журнал DDL-изменений после snapshot baseline                                                                  |
+| `ops/beget_deployment_plan.md`                                                     | deployment runbook                           | production deployment plan для `labinsight.ru`                                                                |
 
 ### Reference (external)
 
@@ -58,8 +58,8 @@ Historical BI archive: [archive/bi/architecture_dashboard_bi.md](./archive/bi/ar
 | Документ                                            | Владеет                          | Source of truth для                                                                                                         |
 | --------------------------------------------------- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | `archive/platform/current-project-analysis.md`      | historical platform analysis     | мартовский анализ проекта до package-era; полезен для исторического контекста, но не source of truth по текущей архитектуре |
-| `archive/bi/architecture_dashboard_bi.md`           | pre-refactor BI architecture     | retired BI runtime shape before Wave 1 registry/filter/IR cleanup                                                      |
-| `archive/bi/bi_refactor_rollout.md`                 | completed BI rollout plan        | historical BR-1..BR-10 sequencing, defaults and acceptance criteria                                                   |
+| `archive/bi/architecture_dashboard_bi.md`           | pre-refactor BI architecture     | retired BI runtime shape before Wave 1 registry/filter/IR cleanup                                                           |
+| `archive/bi/bi_refactor_rollout.md`                 | completed BI rollout plan        | historical BR-1..BR-10 sequencing, defaults and acceptance criteria                                                         |
 | `archive/strategy-v1/strategy_session_bootstrap.md` | historical strategy bootstrap    | старый entry point по `strategy-drive` / `Strategy DWH v1`                                                                  |
 | `archive/strategy-v1/strategy_dwh_v1.md`            | historical strategy architecture | старые `strategy.*` data contracts, marts и dataset ids                                                                     |
 | `archive/strategy-v1/strategy_newcomer_guide.md`    | historical strategy onboarding   | старый newcomer context по strategy-срезу                                                                                   |
@@ -71,22 +71,22 @@ Consolidated EMIS doc set lives in `docs/emis/`. Each file owns one axis; there 
 
 ### Canonical
 
-| Документ                                                    | Владеет                                    | Source of truth для                                                                                           |
-| ----------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| `architecture.md`                                           | canonical repo-wide foundation             | topology, package map, import rules, deployment, shared infrastructure                                        |
-| `emis/README.md`                                            | EMIS entry point + doc map                 | current truth, module boundary, what to read next by task type                                                |
-| `emis/architecture.md`                                      | EMIS vertical architecture                 | operational/BI paths, storage ownership, contracts, published read-models, fixed defaults                     |
-| `emis/product_scope.md`                                     | EMIS product scope                         | in/out of scope, product invariants, UX expectations                                                          |
-| `emis/access_model.md`                                      | EMIS access model                          | supported modes, roles, sessions, write-policy helper, env vars                                               |
-| `emis/change_policy.md`                                     | EMIS governance                            | decision path, non-negotiables, review triggers, exception policy, DoD                                        |
-| `emis/operations.md`                                        | EMIS ops runbook                           | readiness/health, error logging, offline maps, post-deploy verification                                       |
-| `emis/structural_migration.md`                              | target layout и migration policy           | target package layout, import direction rules, alias policy                                                   |
-| `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md` | runtime/API conventions                    | API design conventions, error shape, list meta, audit contract, query limits/sorts                            |
-| `../packages/emis-contracts/AGENTS.md`                      | EMIS contracts package navigation          | где лежат canonical entity contracts, DTO и Zod schemas                                                       |
-| `../packages/emis-server/AGENTS.md`                         | EMIS server package navigation             | где лежат canonical infra helpers и backend modules                                                           |
-| `../packages/emis-ui/AGENTS.md`                             | EMIS UI package navigation                 | где лежат canonical map/status UI exports                                                                     |
-| `../apps/web/src/routes/emis/AGENTS.md`                     | EMIS workspace route contract              | что остается в `/emis` route layer и что выносится из workspace                                               |
-| `../apps/web/src/routes/dashboard/emis/AGENTS.md`           | EMIS BI routes contract                    | границы BI route layer, dataset path и extraction rules                                                       |
+| Документ                                                    | Владеет                           | Source of truth для                                                                                           |
+| ----------------------------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `architecture.md`                                           | canonical repo-wide foundation    | system summary, foundation principles, topology, package map, import rules, deployment, shared infrastructure |
+| `emis/README.md`                                            | EMIS entry point + doc map        | current truth, module boundary, default EMIS reading path without BI prerequisites                            |
+| `emis/architecture.md`                                      | EMIS vertical architecture        | EMIS domain boundary, operational path, storage ownership, contracts, optional BI bridge, fixed defaults      |
+| `emis/product_scope.md`                                     | EMIS product scope                | in/out of scope, product invariants, UX expectations                                                          |
+| `emis/access_model.md`                                      | EMIS access model                 | supported modes, roles, sessions, write-policy helper, env vars                                               |
+| `emis/change_policy.md`                                     | EMIS governance                   | decision path, non-negotiables, review triggers, exception policy, DoD                                        |
+| `emis/operations.md`                                        | EMIS ops runbook                  | readiness/health, error logging, offline maps, post-deploy verification                                       |
+| `emis/structural_migration.md`                              | target layout и migration policy  | target package layout, import direction rules, alias policy                                                   |
+| `../apps/web/src/lib/server/emis/infra/RUNTIME_CONTRACT.md` | runtime/API conventions           | API design conventions, error shape, list meta, audit contract, query limits/sorts                            |
+| `../packages/emis-contracts/AGENTS.md`                      | EMIS contracts package navigation | где лежат canonical entity contracts, DTO и Zod schemas                                                       |
+| `../packages/emis-server/AGENTS.md`                         | EMIS server package navigation    | где лежат canonical infra helpers и backend modules                                                           |
+| `../packages/emis-ui/AGENTS.md`                             | EMIS UI package navigation        | где лежат canonical map/status UI exports                                                                     |
+| `../apps/web/src/routes/emis/AGENTS.md`                     | EMIS workspace route contract     | что остается в `/emis` route layer и что выносится из workspace                                               |
+| `../apps/web/src/routes/dashboard/emis/AGENTS.md`           | EMIS BI routes contract           | границы BI route layer, dataset path и extraction rules                                                       |
 
 ### Archive
 
@@ -107,37 +107,37 @@ Consolidated EMIS doc set lives in `docs/emis/`. Each file owns one axis; there 
 
 ### Canonical
 
-| Документ                                      | Владеет                                      | Source of truth для                                                      |
-| --------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------ |
-| `agents/workflow.md`                          | core agent lifecycle, review model, governance, DoD, memory protocol | процесс, plan ownership, execution loop, review gate, governance passes, DoD, durable memory |
-| `agents/execution-profiles.md`                | runtime/model binding per profile            | which runtime, model, effort, fallback per role per profile              |
-| `.././docs/agents/codex-integration.md`                | Codex CLI integration                        | plugin commands, proof tuples, companion CLI, Codex prompting templates  |
-| `agents/autonomous-mode.md`                   | autonomous execution delta                   | autonomous mode lifecycle, decision framework, guardrails, recovery      |
-| `agents/templates.md`                         | all agent communication templates            | plan, task, handoff, report, governance, transparency templates          |
-| `agents/invariants.md`                        | generic project invariants                   | repo-wide architecture/data/schema/complexity guardrails                 |
-| `agents/git-protocol.md`                      | branch и worktree protocol                   | ветки, worktrees, merge choreography, checkpoints                        |
-| `agents/recovery.md`                          | failure-path protocol                        | recovery rules для rejected slices, branch divergence и tooling outage   |
-| `agents/lead-strategic/instructions.md`       | GPT-5.4 lead + governance passes             | planning, acceptance, architecture/baseline/strategic review passes      |
-| `agents/orchestrator/instructions.md`         | Claude Opus orchestration instructions       | worker dispatch, review gate, report, direct-fix exception               |
-| `agents/worker/guide.md`                      | worker bootstrap and guardrails              | bootstrap, guardrails, review triggers, evidence rules, DoD checklist    |
-| `agents/*-reviewer/instructions.md`           | reviewer role instructions                   | checks, output format, scope for each reviewer                           |
-| `agents/ui-reviewer/instructions.md`          | UI smoke + deep mode                         | smoke-test checks and deep UX audit mode                                 |
-| `agents/skills/debugging.md`                  | debugging playbook                           | reproduce, compare, hypothesize, fix, escalation triggers                |
-| `agents/skills/testing-strategy.md`           | three-mode testing strategy                  | test-first, prototype-pin-refactor, verification-first, per-slice fields |
-| `../docs/QUICKSTART.md`                       | user-facing operator runbook                 | как ставить задачи команде агентов, промпты и сценарии                   |
-| `../docs/ops/usage-telemetry.md`              | agent usage telemetry                        | durable usage history, usefulness rubric, file-first telemetry contract  |
+| Документ                                | Владеет                                                              | Source of truth для                                                                          |
+| --------------------------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `agents/workflow.md`                    | core agent lifecycle, review model, governance, DoD, memory protocol | процесс, plan ownership, execution loop, review gate, governance passes, DoD, durable memory |
+| `agents/execution-profiles.md`          | runtime/model binding per profile                                    | which runtime, model, effort, fallback per role per profile                                  |
+| `.././docs/agents/codex-integration.md` | Codex CLI integration                                                | plugin commands, proof tuples, companion CLI, Codex prompting templates                      |
+| `agents/autonomous-mode.md`             | autonomous execution delta                                           | autonomous mode lifecycle, decision framework, guardrails, recovery                          |
+| `agents/templates.md`                   | all agent communication templates                                    | plan, task, handoff, report, governance, transparency templates                              |
+| `agents/invariants.md`                  | generic project invariants                                           | repo-wide architecture/data/schema/complexity guardrails                                     |
+| `agents/git-protocol.md`                | branch и worktree protocol                                           | ветки, worktrees, merge choreography, checkpoints                                            |
+| `agents/recovery.md`                    | failure-path protocol                                                | recovery rules для rejected slices, branch divergence и tooling outage                       |
+| `agents/lead-strategic/instructions.md` | GPT-5.4 lead + governance passes                                     | planning, acceptance, architecture/baseline/strategic review passes                          |
+| `agents/orchestrator/instructions.md`   | Claude Opus orchestration instructions                               | worker dispatch, review gate, report, direct-fix exception                                   |
+| `agents/worker/guide.md`                | worker bootstrap and guardrails                                      | bootstrap, guardrails, review triggers, evidence rules, DoD checklist                        |
+| `agents/*-reviewer/instructions.md`     | reviewer role instructions                                           | checks, output format, scope for each reviewer                                               |
+| `agents/ui-reviewer/instructions.md`    | UI smoke + deep mode                                                 | smoke-test checks and deep UX audit mode                                                     |
+| `agents/skills/debugging.md`            | debugging playbook                                                   | reproduce, compare, hypothesize, fix, escalation triggers                                    |
+| `agents/skills/testing-strategy.md`     | three-mode testing strategy                                          | test-first, prototype-pin-refactor, verification-first, per-slice fields                     |
+| `../docs/QUICKSTART.md`                 | user-facing operator runbook                                         | как ставить задачи команде агентов, промпты и сценарии                                       |
+| `../docs/ops/usage-telemetry.md`        | agent usage telemetry                                                | durable usage history, usefulness rubric, file-first telemetry contract                      |
 
 #### Domain invariant overlays
 
-| Документ                                      | Владеет                                      | Source of truth для                                                      |
-| --------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------ |
-| `agents/invariants-emis.md`                   | EMIS domain invariants                       | EMIS boundaries, data invariants, tech notes (overlay to invariants.md)  |
+| Документ                    | Владеет                | Source of truth для                                                     |
+| --------------------------- | ---------------------- | ----------------------------------------------------------------------- |
+| `agents/invariants-emis.md` | EMIS domain invariants | EMIS boundaries, data invariants, tech notes (overlay to invariants.md) |
 
 ### Active
 
-| Документ                                          | Владеет                       | Source of truth для                                                                  |
-| ------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------ |
-| `plans/agent_workflow_superpowers_adaptation.md`  | agent workflow rollout plan   | hybrid adoption waves, testing strategy, execution split for Superpowers adaptation  |
+| Документ                                         | Владеет                     | Source of truth для                                                                 |
+| ------------------------------------------------ | --------------------------- | ----------------------------------------------------------------------------------- |
+| `plans/agent_workflow_superpowers_adaptation.md` | agent workflow rollout plan | hybrid adoption waves, testing strategy, execution split for Superpowers adaptation |
 
 ### Archive
 
@@ -178,6 +178,7 @@ Consolidated EMIS doc set lives in `docs/emis/`. Each file owns one axis; there 
 
 Опционально по задаче:
 
+- `bi/architecture.md` - только если change затрагивает `/dashboard/emis/*`, `platform-datasets` или shared filter/dataset runtime
 - `emis/access_model.md` - если задача затрагивает writes, роли, sessions, guardrails
 - `emis/operations.md` - если задача про health/readiness, error logging или offline maps/PMTiles
 - `emis/architecture.md` §6 - если задача про BI/read-models/datasets/contracts

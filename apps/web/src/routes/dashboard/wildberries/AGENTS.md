@@ -56,6 +56,6 @@
 - page-level вычисления лежат прямо рядом с route (`aggregation.ts`, `utils.ts`, `filters.ts`);
 - active routes используют `useFilterWorkspace(...)`, а не top-level `registerFilters(...)`;
 - shared `dateRange` живет в workspace `dashboard-wildberries` и может переиспользоваться между маршрутами;
-- migrated routes передают явный `filterContext.snapshot` в `fetchDataset(...)`;
+- canonical callers собирают явный `params` bag и вызывают `fetchDataset({ id, params })`; legacy `filterContext` остается только в compatibility callers;
 - это хороший reference для будущих доменных модулей, но не идеальная конечная архитектура;
 - при развитии EMIS стоит брать отсюда паттерны, а не копировать структуру один в один.
