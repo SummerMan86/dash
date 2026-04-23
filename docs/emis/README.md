@@ -18,7 +18,6 @@
   - `EMIS_AUTH_MODE=session` — основной режим;
   - `EMIS_AUTH_MODE=none` — только dev/smoke.
 - Admin CRUD для словарей и пользователей уже считается **живой частью системы**, а не deferred scope.
-- По предоставленным документам baseline закрыт, активных архитектурных исключений нет.
 
 ## 2. Границы модуля
 
@@ -38,15 +37,15 @@ BI-маршруты потребляют EMIS только через published 
 
 ## 3. Какие документы читать
 
-| Если нужен ответ на вопрос | Документ |
-|---|---|
-| Что сейчас считается правдой, где искать дальше | `README.md` |
-| Как устроен EMIS, где проходят границы, как идут operational/BI потоки | `architecture.md` |
-| Как изменять EMIS без архитектурного дрейфа | `change_policy.md` |
-| Что входит в продуктовый scope, что не входит, какие инварианты обязательны | `product_scope.md` |
-| Кто и как получает доступ, какие роли и write-правила действуют | `access_model.md` |
-| Как проверять readiness, логи, offline maps и post-deploy состояние | `operations.md` |
-| Как делать structural migration и не ломать зависимости | `structural_migration.md` |
+| Если нужен ответ на вопрос                                                  | Документ                  |
+| --------------------------------------------------------------------------- | ------------------------- |
+| Что сейчас считается правдой, где искать дальше                             | `README.md`               |
+| Как устроен EMIS, где проходят границы, как идут operational/BI потоки      | `architecture.md`         |
+| Как изменять EMIS без архитектурного дрейфа                                 | `change_policy.md`        |
+| Что входит в продуктовый scope, что не входит, какие инварианты обязательны | `product_scope.md`        |
+| Кто и как получает доступ, какие роли и write-правила действуют             | `access_model.md`         |
+| Как проверять readiness, логи, offline maps и post-deploy состояние         | `operations.md`           |
+| Как делать structural migration и не ломать зависимости                     | `structural_migration.md` |
 
 Исторические и feature-specific материалы вынесены в `archive/`.
 
@@ -67,11 +66,11 @@ BI-маршруты потребляют EMIS только через published 
 
 ```text
 /dashboard/emis/*
-  -> fetchDataset(...)
+  -> fetchDataset()
   -> /api/datasets/:id
-  -> compileDataset(...)
-  -> DatasetIr
-  -> Provider
+  -> executeDatasetQuery()
+  -> compile to SelectIr
+  -> Provider.execute()
   -> published mart / view
 ```
 

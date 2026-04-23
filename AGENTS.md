@@ -152,8 +152,8 @@ Canonical target layout для monorepo-style separation:
 ### Non-EMIS BI read-side
 
 - canonical path:
-  `fetchDataset(...) -> /api/datasets/:id -> compileDataset(...) -> DatasetIr -> Provider -> DatasetResponse`
-- `DatasetQuery`, `DatasetResponse`, `DatasetIr`, `Provider` считаются platform contract для этого слоя
+  `fetchDataset() -> /api/datasets/:id -> executeDatasetQuery() -> compile to SelectIr -> Provider.execute() -> DatasetResponse`
+- `DatasetQuery`, `DatasetResponse`, `SelectIr`, `Provider` считаются platform contract для этого слоя
 - правило не распространяется на `routes/api/emis/*`, `server/emis/*`, `server/alerts/*`, `/api/wb/*` и другие operational paths
 
 ### EMIS operational side
